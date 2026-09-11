@@ -38,8 +38,11 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         return True
 
     try:
-        print(f"[upload_cloud] Creating/Verifying repository '{repo_id}' on Hugging Face Hub...")
-        create_repo(repo_id=repo_id, token=token, private=private, exist_ok=True, repo_type="model")
+        print(f"[upload_cloud] Checking/Creating repository '{repo_id}' on Hugging Face Hub...")
+        try:
+            create_repo(repo_id=repo_id, token=token, private=private, exist_ok=True, repo_type="model")
+        except Exception as e_create:
+            print(f"[upload_cloud] Note on repo creation: {e_create}. Proceeding to upload directly...")
 
         print(f"[upload_cloud] Uploading folder '{model_dir}' to '{repo_id}'...")
         api.upload_folder(
@@ -52,6 +55,10 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         return True
     except Exception as e:
         print(f"[upload_cloud] Upload failed: {e}")
+        print("[upload_cloud] Trouble shooting Hugging Face 403 Forbidden:")
+        print("  1. Ensure your HF_TOKEN is a WRITE token (not Read-only) at https://huggingface.co/settings/tokens")
+        print("  2. Ensure your Hugging Face username matches the namespace in repo-id (e.g. your_username/custom-deepfake-vit)")
+        print(f"  3. You can also create the repo manually at https://huggingface.co/new and retry.")
         return False
 
 
