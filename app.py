@@ -266,6 +266,46 @@ def handle_ask_question(data):
         emit('error', {'message': f'Failed to answer question: {str(e)}'})
 
 
+@app.route('/api/colab/callback', methods=['POST'])
+def colab_callback():
+    """Receive live tuning hyperparameters & evaluation metrics from Google Colab."""
+    try:
+        data = request.get_json(force=True) or {}
+        logger.info(f"[colab_bridge] Received tuning callback from Colab: {data}")
+        
+        custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+        os.makedirs(custom_dir, exist_ok=True)
+        
+        # Ingest tuned calibration parameters
+        calib_file = os.path.join(custom_dir, "calibration_params.json")
+        calib_data = {
+            "temperature_scaling_T": data.get("temperature_scaling_T", 1.6178),
+            "optimal_threshold_tau": data.get("optimal_threshold_tau", 0.8118),
+            "calibration_status": "CALIBRATED_FROM_COLAB_GPU",
+            "accuracy": data.get("out_of_distribution_accuracy"),
+            "dataset_trained": data.get("dataset_trained"),
+            "timestamp": datetime.now().isoformat()
+        }
+        with open(calib_file, "w", encoding="utf-8") as f:
+            import json
+            json.dump(calib_data, f, indent=2)
+
+        # Notify Web Dashboard UI via SocketIO
+        socketio.emit('colab_sync_received', calib_data)
+
+        # Reload orchestrator detector in memory
+        global orchestrator
+        if orchestrator and hasattr(orchestrator, "detector"):
+            from deepfake_detector import DeepfakeDetector
+            orchestrator.detector = DeepfakeDetector()
+            logger.info("[colab_bridge] DeepfakeDetector reloaded with new Colab tuning parameters.")
+
+        return jsonify({"status": "success", "message": "Colab tuning parameters ingested successfully", "calibrated": calib_data}), 200
+    except Exception as e:
+        logger.error(f"[colab_bridge] Callback error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @socketio.on('save_session')
 def handle_save_session():
     """Handle session save request."""
