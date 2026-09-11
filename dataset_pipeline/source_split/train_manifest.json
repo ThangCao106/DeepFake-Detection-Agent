@@ -1,0 +1,464 @@
+[
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_001.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "18c13e4fa6c6b5c694353ad807c97b46",
+    "dhash": "506381209866536711"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_003.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "11a8be81730692c22840c87b5da38d00",
+    "dhash": "1085120253745106719"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_005.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "fb92975a347c2e59426a2f29951b25c9",
+    "dhash": "18446744073709551615"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_006.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "a2971aed2c6b041a02270967ddea2517",
+    "dhash": "9187201950435737471"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_007.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "b0c7fd6d9883fb8252978bd5b8445311",
+    "dhash": "9223372036854775807"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_009.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "d20c7a6333e41883fa5eb13a80b6e729",
+    "dhash": "13835058055282163711"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_012.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "ef8b197cc0cb8c2155b16557d66d2542",
+    "dhash": "217024933740611335"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_013.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "3148822a6f57e61f9fdc6f580649a94f",
+    "dhash": "2242545495421427519"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_014.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "11b97ba652c88dc5d8eba7bf5bb74759",
+    "dhash": "1082841996664442639"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_016.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "013d314187b902094a1f080c4780a2bd",
+    "dhash": "1085102592571150095"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_018.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "18881bd6e4ac8e2c4136d734fe27ddf3",
+    "dhash": "1089623784654053151"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_020.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "fde7e62fd4ff5c69ede2a57db1f05076",
+    "dhash": "12645931694356955135"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_021.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "a57349bbf31bdba54a020ab501f99be1",
+    "dhash": "4575656669496737791"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_022.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "48e9805cfc80d11e53435f8c5a84b25f",
+    "dhash": "4575515932008349567"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\fake\\CIFAKE_fake_025.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "441af36487b11406373c984f921fcac5",
+    "dhash": "506381210000754439"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_003.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "4d8eb7e6af9a0f241d9c5f947cd6ff1a",
+    "dhash": "1085102661560114975"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_006.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "1f245e4686d892585bff347d187faa65",
+    "dhash": "9187131306813652863"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_012.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "8335814600deaab749716d5112ab1c77",
+    "dhash": "217024916628113159"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_014.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "a1d4a3c216f6156376d652e184b386d8",
+    "dhash": "1082850792757464847"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_015.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "e5d0c6f1f8412a127f40b899a9875aba",
+    "dhash": "9187343239835811839"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_018.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "2d4c6742d2aef5885ed9dcdd9202cfa6",
+    "dhash": "1089623853373529887"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_020.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "9a646fe212343586a3a969571f461071",
+    "dhash": "12645967016167997439"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_021.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "e0a1542b5afa2e07e8030ad7e01f30ce",
+    "dhash": "4575515932008349695"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_022.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "73a624e8f068556620e9a91c5130abbf",
+    "dhash": "4575445563264171903"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\CIFAKE\\real\\CIFAKE_real_025.jpg",
+    "label": "FAKE",
+    "source": "CIFAKE",
+    "md5": "be83ba73272578dbaed2e2cc6a57a462",
+    "dhash": "506381209866538759"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_003.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "9a0dbef4643851fa999a2bb5e82e0000",
+    "dhash": "2242651187590414143"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_004.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "4dc2d4fa2ce8040e30da60ce1d343767",
+    "dhash": "1085102592572198687"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_006.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "5b69f3e2a987c412b21be313c1dcc27f",
+    "dhash": "506390040454041359"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_007.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "3641da3c5f799d55a4615953c513fc16",
+    "dhash": "506390040319823631"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_009.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "7863848067bf16bcf4faae12ea3cb3a1",
+    "dhash": "2242651325030416191"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_010.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "63e3fcceedf7f9dc0283637aaa8e686b",
+    "dhash": "506381244360492807"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_013.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "97845a9db9051fe2a7c076074a46dcfd",
+    "dhash": "506390040319297287"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_016.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "d8352728e138190105fe2b12d85db6a1",
+    "dhash": "2242563019422768927"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_018.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "48031b7a17ee0ccf7099f40dcf5f39de",
+    "dhash": "2251658524285157183"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_019.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "6a7783f15aff6038f4e1ac6208815c1a",
+    "dhash": "508641805907463951"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_020.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "97183523dfa37ce0e5edea742328e865",
+    "dhash": "2242545289261948703"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_021.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "d595fae2bc9ff1dd142aadfc29f6720d",
+    "dhash": "508641840267202319"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\fake\\Deepfake_v1_fake_023.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "5bf7818bd193e8b8237b060453096bc7",
+    "dhash": "506376794640156423"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_003.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "f02923e4a17ab6f34d3a196ebebea25f",
+    "dhash": "2242545357980376895"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_007.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "47b4290ddd1f2a815d18fc24ca05b295",
+    "dhash": "506381210001280783"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_009.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "ff62fdcf565da29d6c64b7690362ed3f",
+    "dhash": "2251587879585136447"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_015.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "b11e7e21431acc70b6599050f9c9b07d",
+    "dhash": "4557501533498867583"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_016.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "90cff17869f25a984ba003fe930c526c",
+    "dhash": "2242545357980376863"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\Deepfake_v1\\real\\Deepfake_v1_real_018.jpg",
+    "label": "FAKE",
+    "source": "Deepfake_v1",
+    "md5": "6fd9d11ccf0f5de4dc9cc7725d54b4a7",
+    "dhash": "2251587879585136511"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_003.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "229189362ebbfcbf7a7d670e9c6a4a7f",
+    "dhash": "18446602786465382399"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_006.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "e5aabbc3470cf3b1efacef22bb0a9a93",
+    "dhash": "4575515932008382335"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_008.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "5b09b38dc135c734e9f69d23ea655dc4",
+    "dhash": "1085102558211411727"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_009.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "e9b7e643b6f106d446b12904108af9a3",
+    "dhash": "506376811820025607"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_010.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "5239b39a14541d2952b910bafb58427f",
+    "dhash": "218146418488444679"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_013.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "d9da9f82873eaa6ecfbf6a31c9f5fa9b",
+    "dhash": "18446744073441116159"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_015.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "77deea134a15218c8e23bb01fcf21666",
+    "dhash": "2251570288472833855"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_017.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "2dab95e44966ec4b456d7c42349e9173",
+    "dhash": "1085102592571154207"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_018.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "fa3c4734a24a91e786a6833aa879cacf",
+    "dhash": "2242580680330387231"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_019.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "695db903c9465d2d62fc64e4f718148c",
+    "dhash": "2242562950166421279"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_020.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "0ac82e0e0695402f908f0f02fd305da6",
+    "dhash": "1085102592840638239"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_022.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "60ad7d01654f7bd668b9b8acb78c671f",
+    "dhash": "9223231299366420479"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_023.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "5eb42c6d13abdb6127783f3ea0c03f7a",
+    "dhash": "2242580955208302399"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\fake\\GenImage_fake_024.jpg",
+    "label": "FAKE",
+    "source": "GenImage",
+    "md5": "95ba4af395e681d393753c946522aff0",
+    "dhash": "9223230749610606591"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_001.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "7c5295ab3f4f650adb5719f8ab8f02d6",
+    "dhash": "9187201950435770239"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_010.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "fc0dac590647e327f591ea99584ac879",
+    "dhash": "217020535761471239"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_012.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "cadb982a7039c1e93648973a518b57ef",
+    "dhash": "9187201952591642623"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_015.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "4450ff2b77819d442594750b5aa267a3",
+    "dhash": "2242545357982482239"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_017.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "f20b2d0ab4b4c896e5635d32f0647537",
+    "dhash": "1085102661291679519"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_022.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "ca7e91205f70999229a0a2fab1784141",
+    "dhash": "18410715276690587647"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_024.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "9d757bf2eb33ab3735857aa6c860dd69",
+    "dhash": "18446603336221196287"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\GenImage\\real\\GenImage_real_025.jpg",
+    "label": "REAL",
+    "source": "GenImage",
+    "md5": "8dbe7224ab13351f1b4dd50cb117469b",
+    "dhash": "4557501258620944255"
+  }
+]

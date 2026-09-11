@@ -1,0 +1,2813 @@
+[
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-train",
+    "timestamp": "2026-09-11T07:20:29.985385+00:00",
+    "author": "deepfakesMSU",
+    "downloads": 1835,
+    "likes": 8,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:100K<n<1M",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "image",
+      "image_generation"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "garystafford/deepfake-audio-detection",
+    "timestamp": "2026-09-11T07:20:30.274115+00:00",
+    "author": "garystafford",
+    "downloads": 1402,
+    "likes": 5,
+    "tags": [
+      "task_categories:audio-classification",
+      "language:en",
+      "license:cc-by-4.0",
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:audio",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "synthetic-speech",
+      "audio",
+      "tts",
+      "voice-cloning"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ControlNet/AV-Deepfake1M",
+    "timestamp": "2026-09-11T07:20:30.275171+00:00",
+    "author": "ControlNet",
+    "downloads": 1353,
+    "likes": 18,
+    "tags": [
+      "task_categories:video-classification",
+      "language:en",
+      "license:cc",
+      "size_categories:1M<n<10M",
+      "modality:video",
+      "arxiv:2311.15308",
+      "region:us",
+      "deepfakes",
+      "video"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 5,
+    "rejection_reason": "Stage 5 Failed: License 'cc' is restricted or missing",
+    "metadata": {
+      "gated": "manual",
+      "private": false
+    },
+    "license_info": "cc",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "ControlNet/AV-Deepfake1M-PlusPlus",
+    "timestamp": "2026-09-11T07:20:30.570749+00:00",
+    "author": "ControlNet",
+    "downloads": 1313,
+    "likes": 21,
+    "tags": [
+      "task_categories:video-classification",
+      "language:en",
+      "license:other",
+      "size_categories:1M<n<10M",
+      "modality:video",
+      "arxiv:2311.15308",
+      "region:us",
+      "deepfakes",
+      "video",
+      "temporal_localization",
+      "classification"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Sowaiba01/Deepfake",
+    "timestamp": "2026-09-11T07:20:30.570918+00:00",
+    "author": "Sowaiba01",
+    "downloads": 1176,
+    "likes": 2,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:mit",
+      "size_categories:10K<n<100K",
+      "region:us",
+      "deepfake",
+      "face-swap",
+      "detection",
+      "computer-vision",
+      "insightface"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "OpenRL/DeepFakeFace",
+    "timestamp": "2026-09-11T07:20:30.897327+00:00",
+    "author": "OpenRL",
+    "downloads": 1151,
+    "likes": 13,
+    "tags": [
+      "task_categories:image-to-image",
+      "language:en",
+      "license:openrail",
+      "modality:image",
+      "arxiv:2309.02218",
+      "region:us",
+      "deepfake",
+      "diffusion model"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "deepsynthbody/deepfake-ecg-small",
+    "timestamp": "2026-09-11T07:20:31.181909+00:00",
+    "author": "deepsynthbody",
+    "downloads": 1021,
+    "likes": 4,
+    "tags": [
+      "license:cc-by-4.0",
+      "size_categories:10K<n<100K",
+      "format:csv",
+      "modality:tabular",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_PCA",
+    "timestamp": "2026-09-11T07:20:31.182335+00:00",
+    "author": "ts0pwo",
+    "downloads": 851,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:10K<n<100K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "CSALT/deepfake_detection_dataset_urdu",
+    "timestamp": "2026-09-11T07:20:32.084553+00:00",
+    "author": "CSALT",
+    "downloads": 759,
+    "likes": 5,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:audiofolder",
+      "modality:audio",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "AKCIT-Deepfake/BRSpeech-DF",
+    "timestamp": "2026-09-11T07:20:32.084904+00:00",
+    "author": "AKCIT-Deepfake",
+    "downloads": 759,
+    "likes": 2,
+    "tags": [
+      "task_categories:audio-classification",
+      "language:pt",
+      "license:apache-2.0",
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "SherryT997/IndicTTS-Deepfake-Challenge-Data",
+    "timestamp": "2026-09-11T07:20:32.085114+00:00",
+    "author": "SherryT997",
+    "downloads": 661,
+    "likes": 1,
+    "tags": [
+      "license:cc-by-4.0",
+      "size_categories:10K<n<100K",
+      "modality:audio",
+      "modality:text",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "nuriachandra/Deepfake-Eval-2024",
+    "timestamp": "2026-09-11T07:20:32.085436+00:00",
+    "author": "nuriachandra",
+    "downloads": 616,
+    "likes": 46,
+    "tags": [
+      "license:cc-by-sa-4.0",
+      "size_categories:1K<n<10K",
+      "modality:audio",
+      "modality:image",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "arxiv:2503.02857",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 5,
+    "rejection_reason": "Stage 5 Failed: License 'cc-by-sa-4.0' is restricted or missing",
+    "metadata": {
+      "gated": "manual",
+      "private": false
+    },
+    "license_info": "cc-by-sa-4.0",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "bitmind/popular-deepfakes",
+    "timestamp": "2026-09-11T07:20:32.723966+00:00",
+    "author": "bitmind",
+    "downloads": 465,
+    "likes": 1,
+    "tags": [
+      "license:mit",
+      "size_categories:n<1K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "tjw/deepfake-celeba",
+    "timestamp": "2026-09-11T07:20:33.014110+00:00",
+    "author": "tjw",
+    "downloads": 413,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "task_categories:image-to-image",
+      "language:en",
+      "language:zh",
+      "license:other",
+      "size_categories:10K<n<100K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "face",
+      "image-generation",
+      "flux2",
+      "celeba"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "other",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "UniDataPro/deepfake-videos-dataset",
+    "timestamp": "2026-09-11T07:20:33.417341+00:00",
+    "author": "UniDataPro",
+    "downloads": 408,
+    "likes": 4,
+    "tags": [
+      "task_categories:video-classification",
+      "license:cc-by-nc-nd-4.0",
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "video",
+      "deepfake",
+      "Facial Recognition",
+      "Computer Vision",
+      "Machine learning",
+      "Data generation",
+      "Security"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "191fa07121/deepfake-detection-challenge",
+    "timestamp": "2026-09-11T07:20:33.417465+00:00",
+    "author": "191fa07121",
+    "downloads": 400,
+    "likes": 0,
+    "tags": [
+      "task_categories:video-classification",
+      "language:en",
+      "size_categories:n<1K",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "chintalaswathi/nepali-audio-deepfake-dataset",
+    "timestamp": "2026-09-11T07:20:33.417561+00:00",
+    "author": "chintalaswathi",
+    "downloads": 369,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:audiofolder",
+      "modality:audio",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "deepfakesMSU/CVQAD",
+    "timestamp": "2026-09-11T07:20:33.417650+00:00",
+    "author": "deepfakesMSU",
+    "downloads": 362,
+    "likes": 1,
+    "tags": [
+      "language:en",
+      "license:cc",
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "quality-assessment",
+      "video",
+      "compression"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "MBZUAI/DeepfakeJudge-Dataset",
+    "timestamp": "2026-09-11T07:20:33.417819+00:00",
+    "author": "MBZUAI",
+    "downloads": 342,
+    "likes": 4,
+    "tags": [
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:1K<n<10K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "Deepfake",
+      "Detection",
+      "Reasoning"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-val",
+    "timestamp": "2026-09-11T07:20:33.804497+00:00",
+    "author": "deepfakesMSU",
+    "downloads": 322,
+    "likes": 1,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:1K<n<10K",
+      "modality:image",
+      "region:us",
+      "image",
+      "image_generation",
+      "deepfake_detection"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "Ella4839/DeepfakeBench",
+    "timestamp": "2026-09-11T07:20:34.088282+00:00",
+    "author": "Ella4839",
+    "downloads": 302,
+    "likes": 1,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "rshaojimmy/Seq-DeepFake",
+    "timestamp": "2026-09-11T07:20:34.088540+00:00",
+    "author": "rshaojimmy",
+    "downloads": 282,
+    "likes": 3,
+    "tags": [
+      "license:apache-2.0",
+      "modality:image",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "gonnerthetooner/deepfake-frame-views-v3",
+    "timestamp": "2026-09-11T07:20:34.385520+00:00",
+    "author": "gonnerthetooner",
+    "downloads": 276,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "pujanpaudel/deepfake_face_classification",
+    "timestamp": "2026-09-11T07:20:34.385906+00:00",
+    "author": "pujanpaudel",
+    "downloads": 245,
+    "likes": 6,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "arxiv:1711.09020",
+      "arxiv:2406.13495",
+      "region:us",
+      "human",
+      "face",
+      "deepfake",
+      "images"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "UniDataPro/real-vs-fake-human-voice-deepfake-audio",
+    "timestamp": "2026-09-11T07:20:34.686181+00:00",
+    "author": "UniDataPro",
+    "downloads": 237,
+    "likes": 5,
+    "tags": [
+      "task_categories:automatic-speech-recognition",
+      "task_categories:audio-classification",
+      "license:cc-by-nc-nd-4.0",
+      "size_categories:n<1K",
+      "format:audiofolder",
+      "modality:audio",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "voice authentication",
+      "voice recognition",
+      "generated speech analysis",
+      "deepfake detection"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ThinothW/Deepfake-Identity-Isolated-Dataset-PreP",
+    "timestamp": "2026-09-11T07:20:34.686761+00:00",
+    "author": "ThinothW",
+    "downloads": 217,
+    "likes": 1,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:cc-by-4.0",
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "format:optimized-parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "deepfake-detection",
+      "synthetic-media",
+      "face-swap",
+      "computer-vision",
+      "fintech",
+      "kyc",
+      "identity-verification",
+      "biometrics",
+      "security"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "cc-by-4.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 142837,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "Bisher/arabic_deepfake_dataset_models",
+    "timestamp": "2026-09-11T07:20:35.135167+00:00",
+    "author": "Bisher",
+    "downloads": 213,
+    "likes": 0,
+    "tags": [
+      "license:odc-by",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "xxuan-speech/Deepfake-Eval-2024-audio",
+    "timestamp": "2026-09-11T07:20:35.135417+00:00",
+    "author": "xxuan-speech",
+    "downloads": 173,
+    "likes": 0,
+    "tags": [
+      "license:mit",
+      "size_categories:1K<n<10K",
+      "format:audiofolder",
+      "modality:audio",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "gonnerthetooner/deepfake-real-frame-views-hardneg-v1",
+    "timestamp": "2026-09-11T07:20:35.135589+00:00",
+    "author": "gonnerthetooner",
+    "downloads": 167,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Hemg/Deepfakeaudio",
+    "timestamp": "2026-09-11T07:20:35.135680+00:00",
+    "author": "Hemg",
+    "downloads": 146,
+    "likes": 2,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:audio",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "gonnerthetooner/deepfake-celebvhq-frame-views-v1",
+    "timestamp": "2026-09-11T07:20:35.135766+00:00",
+    "author": "gonnerthetooner",
+    "downloads": 146,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Hemgg/deep-fake-detection-dfd-entire-original-dataset",
+    "timestamp": "2026-09-11T07:20:35.135950+00:00",
+    "author": "Hemgg",
+    "downloads": 143,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "dappai/Deepfake-vs-Real-v2",
+    "timestamp": "2026-09-11T07:20:35.136236+00:00",
+    "author": "dappai",
+    "downloads": 142,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:10K<n<100K",
+      "modality:image",
+      "region:us",
+      "Deepfake",
+      "Real",
+      "Classification",
+      "Net"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "alexlicuriceanu/ro-dia-deepfake-audio",
+    "timestamp": "2026-09-11T07:20:35.764800+00:00",
+    "author": "alexlicuriceanu",
+    "downloads": 137,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:audiofolder",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Thien0103/DeepFake_Extracted_Face_Images",
+    "timestamp": "2026-09-11T07:20:35.765004+00:00",
+    "author": "Thien0103",
+    "downloads": 135,
+    "likes": 1,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "modality:video",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2798,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-test-public",
+    "timestamp": "2026-09-11T07:20:36.160830+00:00",
+    "author": "deepfakesMSU",
+    "downloads": 134,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:1K<n<10K",
+      "modality:image",
+      "region:us",
+      "image",
+      "image_generation",
+      "deepfake_detection"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "Hemg/deepfake-and-real-images",
+    "timestamp": "2026-09-11T07:20:36.557320+00:00",
+    "author": "Hemg",
+    "downloads": 128,
+    "likes": 4,
+    "tags": [
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "DeepFake-Audio-Rangers/Arabic_Audio_Deepfake",
+    "timestamp": "2026-09-11T07:20:36.869362+00:00",
+    "author": "DeepFake-Audio-Rangers",
+    "downloads": 122,
+    "likes": 4,
+    "tags": [
+      "task_categories:audio-to-audio",
+      "task_categories:audio-classification",
+      "task_categories:automatic-speech-recognition",
+      "language:ar",
+      "license:odc-by",
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:audio",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us",
+      "synthetic"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Hemgg/deep-fake-detection-dfd-entire-original-datasett",
+    "timestamp": "2026-09-11T07:20:36.869575+00:00",
+    "author": "Hemgg",
+    "downloads": 119,
+    "likes": 1,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "vjjoshi23/Deepfake_dataset_cybersentinal",
+    "timestamp": "2026-09-11T07:20:36.869718+00:00",
+    "author": "vjjoshi23",
+    "downloads": 116,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:cc-by-nc-4.0",
+      "size_categories:1M<n<10M",
+      "format:parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "arxiv:2509.09495",
+      "region:us",
+      "deepfake",
+      "synthetic",
+      "fake"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 150398,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "34data/deepfake-identity-isolated-real",
+    "timestamp": "2026-09-11T07:20:37.161558+00:00",
+    "author": "34data",
+    "downloads": 100,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "chintalaswathi/AI-vs-Deepfake-vs-Real-Resized-Aug",
+    "timestamp": "2026-09-11T07:20:37.161842+00:00",
+    "author": "chintalaswathi",
+    "downloads": 98,
+    "likes": 2,
+    "tags": [
+      "task_categories:image-classification",
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "agent"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 17978,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "34data/deepfake-identity-isolated-fake",
+    "timestamp": "2026-09-11T07:20:37.506910+00:00",
+    "author": "34data",
+    "downloads": 98,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "eliya/voxcpm_deepfake_dataset",
+    "timestamp": "2026-09-11T07:20:37.507739+00:00",
+    "author": "eliya",
+    "downloads": 91,
+    "likes": 1,
+    "tags": [
+      "task_categories:audio-classification",
+      "license:cc-by-nc-4.0",
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "audio",
+      "deepfake",
+      "audio-deepfake-detection",
+      "anti-spoofing",
+      "voice",
+      "text-to-speech",
+      "voxcpm"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_ELA",
+    "timestamp": "2026-09-11T07:20:37.508440+00:00",
+    "author": "ts0pwo",
+    "downloads": 89,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:10K<n<100K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_NA",
+    "timestamp": "2026-09-11T07:20:39.138488+00:00",
+    "author": "ts0pwo",
+    "downloads": 87,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:10K<n<100K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "sofia-ol/MAHE_deepfake_recognition_dataset",
+    "timestamp": "2026-09-11T07:20:40.402835+00:00",
+    "author": "sofia-ol",
+    "downloads": 81,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "license:mit",
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "image"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 19705,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "Supervache/deepfake",
+    "timestamp": "2026-09-11T07:20:40.720870+00:00",
+    "author": "Supervache",
+    "downloads": 80,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2000,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "TonyStark03/deepfake",
+    "timestamp": "2026-09-11T07:20:41.133885+00:00",
+    "author": "TonyStark03",
+    "downloads": 78,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:csv",
+      "modality:text",
+      "modality:video",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "34data/deepfakeface-inpainting",
+    "timestamp": "2026-09-11T07:20:41.134610+00:00",
+    "author": "34data",
+    "downloads": 77,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "gonnerthetooner/deepfake-frame-views-balanced-fusion-v1",
+    "timestamp": "2026-09-11T07:20:41.135528+00:00",
+    "author": "gonnerthetooner",
+    "downloads": 76,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images",
+    "timestamp": "2026-09-11T07:20:41.136244+00:00",
+    "author": "ts0pwo",
+    "downloads": 73,
+    "likes": 1,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "size_categories:10K<n<100K",
+      "modality:image",
+      "region:us",
+      "deepfake"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "acroitoru/social_media_deepfakes",
+    "timestamp": "2026-09-11T07:20:42.063282+00:00",
+    "author": "acroitoru",
+    "downloads": 71,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "34data/deepfakeface-text2img",
+    "timestamp": "2026-09-11T07:20:42.063401+00:00",
+    "author": "34data",
+    "downloads": 69,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Banananafish/Deepfake-Detection",
+    "timestamp": "2026-09-11T07:20:42.063543+00:00",
+    "author": "Banananafish",
+    "downloads": 68,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "bitmind/Deepfake-leonardo-stablecog",
+    "timestamp": "2026-09-11T07:20:42.063661+00:00",
+    "author": "bitmind",
+    "downloads": 67,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "format:optimized-parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2434,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfakes-QA-15K",
+    "timestamp": "2026-09-11T07:20:42.404787+00:00",
+    "author": "prithivMLmods",
+    "downloads": 66,
+    "likes": 1,
+    "tags": [
+      "task_categories:image-classification",
+      "license:apache-2.0",
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us",
+      "deepfake",
+      "quality",
+      "0-bad",
+      "1-good",
+      "base64"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "msaligs/deepfake_iitm_raw",
+    "timestamp": "2026-09-11T07:20:42.750022+00:00",
+    "author": "msaligs",
+    "downloads": 64,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "JamieWithofs/Deepfake-and-real-images",
+    "timestamp": "2026-09-11T07:20:42.751036+00:00",
+    "author": "JamieWithofs",
+    "downloads": 63,
+    "likes": 1,
+    "tags": [
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "eliya/qwen3_deepfake_dataset",
+    "timestamp": "2026-09-11T07:20:43.164592+00:00",
+    "author": "eliya",
+    "downloads": 62,
+    "likes": 2,
+    "tags": [
+      "task_categories:audio-classification",
+      "license:cc-by-nc-4.0",
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "audio",
+      "deepfake",
+      "audio-deepfake-detection",
+      "anti-spoofing",
+      "voice",
+      "text-to-speech",
+      "qwen3"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Sarim-Hash/video_DEEPFAKE_dataset",
+    "timestamp": "2026-09-11T07:20:43.164771+00:00",
+    "author": "Sarim-Hash",
+    "downloads": 60,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "adarsh09singh/speech-deepfake-detection-40k",
+    "timestamp": "2026-09-11T07:20:43.164972+00:00",
+    "author": "adarsh09singh",
+    "downloads": 59,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "format:optimized-parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "angads24/deepfake-video",
+    "timestamp": "2026-09-11T07:20:43.165078+00:00",
+    "author": "angads24",
+    "downloads": 59,
+    "likes": 0,
+    "tags": [
+      "license:cc-by-sa-4.0",
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "Hemg/Deepfake-Audio-Dataset",
+    "timestamp": "2026-09-11T07:20:43.165161+00:00",
+    "author": "Hemg",
+    "downloads": 58,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "format:parquet",
+      "modality:audio",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "lorenzo-morelli/image-splicing-deepfake-mix-new",
+    "timestamp": "2026-09-11T07:20:43.165279+00:00",
+    "author": "lorenzo-morelli",
+    "downloads": 57,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 20000,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "lujain127/deepfake-sample-clips",
+    "timestamp": "2026-09-11T07:20:43.581860+00:00",
+    "author": "lujain127",
+    "downloads": 57,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "satwc-reddy/indian-language-deepfake-speech",
+    "timestamp": "2026-09-11T07:20:43.582129+00:00",
+    "author": "satwc-reddy",
+    "downloads": 55,
+    "likes": 0,
+    "tags": [
+      "task_categories:audio-classification",
+      "language:te",
+      "language:ta",
+      "language:ml",
+      "license:cc-by-4.0",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "itsLeen/deepfake_vs_real_image_detection",
+    "timestamp": "2026-09-11T07:20:43.582256+00:00",
+    "author": "itsLeen",
+    "downloads": 54,
+    "likes": 2,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 7444,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "saakshigupta/deepfake-detection-dataset-v3",
+    "timestamp": "2026-09-11T07:20:43.905611+00:00",
+    "author": "saakshigupta",
+    "downloads": 54,
+    "likes": 3,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:mit",
+      "size_categories:n<1K",
+      "format:parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us",
+      "computer-vision",
+      "deepfake-detection",
+      "image-forensics"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 527,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "yashduhan/DeepFakeDetection",
+    "timestamp": "2026-09-11T07:20:44.231627+00:00",
+    "author": "yashduhan",
+    "downloads": 52,
+    "likes": 1,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "modality:image",
+      "region:us",
+      "computer-vision",
+      "deepfake-detection",
+      "image-classification",
+      "image"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 140000,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "rafa04/DeepFakeFace",
+    "timestamp": "2026-09-11T07:20:44.578289+00:00",
+    "author": "rafa04",
+    "downloads": 52,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-to-image",
+      "language:en",
+      "license:openrail",
+      "size_categories:100K<n<1M",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "arxiv:2309.02218",
+      "region:us",
+      "deepfake",
+      "diffusion model"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "sudhanshu-ranjan/DeepFakeFace",
+    "timestamp": "2026-09-11T07:20:44.909750+00:00",
+    "author": "sudhanshu-ranjan",
+    "downloads": 51,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-to-image",
+      "language:en",
+      "license:openrail",
+      "size_categories:100K<n<1M",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "arxiv:2309.02218",
+      "region:us",
+      "deepfake",
+      "diffusion model"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "ngscamdev/deepfake-and-real-images",
+    "timestamp": "2026-09-11T07:20:45.205439+00:00",
+    "author": "ngscamdev",
+    "downloads": 51,
+    "likes": 1,
+    "tags": [
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "34data/social-media-deepfakes-real",
+    "timestamp": "2026-09-11T07:20:45.531313+00:00",
+    "author": "34data",
+    "downloads": 51,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "k-aisi-anti-deepfake/dear-lsun-inpaint",
+    "timestamp": "2026-09-11T07:20:45.531445+00:00",
+    "author": "k-aisi-anti-deepfake",
+    "downloads": 49,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "license:cc-by-nc-4.0",
+      "arxiv:2606.10309",
+      "region:us",
+      "ai-generated-image-detection",
+      "deepfake-detection",
+      "inpainting",
+      "stable-diffusion"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "itsLeen/deepfake_vs_real_image",
+    "timestamp": "2026-09-11T07:20:45.937159+00:00",
+    "author": "itsLeen",
+    "downloads": 48,
+    "likes": 1,
+    "tags": [
+      "size_categories:n<1K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:pandas",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 972,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real-v2",
+    "timestamp": "2026-09-11T07:20:46.273101+00:00",
+    "author": "prithivMLmods",
+    "downloads": 48,
+    "likes": 3,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:10K<n<100K",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "doi:10.57967/hf/5418",
+      "region:us",
+      "Deepfake",
+      "Real",
+      "Classification",
+      "Net"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "34data/social-media-deepfakes-fake",
+    "timestamp": "2026-09-11T07:20:46.846452+00:00",
+    "author": "34data",
+    "downloads": 48,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "eliya/omnivoice_deepfake_dataset",
+    "timestamp": "2026-09-11T07:20:46.846559+00:00",
+    "author": "eliya",
+    "downloads": 48,
+    "likes": 1,
+    "tags": [
+      "task_categories:audio-classification",
+      "license:cc-by-nc-4.0",
+      "size_categories:100K<n<1M",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "audio",
+      "deepfake",
+      "audio-deepfake-detection",
+      "anti-spoofing",
+      "voice",
+      "text-to-speech",
+      "omnivoice"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "ud-biometrics/deepfake-dataset",
+    "timestamp": "2026-09-11T07:20:46.846813+00:00",
+    "author": "ud-biometrics",
+    "downloads": 47,
+    "likes": 2,
+    "tags": [
+      "task_categories:video-classification",
+      "license:cc-by-nc-nd-4.0",
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "deepfake detection",
+      "AI-generated",
+      "video"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "koyyalamudiraghavendra/deepfake-audio-detection",
+    "timestamp": "2026-09-11T07:20:46.846949+00:00",
+    "author": "koyyalamudiraghavendra",
+    "downloads": 47,
+    "likes": 0,
+    "tags": [
+      "task_categories:audio-classification",
+      "language:en",
+      "license:cc-by-4.0",
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:audio",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "synthetic-speech",
+      "audio",
+      "tts",
+      "voice-cloning"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real",
+    "timestamp": "2026-09-11T07:20:46.847098+00:00",
+    "author": "prithivMLmods",
+    "downloads": 46,
+    "likes": 6,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us",
+      "deepfake",
+      "classification",
+      "label",
+      "0-deepfake",
+      "1-real",
+      "base-64",
+      "ViT"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real-60K",
+    "timestamp": "2026-09-11T07:20:47.326198+00:00",
+    "author": "prithivMLmods",
+    "downloads": 46,
+    "likes": 11,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:10K<n<100K",
+      "modality:image",
+      "doi:10.57967/hf/5313",
+      "region:us",
+      "Deepfake",
+      "Real",
+      "0-Fake",
+      "1-Real",
+      "art",
+      "60,000",
+      "Facial",
+      "Portrait"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "binyamendale/DeepFakeFace",
+    "timestamp": "2026-09-11T07:20:47.604693+00:00",
+    "author": "binyamendale",
+    "downloads": 46,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-to-image",
+      "language:en",
+      "license:openrail",
+      "modality:image",
+      "arxiv:2309.02218",
+      "region:us",
+      "deepfake",
+      "diffusion model"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "NetherlandsForensicInstitute/rppg-deepfake-detection",
+    "timestamp": "2026-09-11T07:20:47.955345+00:00",
+    "author": "NetherlandsForensicInstitute",
+    "downloads": 46,
+    "likes": 0,
+    "tags": [
+      "size_categories:n<1K",
+      "modality:video",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "arjunborra123/deepfake-detection-dataset-v3",
+    "timestamp": "2026-09-11T07:20:47.955491+00:00",
+    "author": "arjunborra123",
+    "downloads": 45,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:mit",
+      "size_categories:n<1K",
+      "format:parquet",
+      "modality:image",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "computer-vision",
+      "deepfake-detection",
+      "image-forensics"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 527,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "JaehoChae/deepfake",
+    "timestamp": "2026-09-11T07:20:48.293688+00:00",
+    "author": "JaehoChae",
+    "downloads": 44,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "deepsynthbody/deepfake_ecg_full_train_validation_test",
+    "timestamp": "2026-09-11T07:20:48.294063+00:00",
+    "author": "deepsynthbody",
+    "downloads": 42,
+    "likes": 2,
+    "tags": [
+      "size_categories:100K<n<1M",
+      "format:webdataset",
+      "modality:text",
+      "library:datasets",
+      "library:webdataset",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "mrxaman19/Indian-deepfake-face",
+    "timestamp": "2026-09-11T07:20:48.294564+00:00",
+    "author": "mrxaman19",
+    "downloads": 41,
+    "likes": 0,
+    "tags": [
+      "license:artistic-2.0",
+      "modality:image",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 5,
+    "rejection_reason": "Stage 5 Failed: License 'artistic-2.0' is restricted or missing",
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "artistic-2.0",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "34data/deepfakes-qa-15k",
+    "timestamp": "2026-09-11T07:20:48.745511+00:00",
+    "author": "34data",
+    "downloads": 40,
+    "likes": 0,
+    "tags": [
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "bushle/deepfake_train_129k_images",
+    "timestamp": "2026-09-11T07:20:48.745686+00:00",
+    "author": "bushle",
+    "downloads": 38,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "deepfakesMSU/not_top_3_ntire",
+    "timestamp": "2026-09-11T07:20:48.745845+00:00",
+    "author": "deepfakesMSU",
+    "downloads": 36,
+    "likes": 0,
+    "tags": [
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "k-aisi-anti-deepfake/aigi-detection-ldm",
+    "timestamp": "2026-09-11T07:20:48.745973+00:00",
+    "author": "k-aisi-anti-deepfake",
+    "downloads": 36,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "license:cc-by-nc-4.0",
+      "arxiv:2606.10309",
+      "region:us",
+      "ai-generated-image-detection",
+      "deepfake-detection",
+      "synthetic-image-detection"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "prithivMLmods/AI-vs-Deepfake-vs-Real",
+    "timestamp": "2026-09-11T07:20:49.109336+00:00",
+    "author": "prithivMLmods",
+    "downloads": 35,
+    "likes": 14,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:mlcroissant",
+      "library:polars",
+      "region:us",
+      "deepfake",
+      "ai",
+      "real"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": "auto",
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "zeeshanaliicreativez/AI-vs-Deepfake-vs-Real",
+    "timestamp": "2026-09-11T07:20:49.458606+00:00",
+    "author": "zeeshanaliicreativez",
+    "downloads": 35,
+    "likes": 0,
+    "tags": [
+      "task_categories:image-classification",
+      "language:en",
+      "license:apache-2.0",
+      "size_categories:1K<n<10K",
+      "format:parquet",
+      "modality:image",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "deepfake",
+      "ai",
+      "real"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "SEARCH-IHI/DeepFakeCMRI",
+    "timestamp": "2026-09-11T07:20:50.086589+00:00",
+    "author": "SEARCH-IHI",
+    "downloads": 34,
+    "likes": 0,
+    "tags": [
+      "license:cc-by-sa-4.0",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "swsswapnilsingh/deepfake_iitm_raw",
+    "timestamp": "2026-09-11T07:20:50.087137+00:00",
+    "author": "swsswapnilsingh",
+    "downloads": 34,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:audio",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "mueller91/human-perception-audio-deepfake-2026",
+    "timestamp": "2026-09-11T07:20:50.087593+00:00",
+    "author": "mueller91",
+    "downloads": 34,
+    "likes": 4,
+    "tags": [
+      "task_categories:audio-classification",
+      "language:en",
+      "license:cc-by-nc-4.0",
+      "size_categories:10K<n<100K",
+      "format:csv",
+      "modality:text",
+      "modality:audio",
+      "library:datasets",
+      "library:pandas",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us",
+      "audio",
+      "deepfake",
+      "deepfake-detection",
+      "text-to-speech",
+      "voice-conversion",
+      "human-perception",
+      "listening-study"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  },
+  {
+    "dataset_id": "jzousz/diffusion_model_deepfakes_lsun_bedroom",
+    "timestamp": "2026-09-11T07:20:50.087903+00:00",
+    "author": "jzousz",
+    "downloads": 33,
+    "likes": 0,
+    "tags": [
+      "size_categories:1M<n<10M",
+      "format:imagefolder",
+      "modality:image",
+      "library:datasets",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "QUALIFIED",
+    "stage_passed": 6,
+    "rejection_reason": null,
+    "metadata": {
+      "gated": false,
+      "private": false
+    },
+    "license_info": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ]
+  },
+  {
+    "dataset_id": "sofia-ol/deepfake-research-dataset",
+    "timestamp": "2026-09-11T07:20:50.420624+00:00",
+    "author": "sofia-ol",
+    "downloads": 33,
+    "likes": 0,
+    "tags": [
+      "size_categories:10K<n<100K",
+      "format:parquet",
+      "modality:text",
+      "library:datasets",
+      "library:dask",
+      "library:polars",
+      "library:mlcroissant",
+      "region:us"
+    ],
+    "status": "REJECTED",
+    "stage_passed": 1,
+    "rejection_reason": "Stage 2 Failed: Non-image dataset modality",
+    "metadata": {},
+    "license_info": "unknown",
+    "license_type": "RESTRICTED",
+    "sample_count": 0,
+    "labels_found": []
+  }
+]

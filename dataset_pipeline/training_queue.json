@@ -1,0 +1,475 @@
+[
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-train",
+    "added_at": "2026-09-11T07:04:18.842593+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 1835
+  },
+  {
+    "dataset_id": "Sowaiba01/Deepfake",
+    "added_at": "2026-09-11T07:04:19.398379+00:00",
+    "license": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 1176
+  },
+  {
+    "dataset_id": "OpenRL/DeepFakeFace",
+    "added_at": "2026-09-11T07:04:19.891843+00:00",
+    "license": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 1151
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_PCA",
+    "added_at": "2026-09-11T07:04:20.361096+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 851
+  },
+  {
+    "dataset_id": "bitmind/popular-deepfakes",
+    "added_at": "2026-09-11T07:04:21.588118+00:00",
+    "license": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 465
+  },
+  {
+    "dataset_id": "tjw/deepfake-celeba",
+    "added_at": "2026-09-11T07:04:22.036017+00:00",
+    "license": "other",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 413
+  },
+  {
+    "dataset_id": "MBZUAI/DeepfakeJudge-Dataset",
+    "added_at": "2026-09-11T07:04:22.746698+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 342
+  },
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-val",
+    "added_at": "2026-09-11T07:04:23.349375+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 322
+  },
+  {
+    "dataset_id": "rshaojimmy/Seq-DeepFake",
+    "added_at": "2026-09-11T07:09:35.530472+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 282
+  },
+  {
+    "dataset_id": "pujanpaudel/deepfake_face_classification",
+    "added_at": "2026-09-11T07:09:36.034519+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 245
+  },
+  {
+    "dataset_id": "ThinothW/Deepfake-Identity-Isolated-Dataset-PreP",
+    "added_at": "2026-09-11T07:20:34.686761+00:00",
+    "license": "cc-by-4.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 142837,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 217
+  },
+  {
+    "dataset_id": "dappai/Deepfake-vs-Real-v2",
+    "added_at": "2026-09-11T07:20:35.136236+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 142
+  },
+  {
+    "dataset_id": "Thien0103/DeepFake_Extracted_Face_Images",
+    "added_at": "2026-09-11T07:20:35.765004+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2798,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 135
+  },
+  {
+    "dataset_id": "deepfakesMSU/NTIRE-RobustAIGenDetection-test-public",
+    "added_at": "2026-09-11T07:20:36.160830+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 134
+  },
+  {
+    "dataset_id": "Hemg/deepfake-and-real-images",
+    "added_at": "2026-09-11T07:20:36.557320+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 128
+  },
+  {
+    "dataset_id": "vjjoshi23/Deepfake_dataset_cybersentinal",
+    "added_at": "2026-09-11T07:20:36.869718+00:00",
+    "license": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 150398,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 116
+  },
+  {
+    "dataset_id": "chintalaswathi/AI-vs-Deepfake-vs-Real-Resized-Aug",
+    "added_at": "2026-09-11T07:20:37.161842+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 17978,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 98
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_ELA",
+    "added_at": "2026-09-11T07:20:37.508440+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 89
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images_NA",
+    "added_at": "2026-09-11T07:20:39.138488+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 87
+  },
+  {
+    "dataset_id": "sofia-ol/MAHE_deepfake_recognition_dataset",
+    "added_at": "2026-09-11T07:20:40.402835+00:00",
+    "license": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 19705,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 81
+  },
+  {
+    "dataset_id": "Supervache/deepfake",
+    "added_at": "2026-09-11T07:20:40.720870+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2000,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 80
+  },
+  {
+    "dataset_id": "ts0pwo/20K_real_and_deepfake_images",
+    "added_at": "2026-09-11T07:20:41.136244+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 73
+  },
+  {
+    "dataset_id": "bitmind/Deepfake-leonardo-stablecog",
+    "added_at": "2026-09-11T07:20:42.063661+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 2434,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 67
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfakes-QA-15K",
+    "added_at": "2026-09-11T07:20:42.404787+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 66
+  },
+  {
+    "dataset_id": "JamieWithofs/Deepfake-and-real-images",
+    "added_at": "2026-09-11T07:20:42.751036+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 63
+  },
+  {
+    "dataset_id": "lorenzo-morelli/image-splicing-deepfake-mix-new",
+    "added_at": "2026-09-11T07:20:43.165279+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 20000,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 57
+  },
+  {
+    "dataset_id": "itsLeen/deepfake_vs_real_image_detection",
+    "added_at": "2026-09-11T07:20:43.582256+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 7444,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 54
+  },
+  {
+    "dataset_id": "saakshigupta/deepfake-detection-dataset-v3",
+    "added_at": "2026-09-11T07:20:43.905611+00:00",
+    "license": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 527,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 54
+  },
+  {
+    "dataset_id": "yashduhan/DeepFakeDetection",
+    "added_at": "2026-09-11T07:20:44.231627+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 140000,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 52
+  },
+  {
+    "dataset_id": "rafa04/DeepFakeFace",
+    "added_at": "2026-09-11T07:20:44.578289+00:00",
+    "license": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 52
+  },
+  {
+    "dataset_id": "sudhanshu-ranjan/DeepFakeFace",
+    "added_at": "2026-09-11T07:20:44.909750+00:00",
+    "license": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 51
+  },
+  {
+    "dataset_id": "ngscamdev/deepfake-and-real-images",
+    "added_at": "2026-09-11T07:20:45.205439+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 190335,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 51
+  },
+  {
+    "dataset_id": "k-aisi-anti-deepfake/dear-lsun-inpaint",
+    "added_at": "2026-09-11T07:20:45.531445+00:00",
+    "license": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 49
+  },
+  {
+    "dataset_id": "itsLeen/deepfake_vs_real_image",
+    "added_at": "2026-09-11T07:20:45.937159+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 972,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 48
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real-v2",
+    "added_at": "2026-09-11T07:20:46.273101+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 48
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real",
+    "added_at": "2026-09-11T07:20:46.847098+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 46
+  },
+  {
+    "dataset_id": "prithivMLmods/Deepfake-vs-Real-60K",
+    "added_at": "2026-09-11T07:20:47.326198+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 46
+  },
+  {
+    "dataset_id": "binyamendale/DeepFakeFace",
+    "added_at": "2026-09-11T07:20:47.604693+00:00",
+    "license": "openrail",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 46
+  },
+  {
+    "dataset_id": "arjunborra123/deepfake-detection-dataset-v3",
+    "added_at": "2026-09-11T07:20:47.955491+00:00",
+    "license": "mit",
+    "license_type": "PERMISSIVE",
+    "sample_count": 527,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 45
+  },
+  {
+    "dataset_id": "k-aisi-anti-deepfake/aigi-detection-ldm",
+    "added_at": "2026-09-11T07:20:48.745973+00:00",
+    "license": "cc-by-nc-4.0",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 36
+  },
+  {
+    "dataset_id": "prithivMLmods/AI-vs-Deepfake-vs-Real",
+    "added_at": "2026-09-11T07:20:49.109336+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 35
+  },
+  {
+    "dataset_id": "zeeshanaliicreativez/AI-vs-Deepfake-vs-Real",
+    "added_at": "2026-09-11T07:20:49.458606+00:00",
+    "license": "apache-2.0",
+    "license_type": "PERMISSIVE",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 35
+  },
+  {
+    "dataset_id": "jzousz/diffusion_model_deepfakes_lsun_bedroom",
+    "added_at": "2026-09-11T07:20:50.087903+00:00",
+    "license": "unknown",
+    "license_type": "RESEARCH_ONLY",
+    "sample_count": 0,
+    "labels_found": [
+      "implicit_binary_label"
+    ],
+    "downloads": 33
+  }
+]

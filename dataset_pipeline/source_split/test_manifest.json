@@ -1,0 +1,191 @@
+[
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_001.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "ee86005f9f5d9e5537d7f070b62b3bad",
+    "dhash": "2242651325029367615"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_002.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "6509bf53fbf4c87597fcb782043a32f3",
+    "dhash": "1085102626796670735"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_004.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "eb8511c2ca86d87135d8adca597d56cd",
+    "dhash": "217020518514230019"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_005.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "c71f669a75e479ae5283a4e293d21c62",
+    "dhash": "13798887968871546879"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_006.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "65a42eb367dfa6aeb649721ecee83c55",
+    "dhash": "2242633526149070623"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_007.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "030147ec149beb1b3882ac2604eb0a94",
+    "dhash": "16082281495346544639"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_008.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "5bb11df87262e82cd2d0a3f849af8bd7",
+    "dhash": "506376794572785415"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_010.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "5ce01d5887b81c2571089e375ace16b9",
+    "dhash": "1085102593242238735"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_011.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "ee83f6339adfbeaa6698b37d71ab9a83",
+    "dhash": "13789933546007166975"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_012.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "6786b7b6a2f2909d82200e3d0bf13256",
+    "dhash": "2251640931830677311"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_013.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "c922f7b34644804485270501c35f0dc2",
+    "dhash": "9187201950435737599"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_016.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "90ac3be647fec3e37d0e28380627fbfd",
+    "dhash": "506381244360494863"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_017.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "20d5640869f8a5617e5dab1329f70e52",
+    "dhash": "506381192753776391"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_018.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "3c0b3b7bf5154e37cd5add650d9ddf5f",
+    "dhash": "18446603334073712639"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_019.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "a03660e9dafe532aee8cb01d3df93a56",
+    "dhash": "1082850792690355983"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_020.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "7655a9087b646a3e81533c42854ee821",
+    "dhash": "4557501533230432063"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_021.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "8a99509f23ba018d08f28cc706f6b69a",
+    "dhash": "217020518514493191"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_022.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "d79a731d1241a6323dbffbc0a49d10a2",
+    "dhash": "18446744064783941631"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_001.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "6a37cde1e8b7ea12db1404f1ae3e8a64",
+    "dhash": "2242580680328298303"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_005.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "2515a0a39bdfbadd67b2196b01154a6e",
+    "dhash": "9187202502339067903"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_007.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "1ac62bf1a2d3bbb32f0a0c70a91b45ff",
+    "dhash": "8052295394102607871"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_011.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "3dcff345557d2e69a4822a6e1721e7eb",
+    "dhash": "6899373891643244543"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_012.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "5f8f8a2822db8a9c153b2a1578437ed7",
+    "dhash": "4557430888798830399"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_013.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "751bd880c616cb33249dc6760f3e6dae",
+    "dhash": "4557501532425125695"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_019.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "1f5e796e2b99d228c2885b2e63f66aba",
+    "dhash": "508641840267726607"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_020.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "9a6f3d0492fc57573fa98ad9acae22c2",
+    "dhash": "4557430889876766527"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_023.jpg",
+    "label": "REAL",
+    "source": "New_Generators_Test",
+    "md5": "1e1ad1c92509d4b73f6138aaa55332f4",
+    "dhash": "4548423689544089407"
+  }
+]

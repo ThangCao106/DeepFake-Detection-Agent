@@ -1,0 +1,23 @@
+# ML Model Dependencies
+torch
+torchvision
+transformers
+pillow
+scikit-learn
+
+
+# Agent Framework Dependencies
+google-generativeai
+python-dotenv
+
+# Web Framework Dependencies
+flask
+flask-socketio
+flask-cors
+python-socketio
+eventlet
+
+# Utilities
+colorama
+
+
