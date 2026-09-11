@@ -91,7 +91,7 @@ class SpatialConsistencyAnalyzer:
 
 
 class DeepfakeDetector:
-    def __init__(self, model_name="dima806/deepfake_vs_real_image_detection"):
+    def __init__(self, model_name="google/vit-base-patch16-224-in21k"):
         """
         Initialize the DeepfakeDetector with a pretrained or custom fine-tuned Hugging Face model.
         Checks if 'custom_vit_model' directory exists in the workspace.
