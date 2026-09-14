@@ -112,6 +112,45 @@ async def _read_subprocess_output(proc):
         _LOGIN_LOGS.append(f"Output reader error: {e}")
 
 
+class SetApiKeyRequest(BaseModel):
+    claude_api_key: str
+
+
+@app.post("/api/auth/set-key")
+async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
+    """Dynamically set CLAUDE_API_KEY environment variable and persist to .env."""
+    key = req.claude_api_key.strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập API Key hợp lệ.")
+
+    os.environ["CLAUDE_API_KEY"] = key
+    os.environ["ANTHROPIC_API_KEY"] = key
+
+    # Persist to .env file in project root
+    env_file = Path(PROJECT_ROOT) / ".env"
+    try:
+        env_lines = []
+        if env_file.exists():
+            env_lines = env_file.read_text(encoding="utf-8").splitlines()
+
+        new_lines = [
+            line for line in env_lines
+            if not line.startswith("CLAUDE_API_KEY=") and not line.startswith("ANTHROPIC_API_KEY=")
+        ]
+        new_lines.append(f"CLAUDE_API_KEY={key}")
+        new_lines.append(f"ANTHROPIC_API_KEY={key}")
+        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as e:
+        _LOGIN_LOGS.append(f"⚠️ Warning saving .env: {e}")
+
+    _LOGIN_LOGS.append("✅ [SUCCESS] CLAUDE_API_KEY updated dynamically in environment!")
+    return {
+        "status": "SUCCESS",
+        "message": "Đã lưu CLAUDE_API_KEY thành công vào hệ thống!",
+        "authenticated": True,
+    }
+
+
 class SubmitAuthCodeRequest(BaseModel):
     code: str
 

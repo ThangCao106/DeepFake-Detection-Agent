@@ -405,8 +405,13 @@
   <!-- API Key Bar -->
   <div class="api-key-bar">
     <div class="api-key-input-group">
-      <label for="apiKey">API Key:</label>
+      <label for="apiKey">Obsagent Key:</label>
       <input type="password" id="apiKey" value="observability-agent-key" placeholder="X-API-Key" />
+    </div>
+    <div class="api-key-input-group">
+      <label for="claudeKeyInput">Claude API Key (sk-ant-...):</label>
+      <input type="password" id="claudeKeyInput" placeholder="sk-ant-api03-..." style="width: 220px;" />
+      <button class="btn-login" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="saveClaudeApiKey()">Lưu Key</button>
     </div>
     <span style="color: var(--text-muted);">Session: <strong id="sessionIdLabel">...</strong></span>
   </div>
@@ -726,6 +731,32 @@ async function submitAuthCode() {
     }
   } catch (err) {
     codeStatusText.textContent = "❌ Kết nối lỗi: " + err.message;
+  }
+}
+
+async function saveClaudeApiKey() {
+  const claudeKeyInput = document.getElementById("claudeKeyInput");
+  const key = claudeKeyInput.value.trim();
+  if (!key) {
+    alert("Vui lòng nhập Claude API Key (dạng sk-ant-api03-...).");
+    return;
+  }
+
+  try {
+    const res = await fetch(getApiUrl("api/auth/set-key"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ claude_api_key: key })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ " + data.message);
+      checkAuthStatus();
+    } else {
+      alert("❌ " + (data.detail || "Không thể lưu API Key."));
+    }
+  } catch (err) {
+    alert("❌ Lỗi kết nối: " + err.message);
   }
 }
 
