@@ -227,7 +227,13 @@ async def chat(req: ChatRequest) -> dict:
         text_parts = [chunk async for chunk in stream_turn(client, content, answer_parts=answer_parts)]
     except Exception as exc:
         await drop_client(req.session_id)
-        raise HTTPException(status_code=502, detail=f"agent error: {exc}") from exc
+        err_msg = str(exc)
+        if "Not logged in" in err_msg or "login" in err_msg.lower() or "auth" in err_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="Chưa đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở liên kết đăng nhập OAuth."
+            ) from exc
+        raise HTTPException(status_code=400, detail=f"Agent error: {err_msg}") from exc
     record_turn(req.session_id, "user", req.message)
     record_turn(req.session_id, "assistant", "".join(answer_parts))
     return {"reply": "".join(text_parts)}

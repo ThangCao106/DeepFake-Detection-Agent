@@ -171,7 +171,13 @@ async def chat_completions(req: ChatCompletionRequest):
     try:
         client, is_new = await get_client(pool_key, system_prompt)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"failed to start agent: {exc}") from exc
+        err_msg = str(exc)
+        if "Not logged in" in err_msg or "login" in err_msg.lower() or "auth" in err_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="Chưa đăng nhập Claude CLI. Vui lòng chạy 'docker compose run --rm login' hoặc nhấp đăng nhập trên UI."
+            ) from exc
+        raise HTTPException(status_code=400, detail=f"Failed to start agent: {err_msg}") from exc
 
     # history[-1] có thể chứa ảnh (list content block) — convert riêng để KHÔNG mất ảnh, rồi
     # mới chèn transcript text của các lượt trước (nếu client vừa tạo mới, cần replay ngữ cảnh).

@@ -711,9 +711,20 @@ chatForm.addEventListener("submit", async (e) => {
       body: JSON.stringify({ session_id: sessionId, message }),
     });
     
-    const data = await resp.json();
+    let data;
+    try {
+      data = await resp.json();
+    } catch (parseErr) {
+      const rawText = await resp.text().catch(() => "");
+      data = { detail: "Lỗi kết nối Server (" + resp.status + "). Vui lòng thử đăng nhập lại Claude CLI." };
+    }
+
     if (!resp.ok) {
-      addMessage("agent", "❌ Error: " + (data.detail || resp.statusText || resp.status));
+      const errorMsg = data.detail || resp.statusText || resp.status;
+      addMessage("agent", "⚠️ " + errorMsg);
+      if (resp.status === 401 || (typeof errorMsg === 'string' && (errorMsg.includes("login") || errorMsg.includes("Claude CLI")))) {
+        setTimeout(openLoginModal, 800);
+      }
       return;
     }
     addMessage("agent", data.reply || data.response || data.message || "Done.");
