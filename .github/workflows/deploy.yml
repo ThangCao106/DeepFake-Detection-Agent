@@ -100,15 +100,15 @@ jobs:
             OBSERVABILITY_AGENT_URL=http://observability-agent:8787
             EOF
 
-            # Build Docker Image & Run Container with Docker Compose
-            echo "🐳 Building fresh Docker images & launching containers..."
+            # Build Docker Image & Run Container with Docker Compose (Reusing Layer Cache)
+            echo "🐳 Building Docker images (reusing layer cache) & launching containers..."
             if docker compose version &> /dev/null; then
-              docker compose down --volumes --remove-orphans || true
-              docker compose build --no-cache
+              docker compose down --remove-orphans || true
+              docker compose build
               docker compose up -d --force-recreate
             elif command -v docker-compose &> /dev/null; then
-              docker-compose down --volumes --remove-orphans || true
-              docker-compose build --no-cache
+              docker-compose down --remove-orphans || true
+              docker-compose build
               docker-compose up -d --force-recreate
             else
               echo "❌ Error: Neither 'docker compose' nor 'docker-compose' command found."
