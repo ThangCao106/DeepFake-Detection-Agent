@@ -142,7 +142,7 @@ class ConversationMemory:
     Implements: Sessions & Memory concept from Kaggle requirements.
     """
     
-    def __init__(self, max_history: int = Config.MAX_CONVERSATION_HISTORY):
+    def __init__(self, max_history: int = getattr(Config, "MAX_CONVERSATION_HISTORY", 20)):
         self.messages: List[Message] = []
         self.max_history = max_history
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")

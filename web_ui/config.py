@@ -26,6 +26,9 @@ class Config:
     LOG_LEVEL = "INFO"
     ENABLE_TRACING = True
     
+    # Session & Memory Settings
+    MAX_CONVERSATION_HISTORY = int(os.getenv("MAX_CONVERSATION_HISTORY", "20"))
+    
     # Forensic Analysis Parameters
     FORENSIC_VERSION = "2.0-AUDITABLE"
     HIGH_FREQ_ANOMALY_THRESHOLD = 0.45
