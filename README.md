@@ -67,9 +67,16 @@ DeepFake-Detection-Agent/
 │   ├── upload_model_cloud.py             - Auto Upload Trọng số lên Hugging Face Hub
 │   └── Colab_MultiModality_AutoTrainer.ipynb - Notebook Form UI trên Google Colab GPU
 │
-└── 🔍 3. OBSERVABILITY SUBSYSTEM         (Phần Agent Quan sát & Persistent Memory)
-    ├── observability-agent/              - Subsystem SRE Claude Agent Service (Port 8787)
-    └── ObservabilityMemoryStore          - Lưu vết Forensic Audit & Certificate ID Registry
+├── 🔍 3. OBSERVABILITY SUBSYSTEM         (Phần Agent Quan sát & Persistent Memory)
+│   ├── observability-agent/              - Subsystem SRE Claude Agent Service (Port 8787 - 23 files)
+│   └── ObservabilityMemoryStore          - Lưu vết Forensic Audit & Certificate ID Registry
+│
+└── 📊 4. BENCHMARK & EVALUATION          (Phần Đánh giá Benchmark & Hiệu chỉnh Mô hình)
+    ├── eval_benchmark.py                 - Evaluator đo AUC, EER, LogLoss, Accuracy
+    ├── calibrate.py                      - Temperature Scaling & Optimal Threshold Finder
+    ├── hf_dataset_scout.py               - Scout & Audit Hugging Face Candidate Datasets
+    ├── export_onnx.py                    - ONNX Exporter & Quantization Engine
+    └── benchmark_results.json            - Kết quả Benchmark & Metrics Baseline
 ```
 
 ## 🚀 8-Stage ViT Fine-Tuning & Hugging Face Dataset Scout Pipeline
