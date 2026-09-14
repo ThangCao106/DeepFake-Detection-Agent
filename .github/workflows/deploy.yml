@@ -24,8 +24,11 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
           script: |
-            TARGET_DIR="${{ secrets.TARGET_DIR || '~/DeepFake-Detection-Agent' }}"
-            REPO_URL="https://github.com/${{ github.repository }}.git"
+            TARGET_DIR="${{ secrets.TARGET_DIR }}"
+            if [ -z "$TARGET_DIR" ]; then
+              TARGET_DIR="$HOME/DeepFake-Detection-Agent"
+            fi
+            REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
             echo "=========================================="
             echo "🚀 Starting Deployment to Server..."
@@ -37,18 +40,27 @@ jobs:
               exit 1
             fi
 
-            # Clone or Pull Repository
+            # Clone or Pull Repository using GITHUB_TOKEN for authentication
             if [ ! -d "$TARGET_DIR/.git" ]; then
-              echo "📦 Repository directory not found. Cloning repository..."
+              echo "📦 Repository directory not found or incomplete. Cloning repository..."
               mkdir -p "$TARGET_DIR"
-              git clone $REPO_URL "$TARGET_DIR"
+              git clone "$REPO_URL" "$TARGET_DIR"
               cd "$TARGET_DIR"
             else
               echo "🔄 Pulling latest code from origin/main..."
               cd "$TARGET_DIR"
+              git remote set-url origin "$REPO_URL"
               git fetch --all
               git reset --hard origin/main
               git pull origin main
+            fi
+
+            # Verify docker-compose.yml exists
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "❌ Error: docker-compose.yml missing in $TARGET_DIR after clone/pull!"
+              pwd
+              ls -la
+              exit 1
             fi
 
             # Create / Update .env File
@@ -62,10 +74,12 @@ jobs:
             echo "🐳 Building Docker image & launching containers..."
             if docker compose version &> /dev/null; then
               docker compose down --remove-orphans || true
-              docker compose up -d --build
+              docker compose build --no-cache
+              docker compose up -d --force-recreate
             elif command -v docker-compose &> /dev/null; then
               docker-compose down --remove-orphans || true
-              docker-compose up -d --build
+              docker-compose build --no-cache
+              docker-compose up -d --force-recreate
             else
               echo "❌ Error: Neither 'docker compose' nor 'docker-compose' command found."
               exit 1
