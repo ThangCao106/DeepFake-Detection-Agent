@@ -1,0 +1,9 @@
+.venv
+.git
+.gitignore
+.gitattributes
+__pycache__
+*.pyc
+.env
+*.log
+nohup.out

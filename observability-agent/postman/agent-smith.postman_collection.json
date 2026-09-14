@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "Agent Smith (Observability Agent)",
+    "description": "API của observability-agent-ubuntu (\"Agent Smith\") — SRE/observability assistant dùng ClickHouse + Grafana qua MCP, chạy trên Claude Agent SDK. 3 nhóm endpoint: /api/chat (session bền, dùng cho tool tự viết), /api/alert (one-shot triage JSON), /v1/* (OpenAI-compatible, dùng cho LibreChat Custom Endpoint).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{api_key}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://10.33.3.131:8787", "type": "string" },
+    { "key": "api_key", "value": "{{api_key}}", "type": "string" },
+    { "key": "session_id", "value": "test-session-1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "/api/chat — session bền, tự chọn session_id",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"{{session_id}}\",\n  \"message\": \"Liệt kê database hiện có\",\n  \"attachments\": []\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/chat",
+          "host": ["{{base_url}}"],
+          "path": ["api", "chat"]
+        },
+        "description": "session_id do CALLER tự đặt (khác /v1/chat/completions phải tự fingerprint) — cùng 1 session_id ở các request sau sẽ tiếp tục đúng ngữ cảnh hội thoại, tái dùng client Claude Code đã kết nối (tránh tốn ~15-20s khởi động subprocess mỗi lần).\n\nResponse: {\"reply\": \"...\"} (không stream — chờ agent chạy xong tool + trả lời rồi mới nhận 1 lần)."
+      }
+    },
+    {
+      "name": "/api/chat — kèm attachment (ảnh base64)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"{{session_id}}\",\n  \"message\": \"Ảnh dashboard này đang báo lỗi gì?\",\n  \"attachments\": [\n    {\n      \"media_type\": \"image/png\",\n      \"data\": \"<BASE64_KHONG_KEM_PREFIX_data:...;base64,>\",\n      \"filename\": \"dashboard.png\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/chat",
+          "host": ["{{base_url}}"],
+          "path": ["api", "chat"]
+        },
+        "description": "attachments chỉ nhận image/* và application/pdf render đúng nghĩa (Claude đọc trực tiếp nội dung ảnh/PDF); các media_type khác bị decode ra text thô rồi chèn vào prompt kèm header \"--- file: <tên> ---\". Agent KHÔNG có tool Read nên đây là cách DUY NHẤT để nó \"thấy\" 1 file — không tự mở file trên server được (xem DISALLOWED_TOOLS)."
+      }
+    },
+    {
+      "name": "/api/alert — one-shot triage (trả JSON severity/root_cause/action)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"alertname\": \"HighErrorRate\",\n  \"service\": \"order-api\",\n  \"severity\": \"warning\",\n  \"summary\": \"error rate > 5% trong 5 phút qua\",\n  \"startsAt\": \"2026-08-28T10:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/alert",
+          "host": ["{{base_url}}"],
+          "path": ["api", "alert"]
+        },
+        "description": "Payload là JSON tự do (dict), thường là nguyên văn alert JSON từ Grafana/Alertmanager forward sang. KHÔNG có khái niệm session — mỗi lần gọi là 1 lượt query() độc lập, spawn/thoát ngay, không tái dùng client.\n\nResponse: {\"triage\": {\"severity\":..., \"likely_root_cause\":..., \"recommended_action\":...}} — nếu model lỡ không trả đúng JSON thì trả về {\"error\": \"model did not return valid JSON\", \"raw\": \"...\"} thay vì bịa/parse ép."
+      }
+    },
+    {
+      "name": "/v1/models — OpenAI-compatible, dùng Bearer token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/models",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "models"]
+        },
+        "description": "Dùng để LibreChat (hoặc bất kỳ client OpenAI-compatible nào) tự fetch danh sách model — luôn trả đúng 1 model cố định \"observability-agent\" (models.fetch: false trong librechat.yaml nên LibreChat thực ra không gọi endpoint này, chỉ để tương thích chuẩn)."
+      }
+    },
+    {
+      "name": "/v1/chat/completions — non-stream",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"observability-agent\",\n  \"stream\": false,\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"Liệt kê database hiện có\" }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/chat/completions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "chat", "completions"]
+        },
+        "description": "Format chuẩn OpenAI Chat Completions. Không có session_id — server tự fingerprint (SHA-256) toàn bộ messages[:-1] để nhận diện \"đây có phải tiếp tục hội thoại đã có client đang mở không\" (xem openai_compat.py). Muốn tiếp tục đúng 1 hội thoại qua Postman: gửi lại NGUYÊN VẸN toàn bộ messages cũ + thêm 1 message user mới ở cuối, giống hệt cách LibreChat resend full history mỗi lần."
+      }
+    },
+    {
+      "name": "/v1/chat/completions — stream (SSE)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "text/event-stream" }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{api_key}}", "type": "string" }]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"observability-agent\",\n  \"stream\": true,\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"Kiểm tra hôm nay order-api có lỗi 5xx nào không\" }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/chat/completions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "chat", "completions"]
+        },
+        "description": "Trả về text/event-stream (dòng \"data: {...}\\n\\n\" nối tiếp, kết bằng \"data: [DONE]\"). Postman render SSE dạng raw text trong tab response, không tự parse từng chunk như trình duyệt/LibreChat — muốn xem đẹp nên dùng non-stream ở request trên khi test tay qua Postman."
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Runtime artifacts
+server.log
+*.log
+nohup.out
+
+# Postman environment sau khi điền API_KEY thật (collection.json không chứa secret, giữ lại được)
+postman/agent-smith.postman_environment.json
