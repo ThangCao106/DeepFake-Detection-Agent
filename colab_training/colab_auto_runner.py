@@ -18,7 +18,7 @@ import importlib
 from colab_dataset_pipeline import ColabMultiModalityDatasetManager, ColabAutoSyncManager
 
 
-def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True):
+def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1):
     sync_manager = ColabAutoSyncManager()
 
     # 1. Step 1: Auto-Pull latest code from GitHub
@@ -64,13 +64,13 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         print("==========================================")
         sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
 
-    # 5. Step 5: Auto-Generate Daily Report & Push to GitHub
-    sync_manager.generate_and_save_report(modality=modality, dataset_key=dataset_key)
+    # 5. Step 5: Auto-Generate Daily Detailed Report & Push to GitHub
+    sync_manager.generate_and_save_report(modality=modality, dataset_key=dataset_key, pass_number=pass_number)
     if github_token:
         print("\n==========================================")
         print("🔄 Step 5: Syncing Report & Metrics back to GitHub...")
         print("==========================================")
-        commit_msg = f"Auto-sync Colab training report for {modality}:{dataset_key} [Auto-Bot]"
+        commit_msg = f"Auto-sync Colab training report for Pass #{pass_number} {modality}:{dataset_key} [Auto-Bot]"
         sync_manager.auto_sync_metrics_to_github(github_token=github_token, commit_message=commit_msg)
 
     print("\n==========================================")
@@ -89,6 +89,17 @@ def get_commit_sha(ref="HEAD"):
         return res.stdout.strip()
     except Exception:
         return ""
+
+
+def get_full_multimodal_queue():
+    """Dynamically query registry to build FULL training queue for ALL IMAGE, VIDEO, and AUDIO datasets."""
+    from colab_dataset_pipeline import AWESOME_DEEPFAKES_REGISTRY
+    queue = []
+    for modality in ["IMAGE", "VIDEO", "AUDIO"]:
+        if modality in AWESOME_DEEPFAKES_REGISTRY:
+            for key in AWESOME_DEEPFAKES_REGISTRY[modality].keys():
+                queue.append((modality, key))
+    return queue
 
 
 def run_auto_listen_daemon(hf_token=None, github_token=None, max_samples=1000, poll_interval=30):
@@ -115,12 +126,13 @@ def run_auto_listen_daemon(hf_token=None, github_token=None, max_samples=1000, p
                 print(f"\n🔔 NEW COMMIT DETECTED ON GITHUB!")
                 print(f"   Old SHA: {last_processed_sha}")
                 print(f"   New SHA: {remote_sha}")
-                print("   🚀 Triggering Automated Training Pipeline...")
+                print("   🚀 Triggering Automated Full Multimodal Training Pipeline...")
 
                 run_continuous_auto_loop(
                     hf_token=hf_token,
                     github_token=github_token,
-                    max_samples=max_samples
+                    max_samples=max_samples,
+                    pass_number=1
                 )
                 last_processed_sha = get_commit_sha("HEAD")
                 print(f"\n✅ Job finished for commit {last_processed_sha}. Resuming Auto-Listen Daemon...")
@@ -132,30 +144,18 @@ def run_auto_listen_daemon(hf_token=None, github_token=None, max_samples=1000, p
         print("\n🛑 Auto-Listen Daemon stopped by user.")
 
 
-def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000):
-    """Run continuous auto loop sequentially over Image, Video, and Audio modalities."""
-    queue = [
-        # Phase 1: IMAGE Modality Deepfake Detection
-        ("IMAGE", "ntire_robust_detection"),
-        ("IMAGE", "cifake"),
-        
-        # Phase 2: VIDEO Modality (Keyframes -> ViT Fine-Tuning)
-        ("VIDEO", "faceforensics_pp"),
-        ("VIDEO", "celeb_df_v2"),
-        
-        # Phase 3: AUDIO Modality (Mel-Spectrograms -> Audio ViT Fine-Tuning)
-        ("AUDIO", "deepspeak_audio"),
-        ("AUDIO", "wavefake")
-    ]
+def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000, pass_number=1):
+    """Run full multi-modality continuous auto loop sequentially over ALL Image, Video, and Audio datasets."""
+    queue = get_full_multimodal_queue()
 
     print("======================================================================")
-    print(f"🔄 STARTING SEQUENTIAL MULTI-MODALITY AUTO-RUNNER LOOP ({len(queue)} STAGES)")
-    print("   Sequence: [IMAGE] ➔ [VIDEO] ➔ [AUDIO]")
+    print(f"🔄 STARTING FULL MULTI-MODALITY AUTO-RUNNER LOOP (Pass #{pass_number} | {len(queue)} STAGES)")
+    print("   Sequence: ALL Registered [IMAGE] ➔ [VIDEO] ➔ [AUDIO] Datasets")
     print("======================================================================")
 
     for idx, (modality, dataset_key) in enumerate(queue, 1):
         print(f"\n======================================================================")
-        print(f"🚀 STAGE [{idx}/{len(queue)}]: MODALITY = [{modality}] | DATASET = [{dataset_key}]")
+        print(f"🚀 STAGE [{idx}/{len(queue)}]: MODALITY = [{modality}] | DATASET = [{dataset_key}] | PASS = #{pass_number}")
         print("======================================================================")
         run_colab_auto_pipeline(
             modality=modality,
@@ -163,7 +163,8 @@ def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000)
             max_samples=max_samples,
             hf_token=hf_token,
             github_token=github_token,
-            auto_pull=True
+            auto_pull=True,
+            pass_number=pass_number
         )
 
 
@@ -189,7 +190,7 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
     try:
         while True:
             print(f"\n" + "="*70)
-            print(f"🌟 === STARTING CONTINUOUS TRAINING PASS #{pass_number} ===")
+            print(f"🌟 === STARTING FULL MULTIMODAL CONTINUOUS TRAINING PASS #{pass_number} ===")
             print("="*70)
 
             # Check if GitHub has new code pushed from local
@@ -210,11 +211,12 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
             else:
                 print(f"ℹ️ Code is up-to-date (SHA: {last_commit_sha[:7]}). Proceeding with Pass #{pass_number}...")
 
-            # Run 1 full multi-modality pass across Image -> Video -> Audio
+            # Run 1 full multi-modality pass across ALL Image -> Video -> Audio datasets
             run_continuous_auto_loop(
                 hf_token=hf_token,
                 github_token=github_token,
-                max_samples=max_samples
+                max_samples=max_samples,
+                pass_number=pass_number
             )
 
             print(f"\n✅ Pass #{pass_number} completed. Progressively refining weights for Pass #{pass_number + 1}...")
