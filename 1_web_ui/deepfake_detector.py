@@ -96,7 +96,10 @@ class DeepfakeDetector:
         Initialize the DeepfakeDetector with a pretrained or custom fine-tuned Hugging Face model.
         Checks if 'custom_vit_model' directory exists in the workspace.
         """
-        custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+        root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
+        local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+        custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
+
         has_custom_weights = (
             os.path.exists(custom_dir) and 
             os.path.exists(os.path.join(custom_dir, "config.json")) and

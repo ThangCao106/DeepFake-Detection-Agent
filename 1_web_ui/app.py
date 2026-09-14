@@ -273,7 +273,9 @@ def colab_callback():
         data = request.get_json(force=True) or {}
         logger.info(f"[colab_bridge] Received tuning callback from Colab: {data}")
         
-        custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+        root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
+        local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+        custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
         os.makedirs(custom_dir, exist_ok=True)
         
         # Ingest tuned calibration parameters
