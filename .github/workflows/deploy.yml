@@ -10,6 +10,7 @@ jobs:
   deploy:
     name: Deploy Docker Compose to Server
     runs-on: ubuntu-latest
+    environment: DTP_DEV
 
     steps:
       - name: Checkout Repository
