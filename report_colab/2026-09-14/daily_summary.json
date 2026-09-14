@@ -1934,5 +1934,2021 @@
       "optimal_threshold_tau": 0.8118
     },
     "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:37.796709",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9121
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9121,
+      "auc_score": 0.9865,
+      "eer_score": 0.0428,
+      "precision": 0.9063,
+      "recall": 0.9115,
+      "f1_score": 0.9089,
+      "temperature_scaling_T": 1.462,
+      "optimal_threshold_tau": 0.7344
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:39.611974",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9121
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9121,
+      "auc_score": 0.9865,
+      "eer_score": 0.0428,
+      "precision": 0.9063,
+      "recall": 0.9115,
+      "f1_score": 0.9089,
+      "temperature_scaling_T": 1.462,
+      "optimal_threshold_tau": 0.7344
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:40.290185",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9121
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9121,
+      "auc_score": 0.9865,
+      "eer_score": 0.0428,
+      "precision": 0.9063,
+      "recall": 0.9115,
+      "f1_score": 0.9089,
+      "temperature_scaling_T": 1.462,
+      "optimal_threshold_tau": 0.7344
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:40.842235",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "faceforensics_pp",
+    "dataset_name": "FaceForensics++ (FF++)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8862
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8862,
+      "auc_score": 0.9606,
+      "eer_score": 0.0402,
+      "precision": 0.8799,
+      "recall": 0.8882,
+      "f1_score": 0.884,
+      "temperature_scaling_T": 1.7685,
+      "optimal_threshold_tau": 0.7117
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:41.319173",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "AUDIO",
+    "dataset_key": "wavefake",
+    "dataset_name": "WaveFake (Audio Deepfake Dataset)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8623
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8623,
+      "auc_score": 0.9178,
+      "eer_score": 0.0549,
+      "precision": 0.8631,
+      "recall": 0.8504,
+      "f1_score": 0.8567,
+      "temperature_scaling_T": 1.5625,
+      "optimal_threshold_tau": 0.7722
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:41.766642",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9239
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9239,
+      "auc_score": 0.9793,
+      "eer_score": 0.0299,
+      "precision": 0.9164,
+      "recall": 0.9309,
+      "f1_score": 0.9236,
+      "temperature_scaling_T": 1.6747,
+      "optimal_threshold_tau": 0.6791
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:42.346144",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9121
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9121,
+      "auc_score": 0.9865,
+      "eer_score": 0.0428,
+      "precision": 0.9063,
+      "recall": 0.9115,
+      "f1_score": 0.9089,
+      "temperature_scaling_T": 1.462,
+      "optimal_threshold_tau": 0.7344
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:42.864528",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "cifake",
+    "dataset_name": "CIFAKE: Real vs AI-Generated CIFAR-10",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9213
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9213,
+      "auc_score": 0.9705,
+      "eer_score": 0.0337,
+      "precision": 0.9305,
+      "recall": 0.9098,
+      "f1_score": 0.92,
+      "temperature_scaling_T": 1.2634,
+      "optimal_threshold_tau": 0.6622
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:43.656663",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "dffd_image",
+    "dataset_name": "DFFD (Diverse Fake Face Dataset)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9101
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9101,
+      "auc_score": 0.9872,
+      "eer_score": 0.0306,
+      "precision": 0.9177,
+      "recall": 0.9106,
+      "f1_score": 0.9141,
+      "temperature_scaling_T": 1.4282,
+      "optimal_threshold_tau": 0.5968
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:44.313583",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "IMAGE",
+    "dataset_key": "ifakefacedb",
+    "dataset_name": "iFakeFaceDB (StyleGAN GANprintR)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9362
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9362,
+      "auc_score": 0.9756,
+      "eer_score": 0.0374,
+      "precision": 0.9473,
+      "recall": 0.9263,
+      "f1_score": 0.9367,
+      "temperature_scaling_T": 1.5659,
+      "optimal_threshold_tau": 0.7835
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:44.788749",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "faceforensics_pp",
+    "dataset_name": "FaceForensics++ (FF++)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8862
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8862,
+      "auc_score": 0.9606,
+      "eer_score": 0.0402,
+      "precision": 0.8799,
+      "recall": 0.8882,
+      "f1_score": 0.884,
+      "temperature_scaling_T": 1.7685,
+      "optimal_threshold_tau": 0.7117
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:45.328297",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "celeb_df_v2",
+    "dataset_name": "Celeb-DF (v2)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.912
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.912,
+      "auc_score": 0.9672,
+      "eer_score": 0.0446,
+      "precision": 0.9202,
+      "recall": 0.9002,
+      "f1_score": 0.9101,
+      "temperature_scaling_T": 1.7363,
+      "optimal_threshold_tau": 0.766
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:45.919649",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "dfdc",
+    "dataset_name": "DeepFake Detection Challenge (DFDC)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.922
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.922,
+      "auc_score": 0.9409,
+      "eer_score": 0.0352,
+      "precision": 0.9169,
+      "recall": 0.9072,
+      "f1_score": 0.912,
+      "temperature_scaling_T": 1.7218,
+      "optimal_threshold_tau": 0.6263
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:46.838492",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "wild_deepfake",
+    "dataset_name": "Wild Deepfake",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9191
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9191,
+      "auc_score": 0.9477,
+      "eer_score": 0.0365,
+      "precision": 0.9179,
+      "recall": 0.9051,
+      "f1_score": 0.9115,
+      "temperature_scaling_T": 1.5511,
+      "optimal_threshold_tau": 0.7611
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:47.378155",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "deeper_forensics",
+    "dataset_name": "DeeperForensics-1.0",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9106
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9106,
+      "auc_score": 0.9602,
+      "eer_score": 0.0463,
+      "precision": 0.9027,
+      "recall": 0.9187,
+      "f1_score": 0.9106,
+      "temperature_scaling_T": 1.6932,
+      "optimal_threshold_tau": 0.7284
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:47.985849",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "VIDEO",
+    "dataset_key": "deepspeak_video",
+    "dataset_name": "DeepSpeak Video (Lip-Sync & Face-Swap)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9013
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9013,
+      "auc_score": 0.9508,
+      "eer_score": 0.0466,
+      "precision": 0.8935,
+      "recall": 0.9085,
+      "f1_score": 0.9009,
+      "temperature_scaling_T": 1.618,
+      "optimal_threshold_tau": 0.8147
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:48.542773",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "AUDIO",
+    "dataset_key": "deepspeak_audio",
+    "dataset_name": "DeepSpeak Voice Deepfakes",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8796
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8796,
+      "auc_score": 0.968,
+      "eer_score": 0.0396,
+      "precision": 0.8904,
+      "recall": 0.8816,
+      "f1_score": 0.886,
+      "temperature_scaling_T": 1.3959,
+      "optimal_threshold_tau": 0.7366
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:49.235964",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "AUDIO",
+    "dataset_key": "fakeavceleb_audio",
+    "dataset_name": "FakeAVCeleb (Audio-Visual Deepfakes)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8558
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8558,
+      "auc_score": 0.9732,
+      "eer_score": 0.0543,
+      "precision": 0.8661,
+      "recall": 0.8518,
+      "f1_score": 0.8589,
+      "temperature_scaling_T": 1.5908,
+      "optimal_threshold_tau": 0.7124
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:49.983150",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "AUDIO",
+    "dataset_key": "wavefake",
+    "dataset_name": "WaveFake (Audio Deepfake Dataset)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8623
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8623,
+      "auc_score": 0.9178,
+      "eer_score": 0.0549,
+      "precision": 0.8631,
+      "recall": 0.8504,
+      "f1_score": 0.8567,
+      "temperature_scaling_T": 1.5625,
+      "optimal_threshold_tau": 0.7722
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:50.770466",
+    "date": "2026-09-14",
+    "pass_number": 1,
+    "modality": "AUDIO",
+    "dataset_key": "asvspoof_2021",
+    "dataset_name": "ASVspoof 2021 Benchmark",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8734
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8734,
+      "auc_score": 0.9555,
+      "eer_score": 0.0525,
+      "precision": 0.8638,
+      "recall": 0.8806,
+      "f1_score": 0.8721,
+      "temperature_scaling_T": 1.62,
+      "optimal_threshold_tau": 0.8634
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:51.445450",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "IMAGE",
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9232
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9232,
+      "auc_score": 0.998,
+      "eer_score": 0.0227,
+      "precision": 0.9321,
+      "recall": 0.9234,
+      "f1_score": 0.9277,
+      "temperature_scaling_T": 1.5083,
+      "optimal_threshold_tau": 0.6482
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:52.216282",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9602
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9602,
+      "auc_score": 0.9949,
+      "eer_score": 0.0124,
+      "precision": 0.96,
+      "recall": 0.9584,
+      "f1_score": 0.9592,
+      "temperature_scaling_T": 1.5947,
+      "optimal_threshold_tau": 0.7163
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:52.897395",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "IMAGE",
+    "dataset_key": "cifake",
+    "dataset_name": "CIFAKE: Real vs AI-Generated CIFAR-10",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9553
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9553,
+      "auc_score": 0.972,
+      "eer_score": 0.012,
+      "precision": 0.9456,
+      "recall": 0.9558,
+      "f1_score": 0.9507,
+      "temperature_scaling_T": 1.369,
+      "optimal_threshold_tau": 0.785
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:53.514906",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "IMAGE",
+    "dataset_key": "dffd_image",
+    "dataset_name": "DFFD (Diverse Fake Face Dataset)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9285
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9285,
+      "auc_score": 0.998,
+      "eer_score": 0.0222,
+      "precision": 0.919,
+      "recall": 0.9147,
+      "f1_score": 0.9168,
+      "temperature_scaling_T": 1.331,
+      "optimal_threshold_tau": 0.6252
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:54.348290",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "IMAGE",
+    "dataset_key": "ifakefacedb",
+    "dataset_name": "iFakeFaceDB (StyleGAN GANprintR)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9338
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9338,
+      "auc_score": 0.9797,
+      "eer_score": 0.0126,
+      "precision": 0.9471,
+      "recall": 0.9274,
+      "f1_score": 0.9371,
+      "temperature_scaling_T": 1.3717,
+      "optimal_threshold_tau": 0.7423
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:55.192248",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "faceforensics_pp",
+    "dataset_name": "FaceForensics++ (FF++)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8988
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8988,
+      "auc_score": 0.9584,
+      "eer_score": 0.0186,
+      "precision": 0.9072,
+      "recall": 0.8901,
+      "f1_score": 0.8986,
+      "temperature_scaling_T": 1.4104,
+      "optimal_threshold_tau": 0.834
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:56.089688",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "celeb_df_v2",
+    "dataset_name": "Celeb-DF (v2)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9401
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9401,
+      "auc_score": 0.9811,
+      "eer_score": 0.0258,
+      "precision": 0.9529,
+      "recall": 0.9271,
+      "f1_score": 0.9398,
+      "temperature_scaling_T": 1.4431,
+      "optimal_threshold_tau": 0.6581
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:56.918744",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "dfdc",
+    "dataset_name": "DeepFake Detection Challenge (DFDC)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.943
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.943,
+      "auc_score": 0.9951,
+      "eer_score": 0.0236,
+      "precision": 0.9538,
+      "recall": 0.936,
+      "f1_score": 0.9448,
+      "temperature_scaling_T": 1.512,
+      "optimal_threshold_tau": 0.6423
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:57.577811",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "wild_deepfake",
+    "dataset_name": "Wild Deepfake",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9027
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9027,
+      "auc_score": 0.9674,
+      "eer_score": 0.0252,
+      "precision": 0.9082,
+      "recall": 0.9119,
+      "f1_score": 0.91,
+      "temperature_scaling_T": 1.4587,
+      "optimal_threshold_tau": 0.7435
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:58.318808",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "deeper_forensics",
+    "dataset_name": "DeeperForensics-1.0",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9032
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9032,
+      "auc_score": 0.9602,
+      "eer_score": 0.0263,
+      "precision": 0.914,
+      "recall": 0.89,
+      "f1_score": 0.9018,
+      "temperature_scaling_T": 1.5183,
+      "optimal_threshold_tau": 0.8485
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:59.023403",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "VIDEO",
+    "dataset_key": "deepspeak_video",
+    "dataset_name": "DeepSpeak Video (Lip-Sync & Face-Swap)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.917
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.917,
+      "auc_score": 0.9756,
+      "eer_score": 0.0317,
+      "precision": 0.927,
+      "recall": 0.9214,
+      "f1_score": 0.9242,
+      "temperature_scaling_T": 1.6323,
+      "optimal_threshold_tau": 0.6102
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:13:59.659831",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "AUDIO",
+    "dataset_key": "deepspeak_audio",
+    "dataset_name": "DeepSpeak Voice Deepfakes",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9086
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9086,
+      "auc_score": 0.9553,
+      "eer_score": 0.03,
+      "precision": 0.9031,
+      "recall": 0.906,
+      "f1_score": 0.9045,
+      "temperature_scaling_T": 1.495,
+      "optimal_threshold_tau": 0.7021
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:14:00.333358",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "AUDIO",
+    "dataset_key": "fakeavceleb_audio",
+    "dataset_name": "FakeAVCeleb (Audio-Visual Deepfakes)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9101
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9101,
+      "auc_score": 0.9589,
+      "eer_score": 0.0267,
+      "precision": 0.9063,
+      "recall": 0.9058,
+      "f1_score": 0.906,
+      "temperature_scaling_T": 1.4163,
+      "optimal_threshold_tau": 0.6336
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:14:00.996793",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "AUDIO",
+    "dataset_key": "wavefake",
+    "dataset_name": "WaveFake (Audio Deepfake Dataset)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8909
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8909,
+      "auc_score": 0.9698,
+      "eer_score": 0.0342,
+      "precision": 0.888,
+      "recall": 0.9006,
+      "f1_score": 0.8943,
+      "temperature_scaling_T": 1.4325,
+      "optimal_threshold_tau": 0.8509
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:14:01.783233",
+    "date": "2026-09-14",
+    "pass_number": 2,
+    "modality": "AUDIO",
+    "dataset_key": "asvspoof_2021",
+    "dataset_name": "ASVspoof 2021 Benchmark",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.8941
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.8941,
+      "auc_score": 0.9422,
+      "eer_score": 0.0385,
+      "precision": 0.9022,
+      "recall": 0.8809,
+      "f1_score": 0.8914,
+      "temperature_scaling_T": 1.4279,
+      "optimal_threshold_tau": 0.7154
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T17:14:02.535040",
+    "date": "2026-09-14",
+    "pass_number": 3,
+    "modality": "IMAGE",
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9496
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9496,
+      "auc_score": 0.998,
+      "eer_score": 0.012,
+      "precision": 0.9548,
+      "recall": 0.9439,
+      "f1_score": 0.9493,
+      "temperature_scaling_T": 1.4489,
+      "optimal_threshold_tau": 0.8518
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
   }
 ]
