@@ -34,7 +34,7 @@ class DeepfakeDataset(Dataset):
 
 
 class TwoStageTrainer:
-    def __init__(self, base_model_name="google/vit-base-patch16-224-in21k", output_dir="custom_vit_model"):
+    def __init__(self, base_model_name="dima806/deepfake_vs_real_image_detection", output_dir="custom_vit_model"):
         self.base_model_name = base_model_name
         self.output_dir = output_dir
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

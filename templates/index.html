@@ -3,24 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepfake Detection Agent System</title>
+    <title>Deepfake Detection AI - Multi-Agent Forensic System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
-    <!-- Background gradient -->
+    <!-- Background Light Soft Gradient -->
     <div class="gradient-bg"></div>
     
     <!-- Header -->
     <header class="header">
-        <div class="container">
+        <div class="container header-container">
             <div class="logo">
-                <span class="logo-icon">🤖</span>
-                <h1>Deepfake Detection AI</h1>
+                <h1 class="logo-text">Deepfake Detection AI</h1>
             </div>
-            <div class="status-indicator">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Connecting...</span>
+            
+            <div class="nav-links">
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Connecting...</span>
+                </div>
             </div>
         </div>
     </header>
@@ -28,41 +33,84 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            <!-- Hero Section -->
-            <section class="hero">
+            
+            <!-- Hero Top Header Section (Centered Description at Top) -->
+            <section class="hero-header">
                 <h2 class="hero-title">Detect AI-Generated Images with Intelligence</h2>
                 <p class="hero-subtitle">Multi-agent system powered by Vision Transformers and Google Gemini</p>
+
+                <!-- Feature Description Pill -->
+                <div class="feature-pills-centered">
+                    <div class="feature-pill">
+                        <p>Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
+                    </div>
+                </div>
             </section>
 
-            <!-- Content Grid -->
+            <!-- Main Side-by-Side Grid Layout (Left: Upload Media | Right: Chat with Agent) -->
             <div class="content-grid">
-                <!-- Upload Section -->
-                <section class="card upload-card">
+                
+                <!-- Left Side: Upload Image / Media Card -->
+                <section class="card upload-card" id="uploadCard">
                     <h3 class="card-title">
                         <span class="icon">📸</span>
-                        Upload Image
+                        Upload Image / Media
                     </h3>
                     
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-content">
-                            <div class="upload-icon">⬆️</div>
-                            <p class="upload-text">Drag & drop an image here</p>
-                            <p class="upload-subtext">or click to browse</p>
-                            <input type="file" id="fileInput" accept="image/*" hidden>
+                            <div class="upload-icon-wrapper">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5c46e5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <p class="upload-headline">Drag and drop your file here or browse to upload</p>
+                            <p class="upload-subheadline">Supports image, video and audio formats</p>
+                            <button type="button" class="btn btn-browse" id="browseBtn">Browse Files</button>
+                            <input type="file" id="fileInput" accept="image/*,video/*,audio/*" hidden>
                         </div>
-                        <div class="image-preview" id="imagePreview" style="display: none;">
-                            <img id="previewImg" src="" alt="Preview">
-                            <button class="btn-remove" id="removeBtn">✕</button>
+
+                        <!-- Media Previews -->
+                        <div class="media-preview" id="mediaPreview" style="display: none;">
+                            <img id="previewImg" src="" alt="Preview Image" style="display: none;">
+                            <video id="previewVideo" controls style="display: none; max-width: 100%; max-height: 220px; border-radius: 12px;"></video>
+                            <div id="previewAudio" class="audio-preview-box" style="display: none;">
+                                <span class="audio-icon">🎵</span>
+                                <span id="audioFileName">audio_file.mp3</span>
+                            </div>
+                            <button class="btn-remove" id="removeBtn" title="Remove file">✕</button>
                         </div>
                     </div>
-                    
+
+                    <!-- Divider line -->
+                    <div class="divider-or">
+                        <span>or</span>
+                    </div>
+
+                    <!-- Media URL Input Field -->
+                    <div class="url-input-group">
+                        <span class="url-icon">🔗</span>
+                        <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL...">
+                    </div>
+
+                    <!-- Analyze Button -->
                     <button class="btn btn-primary" id="analyzeBtn" disabled>
                         <span class="btn-icon">🔍</span>
-                        Analyze Image
+                        Analyze Media
                     </button>
+                    
+                    <!-- Footnote Formats -->
+                    <div class="upload-footer-info" style="margin-top: 14px;">
+
+                        <p class="formats-text"><strong>Supported Image:</strong> PNG, JPG, JPEG, WEBP</p>
+                        <p class="formats-text"><strong>Video:</strong> QuickTime, 1080i, MP4, WEBM, AVI, MOV, MKV</p>
+                        <p class="formats-text"><strong>Audio:</strong> FLAC, MP3, OGG, WAV, AAC</p>
+                    </div>
                 </section>
 
-                <!-- Chat Section -->
+                <!-- Right Side: Chat with Agent Card -->
                 <section class="card chat-card">
                     <h3 class="card-title">
                         <span class="icon">💬</span>
@@ -71,7 +119,7 @@
                     
                     <div class="chat-messages" id="chatMessages">
                         <div class="welcome-message">
-                            <p>👋 Welcome! Upload an image to start detection.</p>
+                            <p>👋 Welcome! Upload an image or video to start detection.</p>
                         </div>
                     </div>
                     
@@ -88,13 +136,14 @@
                         </button>
                     </div>
                 </section>
+                
             </div>
 
-            <!-- Results Section -->
-            <section class="card results-card" id="resultsCard" style="display: none;">
+            <!-- Full Width Results Section (Below Upload & Chat) -->
+            <section class="card results-card" id="resultsCard" style="display: none; margin-top: 30px;">
                 <h3 class="card-title">
                     <span class="icon">📊</span>
-                    Detection Results
+                    Detection & Forensic Results
                 </h3>
                 
                 <div class="results-content">
@@ -102,7 +151,7 @@
                     <div class="result-prediction">
                         <div class="prediction-label" id="predictionLabel">-</div>
                         <div class="prediction-confidence">
-                            <span>Confidence:</span>
+                            <span>Confidence Score:</span>
                             <span id="confidenceValue">0%</span>
                         </div>
                     </div>
@@ -117,42 +166,48 @@
                     <!-- Detailed Scores -->
                     <div class="detailed-scores" id="detailedScores"></div>
 
+                    <!-- Video Frame-by-Frame Results Container -->
+                    <div class="video-frames-section" id="videoFramesSection" style="display: none; margin-top: 15px;">
+                        <h4 style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;">🎬 Frame-by-Frame Video Analysis</h4>
+                        <div class="frames-grid" id="framesGrid" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;"></div>
+                    </div>
+
                     <!-- Auditable Forensic Certificate Section -->
-                    <div class="forensic-cert-card" id="forensicCertCard" style="margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.25); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px;">
-                            <h4 style="margin: 0; color: #4CAF50; font-size: 0.95rem;">📜 Auditable Digital Forensic Certificate</h4>
-                            <span id="certBadge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; background: #333; font-weight: bold;">-</span>
+                    <div class="forensic-cert-card" id="forensicCertCard" style="margin-top: 20px; padding: 18px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px;">
+                            <h4 style="margin: 0; color: #166534; font-size: 0.95rem; font-weight: 700;">📜 Auditable Digital Forensic Certificate</h4>
+                            <span id="certBadge" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #fff;">-</span>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;" id="certMetricsGrid">
-                            <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                                <div style="color: #aaa;">Cert ID</div>
-                                <div id="certIdVal" style="font-family: monospace; font-weight: bold; color: #fff;">-</div>
+                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
+                                <div style="color: #64748b; font-size: 0.75rem;">Certificate ID</div>
+                                <div id="certIdVal" style="font-family: monospace; font-weight: bold; color: #1e293b; font-size: 0.85rem;">-</div>
                             </div>
-                            <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                                <div style="color: #aaa;">Composite Risk</div>
-                                <div id="certRiskVal" style="font-weight: bold; color: #ff9800;">-</div>
+                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
+                                <div style="color: #64748b; font-size: 0.75rem;">Composite Risk</div>
+                                <div id="certRiskVal" style="font-weight: bold; color: #d97706; font-size: 0.85rem;">-</div>
                             </div>
-                            <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                                <div style="color: #aaa;">Spectral Anomaly (FFT 2D)</div>
-                                <div id="certSpectralVal" style="font-weight: bold; color: #2196f3;">-</div>
+                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
+                                <div style="color: #64748b; font-size: 0.75rem;">Spectral Anomaly (FFT 2D)</div>
+                                <div id="certSpectralVal" style="font-weight: bold; color: #2563eb; font-size: 0.85rem;">-</div>
                             </div>
-                            <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
-                                <div style="color: #aaa;">Spatial Noise Inconsistency</div>
-                                <div id="certSpatialVal" style="font-weight: bold; color: #e91e63;">-</div>
+                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
+                                <div style="color: #64748b; font-size: 0.75rem;">Spatial Noise Inconsistency</div>
+                                <div id="certSpatialVal" style="font-weight: bold; color: #db2777; font-size: 0.85rem;">-</div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Explanation -->
                     <div class="explanation-section" id="explanationSection" style="display: none;">
-                        <h4>🧠 AI Forensic Analysis & Regulatory Report</h4>
+                        <h4>🧠 AI Forensic Analysis & Multi-Agent Explanation</h4>
                         <div class="explanation-text" id="explanationText"></div>
                     </div>
 
                 </div>
             </section>
 
-            <!-- Agent Status -->
+            <!-- Agent Status Floating Widget -->
             <section class="agent-status" id="agentStatus" style="display: none;">
                 <div class="status-item">
                     <div class="status-spinner"></div>
@@ -162,12 +217,8 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>Built for Kaggle Agents Intensive Capstone Project | Track: Agents for Good</p>
-    </footer>
+
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
-

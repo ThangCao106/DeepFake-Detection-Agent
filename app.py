@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'deepfake-detection-secret-key-2024'
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB max file size
 
 # Allowed file extensions
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'mp3', 'wav'}
 
 # Initialize extensions
 CORS(app)
@@ -168,7 +168,7 @@ def handle_analyze_image(data):
                 'message': 'Running ML model...'
             })
             
-            result = detector.predict(filepath)
+            result = detector.predict_media(filepath)
             
             if 'error' in result:
                 emit('error', {'message': result['error']})

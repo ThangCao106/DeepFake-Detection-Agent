@@ -91,40 +91,56 @@ class SpatialConsistencyAnalyzer:
 
 
 class DeepfakeDetector:
-    def __init__(self, model_name="google/vit-base-patch16-224-in21k"):
+    def __init__(self, model_name="dima806/deepfake_vs_real_image_detection"):
         """
         Initialize the DeepfakeDetector with a pretrained or custom fine-tuned Hugging Face model.
         Checks if 'custom_vit_model' directory exists in the workspace.
         """
         custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
-        if os.path.exists(custom_dir) and os.path.exists(os.path.join(custom_dir, "config.json")):
-            target_model = custom_dir
+        has_custom_weights = (
+            os.path.exists(custom_dir) and 
+            os.path.exists(os.path.join(custom_dir, "config.json")) and
+            any(os.path.exists(os.path.join(custom_dir, w)) for w in ["model.safetensors", "pytorch_model.bin", "model.bin"])
+        )
+
+        target_model = custom_dir if has_custom_weights else model_name
+        if has_custom_weights:
             print(f"[info] Custom fine-tuned model detected! Loading from: {target_model}")
         else:
-            target_model = model_name
-            print(f"[info] Loading base model: {target_model} ...")
+            print(f"[info] Loading base model: {model_name} ...")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"[info] Using device: {self.device}")
+        
         try:
             self.processor = AutoImageProcessor.from_pretrained(target_model)
             self.model = AutoModelForImageClassification.from_pretrained(target_model).to(self.device)
             self.model.eval()
+        except Exception as e:
+            if target_model != model_name:
+                print(f"[warning] Failed to load custom model from '{target_model}': {e}. Falling back to base model '{model_name}'...")
+                target_model = model_name
+                self.processor = AutoImageProcessor.from_pretrained(target_model)
+                self.model = AutoModelForImageClassification.from_pretrained(target_model).to(self.device)
+                self.model.eval()
+            else:
+                raise e
 
-            # Load calibration parameters if present
-            calib_file = os.path.join(custom_dir, "calibration_params.json")
-            if os.path.exists(calib_file):
-                import json
+        # Load calibration parameters if present
+        calib_file = os.path.join(custom_dir, "calibration_params.json")
+        if os.path.exists(calib_file):
+            import json
+            try:
                 with open(calib_file, "r") as f:
                     self.calibration_params = json.load(f)
                 print(f"[info] Calibration parameters loaded: T={self.calibration_params.get('temperature_scaling_T')}, tau={self.calibration_params.get('optimal_threshold_tau')}")
-            else:
+            except Exception as e:
+                print(f"[warning] Could not parse calibration_params.json: {e}")
                 self.calibration_params = None
+        else:
+            self.calibration_params = None
 
-            print("[info] Model loaded successfully.")
-        except Exception as e:
-            print(f"[error] Error loading model '{target_model}': {e}")
-            raise
+        print("[info] Model loaded successfully.")
 
 
     def _crop_face_if_possible(self, pil_image):
@@ -249,6 +265,128 @@ class DeepfakeDetector:
             }
         except Exception as e:
             return {"error": str(e)}
+
+    def predict_video(self, video_path, num_frames=6):
+        """
+        Extract keyframes from video and perform frame-by-frame deepfake detection.
+        Aggregates predictions into a overall video verdict and forensic audit log.
+        """
+        if not os.path.exists(video_path):
+            return {"error": "Video file not found"}
+
+        try:
+            import cv2
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                return {"error": "Could not open video file"}
+
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+            duration_sec = total_frames / fps if fps > 0 else 0
+
+            if total_frames <= 0:
+                cap.release()
+                return {"error": "Video contains no readable frames"}
+
+            step = max(1, total_frames // num_frames)
+            frame_indices = [min(i * step, total_frames - 1) for i in range(num_frames)]
+
+            base_dir = os.path.dirname(video_path)
+            base_name = os.path.basename(video_path).rsplit('.', 1)[0]
+
+            frame_results = []
+            fake_probs = []
+
+            for idx, f_idx in enumerate(frame_indices):
+                cap.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
+                ret, frame = cap.read()
+                if not ret:
+                    continue
+
+                temp_frame_path = os.path.join(base_dir, f"{base_name}_frame_{idx}.jpg")
+                cv2.imwrite(temp_frame_path, frame)
+
+                try:
+                    res = self.predict(temp_frame_path, use_face_crop=True)
+                    if "error" not in res:
+                        timestamp_sec = round(f_idx / fps, 2)
+                        cert = res.get("forensic_certificate", {})
+                        ev = cert.get("multi_dimensional_evidence", {})
+                        fake_p = ev.get("passive_model_score", {}).get("fake_probability", 0.5)
+
+                        frame_results.append({
+                            "frame_index": f_idx,
+                            "timestamp_sec": timestamp_sec,
+                            "label": res["label"],
+                            "confidence": res["confidence"],
+                            "fake_probability": fake_p,
+                            "spectral_anomaly": ev.get("spectral_frequency_analysis", {}).get("high_frequency_anomaly_score", 0.0),
+                            "spatial_inconsistency": ev.get("spatial_inconsistency_analysis", {}).get("spatial_inconsistency_score", 0.0)
+                        })
+                        fake_probs.append(fake_p)
+                finally:
+                    if os.path.exists(temp_frame_path):
+                        os.remove(temp_frame_path)
+
+            cap.release()
+
+            if not fake_probs:
+                return {"error": "Failed to analyze any video frames"}
+
+            avg_fake_prob = float(np.mean(fake_probs))
+            max_fake_prob = float(np.max(fake_probs))
+            # Video risk is weighted towards the highest anomalous frame
+            overall_fake_score = 0.6 * max_fake_prob + 0.4 * avg_fake_prob
+
+            verdict_label = "Deepfake" if overall_fake_score > 0.5 else "Realism"
+            confidence = overall_fake_score if verdict_label == "Deepfake" else 1.0 - overall_fake_score
+
+            all_scores = {
+                "Deepfake": round(overall_fake_score, 4),
+                "Realism": round(1.0 - overall_fake_score, 4)
+            }
+
+            cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+            forensic_certificate = {
+                "certificate_id": cert_id,
+                "timestamp": timestamp,
+                "forensic_version": "2.0-VIDEO-AUDITABLE",
+                "compliance_standard": "EU AI Act Article 50 & DSA Auditable Video",
+                "video_metadata": {
+                    "total_frames": total_frames,
+                    "fps": round(fps, 2),
+                    "duration_seconds": round(duration_sec, 2),
+                    "analyzed_frames_count": len(frame_results)
+                },
+                "multi_dimensional_evidence": {
+                    "frame_by_frame_analysis": frame_results,
+                    "aggregate_fake_probability": round(avg_fake_prob, 4),
+                    "peak_fake_probability": round(max_fake_prob, 4)
+                },
+                "composite_risk_score": round(overall_fake_score, 4),
+                "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if overall_fake_score > 0.5 else "AUTHENTIC_VIDEO_LIKELY"
+            }
+
+            return {
+                "label": verdict_label,
+                "confidence": confidence,
+                "all_scores": all_scores,
+                "forensic_certificate": forensic_certificate,
+                "frame_results": frame_results
+            }
+        except Exception as e:
+            return {"error": f"Video processing error: {str(e)}"}
+
+    def predict_media(self, file_path):
+        """Predict for either image or video based on file extension."""
+        ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else ''
+        if ext in {'mp4', 'avi', 'mov', 'mkv', 'webm'}:
+            return self.predict_video(file_path)
+        else:
+            return self.predict(file_path)
+
 
 
 def main():

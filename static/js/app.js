@@ -4,10 +4,16 @@ const socket = io();
 // DOM Elements
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
-const imagePreview = document.getElementById('imagePreview');
+const browseBtn = document.getElementById('browseBtn');
+const mediaPreview = document.getElementById('mediaPreview');
 const previewImg = document.getElementById('previewImg');
+const previewVideo = document.getElementById('previewVideo');
+const previewAudio = document.getElementById('previewAudio');
+const audioFileName = document.getElementById('audioFileName');
 const removeBtn = document.getElementById('removeBtn');
 const analyzeBtn = document.getElementById('analyzeBtn');
+const urlInput = document.getElementById('urlInput');
+
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -76,9 +82,18 @@ socket.on('session_saved', (data) => {
     addSystemMessage(`Session saved: ${data.session_id}`);
 });
 
-// ===== File Upload =====
-uploadArea.addEventListener('click', () => {
-    fileInput.click();
+// ===== File Upload Handling =====
+if (browseBtn) {
+    browseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+}
+
+uploadArea.addEventListener('click', (e) => {
+    if (e.target.id !== 'removeBtn' && !e.target.classList.contains('btn-browse')) {
+        fileInput.click();
+    }
 });
 
 uploadArea.addEventListener('dragover', (e) => {
@@ -106,44 +121,73 @@ fileInput.addEventListener('change', (e) => {
     }
 });
 
+if (urlInput) {
+    urlInput.addEventListener('input', () => {
+        if (urlInput.value.trim().length > 5 && !uploadedFile) {
+            analyzeBtn.disabled = false;
+        } else if (!uploadedFile) {
+            analyzeBtn.disabled = true;
+        }
+    });
+}
+
 removeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     clearUpload();
 });
 
 function handleFile(file) {
-    // Validate file type
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid image file (PNG, JPG, WEBP, GIF)');
-        return;
-    }
-
-    // Validate file size (16MB max)
-    if (file.size > 16 * 1024 * 1024) {
-        alert('File size must be less than 16MB');
+    // Validate file size (64MB max)
+    if (file.size > 64 * 1024 * 1024) {
+        alert('File size must be less than 64MB');
         return;
     }
 
     uploadedFile = file;
+    document.querySelector('.upload-content').style.display = 'none';
+    mediaPreview.style.display = 'block';
 
-    // Show preview
+    previewImg.style.display = 'none';
+    previewVideo.style.display = 'none';
+    previewAudio.style.display = 'none';
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-        previewImg.src = e.target.result;
-        document.querySelector('.upload-content').style.display = 'none';
-        imagePreview.style.display = 'block';
-        analyzeBtn.disabled = false;
-    };
-    reader.readAsDataURL(file);
+
+    if (file.type.startsWith('image/')) {
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewImg.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else if (file.type.startsWith('video/')) {
+        reader.onload = (e) => {
+            previewVideo.src = e.target.result;
+            previewVideo.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else if (file.type.startsWith('audio/')) {
+        audioFileName.textContent = file.name;
+        previewAudio.style.display = 'flex';
+    } else {
+        // Fallback for unrecognized extension
+        audioFileName.textContent = file.name;
+        previewAudio.style.display = 'flex';
+    }
+
+    analyzeBtn.disabled = false;
 }
 
 function clearUpload() {
     uploadedFile = null;
     uploadedFilePath = null;
     fileInput.value = '';
+    if (urlInput) urlInput.value = '';
+    
     document.querySelector('.upload-content').style.display = 'block';
-    imagePreview.style.display = 'none';
+    mediaPreview.style.display = 'none';
+    previewImg.src = '';
+    previewVideo.src = '';
+    
     analyzeBtn.disabled = true;
     resultsCard.style.display = 'none';
     analysisComplete = false;
@@ -151,16 +195,17 @@ function clearUpload() {
     sendBtn.disabled = true;
 }
 
-// ===== Analyze Image =====
+// ===== Analyze Media =====
 analyzeBtn.addEventListener('click', async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFile && (!urlInput || !urlInput.value.trim())) return;
 
     analyzeBtn.disabled = true;
     analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span> Uploading...';
 
-    // Upload file
     const formData = new FormData();
-    formData.append('file', uploadedFile);
+    if (uploadedFile) {
+        formData.append('file', uploadedFile);
+    }
 
     try {
         const response = await fetch('/api/upload', {
@@ -173,14 +218,11 @@ analyzeBtn.addEventListener('click', async () => {
         if (data.success) {
             uploadedFilePath = data.filepath;
             analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyzing...';
-
-            // Clear previous results
             resultsCard.style.display = 'none';
 
-            // Add user message
-            addUserMessage(`Analyzing image: ${uploadedFile.name}`);
+            const mediaName = uploadedFile ? uploadedFile.name : urlInput.value;
+            addUserMessage(`Analyzing media content: ${mediaName}`);
 
-            // Send to agent via WebSocket
             socket.emit('analyze_image', {
                 filepath: uploadedFilePath,
                 query: ''
@@ -192,7 +234,7 @@ analyzeBtn.addEventListener('click', async () => {
         console.error('Upload error:', error);
         addSystemMessage(`Upload failed: ${error.message}`, 'error');
         analyzeBtn.disabled = false;
-        analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Image';
+        analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Media';
     }
 });
 
@@ -213,7 +255,6 @@ function sendMessage() {
     chatInput.disabled = true;
     sendBtn.disabled = true;
 
-    // Send question to agent
     socket.emit('ask_question', { question: message });
 }
 
@@ -253,22 +294,18 @@ function scrollToBottom() {
 function displayResults(data) {
     resultsCard.style.display = 'block';
 
-    // Prediction label
     const predictionLabel = document.getElementById('predictionLabel');
     predictionLabel.textContent = data.label;
     predictionLabel.className = 'prediction-label ' + data.label.toLowerCase();
 
-    // Confidence
     const confidence = (data.confidence * 100).toFixed(1);
     document.getElementById('confidenceValue').textContent = confidence + '%';
 
-    // Confidence meter
     const meterFill = document.getElementById('meterFill');
     setTimeout(() => {
         meterFill.style.width = confidence + '%';
     }, 100);
 
-    // Detailed scores
     const detailedScores = document.getElementById('detailedScores');
     detailedScores.innerHTML = '';
 
@@ -282,7 +319,31 @@ function displayResults(data) {
         detailedScores.appendChild(scoreItem);
     }
 
-    // Render Auditable Forensic Certificate if available
+    // Render frame-by-frame analysis for videos if present
+    const videoFramesSection = document.getElementById('videoFramesSection');
+    const framesGrid = document.getElementById('framesGrid');
+    
+    const frames = data.frame_results || (data.forensic_certificate && data.forensic_certificate.multi_dimensional_evidence && data.forensic_certificate.multi_dimensional_evidence.frame_by_frame_analysis);
+
+    if (frames && frames.length > 0) {
+        framesGrid.innerHTML = '';
+        frames.forEach((f, idx) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; min-width: 130px; text-align: center;';
+            const statusColor = f.fake_probability > 0.5 ? '#b91c1c' : '#15803d';
+            card.innerHTML = `
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Frame ${idx + 1} (${f.timestamp_sec}s)</div>
+                <div style="font-size: 0.85rem; font-weight: 800; color: ${statusColor}; margin: 4px 0;">${f.label}</div>
+                <div style="font-size: 0.75rem; color: #334155;">Fake: ${(f.fake_probability * 100).toFixed(1)}%</div>
+            `;
+            framesGrid.appendChild(card);
+        });
+        videoFramesSection.style.display = 'block';
+    } else {
+        videoFramesSection.style.display = 'none';
+    }
+
+    // Render Auditable Forensic Certificate
     const forensicCertCard = document.getElementById('forensicCertCard');
     if (data.forensic_certificate) {
         const cert = data.forensic_certificate;
@@ -299,7 +360,7 @@ function displayResults(data) {
 
         const certBadge = document.getElementById('certBadge');
         certBadge.textContent = cert.auditable_verdict || 'AUDITABLE';
-        certBadge.style.background = cert.composite_risk_score > 0.5 ? '#f44336' : '#4CAF50';
+        certBadge.style.background = cert.composite_risk_score > 0.5 ? '#ef4444' : '#10b981';
         certBadge.style.color = '#fff';
 
         forensicCertCard.style.display = 'block';
@@ -307,14 +368,11 @@ function displayResults(data) {
         forensicCertCard.style.display = 'none';
     }
 
-    // Scroll to results
     resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    // Reset analyze button
     analyzeBtn.disabled = false;
-    analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Another';
+    analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Another Media';
 }
-
 
 function displayExplanation(text) {
     const explanationSection = document.getElementById('explanationSection');
@@ -323,7 +381,6 @@ function displayExplanation(text) {
     explanationSection.style.display = 'block';
     explanationText.textContent = text;
 
-    // Add to chat
     addAgentMessage(text);
 }
 
@@ -337,12 +394,10 @@ function hideAgentStatus() {
     agentStatus.style.display = 'none';
 }
 
-// ===== Utility Functions =====
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// ===== Initialize =====
-console.log('Deepfake Detection Web App initialized');
+console.log('Deepfake Detection Web App initialized with video & media support');
