@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:56:01
-**Total Training Runs Completed:** 306
+**Last Updated:** 2026-09-14 17:56:17
+**Total Training Runs Completed:** 312
 
 ## 📈 Performance Metric Comparison Table
 
@@ -312,6 +312,12 @@
 | 1 | `IMAGE` | `ntire_robust_detection` | 0.912 | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ COMPLETED_SUCCESSFULLY |
 | 1 | `IMAGE` | `ntire_robust_detection` | 0.912 | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ COMPLETED_SUCCESSFULLY |
 | 1 | `IMAGE` | `ntire_robust_detection` | 0.912 | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `VIDEO` | `faceforensics_pp` | 0.886 | 0.961 | 0.040 | 1.7685 | 0.7117 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `AUDIO` | `wavefake` | 0.862 | 0.918 | 0.055 | 1.5625 | 0.7722 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `IMAGE` | `dima806_deepfake` | 0.924 | 0.979 | 0.030 | 1.6747 | 0.6791 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `IMAGE` | `ntire_robust_detection` | 0.912 | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `IMAGE` | `cifake` | 0.921 | 0.971 | 0.034 | 1.2634 | 0.6622 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `IMAGE` | `dffd_image` | 0.910 | 0.987 | 0.031 | 1.4282 | 0.5968 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -625,6 +631,12 @@ P3 [IMAGE] dima806_deepfake         [██████████████�
 P1 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.987
 P1 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.987
 P1 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.987
+P1 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.961
+P1 [AUDIO] wavefake                 [██████████████████████░░░] AUC: 0.918
+P1 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.979
+P1 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.987
+P1 [IMAGE] cifake                   [████████████████████████░] AUC: 0.971
+P1 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.987
 ```
 
 ## 🔧 Environment & Hyperparameters
