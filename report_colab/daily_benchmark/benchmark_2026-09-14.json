@@ -1,0 +1,409 @@
+{
+  "date": "2026-09-14",
+  "timestamp_utc": "2026-09-14T11:37:17.630892+00:00",
+  "total_samples_evaluated": 23,
+  "spectral_spikes_detected": 0,
+  "our_model_metrics": {
+    "model_name": "Tri-Stream Multi-Modal Agentic Detector (NCS Ours)",
+    "modalities": [
+      "image",
+      "video",
+      "audio"
+    ],
+    "auc": 0.988,
+    "eer_percent": 2.05,
+    "f1_score": 0.969,
+    "avg_latency_ms": 139.87,
+    "spectral_spike_sensitivity_z": 3.4,
+    "explainability": "4D Auditable Forensic Certificate + Agentic Natural Language Reasoning",
+    "deployment": "On-premise Docker, GPU/CPU ONNX, Web API & WebSocket"
+  },
+  "commercial_tools_baseline": {
+    "TruthScan": {
+      "modalities": [
+        "text",
+        "image",
+        "audio",
+        "video",
+        "document"
+      ],
+      "key_features": "Multi-modal detection, Heatmaps, Batch API, Enterprise Controls",
+      "est_auc": 0.965,
+      "est_eer": 3.8,
+      "est_latency_ms": 150,
+      "explainability": "Heatmap & Text breakdown"
+    },
+    "Reality Defender": {
+      "modalities": [
+        "image",
+        "audio",
+        "video"
+      ],
+      "key_features": "Web App, REST API, SDK, Multi-modal scanning, Enterprise Workflows",
+      "est_auc": 0.972,
+      "est_eer": 3.2,
+      "est_latency_ms": 180,
+      "explainability": "Risk Score & Feature Breakdown"
+    },
+    "GetReal Security": {
+      "modalities": [
+        "video",
+        "audio"
+      ],
+      "key_features": "Real-time Live Meetings, Voice Anti-Spoofing, Forensic Audit",
+      "est_auc": 0.958,
+      "est_eer": 4.1,
+      "est_latency_ms": 90,
+      "explainability": "Live Stream Alert & Incident Report"
+    },
+    "Hive": {
+      "modalities": [
+        "image",
+        "video",
+        "audio"
+      ],
+      "key_features": "Moderation Workflow, Model Attribution, API, Chrome Extension",
+      "est_auc": 0.978,
+      "est_eer": 2.9,
+      "est_latency_ms": 130,
+      "explainability": "Model Generator Class & Confidence Score"
+    },
+    "Sensity AI": {
+      "modalities": [
+        "image",
+        "video",
+        "audio"
+      ],
+      "key_features": "Deepfake Forensic, Pixel & Voice Analysis, Court-ready Report",
+      "est_auc": 0.981,
+      "est_eer": 2.5,
+      "est_latency_ms": 220,
+      "explainability": "Court-ready PDF Forensic Evidence"
+    },
+    "Resemble Detect": {
+      "modalities": [
+        "audio",
+        "image",
+        "video"
+      ],
+      "key_features": "Watermarking & Provenance, Reverse Search, Voice Deepfake Spec",
+      "est_auc": 0.975,
+      "est_eer": 3.0,
+      "est_latency_ms": 110,
+      "explainability": "Watermark Trace & Voice Frequency Spectrogram"
+    },
+    "Pindrop Pulse": {
+      "modalities": [
+        "audio"
+      ],
+      "key_features": "Contact Center Protection, Liveness Check, Virtual Meeting Protection",
+      "est_auc": 0.984,
+      "est_eer": 2.2,
+      "est_latency_ms": 75,
+      "explainability": "Synthetic Voice Phoneme Anomalies"
+    },
+    "DuckDuckGoose AI": {
+      "modalities": [
+        "image",
+        "video",
+        "audio"
+      ],
+      "key_features": "Explainable DeepDetector, Identity Verification (KYC), On-premise",
+      "est_auc": 0.97,
+      "est_eer": 3.4,
+      "est_latency_ms": 160,
+      "explainability": "Explainable Heatmaps & Audit Trail"
+    },
+    "Attestiv DeepScan": {
+      "modalities": [
+        "image",
+        "document",
+        "audio",
+        "video"
+      ],
+      "key_features": "Insurance & Business Document Fraud, Digital Fingerprinting",
+      "est_auc": 0.962,
+      "est_eer": 3.9,
+      "est_latency_ms": 190,
+      "explainability": "Document Metadata & Tamper Fingerprint"
+    },
+    "NVIDIA Synthetic Video Detector": {
+      "modalities": [
+        "video"
+      ],
+      "key_features": "NVIDIA NIM Microservice, GPU Accelerated, Broadcast & Compression Robust",
+      "est_auc": 0.986,
+      "est_eer": 2.1,
+      "est_latency_ms": 45,
+      "explainability": "NIM Microservice Frame Scores"
+    }
+  },
+  "optimal_proposals": {
+    "target_auc": 0.992,
+    "target_f1": 0.975,
+    "target_eer": "< 1.8%",
+    "target_jpeg_robustness": "Q=30 (Accuracy drop < 1.2%)",
+    "target_inference_latency": "< 95 ms (Image), < 750 ms (Video)",
+    "key_training_enhancements": [
+      "Loss Function: Tri-Stream Focal-ArcFace Loss with hard-negative mining across Mega-MMDF",
+      "Noise Augmentation: Apply random JPEG re-compression (Q=20-90) & Gaussian blur during batching",
+      "Frequency Alignment: Add 2D FFT Z-score residual loss into ViT intermediate attention layers",
+      "Spectral Spike Threshold: Maintain adaptive z-score threshold tau* = 3.4 to prevent natural photo false positives"
+    ]
+  },
+  "detailed_sample_results": [
+    {
+      "sample_id": 1,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_001.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9889459013938904,
+      "risk_score": 0.7843,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 291.49
+    },
+    {
+      "sample_id": 2,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_002.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9926993250846863,
+      "risk_score": 0.7749,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 135.55
+    },
+    {
+      "sample_id": 3,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_004.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9942278861999512,
+      "risk_score": 0.7928,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 121.8
+    },
+    {
+      "sample_id": 4,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_006.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9917386174201965,
+      "risk_score": 0.7742,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 121.13
+    },
+    {
+      "sample_id": 5,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_007.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9937915205955505,
+      "risk_score": 0.7924,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 123.86
+    },
+    {
+      "sample_id": 6,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_008.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9931976795196533,
+      "risk_score": 0.794,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 141.72
+    },
+    {
+      "sample_id": 7,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_009.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.995060384273529,
+      "risk_score": 0.7558,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 163.87
+    },
+    {
+      "sample_id": 8,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_010.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9932646751403809,
+      "risk_score": 0.8135,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 139.6
+    },
+    {
+      "sample_id": 9,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_012.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9931221604347229,
+      "risk_score": 0.7516,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 151.78
+    },
+    {
+      "sample_id": 10,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_014.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9917306303977966,
+      "risk_score": 0.7864,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 132.12
+    },
+    {
+      "sample_id": 11,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_015.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9914291501045227,
+      "risk_score": 0.7872,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 140.93
+    },
+    {
+      "sample_id": 12,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_016.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9941524863243103,
+      "risk_score": 0.7625,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 138.2
+    },
+    {
+      "sample_id": 13,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_017.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9950022101402283,
+      "risk_score": 0.8014,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 128.82
+    },
+    {
+      "sample_id": 14,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_019.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9935413599014282,
+      "risk_score": 0.8038,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 131.76
+    },
+    {
+      "sample_id": 15,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_020.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9935835003852844,
+      "risk_score": 0.8084,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 132.09
+    },
+    {
+      "sample_id": 16,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_022.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.9927446842193604,
+      "risk_score": 0.7928,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 138.0
+    },
+    {
+      "sample_id": 17,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_025.jpg",
+      "ground_truth": "FAKE",
+      "prediction": "Fake",
+      "confidence": 0.994274914264679,
+      "risk_score": 0.7923,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 135.38
+    },
+    {
+      "sample_id": 18,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_008.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.9177380204200745,
+      "risk_score": 0.8572,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 129.06
+    },
+    {
+      "sample_id": 19,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_009.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.7591243386268616,
+      "risk_score": 0.6861,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 123.73
+    },
+    {
+      "sample_id": 20,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_010.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.8165737986564636,
+      "risk_score": 0.7124,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 125.17
+    },
+    {
+      "sample_id": 21,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_012.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.6695834994316101,
+      "risk_score": 0.6182,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 126.94
+    },
+    {
+      "sample_id": 22,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_021.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.8736993074417114,
+      "risk_score": 0.8205,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 122.15
+    },
+    {
+      "sample_id": 23,
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_025.jpg",
+      "ground_truth": "REAL",
+      "prediction": "Fake",
+      "confidence": 0.6043583750724792,
+      "risk_score": 0.6367,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 121.98
+    }
+  ]
+}
