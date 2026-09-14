@@ -41,18 +41,19 @@ jobs:
             fi
 
             # Clone or Pull Repository using GITHUB_TOKEN for authentication
-            if [ ! -d "$TARGET_DIR/.git" ]; then
-              echo "📦 Repository directory not found or incomplete. Cloning repository..."
-              mkdir -p "$TARGET_DIR"
-              git clone "$REPO_URL" "$TARGET_DIR"
-              cd "$TARGET_DIR"
-            else
+            if [ -d "$TARGET_DIR/.git" ]; then
               echo "🔄 Pulling latest code from origin/main..."
               cd "$TARGET_DIR"
               git remote set-url origin "$REPO_URL"
               git fetch --all
               git reset --hard origin/main
               git pull origin main
+            else
+              echo "📦 Cleaning incomplete directory and cloning fresh repository..."
+              rm -rf "$TARGET_DIR"
+              mkdir -p "$TARGET_DIR"
+              git clone "$REPO_URL" "$TARGET_DIR"
+              cd "$TARGET_DIR"
             fi
 
             # Verify docker-compose.yml exists
