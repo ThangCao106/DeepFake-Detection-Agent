@@ -52,14 +52,14 @@ graph TD
 
 ```text
 DeepFake-Detection-Agent/
-├── 🌐 1. WEB UI & INFERENCE APP          (Phần Ứng dụng & Giao diện Suy luận)
+├── 🌐 web_ui/                            (Phần Ứng dụng & Giao diện Suy luận)
 │   ├── app.py                            - Flask Web Server & SocketIO (Port 5000)
 │   ├── templates/ & static/              - Giao diện Light Lavender UI & Multi-Modality Viewer
 │   ├── deepfake_detector.py              - Engine suy luận Image, Video, Audio & Certificate ID
 │   ├── agent_system.py                   - Multi-Agent Orchestrator & Claude/Gemini Fallback
-│   └── docker-compose.yml & deploy.yml   - Multi-Container Orchestration & CI/CD Deployment
+│   └── config.py                         - App Configuration Manager
 │
-├── 🧠 2. COLAB TRAINING & AUTO-SYNC      (Phần Huấn luyện & Tự động hóa Colab GPU)
+├── 🧠 colab_training/                    (Phần Huấn luyện & Tự động hóa Colab GPU)
 │   ├── colab_auto_runner.py              - Smart Hybrid Continuous Auto-Runner Engine
 │   ├── colab_dataset_pipeline.py         - Manager dữ liệu Multi-Modality & Auto-Sync GitHub
 │   ├── train_pipeline.py                 - Two-Stage ViT Fine-Tuning Pipeline (Image/Video/Audio)
@@ -67,11 +67,12 @@ DeepFake-Detection-Agent/
 │   ├── upload_model_cloud.py             - Auto Upload Trọng số lên Hugging Face Hub
 │   └── Colab_MultiModality_AutoTrainer.ipynb - Notebook Form UI trên Google Colab GPU
 │
-├── 🔍 3. OBSERVABILITY SUBSYSTEM         (Phần Agent Quan sát & Persistent Memory)
-│   ├── observability-agent/              - Subsystem SRE Claude Agent Service (Port 8787 - 23 files)
-│   └── ObservabilityMemoryStore          - Lưu vết Forensic Audit & Certificate ID Registry
+├── 🔍 observability/                     (Phần Agent Quan sát & Persistent Memory)
+│   ├── Dockerfile & docker-compose.yml   - Subsystem SRE Claude Agent Service (Port 8787)
+│   ├── app/ & static/                    - Core Agent Implementation
+│   └── MEMORY_SETUP.md                   - Audit Memory & Knowledge Base
 │
-└── 📊 4. BENCHMARK & EVALUATION          (Phần Đánh giá Benchmark & Hiệu chỉnh Mô hình)
+└── 📊 benchmark/                         (Phần Đánh giá Benchmark & Hiệu chỉnh Mô hình)
     ├── eval_benchmark.py                 - Evaluator đo AUC, EER, LogLoss, Accuracy
     ├── calibrate.py                      - Temperature Scaling & Optimal Threshold Finder
     ├── hf_dataset_scout.py               - Scout & Audit Hugging Face Candidate Datasets

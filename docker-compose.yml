@@ -34,7 +34,7 @@ services:
   # =========================================================
   observability-agent:
     build:
-      context: ./3_observability
+      context: ./observability
       dockerfile: Dockerfile
     container_name: observability_agent
     restart: unless-stopped

@@ -1,8 +1,8 @@
 import os
 import sys
 
-# Add 1_web_ui directory to Python import path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "1_web_ui"))
+# Add web_ui directory to Python import path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "web_ui"))
 
 from app import app, socketio
 
