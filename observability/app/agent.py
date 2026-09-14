@@ -149,6 +149,12 @@ def prepend_history(content: UserContent, key: str) -> UserContent:
 
 
 def _build_options(system_prompt: str, partial: bool = False) -> ClaudeAgentOptions:
+    env_dict = dict(os.environ)
+    api_key = os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+    if api_key:
+        env_dict["ANTHROPIC_API_KEY"] = api_key
+        env_dict["CLAUDE_API_KEY"] = api_key
+
     return ClaudeAgentOptions(
         cwd=PROJECT_ROOT,
         system_prompt=system_prompt,
@@ -158,10 +164,7 @@ def _build_options(system_prompt: str, partial: bool = False) -> ClaudeAgentOpti
         permission_mode="default",
         include_partial_messages=partial,
         thinking={"type": "adaptive", "display": "summarized"},
-        # setting_sources mặc định là None (không nạp gì) — cố tình KHÔNG set "user" ở
-        # đây: nạp user settings sẽ kéo theo toàn bộ permission/hook cấp máy của người
-        # dùng (bash pre-approved cho các dự án khác, hooks tự chạy...), phá vỡ mục
-        # tiêu giới hạn agent chỉ trong phạm vi observability/ClickHouse.
+        env=env_dict,
     )
 
 

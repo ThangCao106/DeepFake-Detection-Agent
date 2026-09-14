@@ -49,7 +49,8 @@ async def auth_status() -> dict:
     claude_dir = Path(home_dir) / ".claude"
     user_claude_dir = Path.home() / ".claude"
 
-    is_authenticated = claude_dir.exists() or user_claude_dir.exists()
+    has_api_key = bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
+    is_authenticated = claude_dir.exists() or user_claude_dir.exists() or has_api_key
     return {
         "authenticated": is_authenticated,
         "status": "AUTHENTICATED" if is_authenticated else "NOT_LOGGED_IN",
