@@ -273,10 +273,25 @@ function addUserMessage(text) {
     scrollToBottom();
 }
 
+function renderMarkdown(text) {
+    if (!text) return '';
+    if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+        try {
+            return marked.parse(text);
+        } catch (e) {
+            console.error('Markdown parse error:', e);
+        }
+    }
+    return escapeHtml(text)
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
 function addAgentMessage(text) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message agent';
-    messageDiv.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+    messageDiv.innerHTML = `<div class="message-content markdown-body">${renderMarkdown(text)}</div>`;
     chatMessages.appendChild(messageDiv);
     scrollToBottom();
 
@@ -385,7 +400,7 @@ function displayExplanation(text) {
     const explanationText = document.getElementById('explanationText');
 
     explanationSection.style.display = 'block';
-    explanationText.textContent = text;
+    explanationText.innerHTML = renderMarkdown(text);
 
     addAgentMessage(text);
 }

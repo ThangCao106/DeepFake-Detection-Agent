@@ -25,8 +25,10 @@ class FrequencyDomainAnalyzer:
     @staticmethod
     def analyze_spectral_anomaly(pil_image):
         """
-        Compute high-frequency spectral energy residual ratio.
-        Returns score in range [0.0, 1.0] where higher values indicate abnormal spectral power distribution.
+        Compute high-frequency spectral energy residual ratio using 2D FFT.
+        Measures isolated impulse power spikes in the high-frequency spectrum.
+        GAN and Latent Diffusion Models introduce periodic lattice grid artifacts (high z-score spikes).
+        Returns score in range [0.0, 1.0].
         """
         try:
             gray = pil_image.convert("L")
@@ -41,21 +43,27 @@ class FrequencyDomainAnalyzer:
             magnitude_spectrum = np.abs(f_shift) + 1e-8
             log_magnitude = np.log(magnitude_spectrum)
 
-            # Define high-frequency mask (outer 30% region from center)
             cy, cx = h // 2, w // 2
             r = min(cy, cx)
             y, x = np.ogrid[:h, :w]
             dist_from_center = np.sqrt((x - cx)**2 + (y - cy)**2)
             
-            low_freq_mask = dist_from_center <= (r * 0.35)
-            high_freq_mask = dist_from_center > (r * 0.35)
+            # Focus on high-frequency annular band (40% to 95% of radius)
+            hf_mask = (dist_from_center >= (r * 0.40)) & (dist_from_center <= (r * 0.95))
+            if not np.any(hf_mask):
+                return 0.0
 
-            total_energy = np.sum(log_magnitude)
-            high_freq_energy = np.sum(log_magnitude[high_freq_mask])
-            
-            ratio = high_freq_energy / (total_energy + 1e-8)
-            # Normalize ratio score (typical natural images ratio ~ 0.5 - 0.65; artifacts > 0.7)
-            anomaly_score = float(np.clip((ratio - 0.55) / 0.30, 0.0, 1.0))
+            hf_vals = log_magnitude[hf_mask]
+            peak_val = float(np.max(hf_vals))
+            median_val = float(np.median(hf_vals))
+            std_val = float(np.std(hf_vals)) + 1e-6
+
+            # Z-score of highest spectral peak in high-frequency zone
+            spike_zscore = (peak_val - median_val) / std_val
+
+            # Natural textures have smooth spectral roll-off (z-score ~ 2.0 - 3.2),
+            # while generative grid artifacts create sharp discrete energy spikes (z-score > 4.2).
+            anomaly_score = float(np.clip((spike_zscore - 3.4) / 3.0, 0.0, 1.0))
             return round(anomaly_score, 4)
         except Exception:
             return 0.0
@@ -223,8 +231,8 @@ class DeepfakeDetector:
             is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
             fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
 
-            # Composite Risk Rating
-            composite_risk = round(float(0.6 * fake_prob + 0.25 * spectral_anomaly + 0.15 * spatial_inconsistency), 4)
+            # Composite Risk Rating (Primary classifier 75%, spectral 15%, spatial 10%)
+            composite_risk = round(float(0.75 * fake_prob + 0.15 * spectral_anomaly + 0.10 * spatial_inconsistency), 4)
 
             forensic_certificate = {
                 "certificate_id": cert_id,
