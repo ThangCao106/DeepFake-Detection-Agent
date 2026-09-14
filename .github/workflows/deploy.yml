@@ -71,14 +71,19 @@ jobs:
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
 
+            # Force stop and remove old containers explicitly before rebuild
+            echo "🛑 Force stopping old containers..."
+            docker stop deepfake_detection_web || true
+            docker rm -f deepfake_detection_web || true
+
             # Build Docker Image & Run Container with Docker Compose
-            echo "🐳 Building Docker image & launching containers..."
+            echo "🐳 Building fresh Docker image & launching containers..."
             if docker compose version &> /dev/null; then
-              docker compose down --remove-orphans || true
+              docker compose down --volumes --remove-orphans || true
               docker compose build --no-cache
               docker compose up -d --force-recreate
             elif command -v docker-compose &> /dev/null; then
-              docker-compose down --remove-orphans || true
+              docker-compose down --volumes --remove-orphans || true
               docker-compose build --no-cache
               docker-compose up -d --force-recreate
             else
