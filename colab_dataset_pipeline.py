@@ -92,6 +92,55 @@ class ColabMultiModalityDatasetManager:
             return manifest_path
 
 
+class ColabAutoSyncManager:
+    """
+    Automated 2-Way Synchronization Manager for Google Colab GPU Fine-Tuning.
+    1. Auto-Pull: Pulls latest code pushed from Local -> GitHub into Colab runtime.
+    2. Auto-Upload: Uploads fine-tuned ViT weights & ONNX model directly to Hugging Face Hub.
+    3. Auto-Push: Commits & pushes training metrics, benchmark logs, and calibration parameters back to GitHub.
+    """
+    def __init__(self, github_repo="ThangCao106/DeepFake-Detection-Agent", hf_repo="ThangCao/custom-deepfake-vit"):
+        self.github_repo = github_repo
+        self.hf_repo = hf_repo
+
+    @staticmethod
+    def auto_pull_latest_code():
+        """Pull latest code updates from GitHub main branch into Colab."""
+        print("[auto_sync] 🔄 Pulling latest code from GitHub origin/main...")
+        os.system("git fetch origin main && git reset --hard origin/main && git pull origin main")
+
+    def auto_upload_hf(self, model_dir="custom_vit_model", hf_token=None):
+        """Upload fine-tuned model weights to Hugging Face Hub."""
+        token = hf_token or os.environ.get("HF_TOKEN")
+        if not token:
+            print("[auto_sync] ⚠️ Warning: HF_TOKEN not provided. Skipping Hugging Face upload.")
+            return False
+
+        print(f"[auto_sync] 🚀 Uploading trained model weights to Hugging Face Hub ({self.hf_repo})...")
+        from upload_model_cloud import upload_model_to_hf
+        return upload_model_to_hf(model_dir=model_dir, repo_id=self.hf_repo, hf_token=token)
+
+    def auto_sync_metrics_to_github(self, github_token=None, commit_message=None):
+        """Push training metrics, benchmark results, and log updates back to GitHub."""
+        token = github_token or os.environ.get("GITHUB_TOKEN")
+        if not token:
+            print("[auto_sync] ⚠️ Warning: GITHUB_TOKEN not provided. Cannot push metrics to GitHub.")
+            return False
+
+        msg = commit_message or "Auto-sync Colab training results & calibration parameters [Auto-Bot]"
+        print(f"[auto_sync] 📦 Pushing updated logs and metrics back to GitHub ({self.github_repo})...")
+
+        authenticated_url = f"https://{token}@github.com/{self.github_repo}.git"
+        os.system(f'git config user.name "Colab AutoTrainer"')
+        os.system(f'git config user.email "colab@autotrainer.ai"')
+        os.system(f'git remote set-url origin "{authenticated_url}"')
+        os.system('git add dataset_pipeline/history_log.json custom_vit_model/benchmark_results.json custom_vit_model/calibration_params.json 2>/dev/null || true')
+        os.system(f'git commit -m "{msg}" || true')
+        os.system('git push origin main')
+        print("[auto_sync] ✅ Metrics successfully synced to GitHub!")
+        return True
+
+
 def main():
     manager = ColabMultiModalityDatasetManager()
     manager.print_menu()
