@@ -237,7 +237,7 @@ async def trigger_login() -> dict:
         if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
             _LOGIN_LOGS = []
             env = os.environ.copy()
-            env["CI"] = "1"
+            env.pop("CI", None)
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
 
