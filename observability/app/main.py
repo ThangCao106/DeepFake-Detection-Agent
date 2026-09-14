@@ -65,6 +65,10 @@ _LAST_OAUTH_URL = None
 _LOGIN_LOGS = []
 
 
+def _strip_ansi(text: str) -> str:
+    return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+
+
 async def _read_subprocess_output(proc):
     """Background task to continuously read subprocess stdout asynchronously without blocking event loop."""
     global _LAST_OAUTH_URL, _LOGIN_LOGS
@@ -75,8 +79,9 @@ async def _read_subprocess_output(proc):
             chunk = await proc.stdout.read(256)
             if not chunk:
                 break
-            text = chunk.decode("utf-8", errors="ignore")
-            buffer += text
+            raw_text = chunk.decode("utf-8", errors="ignore")
+            clean_text = _strip_ansi(raw_text)
+            buffer += clean_text
 
             # Extract lines from buffer
             lines = buffer.splitlines()
@@ -85,22 +90,23 @@ async def _read_subprocess_output(proc):
                 if clean_line:
                     if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != clean_line:
                         _LOGIN_LOGS.append(clean_line)
-                    match = re.search(
-                        r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
-                        clean_line,
-                        re.IGNORECASE,
-                    )
-                    if match and not _LAST_OAUTH_URL:
-                        _LAST_OAUTH_URL = match.group(1)
+                    
+                    matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', clean_line)
+                    for url in matches:
+                        url_clean = url.rstrip('.,;:')
+                        url_lower = url_clean.lower()
+                        if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize", "login", "account"]):
+                            if not _LAST_OAUTH_URL:
+                                _LAST_OAUTH_URL = url_clean
 
-            # Also check raw text chunk directly for OAuth URLs
-            match_raw = re.search(
-                r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
-                buffer,
-                re.IGNORECASE,
-            )
-            if match_raw and not _LAST_OAUTH_URL:
-                _LAST_OAUTH_URL = match_raw.group(1)
+            # Also check raw buffer directly for OAuth URLs
+            raw_matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', buffer)
+            for url in raw_matches:
+                url_clean = url.rstrip('.,;:')
+                url_lower = url_clean.lower()
+                if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize", "login", "account"]):
+                    if not _LAST_OAUTH_URL:
+                        _LAST_OAUTH_URL = url_clean
 
     except Exception as e:
         _LOGIN_LOGS.append(f"Output reader error: {e}")
