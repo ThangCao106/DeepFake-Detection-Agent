@@ -112,6 +112,59 @@ async def _read_subprocess_output(proc):
         _LOGIN_LOGS.append(f"Output reader error: {e}")
 
 
+class SubmitAuthCodeRequest(BaseModel):
+    code: str
+
+
+@app.post("/api/auth/submit-code")
+async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
+    """Submit OAuth authorization code to running claude login subprocess stdin."""
+    global _ACTIVE_LOGIN_PROC, _LOGIN_LOGS
+    if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
+        raise HTTPException(status_code=400, detail="Không có tiến trình 'claude login' nào đang chạy.")
+
+    try:
+        code_input = req.code.strip() + "\n"
+        if _ACTIVE_LOGIN_PROC.stdin:
+            _ACTIVE_LOGIN_PROC.stdin.write(code_input.encode("utf-8"))
+            await _ACTIVE_LOGIN_PROC.stdin.drain()
+            _LOGIN_LOGS.append(f"➡️ [DEBUG] Submitted OAuth code to stdin ({len(req.code)} chars)")
+            return {
+                "status": "SUCCESS",
+                "message": "Đã gửi mã xác thực OAuth tới tiến trình login!",
+                "logs": _LOGIN_LOGS[-25:],
+            }
+        raise HTTPException(status_code=500, detail="Subprocess stdin is not writable.")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Lỗi gửi mã xác thực: {exc}")
+
+
+@app.get("/api/auth/debug-logs")
+async def get_debug_logs() -> dict:
+    """Return full debug trace and authentication state diagnostics."""
+    global _ACTIVE_LOGIN_PROC, _LAST_OAUTH_URL, _LOGIN_LOGS
+    proc_status = "NOT_STARTED"
+    if _ACTIVE_LOGIN_PROC is not None:
+        if _ACTIVE_LOGIN_PROC.returncode is None:
+            proc_status = f"RUNNING (PID: {_ACTIVE_LOGIN_PROC.pid})"
+        else:
+            proc_status = f"EXITED (ReturnCode: {_ACTIVE_LOGIN_PROC.returncode})"
+
+    home_dir = os.environ.get("HOME", "/home/agent")
+    claude_dir = Path(home_dir) / ".claude"
+    user_claude_dir = Path.home() / ".claude"
+
+    return {
+        "process_status": proc_status,
+        "oauth_url": _LAST_OAUTH_URL,
+        "claude_dir_exists": claude_dir.exists(),
+        "user_claude_dir_exists": user_claude_dir.exists(),
+        "has_api_key": bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")),
+        "total_log_lines": len(_LOGIN_LOGS),
+        "logs": _LOGIN_LOGS,
+    }
+
+
 @app.post("/api/auth/trigger-login")
 async def trigger_login() -> dict:
     """Auto-launch Claude CLI login subprocess non-blockingly and capture OAuth URL."""
@@ -138,7 +191,7 @@ async def trigger_login() -> dict:
             "message": "OAuth URL retrieved from cache.",
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-20:],
+            "logs": _LOGIN_LOGS[-25:],
         }
 
     try:
@@ -149,8 +202,13 @@ async def trigger_login() -> dict:
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
 
+            _LOGIN_LOGS.append(f"🚀 [DEBUG] Launching login command: '{cmd}'")
+            _LOGIN_LOGS.append(f"📂 [DEBUG] Project Root: '{PROJECT_ROOT}', HOME: '{env.get('HOME')}'")
+            _LOGIN_LOGS.append(f"🔑 [DEBUG] API Key present in env: {bool(env.get('CLAUDE_API_KEY') or env.get('ANTHROPIC_API_KEY'))}")
+
             _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
                 cmd,
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=PROJECT_ROOT,
@@ -185,9 +243,10 @@ async def trigger_login() -> dict:
             ),
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-20:],
+            "logs": _LOGIN_LOGS[-25:],
         }
     except Exception as exc:
+        _LOGIN_LOGS.append(f"❌ [DEBUG ERROR] Execution error: {exc}")
         return {
             "status": "ERROR",
             "message": f"Execution error: {exc}",
