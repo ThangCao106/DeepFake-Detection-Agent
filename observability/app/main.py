@@ -24,20 +24,38 @@ app = FastAPI(title="Observability Agent (local test)")
 app.include_router(openai_router)
 
 
+class GateLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/api/auth/gate-login")
+async def gate_login(req: GateLoginRequest) -> dict:
+    """Verify user login credentials for Obsagent Subsystem (thang.cd / Thang@123)."""
+    if req.username == "thang.cd" and req.password == "Thang@123":
+        return {
+            "status": "SUCCESS",
+            "authenticated": True,
+            "user": req.username,
+            "message": "Subsystem access granted.",
+        }
+    raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác")
+
+
 @app.get("/api/auth/status")
 async def auth_status() -> dict:
     """Return Claude CLI authentication status and login instructions."""
     home_dir = os.environ.get("HOME", "/home/agent")
     claude_dir = Path(home_dir) / ".claude"
     user_claude_dir = Path.home() / ".claude"
-    
+
     is_authenticated = claude_dir.exists() or user_claude_dir.exists()
     return {
         "authenticated": is_authenticated,
         "status": "AUTHENTICATED" if is_authenticated else "NOT_LOGGED_IN",
         "default_key": API_KEY,
         "login_command": "docker compose run --rm login",
-        "cli_command": "npx @anthropic-ai/claude-code login"
+        "cli_command": "npx @anthropic-ai/claude-code login",
     }
 
 

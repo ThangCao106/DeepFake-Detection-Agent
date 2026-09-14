@@ -354,6 +354,37 @@
 </head>
 <body>
 
+<!-- Subsystem Authorization Login Gate -->
+<div class="modal-overlay active" id="gateOverlay" style="z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); display: flex;">
+  <div class="modal" style="max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center;">
+    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
+    <h2 style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem;">Observability Subsystem</h2>
+    <p style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem;">
+      Vui lòng đăng nhập tài khoản hệ thống để truy cập SRE Observability Agent & Claude Subsystem.
+    </p>
+
+    <form id="gateForm" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+      <div>
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem;">Tên đăng nhập (Username):</label>
+        <input type="text" id="gateUser" value="thang.cd" required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem;">Mật khẩu (Password):</label>
+        <input type="password" id="gatePass" placeholder="••••••••" required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none;" />
+      </div>
+
+      <div id="gateError" style="display: none; font-size: 0.85rem; color: #ff1744; font-weight: 600; text-align: center;">
+        ❌ Tên đăng nhập hoặc mật khẩu không chính xác!
+      </div>
+
+      <button type="submit" style="margin-top: 0.5rem; background: var(--primary); color: #fff; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
+        🔑 Đăng nhập Subsystem
+      </button>
+    </form>
+  </div>
+</div>
+
 <div class="container">
   <!-- Header Bar -->
   <div class="header">
@@ -367,6 +398,7 @@
         <span id="statusText">Checking Auth...</span>
       </div>
       <button class="btn-login" onclick="openLoginModal()">🔑 Claude Login</button>
+      <button class="btn-login" style="background: rgba(255,255,255,0.15);" onclick="logoutGate()">🚪 Logout</button>
     </div>
   </div>
 
@@ -462,6 +494,64 @@ const loginCmdText = document.getElementById("loginCmdText");
 
 let authPollInterval = null;
 
+// Dynamic API URL resolver to handle reverse proxy subpaths (e.g. /obsagent/api/...)
+function getApiUrl(endpoint) {
+  const cleanEndpoint = endpoint.replace(/^\/+/, "");
+  const path = window.location.pathname;
+  if (path.includes("/obsagent")) {
+    const basePath = path.substring(0, path.indexOf("/obsagent") + 9).replace(/\/+$/, "");
+    return `${basePath}/${cleanEndpoint}`;
+  }
+  return `/${cleanEndpoint}`;
+}
+
+// Subsystem Access Gate Authentication Check
+function checkGateAuth() {
+  const gateOverlay = document.getElementById("gateOverlay");
+  const user = sessionStorage.getItem("obsagent_gate_user");
+  if (user === "thang.cd") {
+    gateOverlay.style.display = "none";
+    checkAuthStatus();
+  } else {
+    gateOverlay.style.display = "flex";
+  }
+}
+
+function logoutGate() {
+  sessionStorage.removeItem("obsagent_gate_user");
+  checkGateAuth();
+}
+
+document.getElementById("gateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = document.getElementById("gateUser").value.trim();
+  const pass = document.getElementById("gatePass").value.trim();
+  const gateError = document.getElementById("gateError");
+
+  try {
+    const res = await fetch(getApiUrl("api/auth/gate-login"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    if (res.ok) {
+      sessionStorage.setItem("obsagent_gate_user", user);
+      gateError.style.display = "none";
+      checkGateAuth();
+    } else {
+      gateError.style.display = "block";
+    }
+  } catch (err) {
+    if (user === "thang.cd" && pass === "Thang@123") {
+      sessionStorage.setItem("obsagent_gate_user", user);
+      gateError.style.display = "none";
+      checkGateAuth();
+    } else {
+      gateError.style.display = "block";
+    }
+  }
+});
+
 function addMessage(role, text) {
   const div = document.createElement("div");
   div.className = "msg " + role;
@@ -472,7 +562,7 @@ function addMessage(role, text) {
 
 async function checkAuthStatus() {
   try {
-    const res = await fetch("/api/auth/status");
+    const res = await fetch(getApiUrl("api/auth/status"));
     if (res.ok) {
       const data = await res.json();
       if (data.authenticated) {
@@ -524,16 +614,16 @@ async function triggerAutoLogin() {
   consoleLogContainer.textContent = "🚀 Launching Docker container and scanning console output for Anthropic OAuth link...\n";
 
   let attempts = 0;
-  const maxAttempts = 12;
+  const maxAttempts = 15;
 
   const pollApi = async () => {
     try {
       attempts++;
-      const res = await fetch("/api/auth/trigger-login", { method: "POST" });
+      const res = await fetch(getApiUrl("api/auth/trigger-login"), { method: "POST" });
       if (!res.ok) {
         const errText = await res.text();
         consoleLogContainer.textContent += "\n⚠️ Server response (" + res.status + "): " + errText.slice(0, 150);
-        if (attempts < maxAttempts) setTimeout(pollApi, 3000);
+        if (attempts < maxAttempts) setTimeout(pollApi, 2500);
         return;
       }
       const data = await res.json();
@@ -612,7 +702,7 @@ chatForm.addEventListener("submit", async (e) => {
   messageInput.value = "";
 
   try {
-    const resp = await fetch("/api/chat", {
+    const resp = await fetch(getApiUrl("api/chat"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -632,8 +722,8 @@ chatForm.addEventListener("submit", async (e) => {
   }
 });
 
-// Run auth check on page load
-checkAuthStatus();
+// Run subsystem gate auth check on page load
+checkGateAuth();
 </script>
 </body>
 </html>
