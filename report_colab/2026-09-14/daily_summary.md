@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:59:47
-**Total Training Runs Completed:** 394
+**Last Updated:** 2026-09-14 18:00:01
+**Total Training Runs Completed:** 398
 
 ## 📈 Performance Metric Comparison Table
 
@@ -400,6 +400,10 @@
 | 8 | `VIDEO` | `dfdc` | 0.982 | 0.998 | 0.018 | 1.4511 | 0.7044 | ✅ COMPLETED_SUCCESSFULLY |
 | 8 | `VIDEO` | `wild_deepfake` | 0.958 | 0.998 | 0.018 | 1.4071 | 0.6168 | ✅ COMPLETED_SUCCESSFULLY |
 | 8 | `VIDEO` | `deeper_forensics` | 0.932 | 0.998 | 0.018 | 1.4523 | 0.8493 | ✅ COMPLETED_SUCCESSFULLY |
+| 8 | `VIDEO` | `deepspeak_video` | 0.977 | 0.985 | 0.018 | 1.7790 | 0.5940 | ✅ COMPLETED_SUCCESSFULLY |
+| 8 | `AUDIO` | `deepspeak_audio` | 0.912 | 0.981 | 0.022 | 1.4555 | 0.7711 | ✅ COMPLETED_SUCCESSFULLY |
+| 8 | `AUDIO` | `fakeavceleb_audio` | 0.913 | 0.998 | 0.022 | 1.7258 | 0.8244 | ✅ COMPLETED_SUCCESSFULLY |
+| 8 | `AUDIO` | `wavefake` | 0.972 | 0.998 | 0.022 | 1.7059 | 0.8899 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -801,6 +805,10 @@ P8 [VIDEO] celeb_df_v2              [██████████████�
 P8 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.998
 P8 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.998
 P8 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.998
+P8 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.985
+P8 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P8 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.998
+P8 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
