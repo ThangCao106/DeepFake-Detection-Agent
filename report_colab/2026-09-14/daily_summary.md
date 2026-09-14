@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:59:02
-**Total Training Runs Completed:** 380
+**Last Updated:** 2026-09-14 17:59:11
+**Total Training Runs Completed:** 383
 
 ## 📈 Performance Metric Comparison Table
 
@@ -386,6 +386,9 @@
 | 7 | `VIDEO` | `wild_deepfake` | 0.926 | 0.998 | 0.018 | 1.4102 | 0.7207 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `VIDEO` | `deeper_forensics` | 0.978 | 0.998 | 0.018 | 1.6912 | 0.7585 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `VIDEO` | `deepspeak_video` | 0.965 | 0.993 | 0.018 | 1.3976 | 0.5995 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `AUDIO` | `deepspeak_audio` | 0.923 | 0.985 | 0.022 | 1.4427 | 0.6882 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `AUDIO` | `fakeavceleb_audio` | 0.936 | 0.990 | 0.022 | 1.8261 | 0.8801 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `AUDIO` | `wavefake` | 0.906 | 0.998 | 0.022 | 1.5119 | 0.8892 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -773,6 +776,9 @@ P7 [VIDEO] dfdc                     [██████████████�
 P7 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.998
 P7 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.998
 P7 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.993
+P7 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.985
+P7 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.990
+P7 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
