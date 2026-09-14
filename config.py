@@ -14,14 +14,13 @@ class Config:
     
     # API Keys
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", os.getenv("ANTHROPIC_API_KEY", ""))
+    OBSERVABILITY_AGENT_URL = os.getenv("OBSERVABILITY_AGENT_URL", "http://127.0.0.1:8787")
     
     # Model Settings
     DEEPFAKE_MODEL_NAME = "prithivMLmods/Deep-Fake-Detector-v2-Model"
-    GEMINI_MODEL_NAME = "models/gemini-2.5-flash"
-    
-    # Agent Settings
-    MAX_CONVERSATION_HISTORY = 10
-    TEMPERATURE = 0.7
+    GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+    CLAUDE_MODEL_NAME = os.getenv("CLAUDE_MODEL_NAME", "claude-3-5-sonnet-20241022")
     
     # Logging
     LOG_LEVEL = "INFO"

@@ -213,9 +213,15 @@ analyzeBtn.addEventListener('click', async () => {
             body: formData
         });
 
-        const data = await response.json();
+        let data;
+        const responseText = await response.text();
+        try {
+            data = JSON.parse(responseText);
+        } catch (jsonErr) {
+            throw new Error(`Server error (${response.status}): ${responseText.substring(0, 120)}...`);
+        }
 
-        if (data.success) {
+        if (response.ok && data.success) {
             uploadedFilePath = data.filepath;
             analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyzing...';
             resultsCard.style.display = 'none';
@@ -228,7 +234,7 @@ analyzeBtn.addEventListener('click', async () => {
                 query: ''
             });
         } else {
-            throw new Error(data.error || 'Upload failed');
+            throw new Error(data.error || `Upload failed with status ${response.status}`);
         }
     } catch (error) {
         console.error('Upload error:', error);

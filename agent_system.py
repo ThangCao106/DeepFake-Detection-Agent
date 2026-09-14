@@ -43,6 +43,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+import re
+import requests
+
 @dataclass
 class Message:
     """Represents a message in the conversation."""
@@ -50,6 +53,87 @@ class Message:
     content: str
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class ObservabilityMemoryStore:
+    """
+    Persistent memory store for Observability Agent & Multi-Modal Forensic Audits.
+    Stores forensic decision records and certificates indexed by Certificate ID.
+    """
+    _instance = None
+
+    def __init__(self, memory_file="dataset_pipeline/observability_memory.json"):
+        self.memory_file = memory_file
+        os.makedirs(os.path.dirname(memory_file), exist_ok=True)
+        self.certificates: Dict[str, Dict[str, Any]] = {}
+        self.chat_history: List[Dict[str, Any]] = []
+        self._load_memory()
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def _load_memory(self):
+        if os.path.exists(self.memory_file):
+            try:
+                with open(self.memory_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.certificates = data.get("certificates", {})
+                    self.chat_history = data.get("chat_history", [])
+                logger.info(f"Loaded {len(self.certificates)} forensic certificates into ObservabilityMemoryStore")
+            except Exception as e:
+                logger.error(f"Error loading ObservabilityMemoryStore: {e}")
+
+    def save_certificate(self, cert_id: str, detection_result: Dict[str, Any]):
+        """Store forensic analysis certificate by Certificate ID."""
+        if not cert_id:
+            return
+        cert_id_upper = cert_id.strip().upper()
+        self.certificates[cert_id_upper] = {
+            "timestamp": datetime.now().isoformat(),
+            "detection_result": detection_result
+        }
+        self._persist()
+
+    def lookup_certificate(self, cert_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve forensic analysis certificate by Certificate ID."""
+        if not cert_id:
+            return None
+        cert_id_upper = cert_id.strip().upper()
+        record = self.certificates.get(cert_id_upper)
+        if record:
+            return record.get("detection_result")
+        
+        # Fuzzy match search for certificate ID substring
+        for cid, data in self.certificates.items():
+            if cert_id_upper in cid:
+                return data.get("detection_result")
+        return None
+
+    def add_chat_log(self, role: str, content: str, cert_id: str = None):
+        """Add chat entry to persistent Observability Memory."""
+        self.chat_history.append({
+            "timestamp": datetime.now().isoformat(),
+            "role": role,
+            "content": content,
+            "certificate_id": cert_id
+        })
+        # Keep last 100 entries
+        if len(self.chat_history) > 100:
+            self.chat_history = self.chat_history[-100:]
+        self._persist()
+
+    def _persist(self):
+        try:
+            with open(self.memory_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "certificates": self.certificates,
+                    "chat_history": self.chat_history
+                }, f, indent=2, default=str)
+        except Exception as e:
+            logger.error(f"Error persisting ObservabilityMemoryStore: {e}")
 
 
 class ConversationMemory:
@@ -62,23 +146,29 @@ class ConversationMemory:
         self.messages: List[Message] = []
         self.max_history = max_history
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.obs_memory = ObservabilityMemoryStore.get_instance()
         logger.info(f"Initialized conversation memory for session: {self.session_id}")
     
     def add_message(self, role: str, content: str, metadata: Dict = None):
-        """Add a message to conversation history."""
+        """Add a message to conversation history and sync with Observability Memory."""
         msg = Message(role=role, content=content, metadata=metadata or {})
         self.messages.append(msg)
         
-        # Keep only recent messages to manage context size
         if len(self.messages) > self.max_history:
             self.messages = self.messages[-self.max_history:]
         
-        logger.debug(f"Added {role} message to memory")
+        cert_id = None
+        if metadata and "forensic_certificate" in metadata:
+            cert_id = metadata["forensic_certificate"].get("certificate_id")
+            self.obs_memory.save_certificate(cert_id, metadata)
+        
+        self.obs_memory.add_chat_log(role, content, cert_id=cert_id)
+        logger.debug(f"Added {role} message to memory and ObservabilityStore")
     
     def get_context(self) -> str:
         """Get formatted conversation context for LLM."""
         context_parts = []
-        for msg in self.messages[-5:]:  # Last 5 messages for context
+        for msg in self.messages[-5:]:
             context_parts.append(f"{msg.role.upper()}: {msg.content}")
         return "\n".join(context_parts)
     
@@ -118,73 +208,131 @@ class DeepfakeDetectionTool:
     
     def detect(self, image_path: str) -> Dict[str, Any]:
         """
-        Run deepfake detection on an image.
-        
-        Args:
-            image_path: Path to the image file
-            
-        Returns:
-            Detection results with label, confidence, and scores
+        Run deepfake detection on media file (Image, Video, Audio).
         """
         logger.info(f"Running detection on: {image_path}")
         
-        if Config.ENABLE_TRACING:
-            start_time = datetime.now()
+        start_time = datetime.now()
+        result = self.detector.predict_media(image_path)
         
-        result = self.detector.predict(image_path)
+        duration = (datetime.now() - start_time).total_seconds()
+        result['processing_time'] = duration
         
-        if Config.ENABLE_TRACING:
-            duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"Detection completed in {duration:.2f}s")
-            result['processing_time'] = duration
+        # Save to Observability Memory Store
+        cert = result.get("forensic_certificate", {})
+        cert_id = cert.get("certificate_id")
+        if cert_id:
+            ObservabilityMemoryStore.get_instance().save_certificate(cert_id, result)
         
         return result
     
     def get_description(self) -> str:
         """Get tool description for LLM context."""
         return """
-        DeepfakeDetectionTool: Analyzes images to detect if they are real or AI-generated deepfakes.
-        Returns: label (Realism/Deepfake), confidence score, and detailed probability scores.
+        DeepfakeDetectionTool: Analyzes images, videos, and audio clips to detect if they are real or AI-generated deepfakes.
+        Returns: label (Realism/Deepfake), confidence score, detailed probability scores, and Auditable Forensic Certificate.
         """
 
 
 class AnalysisAgent:
     """
-    LLM-powered agent for analyzing detection results and answering questions.
-    Implements: Agent powered by LLM concept from Kaggle requirements.
+    LLM-powered agent for analyzing detection results, checking Certificate IDs, and answering queries.
+    Connects to both Gemini and Claude via Observability Agent.
     """
     
     def __init__(self, api_key: str):
+        self.api_key = api_key
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(Config.GEMINI_MODEL_NAME)
-        logger.info(f"Initialized AnalysisAgent with {Config.GEMINI_MODEL_NAME}")
+        self.model_candidates = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-3.6-flash"]
+        self.active_model_name = self._sanitize_model_name(Config.GEMINI_MODEL_NAME)
+        self.model = genai.GenerativeModel(self.active_model_name)
+        self.obs_memory = ObservabilityMemoryStore.get_instance()
+        logger.info(f"Initialized AnalysisAgent with primary model {self.active_model_name}")
+
+    def _sanitize_model_name(self, name: str) -> str:
+        """Remove 'models/' prefix if present to ensure API compatibility."""
+        if name.startswith("models/"):
+            return name.replace("models/", "")
+        return name
     
+    def _call_claude_llm(self, prompt: str) -> Optional[str]:
+        """Invoke Claude LLM via Observability Agent API or Anthropic API."""
+        # Try local Observability Agent endpoint
+        try:
+            url = f"{Config.OBSERVABILITY_AGENT_URL}/api/chat"
+            res = requests.post(url, json={"message": prompt}, timeout=8)
+            if res.status_code == 200:
+                data = res.json()
+                text = data.get("response") or data.get("content") or data.get("message")
+                if text:
+                    logger.info("Generated explanation via Observability Agent (Claude)")
+                    return text
+        except Exception as e_obs:
+            logger.debug(f"Observability Agent endpoint not available: {e_obs}")
+
+        # Try direct Anthropic API if key present
+        if Config.CLAUDE_API_KEY:
+            try:
+                headers = {
+                    "x-api-key": Config.CLAUDE_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json"
+                }
+                payload = {
+                    "model": Config.CLAUDE_MODEL_NAME,
+                    "max_tokens": 1000,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+                res = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload, timeout=12)
+                if res.status_code == 200:
+                    data = res.json()
+                    text = data.get("content", [{}])[0].get("text")
+                    if text:
+                        logger.info("Generated explanation via Anthropic Claude API")
+                        return text
+            except Exception as e_claude:
+                logger.error(f"Claude API call failed: {e_claude}")
+
+        return None
+
     def analyze(self, detection_result: Dict[str, Any], user_query: str = None, 
                 conversation_context: str = "") -> str:
         """
-        Analyze detection results and provide explanation.
-        
-        Args:
-            detection_result: Results from deepfake detection
-            user_query: Optional user question
-            conversation_context: Previous conversation for context
-            
-        Returns:
-            Analysis and explanation from the LLM
+        Analyze detection results or lookup Certificate ID and provide authoritative LLM explanation.
         """
         logger.info("AnalysisAgent processing request")
         
-        # Build prompt for the LLM
+        # Check if user query specifies a Certificate ID to check
+        cert_id_match = re.search(r'(CERT-\d{8}-[A-Z0-9]+)', user_query or '', re.IGNORECASE)
+        if cert_id_match:
+            target_cert_id = cert_id_match.group(1).upper()
+            logger.info(f"Certificate ID query detected: {target_cert_id}")
+            stored_result = self.obs_memory.lookup_certificate(target_cert_id)
+            if stored_result:
+                detection_result = stored_result
+                user_query = f"Provide detailed forensic verification for Certificate ID: {target_cert_id}. Question: {user_query}"
+            else:
+                return f"🔍 Certificate ID '{target_cert_id}' not found in Observability Memory Store. Please ensure the media has been analyzed."
+
         prompt = self._build_prompt(detection_result, user_query, conversation_context)
         
-        try:
-            response = self.model.generate_content(prompt)
-            analysis = response.text
-            logger.info("AnalysisAgent completed analysis")
-            return analysis
-        except Exception as e:
-            logger.error(f"AnalysisAgent error: {e}")
-            return f"Error during analysis: {str(e)}"
+        # Try Claude first if configured
+        claude_response = self._call_claude_llm(prompt)
+        if claude_response:
+            return claude_response
+
+        # Fallback to Gemini with model name retry logic (1.5-flash -> 2.0-flash -> 1.5-pro)
+        for model_name in [self.active_model_name] + self.model_candidates:
+            try:
+                model_inst = genai.GenerativeModel(model_name)
+                response = model_inst.generate_content(prompt)
+                analysis = response.text
+                logger.info(f"AnalysisAgent completed analysis using Gemini ({model_name})")
+                return analysis
+            except Exception as e:
+                logger.warning(f"Gemini model '{model_name}' failed: {e}. Trying next model candidate...")
+        
+        return f"Analytic Report: Media classified as '{detection_result.get('label')}' with {detection_result.get('confidence', 0):.1%} confidence. Certificate ID: {detection_result.get('forensic_certificate', {}).get('certificate_id', 'N/A')}."
     
     def _build_prompt(self, detection_result: Dict[str, Any], 
                      user_query: str = None, context: str = "") -> str:
