@@ -42,28 +42,30 @@ jobs:
               exit 1
             fi
 
-            # Check Container Status & Port 5000 Availability
-            echo "🔍 Checking container status and Port 5000..."
+            # Check Container Status & Ports 5000 / 8787 Availability
+            echo "🔍 Checking container status and Ports 5000 & 8787..."
             
-            # 1. Check if container named 'deepfake_detection_web' is running
-            CONTAINER_BY_NAME=$(docker ps -q -f name=deepfake_detection_web)
-            if [ -n "$CONTAINER_BY_NAME" ]; then
-              echo "🛑 Container 'deepfake_detection_web' is running ($CONTAINER_BY_NAME). Stopping container..."
-              docker stop deepfake_detection_web || true
-              docker rm -f deepfake_detection_web || true
-            else
-              echo "ℹ️ Container 'deepfake_detection_web' is not currently running."
-            fi
+            # 1. Stop existing containers by name
+            for CONTAINER_NAME in deepfake_detection_web observability_agent; do
+              RUNNING_CID=$(docker ps -q -f name=$CONTAINER_NAME)
+              if [ -n "$RUNNING_CID" ]; then
+                echo "🛑 Container '$CONTAINER_NAME' is running ($RUNNING_CID). Stopping container..."
+                docker stop $CONTAINER_NAME || true
+                docker rm -f $CONTAINER_NAME || true
+              fi
+            done
 
-            # 2. Check if any docker container is binding Port 5000
-            CONTAINER_BY_PORT=$(docker ps -q -f publish=5000)
-            if [ -n "$CONTAINER_BY_PORT" ]; then
-              echo "⚠️ Port 5000 is occupied by container ID(s): $CONTAINER_BY_PORT. Stopping occupied container(s)..."
-              docker stop $CONTAINER_BY_PORT || true
-              docker rm -f $CONTAINER_BY_PORT || true
-            else
-              echo "✅ Port 5000 is free and available for deployment."
-            fi
+            # 2. Check if any docker container is binding Port 5000 or 8787
+            for PORT_NUM in 5000 8787; do
+              CONTAINER_BY_PORT=$(docker ps -q -f publish=$PORT_NUM)
+              if [ -n "$CONTAINER_BY_PORT" ]; then
+                echo "⚠️ Port $PORT_NUM is occupied by container ID(s): $CONTAINER_BY_PORT. Stopping occupied container(s)..."
+                docker stop $CONTAINER_BY_PORT || true
+                docker rm -f $CONTAINER_BY_PORT || true
+              else
+                echo "✅ Port $PORT_NUM is free and available."
+              fi
+            done
 
             # Clone or Pull Repository using GITHUB_TOKEN for authentication
             if [ -d "$TARGET_DIR/.git" ]; then
@@ -92,12 +94,14 @@ jobs:
             # Create / Update .env File
             echo "⚙️ Updating environment variables (.env)..."
             cat <<EOF > .env
-            PORT=5000
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            EOF
+PORT=5000
+GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+CLAUDE_API_KEY=${{ secrets.CLAUDE_API_KEY }}
+OBSERVABILITY_AGENT_URL=http://observability-agent:8787
+EOF
 
             # Build Docker Image & Run Container with Docker Compose
-            echo "🐳 Building fresh Docker image & launching containers..."
+            echo "🐳 Building fresh Docker images & launching containers..."
             if docker compose version &> /dev/null; then
               docker compose down --volumes --remove-orphans || true
               docker compose build --no-cache
@@ -117,10 +121,17 @@ jobs:
 
             # Perform Healthcheck
             echo "🏥 Verifying service deployment health..."
-            sleep 8
+            sleep 10
             if curl -s -f http://localhost:5000/api/status > /dev/null; then
-              echo "✅ Deployment Successful! Service is running on http://localhost:5000"
+              echo "✅ Web UI Deployment Successful! Service running on http://localhost:5000"
             else
-              echo "⚠️ Warning: Healthcheck endpoint did not respond immediately, checking logs..."
+              echo "⚠️ Warning: Web UI healthcheck endpoint did not respond immediately, checking logs..."
               docker logs deepfake_detection_web --tail 20
+            fi
+
+            if curl -s -f http://localhost:8787/v1/models > /dev/null || curl -s http://localhost:8787/ > /dev/null; then
+              echo "✅ Observability Subsystem Agent is running on http://localhost:8787"
+            else
+              echo "⚠️ Warning: Observability Agent on port 8787 did not respond immediately, checking logs..."
+              docker logs observability_agent --tail 20
             fi

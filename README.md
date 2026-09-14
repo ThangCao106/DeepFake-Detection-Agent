@@ -48,20 +48,28 @@ graph TD
 ## 📷 Project Demo
 <img width="1888" height="993" alt="image" src="https://github.com/user-attachments/assets/26f1bbae-8780-4a6a-b9c6-9ee617a93e8f" />
 
-## 📁 Project Structure
+## 📁 Modular System Architecture
 
-```bash
-Agent/
-├── 🐍 agent_system.py          # Multi-agent orchestrator (CLI)
-├── 🌐 app.py                   # Flask web application
-├── 🔍 deepfake_detector.py     # ML model wrapper & Auditable Forensic Certificate
-├── ⚙️ config.py                # Configuration management
-├── 📋 requirements.txt         # Python dependencies
-├── 🐳 Dockerfile               # Docker build recipe
-├── 🐙 docker-compose.yml       # Docker Compose service definition
-├── 🙈 .dockerignore            # Docker build ignore rules
-├── 🔒 .env.example             # Environment template
-└── 📖 README.md                # This file
+```text
+DeepFake-Detection-Agent/
+├── 🌐 1. WEB UI & INFERENCE APP          (Phần Ứng dụng & Giao diện Suy luận)
+│   ├── app.py                            - Flask Web Server & SocketIO (Port 5000)
+│   ├── templates/ & static/              - Giao diện Light Lavender UI & Multi-Modality Viewer
+│   ├── deepfake_detector.py              - Engine suy luận Image, Video, Audio & Certificate ID
+│   ├── agent_system.py                   - Multi-Agent Orchestrator & Claude/Gemini Fallback
+│   └── docker-compose.yml & deploy.yml   - Multi-Container Orchestration & CI/CD Deployment
+│
+├── 🧠 2. COLAB TRAINING & AUTO-SYNC      (Phần Huấn luyện & Tự động hóa Colab GPU)
+│   ├── colab_auto_runner.py              - Smart Hybrid Continuous Auto-Runner Engine
+│   ├── colab_dataset_pipeline.py         - Manager dữ liệu Multi-Modality & Auto-Sync GitHub
+│   ├── train_pipeline.py                 - Two-Stage ViT Fine-Tuning Pipeline (Image/Video/Audio)
+│   ├── data_pipeline.py                  - Registry Awesome-Deepfakes Datasets
+│   ├── upload_model_cloud.py             - Auto Upload Trọng số lên Hugging Face Hub
+│   └── Colab_MultiModality_AutoTrainer.ipynb - Notebook Form UI trên Google Colab GPU
+│
+└── 🔍 3. OBSERVABILITY SUBSYSTEM         (Phần Agent Quan sát & Persistent Memory)
+    ├── observability-agent/              - Subsystem SRE Claude Agent Service (Port 8787)
+    └── ObservabilityMemoryStore          - Lưu vết Forensic Audit & Certificate ID Registry
 ```
 
 ## 🚀 8-Stage ViT Fine-Tuning & Hugging Face Dataset Scout Pipeline
