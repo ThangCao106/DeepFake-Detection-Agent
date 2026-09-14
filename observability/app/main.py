@@ -89,12 +89,22 @@ async def _read_subprocess_output(proc):
 
 @app.post("/api/auth/trigger-login")
 async def trigger_login() -> dict:
-    """Auto-launch docker compose run --rm login subprocess non-blockingly and capture OAuth URL."""
+    """Auto-launch Claude CLI login subprocess non-blockingly and capture OAuth URL."""
     global _ACTIVE_LOGIN_PROC, _LAST_OAUTH_URL, _LOGIN_LOGS
     import asyncio
+    import os
     import re
+    import shutil
 
-    cmd = "docker compose run --rm login"
+    # Smart command selection based on available executables in environment
+    if shutil.which("claude"):
+        cmd = "claude login"
+    elif shutil.which("npx"):
+        cmd = "npx -y @anthropic-ai/claude-code login"
+    elif shutil.which("docker"):
+        cmd = "docker compose run --rm login"
+    else:
+        cmd = "npx -y @anthropic-ai/claude-code login"
 
     # Return cached URL if available
     if _LAST_OAUTH_URL:
@@ -114,6 +124,7 @@ async def trigger_login() -> dict:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=PROJECT_ROOT,
+                env=os.environ.copy()
             )
             asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
 
@@ -140,7 +151,7 @@ async def trigger_login() -> dict:
             "message": (
                 "OAuth URL captured successfully!"
                 if _LAST_OAUTH_URL
-                else "Docker login container running..."
+                else f"Login command '{cmd}' running..."
             ),
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
