@@ -423,8 +423,14 @@
       <li>Session credentials are saved to persistent volume and shared with Port 8787 automatically!</li>
     </ol>
 
-    <div style="margin-top: 1.5rem; text-align: right;">
+    <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+      <button class="btn-login" style="background: #00c853;" onclick="triggerAutoLogin()">⚡ Auto Launch Docker Login</button>
       <button class="btn-login" style="display: inline-flex;" onclick="checkAuthStatus(); closeLoginModal();">✅ Refresh Auth Status</button>
+    </div>
+
+    <div id="oauthBox" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f5e9; border-radius: 8px; border: 1px solid #a5d6a7;">
+      <p style="font-weight: 600; color: #2e7d32; margin-bottom: 0.5rem;">🔗 Anthropic OAuth Authorization Link Detected!</p>
+      <a id="oauthLink" href="#" target="_blank" style="display: inline-block; background: #2e7d32; color: #fff; text-decoration: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem;">🌐 Click Here to Authorize Claude Account</a>
     </div>
   </div>
 </div>
@@ -476,10 +482,38 @@ async function checkAuthStatus() {
 
 function openLoginModal() {
   document.getElementById("loginModal").classList.add("active");
+  triggerAutoLogin();
 }
 
 function closeLoginModal() {
   document.getElementById("loginModal").classList.remove("active");
+}
+
+async function triggerAutoLogin() {
+  const oauthBox = document.getElementById("oauthBox");
+  const oauthLink = document.getElementById("oauthLink");
+  const loginCmdText = document.getElementById("loginCmdText");
+
+  loginCmdText.textContent = "⏳ Auto running docker compose run --rm login...";
+
+  try {
+    const res = await fetch("/api/auth/trigger-login", { method: "POST" });
+    const data = await res.json();
+    if (data.status === "SUCCESS" && data.oauth_url) {
+      oauthLink.href = data.oauth_url;
+      oauthBox.style.display = "block";
+      loginCmdText.textContent = data.command;
+    } else {
+      loginCmdText.textContent = data.command || "docker compose run --rm login";
+      if (data.oauth_url) {
+        oauthLink.href = data.oauth_url;
+        oauthBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    console.error("Auto login error:", err);
+    loginCmdText.textContent = "docker compose run --rm login";
+  }
 }
 
 function copyLoginCmd() {

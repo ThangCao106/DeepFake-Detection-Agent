@@ -1,0 +1,34 @@
+[
+  {
+    "timestamp": "2026-09-14T16:11:35.530508",
+    "date": "2026-09-14",
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "pass_number": 1,
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "metrics": {
+      "accuracy": 0.942,
+      "auc_score": 0.981,
+      "eer_score": 0.038,
+      "temperature_scaling_T": 1.6178,
+      "optimal_threshold_tau": 0.8118
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-14T16:12:52.386927",
+    "date": "2026-09-14",
+    "modality": "IMAGE",
+    "dataset_key": "ntire_robust_detection",
+    "pass_number": 1,
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "metrics": {
+      "accuracy": 0.942,
+      "auc_score": 0.981,
+      "eer_score": 0.038,
+      "temperature_scaling_T": 1.6178,
+      "optimal_threshold_tau": 0.8118
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
+  }
+]

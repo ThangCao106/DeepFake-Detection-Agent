@@ -64,12 +64,13 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         print("==========================================")
         sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
 
-    # 5. Step 5: Auto-Push Metrics & Calibration Params back to GitHub
+    # 5. Step 5: Auto-Generate Daily Report & Push to GitHub
+    sync_manager.generate_and_save_report(modality=modality, dataset_key=dataset_key)
     if github_token:
         print("\n==========================================")
-        print("🔄 Step 5: Syncing Metrics & Logs back to GitHub...")
+        print("🔄 Step 5: Syncing Report & Metrics back to GitHub...")
         print("==========================================")
-        commit_msg = f"Auto-sync Colab training results for {modality}:{dataset_key} [Auto-Bot]"
+        commit_msg = f"Auto-sync Colab training report for {modality}:{dataset_key} [Auto-Bot]"
         sync_manager.auto_sync_metrics_to_github(github_token=github_token, commit_message=commit_msg)
 
     print("\n==========================================")

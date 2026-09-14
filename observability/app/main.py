@@ -1,4 +1,8 @@
 import json
+import os
+import re
+import subprocess
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +17,7 @@ from app.agent import (
     run_agent,
     stream_turn,
 )
-from app.config import ALERT_SYSTEM_PROMPT, API_KEY, CHAT_SYSTEM_PROMPT
-from app.openai_compat import router as openai_router
+from app.config import ALERT_SYSTEM_PROMPT, API_KEY, CHAT_SYSTEM_PROMPT, PROJECT_ROOT
 
 app = FastAPI(title="Observability Agent (local test)")
 app.include_router(openai_router)
@@ -35,6 +38,51 @@ async def auth_status() -> dict:
         "login_command": "docker compose run --rm login",
         "cli_command": "npx @anthropic-ai/claude-code login"
     }
+
+
+@app.post("/api/auth/trigger-login")
+async def trigger_login() -> dict:
+    """Auto-launch docker compose run --rm login subprocess and capture OAuth URL."""
+    import subprocess
+    import re
+    cmd = "docker compose run --rm login"
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=PROJECT_ROOT
+        )
+        
+        oauth_url = None
+        output_logs = []
+        for _ in range(20):
+            if proc.poll() is not None:
+                break
+            line = proc.stdout.readline() if proc.stdout else ""
+            if line:
+                output_logs.append(line.strip())
+                match = re.search(r'(https://[^\s"]*(?:claude|anthropic)[^\s"]*)', line)
+                if match:
+                    oauth_url = match.group(1)
+                    break
+
+        return {
+            "status": "SUCCESS",
+            "message": "Docker login container triggered!",
+            "command": cmd,
+            "oauth_url": oauth_url,
+            "logs": output_logs
+        }
+    except Exception as exc:
+        return {
+            "status": "ERROR",
+            "message": f"Execution error: {exc}",
+            "command": cmd,
+            "oauth_url": None
+        }
 
 
 def check_api_key(x_api_key: str = Header(...)) -> None:
