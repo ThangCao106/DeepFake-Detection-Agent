@@ -2,50 +2,501 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
-<title>Observability Agent (local test)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observability Agent — SRE Claude Subsystem</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
-  #log { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; height: 60vh; overflow-y: auto; background: #fafafa; }
-  .msg { margin-bottom: 0.75rem; white-space: pre-wrap; }
-  .user { color: #0b5; font-weight: 600; }
-  .agent { color: #333; }
-  form { display: flex; gap: 0.5rem; margin-top: 1rem; }
-  input[type=text] { flex: 1; padding: 0.5rem; }
-  button { padding: 0.5rem 1rem; }
-  #apiKeyRow { margin-bottom: 1rem; font-size: 0.9rem; color: #666; }
-  #apiKeyRow input { width: 220px; }
+  :root {
+    --bg-main: #f8f6fc;
+    --card-bg: #ffffff;
+    --primary: #7c4dff;
+    --primary-hover: #651fff;
+    --primary-light: #f0ebff;
+    --text-dark: #1e1b2e;
+    --text-muted: #6e6b7e;
+    --border-color: #e5def0;
+    --success: #00c853;
+    --warning: #ffab00;
+    --danger: #ff1744;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --shadow: 0 10px 30px rgba(124, 77, 255, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 900px;
+    height: 90vh;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  }
+
+  /* Header Bar */
+  .header {
+    background: linear-gradient(135deg, #1e1b2e 0%, #2a243d 100%);
+    color: #ffffff;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .header-title h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .header-title .badge {
+    background: rgba(124, 77, 255, 0.2);
+    color: #b39ddb;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-weight: 500;
+    border: 1px solid rgba(179, 157, 219, 0.3);
+  }
+
+  .auth-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .status-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .dot.inactive { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  .btn-login {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-login:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+
+  /* Subheader API Key Bar */
+  .api-key-bar {
+    background: #f1edfa;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .api-key-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .api-key-input-group label {
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .api-key-input-group input {
+    border: 1px solid var(--border-color);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    width: 220px;
+    background: #fff;
+  }
+
+  /* Chat Output Area */
+  .chat-box {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: var(--bg-main);
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--primary);
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(124, 77, 255, 0.2);
+  }
+
+  .msg.agent {
+    align-self: flex-start;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .msg.system {
+    align-self: center;
+    background: #e8eaf6;
+    color: #3f51b5;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 20px;
+    padding: 0.4rem 1rem;
+  }
+
+  /* Quick Actions Pills */
+  .quick-pills {
+    padding: 0.5rem 1.5rem;
+    background: var(--card-bg);
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .pill-btn {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid rgba(124, 77, 255, 0.2);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .pill-btn:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* Input Form */
+  .input-form {
+    padding: 1rem 1.5rem;
+    background: var(--card-bg);
+    display: flex;
+    gap: 0.75rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .input-form input[type=text] {
+    flex: 1;
+    padding: 0.85rem 1.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-form input[type=text]:focus {
+    border-color: var(--primary);
+  }
+
+  .input-form button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .input-form button:hover {
+    background: var(--primary-hover);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #fff;
+    width: 90%;
+    max-width: 550px;
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .modal-header h3 { font-size: 1.2rem; font-weight: 600; }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+
+  .cmd-box {
+    background: #1e1b2e;
+    color: #00e676;
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+    position: relative;
+    word-break: break-all;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover { background: rgba(255,255,255,0.3); }
+
+  .instructions-list {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-dark);
+    margin-left: 1.2rem;
+  }
 </style>
 </head>
 <body>
-<h2>Observability Agent — local test only</h2>
-<div id="apiKeyRow">
-  API Key: <input type="password" id="apiKey" placeholder="X-API-Key" />
+
+<div class="container">
+  <!-- Header Bar -->
+  <div class="header">
+    <div class="header-title">
+      <h1>🔍 Observability Agent</h1>
+      <span class="badge">Claude CLI SRE Subsystem</span>
+    </div>
+    <div class="auth-status-bar">
+      <div class="status-tag" id="statusTag">
+        <div class="dot inactive" id="statusDot"></div>
+        <span id="statusText">Checking Auth...</span>
+      </div>
+      <button class="btn-login" onclick="openLoginModal()">🔑 Claude Login</button>
+    </div>
+  </div>
+
+  <!-- API Key Bar -->
+  <div class="api-key-bar">
+    <div class="api-key-input-group">
+      <label for="apiKey">API Key:</label>
+      <input type="password" id="apiKey" value="observability-agent-key" placeholder="X-API-Key" />
+    </div>
+    <span style="color: var(--text-muted);">Session: <strong id="sessionIdLabel">...</strong></span>
+  </div>
+
+  <!-- Chat Log Box -->
+  <div class="chat-box" id="chatBox">
+    <div class="msg system">
+      👋 Observability SRE Agent ready. Powered by Claude CLI Authentication (No API Key Required).
+    </div>
+  </div>
+
+  <!-- Quick Pills -->
+  <div class="quick-pills">
+    <button class="pill-btn" onclick="sendQuickPrompt('Check active ClickHouse log anomalies in the last 15 minutes')">📊 Log Anomalies</button>
+    <button class="pill-btn" onclick="sendQuickPrompt('Inspect HSC agent_memory knowledge base records')">📜 Forensic Memory</button>
+    <button class="pill-btn" onclick="sendQuickPrompt('Verify Grafana Prometheus system health metrics')">🏥 Health Metrics</button>
+  </div>
+
+  <!-- Input Form -->
+  <form class="input-form" id="chatForm">
+    <input type="text" id="messageInput" placeholder="Ask Observability Agent about ClickHouse / Log Errors / System Traces..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
 </div>
-<div id="log"></div>
-<form id="chatForm">
-  <input type="text" id="message" placeholder="Hỏi gì đó về ClickHouse / lỗi hệ thống..." autocomplete="off" />
-  <button type="submit">Gửi</button>
-</form>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔑 Claude CLI Authentication Setup</h3>
+      <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+    </div>
+    <p style="font-size: 0.95rem; color: var(--text-muted);">
+      This subsystem uses the logged-in Claude CLI session. Run the following command on your server or container to complete Anthropic OAuth login:
+    </p>
+
+    <div class="cmd-box">
+      <span id="loginCmdText">docker compose run --rm login</span>
+      <button class="copy-btn" onclick="copyLoginCmd()">Copy</button>
+    </div>
+
+    <ol class="instructions-list">
+      <li>Run the Docker Compose command above in your terminal.</li>
+      <li>Copy the Anthropic OAuth authorization link printed in console.</li>
+      <li>Open the link in your browser to log into your Claude Account.</li>
+      <li>Session credentials are saved to persistent volume and shared with Port 8787 automatically!</li>
+    </ol>
+
+    <div style="margin-top: 1.5rem; text-align: right;">
+      <button class="btn-login" style="display: inline-flex;" onclick="checkAuthStatus(); closeLoginModal();">✅ Refresh Auth Status</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const sessionId = "browser-" + Math.random().toString(36).slice(2);
-const log = document.getElementById("log");
-const form = document.getElementById("chatForm");
-const messageInput = document.getElementById("message");
+const sessionId = "browser-" + Math.random().toString(36).slice(2, 10);
+document.getElementById("sessionIdLabel").textContent = sessionId;
+
+const chatBox = document.getElementById("chatBox");
+const chatForm = document.getElementById("chatForm");
+const messageInput = document.getElementById("messageInput");
 const apiKeyInput = document.getElementById("apiKey");
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+const loginCmdText = document.getElementById("loginCmdText");
 
 function addMessage(role, text) {
   const div = document.createElement("div");
   div.className = "msg " + role;
-  div.textContent = (role === "user" ? "Bạn: " : "Agent: ") + text;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
+  div.textContent = (role === "user" ? "You: " : role === "agent" ? "Claude Agent: " : "") + text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-form.addEventListener("submit", async (e) => {
+async function checkAuthStatus() {
+  try {
+    const res = await fetch("/api/auth/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated) {
+        statusDot.className = "dot active";
+        statusText.textContent = "Claude Authenticated";
+      } else {
+        statusDot.className = "dot inactive";
+        statusText.textContent = "Claude Login Needed";
+      }
+      if (data.default_key && apiKeyInput.value === "observability-agent-key") {
+        apiKeyInput.value = data.default_key;
+      }
+      if (data.login_command) {
+        loginCmdText.textContent = data.login_command;
+      }
+    }
+  } catch (err) {
+    statusDot.className = "dot active";
+    statusText.textContent = "Claude CLI Ready";
+  }
+}
+
+function openLoginModal() {
+  document.getElementById("loginModal").classList.add("active");
+}
+
+function closeLoginModal() {
+  document.getElementById("loginModal").classList.remove("active");
+}
+
+function copyLoginCmd() {
+  navigator.clipboard.writeText(loginCmdText.textContent);
+  alert("Login command copied to clipboard!");
+}
+
+function sendQuickPrompt(promptText) {
+  messageInput.value = promptText;
+  chatForm.dispatchEvent(new Event('submit'));
+}
+
+chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const message = messageInput.value.trim();
   if (!message) return;
+  
   addMessage("user", message);
   messageInput.value = "";
 
@@ -58,16 +509,20 @@ form.addEventListener("submit", async (e) => {
       },
       body: JSON.stringify({ session_id: sessionId, message }),
     });
+    
     const data = await resp.json();
     if (!resp.ok) {
-      addMessage("agent", "Lỗi: " + (data.detail || resp.status));
+      addMessage("agent", "❌ Error: " + (data.detail || resp.statusText || resp.status));
       return;
     }
-    addMessage("agent", data.reply);
+    addMessage("agent", data.reply || data.response || data.message || "Done.");
   } catch (err) {
-    addMessage("agent", "Lỗi kết nối: " + err.message);
+    addMessage("agent", "❌ Connection error: " + err.message);
   }
 });
+
+// Run auth check on page load
+checkAuthStatus();
 </script>
 </body>
 </html>

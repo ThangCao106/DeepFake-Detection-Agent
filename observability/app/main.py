@@ -20,6 +20,23 @@ app = FastAPI(title="Observability Agent (local test)")
 app.include_router(openai_router)
 
 
+@app.get("/api/auth/status")
+async def auth_status() -> dict:
+    """Return Claude CLI authentication status and login instructions."""
+    home_dir = os.environ.get("HOME", "/home/agent")
+    claude_dir = Path(home_dir) / ".claude"
+    user_claude_dir = Path.home() / ".claude"
+    
+    is_authenticated = claude_dir.exists() or user_claude_dir.exists()
+    return {
+        "authenticated": is_authenticated,
+        "status": "AUTHENTICATED" if is_authenticated else "NOT_LOGGED_IN",
+        "default_key": API_KEY,
+        "login_command": "docker compose run --rm login",
+        "cli_command": "npx @anthropic-ai/claude-code login"
+    }
+
+
 def check_api_key(x_api_key: str = Header(...)) -> None:
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="invalid api key")
