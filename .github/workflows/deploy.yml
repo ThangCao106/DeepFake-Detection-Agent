@@ -24,7 +24,9 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
           script: |
-            TARGET_DIR="${{ secrets.TARGET_DIR }}"
+            # Clean and sanitize TARGET_DIR path string (strip trailing control characters / newlines)
+            RAW_DIR="${{ secrets.TARGET_DIR }}"
+            TARGET_DIR=$(echo "$RAW_DIR" | tr -d '\r\n' | xargs)
             if [ -z "$TARGET_DIR" ]; then
               TARGET_DIR="$HOME/DeepFake-Detection-Agent"
             fi
@@ -38,6 +40,29 @@ jobs:
             if ! command -v docker &> /dev/null; then
               echo "❌ Error: Docker is not installed on server."
               exit 1
+            fi
+
+            # Check Container Status & Port 5000 Availability
+            echo "🔍 Checking container status and Port 5000..."
+            
+            # 1. Check if container named 'deepfake_detection_web' is running
+            CONTAINER_BY_NAME=$(docker ps -q -f name=deepfake_detection_web)
+            if [ -n "$CONTAINER_BY_NAME" ]; then
+              echo "🛑 Container 'deepfake_detection_web' is running ($CONTAINER_BY_NAME). Stopping container..."
+              docker stop deepfake_detection_web || true
+              docker rm -f deepfake_detection_web || true
+            else
+              echo "ℹ️ Container 'deepfake_detection_web' is not currently running."
+            fi
+
+            # 2. Check if any docker container is binding Port 5000
+            CONTAINER_BY_PORT=$(docker ps -q -f publish=5000)
+            if [ -n "$CONTAINER_BY_PORT" ]; then
+              echo "⚠️ Port 5000 is occupied by container ID(s): $CONTAINER_BY_PORT. Stopping occupied container(s)..."
+              docker stop $CONTAINER_BY_PORT || true
+              docker rm -f $CONTAINER_BY_PORT || true
+            else
+              echo "✅ Port 5000 is free and available for deployment."
             fi
 
             # Clone or Pull Repository using GITHUB_TOKEN for authentication
@@ -70,11 +95,6 @@ jobs:
             PORT=5000
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
-
-            # Force stop and remove old containers explicitly before rebuild
-            echo "🛑 Force stopping old containers..."
-            docker stop deepfake_detection_web || true
-            docker rm -f deepfake_detection_web || true
 
             # Build Docker Image & Run Container with Docker Compose
             echo "🐳 Building fresh Docker image & launching containers..."
