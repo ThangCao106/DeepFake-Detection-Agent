@@ -31,11 +31,19 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         f_size_mb = os.path.getsize(os.path.join(model_dir, f)) / (1024 * 1024)
         print(f"  - {f} ({f_size_mb:.2f} MB)")
 
-    if not token:
-        print("[upload_cloud] To upload to Hugging Face Hub, set your HF_TOKEN:")
-        print(f"  $env:HF_TOKEN=\"your_huggingface_write_token\"")
-        print(f"  py -3 upload_model_cloud.py --repo-id {repo_id}")
-        return True
+    # Validate token user
+    hf_username = None
+    try:
+        user_info = api.whoami(token=token)
+        hf_username = user_info.get("name")
+        print(f"[upload_cloud] Authenticated with Hugging Face as user: '{hf_username}'")
+        
+        namespace = repo_id.split("/")[0] if "/" in repo_id else repo_id
+        if hf_username and namespace != hf_username:
+            print(f"[upload_cloud] ⚠️ Warning: Token username ('{hf_username}') differs from repo namespace ('{namespace}').")
+            print(f"[upload_cloud] 💡 Suggested repo_id: '{hf_username}/{repo_id.split('/')[-1]}'")
+    except Exception as e_whoami:
+        print(f"[upload_cloud] Note: Could not verify token user identity: {e_whoami}")
 
     try:
         print(f"[upload_cloud] Checking/Creating repository '{repo_id}' on Hugging Face Hub...")
@@ -54,11 +62,19 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         print(f"[upload_cloud] Upload Successful! Model is now live at: https://huggingface.co/{repo_id}")
         return True
     except Exception as e:
-        print(f"[upload_cloud] Upload failed: {e}")
-        print("[upload_cloud] Trouble shooting Hugging Face 403 Forbidden:")
-        print("  1. Ensure your HF_TOKEN is a WRITE token (not Read-only) at https://huggingface.co/settings/tokens")
-        print("  2. Ensure your Hugging Face username matches the namespace in repo-id (e.g. your_username/custom-deepfake-vit)")
-        print(f"  3. You can also create the repo manually at https://huggingface.co/new and retry.")
+        print(f"\n[upload_cloud] Upload failed: {e}")
+        print("\n=== 🛠️ HUGGING FACE 403 FORBIDDEN TROUBLESHOOTING ===")
+        if hf_username:
+            print(f"1. Username Mismatch Check:")
+            print(f"   Your HF Token belongs to user: '{hf_username}'")
+            print(f"   You tried to upload to repo: '{repo_id}'")
+            if repo_id.split('/')[0] != hf_username:
+                print(f"   👉 FIX: Run command with --repo-id {hf_username}/{repo_id.split('/')[-1]}")
+        print("2. Token Permissions Check:")
+        print("   Go to: https://huggingface.co/settings/tokens")
+        print("   Ensure your token type is 'WRITE' or 'Fine-grained' with 'Create/edit repos' permission.")
+        print("3. Manual Repo Creation Option:")
+        print(f"   Create repo manually at: https://huggingface.co/new (name: {repo_id.split('/')[-1]}) then re-run.")
         return False
 
 
