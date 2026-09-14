@@ -166,6 +166,63 @@ def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000)
         )
 
 
+def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
+    """
+    Smart Hybrid Continuous Training Loop:
+    1. Continuously iterates training passes (Pass 1 ➔ Pass 2 ➔ Pass 3...).
+    2. Before each pass, checks if new code was pushed to GitHub origin/main.
+       - If new commit detected: Auto-pulls latest code and reloads modules immediately.
+       - If no new commit: Continues next Pass smoothly to progressively optimize weights!
+    3. Uploads trained model weights to Hugging Face Hub after each dataset stage.
+    4. Syncs metrics back to GitHub after each pass.
+    """
+    pass_number = 1
+    last_commit_sha = get_commit_sha("HEAD")
+
+    print("======================================================================")
+    print("🔄 STARTING SMART HYBRID CONTINUOUS AUTO-RUNNER LOOP")
+    print("   1. Auto-Detects new code commits pushed from Local ➔ Reloads & Runs")
+    print("   2. If no new code: Continuously loops (Pass 1 ➔ Pass 2 ➔ Pass 3...)")
+    print("======================================================================")
+
+    try:
+        while True:
+            print(f"\n" + "="*70)
+            print(f"🌟 === STARTING CONTINUOUS TRAINING PASS #{pass_number} ===")
+            print("="*70)
+
+            # Check if GitHub has new code pushed from local
+            os.system("git fetch origin main 2>/dev/null")
+            remote_sha = get_commit_sha("origin/main")
+
+            if remote_sha and remote_sha != last_commit_sha:
+                print(f"\n🔔 NEW CODE COMMIT DETECTED ON GITHUB! ({remote_sha[:7]})")
+                print("   📥 Pulling latest code and reloading modules...")
+                os.system("git reset --hard origin/main && git pull origin main")
+                last_commit_sha = get_commit_sha("HEAD")
+                
+                # Reload modules to apply local edits
+                import colab_dataset_pipeline
+                import train_pipeline
+                importlib.reload(colab_dataset_pipeline)
+                importlib.reload(train_pipeline)
+            else:
+                print(f"ℹ️ Code is up-to-date (SHA: {last_commit_sha[:7]}). Proceeding with Pass #{pass_number}...")
+
+            # Run 1 full multi-modality pass across Image -> Video -> Audio
+            run_continuous_auto_loop(
+                hf_token=hf_token,
+                github_token=github_token,
+                max_samples=max_samples
+            )
+
+            print(f"\n✅ Pass #{pass_number} completed. Progressively refining weights for Pass #{pass_number + 1}...")
+            pass_number += 1
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print("\n🛑 Smart Auto-Runner Loop stopped by user.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Colab Automated Continuous Training & Feedback Loop")
     parser.add_argument("--modality", type=str, default="IMAGE", choices=["IMAGE", "VIDEO", "AUDIO"], help="Dataset modality")
@@ -174,7 +231,7 @@ if __name__ == "__main__":
     parser.add_argument("--hf-token", type=str, default=None, help="Hugging Face Write Token")
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Classic Access Token for auto-pushing metrics")
     parser.add_argument("--no-pull", action="store_true", help="Disable auto-pulling code from GitHub")
-    parser.add_argument("--loop", action="store_true", help="Run continuous loop over all modalities")
+    parser.add_argument("--loop", action="store_true", help="Run smart hybrid continuous loop (Pass 1 -> Pass 2... + Auto-Detect commits)")
     parser.add_argument("--listen", action="store_true", help="Auto-Listen Daemon mode: Polls GitHub continuously and triggers training on every git push")
     parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds for --listen mode")
     args = parser.parse_args()
@@ -187,7 +244,11 @@ if __name__ == "__main__":
             poll_interval=args.poll_interval
         )
     elif args.loop:
-        run_continuous_auto_loop(hf_token=args.hf_token, github_token=args.github_token, max_samples=args.max_samples)
+        run_smart_auto_loop(
+            hf_token=args.hf_token,
+            github_token=args.github_token,
+            max_samples=args.max_samples
+        )
     else:
         run_colab_auto_pipeline(
             modality=args.modality,
