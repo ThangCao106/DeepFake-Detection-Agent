@@ -46,17 +46,38 @@ _LAST_OAUTH_URL = None
 _LOGIN_LOGS = []
 
 
+async def _read_subprocess_output(proc):
+    """Background task to continuously read subprocess stdout asynchronously without blocking event loop."""
+    global _LAST_OAUTH_URL, _LOGIN_LOGS
+    import re
+    try:
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            clean_line = line.decode("utf-8", errors="ignore").strip()
+            if clean_line:
+                _LOGIN_LOGS.append(clean_line)
+                match = re.search(
+                    r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
+                    clean_line,
+                    re.IGNORECASE,
+                )
+                if match and not _LAST_OAUTH_URL:
+                    _LAST_OAUTH_URL = match.group(1)
+    except Exception as e:
+        _LOGIN_LOGS.append(f"Output reader error: {e}")
+
+
 @app.post("/api/auth/trigger-login")
 async def trigger_login() -> dict:
-    """Auto-launch docker compose run --rm login subprocess and capture OAuth URL."""
+    """Auto-launch docker compose run --rm login subprocess non-blockingly and capture OAuth URL."""
     global _ACTIVE_LOGIN_PROC, _LAST_OAUTH_URL, _LOGIN_LOGS
     import asyncio
     import re
-    import subprocess
-    import time
 
     cmd = "docker compose run --rm login"
-    
+
     # Return cached URL if available
     if _LAST_OAUTH_URL:
         return {
@@ -64,51 +85,48 @@ async def trigger_login() -> dict:
             "message": "OAuth URL retrieved from cache.",
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-15:]
+            "logs": _LOGIN_LOGS[-15:],
         }
 
     try:
-        if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.poll() is not None:
+        if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
             _LOGIN_LOGS = []
-            _ACTIVE_LOGIN_PROC = subprocess.Popen(
+            _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
                 cmd,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
                 cwd=PROJECT_ROOT,
-                bufsize=1
             )
+            asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
 
-        start_time = time.time()
-        while time.time() - start_time < 20:
-            if _ACTIVE_LOGIN_PROC.poll() is not None and not _ACTIVE_LOGIN_PROC.stdout:
+        # Non-blocking poll for up to 3 seconds for initial fast detection
+        for _ in range(6):
+            if _LAST_OAUTH_URL:
                 break
-            
-            line = _ACTIVE_LOGIN_PROC.stdout.readline() if _ACTIVE_LOGIN_PROC.stdout else ""
-            if line:
-                clean_line = line.strip()
-                _LOGIN_LOGS.append(clean_line)
-                match = re.search(r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)', clean_line, re.IGNORECASE)
-                if match:
-                    _LAST_OAUTH_URL = match.group(1)
-                    break
-            else:
-                await asyncio.sleep(0.4)
+            await asyncio.sleep(0.5)
 
+        # Fallback regex check over captured logs
         if not _LAST_OAUTH_URL:
             for log in _LOGIN_LOGS:
-                match = re.search(r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)', log, re.IGNORECASE)
+                match = re.search(
+                    r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
+                    log,
+                    re.IGNORECASE,
+                )
                 if match:
                     _LAST_OAUTH_URL = match.group(1)
                     break
 
         return {
             "status": "SUCCESS" if _LAST_OAUTH_URL else "PENDING",
-            "message": "OAuth URL captured successfully!" if _LAST_OAUTH_URL else "Docker login container running...",
+            "message": (
+                "OAuth URL captured successfully!"
+                if _LAST_OAUTH_URL
+                else "Docker login container running..."
+            ),
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-15:]
+            "logs": _LOGIN_LOGS[-15:],
         }
     except Exception as exc:
         return {
@@ -116,7 +134,7 @@ async def trigger_login() -> dict:
             "message": f"Execution error: {exc}",
             "command": cmd,
             "oauth_url": None,
-            "logs": _LOGIN_LOGS
+            "logs": _LOGIN_LOGS,
         }
 
 
