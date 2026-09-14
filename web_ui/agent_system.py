@@ -256,42 +256,41 @@ class AnalysisAgent:
         return name
     
     def _call_claude_llm(self, prompt: str) -> Optional[str]:
-        """Invoke Claude LLM via Observability Agent API or Anthropic API."""
-        # Try local Observability Agent endpoint
+        """Invoke Claude LLM via logged-in Observability Agent service (Port 8787)."""
+        obs_key = os.getenv("API_KEY", "observability-agent-key")
+        headers = {"X-Api-Key": obs_key, "Content-Type": "application/json"}
+        
+        # 1. Try local Observability Agent /api/chat endpoint (uses logged-in Claude CLI session)
         try:
             url = f"{Config.OBSERVABILITY_AGENT_URL}/api/chat"
-            res = requests.post(url, json={"message": prompt}, timeout=8)
+            payload = {"session_id": "web-ui-session", "message": prompt}
+            res = requests.post(url, headers=headers, json=payload, timeout=12)
             if res.status_code == 200:
                 data = res.json()
                 text = data.get("response") or data.get("content") or data.get("message")
                 if text:
-                    logger.info("Generated explanation via Observability Agent (Claude)")
+                    logger.info("Generated explanation via Observability Agent (Logged-in Claude)")
                     return text
         except Exception as e_obs:
-            logger.debug(f"Observability Agent endpoint not available: {e_obs}")
+            logger.debug(f"Observability Agent /api/chat endpoint failed: {e_obs}")
 
-        # Try direct Anthropic API if key present
-        if Config.CLAUDE_API_KEY:
-            try:
-                headers = {
-                    "x-api-key": Config.CLAUDE_API_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json"
-                }
-                payload = {
-                    "model": Config.CLAUDE_MODEL_NAME,
-                    "max_tokens": 1000,
-                    "messages": [{"role": "user", "content": prompt}]
-                }
-                res = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload, timeout=12)
-                if res.status_code == 200:
-                    data = res.json()
-                    text = data.get("content", [{}])[0].get("text")
+        # 2. Try OpenAI-compatible /v1/chat/completions endpoint
+        try:
+            url = f"{Config.OBSERVABILITY_AGENT_URL}/v1/chat/completions"
+            payload = {
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            res = requests.post(url, headers=headers, json=payload, timeout=12)
+            if res.status_code == 200:
+                data = res.json()
+                choices = data.get("choices", [])
+                if choices:
+                    text = choices[0].get("message", {}).get("content")
                     if text:
-                        logger.info("Generated explanation via Anthropic Claude API")
+                        logger.info("Generated explanation via Observability Agent OpenAI-Compat (Logged-in Claude)")
                         return text
-            except Exception as e_claude:
-                logger.error(f"Claude API call failed: {e_claude}")
+        except Exception as e_v1:
+            logger.debug(f"Observability Agent /v1/chat/completions endpoint failed: {e_v1}")
 
         return None
 

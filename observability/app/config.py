@@ -7,7 +7,7 @@ PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 
 load_dotenv(Path(PROJECT_ROOT) / ".env")
 
-API_KEY = os.environ["API_KEY"]
+API_KEY = os.environ.get("API_KEY", "observability-agent-key")
 
 # Read-only connection — existing log/metrics queries. Unchanged.
 CLICKHOUSE_MCP = {
