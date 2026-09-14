@@ -68,21 +68,39 @@ async def _read_subprocess_output(proc):
     """Background task to continuously read subprocess stdout asynchronously without blocking event loop."""
     global _LAST_OAUTH_URL, _LOGIN_LOGS
     import re
+    buffer = ""
     try:
         while True:
-            line = await proc.stdout.readline()
-            if not line:
+            chunk = await proc.stdout.read(256)
+            if not chunk:
                 break
-            clean_line = line.decode("utf-8", errors="ignore").strip()
-            if clean_line:
-                _LOGIN_LOGS.append(clean_line)
-                match = re.search(
-                    r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
-                    clean_line,
-                    re.IGNORECASE,
-                )
-                if match and not _LAST_OAUTH_URL:
-                    _LAST_OAUTH_URL = match.group(1)
+            text = chunk.decode("utf-8", errors="ignore")
+            buffer += text
+
+            # Extract lines from buffer
+            lines = buffer.splitlines()
+            for line in lines:
+                clean_line = line.strip()
+                if clean_line:
+                    if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != clean_line:
+                        _LOGIN_LOGS.append(clean_line)
+                    match = re.search(
+                        r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
+                        clean_line,
+                        re.IGNORECASE,
+                    )
+                    if match and not _LAST_OAUTH_URL:
+                        _LAST_OAUTH_URL = match.group(1)
+
+            # Also check raw text chunk directly for OAuth URLs
+            match_raw = re.search(
+                r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
+                buffer,
+                re.IGNORECASE,
+            )
+            if match_raw and not _LAST_OAUTH_URL:
+                _LAST_OAUTH_URL = match_raw.group(1)
+
     except Exception as e:
         _LOGIN_LOGS.append(f"Output reader error: {e}")
 
@@ -113,18 +131,23 @@ async def trigger_login() -> dict:
             "message": "OAuth URL retrieved from cache.",
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-15:],
+            "logs": _LOGIN_LOGS[-20:],
         }
 
     try:
         if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
             _LOGIN_LOGS = []
+            env = os.environ.copy()
+            env["CI"] = "1"
+            env["FORCE_COLOR"] = "0"
+            env["HOME"] = "/home/agent"
+
             _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
                 cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=PROJECT_ROOT,
-                env=os.environ.copy()
+                env=env
             )
             asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
 
@@ -155,7 +178,7 @@ async def trigger_login() -> dict:
             ),
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-15:],
+            "logs": _LOGIN_LOGS[-20:],
         }
     except Exception as exc:
         return {

@@ -614,7 +614,7 @@ async function triggerAutoLogin() {
   consoleLogContainer.textContent = "🚀 Launching Docker container and scanning console output for Anthropic OAuth link...\n";
 
   let attempts = 0;
-  const maxAttempts = 15;
+  const maxAttempts = 25;
 
   const pollApi = async () => {
     try {
@@ -623,7 +623,7 @@ async function triggerAutoLogin() {
       if (!res.ok) {
         const errText = await res.text();
         consoleLogContainer.textContent += "\n⚠️ Server response (" + res.status + "): " + errText.slice(0, 150);
-        if (attempts < maxAttempts) setTimeout(pollApi, 2500);
+        if (attempts < maxAttempts) setTimeout(pollApi, 2000);
         return;
       }
       const data = await res.json();
@@ -649,7 +649,7 @@ async function triggerAutoLogin() {
         // Auto-poll auth status every 3s to confirm when user finishes login
         startAuthStatusPolling();
       } else if (attempts < maxAttempts) {
-        setTimeout(pollApi, 2000);
+        setTimeout(pollApi, 1500);
       } else {
         consoleLogContainer.textContent += "\n⚠️ Container started. If link didn't appear automatically, run `docker compose run --rm login` in your terminal.";
       }
