@@ -18,6 +18,7 @@ from app.agent import (
     stream_turn,
 )
 from app.config import ALERT_SYSTEM_PROMPT, API_KEY, CHAT_SYSTEM_PROMPT, PROJECT_ROOT
+from app.openai_compat import router as openai_router
 
 app = FastAPI(title="Observability Agent (local test)")
 app.include_router(openai_router)
