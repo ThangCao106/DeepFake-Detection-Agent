@@ -1,0 +1,85 @@
+name: CI/CD Build & Deploy Docker to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Docker Compose to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH to Target Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            TARGET_DIR="${{ secrets.TARGET_DIR || '~/DeepFake-Detection-Agent' }}"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+
+            echo "=========================================="
+            echo "🚀 Starting Deployment to Server..."
+            echo "=========================================="
+
+            # Verify Docker availability
+            if ! command -v docker &> /dev/null; then
+              echo "❌ Error: Docker is not installed on server."
+              exit 1
+            fi
+
+            # Clone or Pull Repository
+            if [ ! -d "$TARGET_DIR/.git" ]; then
+              echo "📦 Repository directory not found. Cloning repository..."
+              mkdir -p "$TARGET_DIR"
+              git clone $REPO_URL "$TARGET_DIR"
+              cd "$TARGET_DIR"
+            else
+              echo "🔄 Pulling latest code from origin/main..."
+              cd "$TARGET_DIR"
+              git fetch --all
+              git reset --hard origin/main
+              git pull origin main
+            fi
+
+            # Create / Update .env File
+            echo "⚙️ Updating environment variables (.env)..."
+            cat <<EOF > .env
+            PORT=5000
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            EOF
+
+            # Build Docker Image & Run Container with Docker Compose
+            echo "🐳 Building Docker image & launching containers..."
+            if docker compose version &> /dev/null; then
+              docker compose down --remove-orphans || true
+              docker compose up -d --build
+            elif command -v docker-compose &> /dev/null; then
+              docker-compose down --remove-orphans || true
+              docker-compose up -d --build
+            else
+              echo "❌ Error: Neither 'docker compose' nor 'docker-compose' command found."
+              exit 1
+            fi
+
+            # Cleanup unused dangling images
+            echo "🧹 Cleaning up dangling Docker images..."
+            docker image prune -f
+
+            # Perform Healthcheck
+            echo "🏥 Verifying service deployment health..."
+            sleep 8
+            if curl -s -f http://localhost:5000/api/status > /dev/null; then
+              echo "✅ Deployment Successful! Service is running on http://localhost:5000"
+            else
+              echo "⚠️ Warning: Healthcheck endpoint did not respond immediately, checking logs..."
+              docker logs deepfake_detection_web --tail 20
+            fi
