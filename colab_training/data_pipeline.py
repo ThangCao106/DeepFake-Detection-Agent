@@ -47,6 +47,12 @@ AWESOME_DEEPFAKES_REGISTRY = {
             "type": "github",
             "repo": "https://github.com/socialabubi/iFakeFaceDB",
             "description": "87,000 StyleGAN images with removed fingerprints."
+        },
+        "dfbench_lmm": {
+            "name": "DFBench 2025 (Large Multimodal Model Image Benchmark)",
+            "type": "github/hf",
+            "repo": "https://github.com/SOTA-Deepfake/DFBench",
+            "description": "2025 SOTA benchmark evaluating Large Multimodal Models (LMMs) on AI-generated & synthetic images."
         }
     },
     "VIDEO": {
@@ -85,6 +91,18 @@ AWESOME_DEEPFAKES_REGISTRY = {
             "type": "huggingface",
             "hf_path": "faridlab/deepspeak_v1",
             "description": "6,226 real & 6,799 fake videos with lip-sync and face-swap manipulation."
+        },
+        "mega_mmdf": {
+            "name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
+            "type": "github/arxiv",
+            "repo": "https://github.com/SOTA-Deepfake/DeepfakeBench-MM",
+            "description": "1.1M multimodal samples across 21 forgery pipelines (Audio, Visual & Lip-Sync)."
+        },
+        "df40": {
+            "name": "DF40 Benchmark (2026 SOTA Forgery Suite)",
+            "type": "github",
+            "repo": "https://github.com/SOTA-Deepfake/DF40",
+            "description": "40 SOTA forgery algorithms including recent Diffusion, Audio-driven Talking Head & AI Video Generators."
         }
     },
     "AUDIO": {
@@ -111,6 +129,12 @@ AWESOME_DEEPFAKES_REGISTRY = {
             "type": "external",
             "url": "https://www.asvspoof.org/",
             "description": "Logical & Physical access voice spoofing & audio deepfake benchmark."
+        },
+        "omni_fake": {
+            "name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
+            "type": "github/alphaxiv",
+            "repo": "https://github.com/Omni-Fake/Omni-Fake-Benchmark",
+            "description": "1.2M+ multimodal samples & 200k OOD samples across Image, Audio, Video & Audio-Visual Talking Heads."
         }
     }
 }

@@ -24,22 +24,22 @@ Trong giai đoạn 2025–2026, sự bùng nổ của Trí tuệ Nhân tạo Sin
 2. **Video giả mạo (Video Deepfakes)**: Tráo mặt (Face-swap), mô phỏng nét mặt (Face2Face) và sinh Video theo thời gian thực (Sora, Runway Gen-3, Celeb-DF++ 2025).
 3. **Âm thanh/Giọng nói giả mạo (Audio Deepfakes)**: Nhân bản giọng nói (Voice Cloning), tổng hợp tiếng nói (TTS) và bất đồng bộ môi-tiếng (Lip-sync mismatch trong DeepSpeak 2024-2025, FakeAVCeleb).
 
-Tham khảo từ cấu trúc hệ thống [TRahulsingh/DeepfakeDetector](https://github.com/TRahulsingh/DeepfakeDetector) (hệ thống PyTorch/EfficientNet/ViT kết hợp ONNX Runtime phát hiện ảnh & video) và danh mục dữ liệu mở chuẩn quốc tế [Awesome-Deepfakes](https://github.com/Daisy-Zhang/Awesome-Deepfakes), các công cụ giám định hiện nay đối mặt với **3 thách thức cốt lõi**:
-1. **Suy giảm độ chính xác OOD trên dữ liệu đa phương thức**: Mô hình huấn luyện trên một loại dữ liệu/máy sinh cũ bị suy giảm nghiêm trọng khi gặp các dạng video/audio giả mạo mới.
-2. **Hiện tượng tự tin thái quá của mạng Nơ-ron (Probability Overconfidence)**: Mạng nơ-ron sâu đưa ra mức độ tin tưởng tuyệt đối (>99%) ngay cả với các mẫu giả mạo tinh vi ranh giới.
-3. **Thiếu khả năng giám định minh bạch đa phương thức**: Chưa có hệ thống nào cấp Chứng thư Giám định Số (Auditable Forensic Certificate) hợp nhất thông tin giám định ảnh, video (frame-by-frame) và audio đáp ứng chuẩn EU AI Act Điều 50 và DSA.
-
-Để giải quyết triệt để các thách thức trên, đề tài đề xuất giải pháp: **Kết hợp Fine-Tuning Transformer trên 3 luồng dữ liệu (Image, Video keyframes, Audio Mel-Spectrograms), ứng dụng hiệu chỉnh xác suất Post-Hoc Temperature Scaling ($T^* = 1.6178$) cùng ngưỡng tối ưu Youden's J ($\tau^* = 0.8118$), tích hợp Khung Hệ thống Đa tác thể (Multi-Agent System) phát hành Chứng thư Giám định Số**.
-
----
-
-## III. MỤC ĐÍCH VÀ NHIỆM VỤ NGHIÊN CỨU
-
-### 1. Mục đích nghiên cứu
-Xây dựng hệ thống đa tác thể thông minh phát hiện tin cậy các dạng Deepfake Đa phương thức (Image, Video, Audio) với độ chính xác cao trên tập ngoài phân phối (OOD), tự động hiệu chỉnh độ tin cậy xác suất và xuất Chứng thư Giám định Số Auditable Forensic Certificate.
-
-### 2. Nhiệm vụ nghiên cứu
-1. **Phân loại & Xây dựng Bộ Registry Dữ liệu Đa phương thức (Image, Video, Audio)**: Dựa trên nguồn dữ liệu *Awesome-Deepfakes* (NTIRE 2024, CIFAKE, FaceForensics++, Celeb-DF++, DeepSpeak, WaveFake, FakeAVCeleb).
+27: Tham khảo từ cấu trúc hệ thống [TRahulsingh/DeepfakeDetector](https://github.com/TRahulsingh/DeepfakeDetector) và các bộ dữ liệu SOTA 2025-2026 chuẩn quốc tế (**DeepfakeBench-MM / Mega-MMDF 2025** với 1.1 triệu mẫu đa phương thức, **Omni-Fake 2026** với 1.2 triệu mẫu OOD, **DF40 Benchmark 2026** gồm 40 kỹ thuật sinh Deepfake mới nhất, và **DFBench 2025** cho Large Multimodal Models), các công cụ giám định hiện nay đối mặt với **3 thách thức cốt lõi**:
+28: 1. **Suy giảm độ chính xác OOD trên dữ liệu đa phương thức**: Mô hình huấn luyện trên một loại dữ liệu/máy sinh cũ bị suy giảm nghiêm trọng khi gặp các dạng video/audio/talking-head giả mạo mới ngoài phân phối (Out-Of-Distribution).
+29: 2. **Hiện tượng tự tin thái quá của mạng Nơ-ron (Probability Overconfidence)**: Mạng nơ-ron sâu đưa ra mức độ tin tưởng tuyệt đối (>99%) ngay cả với các mẫu giả mạo tinh vi ranh giới.
+30: 3. **Thiếu khả năng giám định minh bạch đa phương thức**: Chưa có hệ thống nào cấp Chứng thư Giám định Số (Auditable Forensic Certificate) hợp nhất thông tin giám định ảnh, video (frame-by-frame) và audio đáp ứng chuẩn EU AI Act Điều 50 và DSA.
+31: 
+32: Để giải quyết triệt để các thách thức trên, đề tài đề xuất giải pháp: **Kết hợp Fine-Tuning Transformer trên 3 luồng dữ liệu (Image, Video keyframes, Audio Mel-Spectrograms) cùng kiến trúc hỗn hợp chuyên gia đa phương thức (Multimodal Sparse Mixture-of-Experts - DF-MoE), ứng dụng hiệu chỉnh xác suất Post-Hoc Temperature Scaling ($T^*$) cùng ngưỡng tối ưu Youden's J ($\tau^*$), tích hợp Khung Hệ thống Đa tác thể (Multi-Agent System) phát hành Chứng thư Giám định Số**.
+33: 
+34: ---
+35: 
+36: ## III. MỤC ĐÍCH VÀ NHIỆM VỤ NGHIÊN CỨU
+37: 
+38: ### 1. Mục đích nghiên cứu
+39: Xây dựng hệ thống đa tác thể thông minh phát hiện tin cậy các dạng Deepfake Đa phương thức (Image, Video, Audio) với độ chính xác cao trên tập ngoài phân phối (OOD), tự động hiệu chỉnh độ tin cậy xác suất và xuất Chứng thư Giám định Số Auditable Forensic Certificate.
+40: 
+41: ### 2. Nhiệm vụ nghiên cứu
+42: 1. **Phân loại & Xây dựng Bộ Registry Dữ liệu Đa phương thức (Image, Video, Audio)**: Dựa trên nguồn dữ liệu *Awesome-Deepfakes* và các benchmark 2025–2026 (Mega-MMDF, Omni-Fake, DF40, DFBench, NTIRE 2024, CIFAKE, FaceForensics++, Celeb-DF++, DeepSpeak, WaveFake, FakeAVCeleb).
 2. **Nghiên cứu Kỹ thuật Tiền xử lý Đa phương thức**: 
    - Image: Khử trùng lặp MD5 + Difference Hash (`dhash`).
    - Video: Trích xuất khung hình chính tự động (Keyframe Extraction) bằng OpenCV.
