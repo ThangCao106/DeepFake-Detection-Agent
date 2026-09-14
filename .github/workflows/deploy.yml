@@ -129,9 +129,9 @@ jobs:
               docker logs deepfake_detection_web --tail 20
             fi
 
-            if curl -s -f http://localhost:8787/v1/models > /dev/null || curl -s http://localhost:8787/ > /dev/null; then
+            if curl -s -f http://localhost:8787/api/auth/status > /dev/null || curl -s -f -H "Authorization: Bearer observability-agent-key" http://localhost:8787/v1/models > /dev/null || curl -s http://localhost:8787/ > /dev/null; then
               echo "✅ Observability Subsystem Agent is running on http://localhost:8787"
             else
               echo "⚠️ Warning: Observability Agent on port 8787 did not respond immediately, checking logs..."
-              docker logs observability_agent --tail 20
+              docker logs observability_agent --tail 20 2>/dev/null || docker compose logs --tail 20 observability-agent 2>/dev/null || true
             fi

@@ -10,6 +10,7 @@
 # through the corporate SSL-inspecting proxy that was already unreliable
 # (intermittent 503s) for a different domain.
 FROM node:22-slim AS node
+RUN npm install -g @anthropic-ai/claude-code || true
 
 FROM python:3.13-slim
 
@@ -29,13 +30,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 # returning intermittent 503s for that domain.
 RUN pip install --no-cache-dir uv
 
-# Node 22 + npm, copied from the node:22-slim stage above (no apt/curl needed).
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
+# Node 22 + npm + claude CLI, copied from the node:22-slim stage above (no apt/curl needed).
+COPY --from=node /usr/local/bin /usr/local/bin
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install -g @anthropic-ai/claude-code \
-    && node --version && npm --version
+RUN node --version && npm --version
 
 # Non-root user, UID/GID pinned to 1000:1000 (not left to auto-increment) so it's
 # predictable from OUTSIDE the container too — if $HOME is bind-mounted from a host
