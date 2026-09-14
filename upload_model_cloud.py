@@ -40,8 +40,8 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         
         namespace = repo_id.split("/")[0] if "/" in repo_id else repo_id
         if hf_username and namespace != hf_username:
-            print(f"[upload_cloud] ⚠️ Warning: Token username ('{hf_username}') differs from repo namespace ('{namespace}').")
-            print(f"[upload_cloud] 💡 Suggested repo_id: '{hf_username}/{repo_id.split('/')[-1]}'")
+            print(f"[upload_cloud] Warning: Token username ('{hf_username}') differs from repo namespace ('{namespace}').")
+            print(f"[upload_cloud] Suggested repo_id: '{hf_username}/{repo_id.split('/')[-1]}'")
     except Exception as e_whoami:
         print(f"[upload_cloud] Note: Could not verify token user identity: {e_whoami}")
 
@@ -63,13 +63,13 @@ def upload_model_to_hf(model_dir="custom_vit_model", repo_id=None, hf_token=None
         return True
     except Exception as e:
         print(f"\n[upload_cloud] Upload failed: {e}")
-        print("\n=== 🛠️ HUGGING FACE 403 FORBIDDEN TROUBLESHOOTING ===")
+        print("\n=== HUGGING FACE TROUBLESHOOTING ===")
         if hf_username:
             print(f"1. Username Mismatch Check:")
             print(f"   Your HF Token belongs to user: '{hf_username}'")
             print(f"   You tried to upload to repo: '{repo_id}'")
             if repo_id.split('/')[0] != hf_username:
-                print(f"   👉 FIX: Run command with --repo-id {hf_username}/{repo_id.split('/')[-1]}")
+                print(f"   FIX: Run command with --repo-id {hf_username}/{repo_id.split('/')[-1]}")
         print("2. Token Permissions Check:")
         print("   Go to: https://huggingface.co/settings/tokens")
         print("   Ensure your token type is 'WRITE' or 'Fine-grained' with 'Create/edit repos' permission.")
