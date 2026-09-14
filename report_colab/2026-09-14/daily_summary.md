@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 10:39:31
-**Total Training Runs Completed:** 208
+**Last Updated:** 2026-09-14 10:51:47
+**Total Training Runs Completed:** 264
 
 ## 📈 Performance Metric Comparison Table
 
@@ -214,6 +214,62 @@
 | 14 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 | 14 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 | 15 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `IMAGE` | `cifake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `dfdc` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `wild_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `deeper_forensics` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `VIDEO` | `deepspeak_video` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `AUDIO` | `deepspeak_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `IMAGE` | `ntire_robust_detection` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `IMAGE` | `cifake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `dfdc` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `wild_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `deeper_forensics` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `VIDEO` | `deepspeak_video` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `AUDIO` | `deepspeak_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 16 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `IMAGE` | `ntire_robust_detection` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `IMAGE` | `cifake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `dfdc` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `wild_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `deeper_forensics` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `VIDEO` | `deepspeak_video` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `AUDIO` | `deepspeak_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 17 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `IMAGE` | `ntire_robust_detection` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `IMAGE` | `cifake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `dfdc` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `wild_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `deeper_forensics` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `deepspeak_video` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `AUDIO` | `deepspeak_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -429,6 +485,62 @@ P14 [AUDIO] fakeavceleb_audio        [██████████████
 P14 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
 P14 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
 P15 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
+P15 [IMAGE] cifake                   [████████████████████████░] AUC: 0.981
+P15 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
+P15 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
+P15 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P15 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
+P15 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.981
+P15 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.981
+P15 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.981
+P15 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.981
+P15 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P15 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
+P15 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
+P15 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
+P16 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
+P16 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.981
+P16 [IMAGE] cifake                   [████████████████████████░] AUC: 0.981
+P16 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
+P16 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
+P16 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P16 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
+P16 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.981
+P16 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.981
+P16 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.981
+P16 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.981
+P16 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P16 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
+P16 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
+P16 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
+P17 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
+P17 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.981
+P17 [IMAGE] cifake                   [████████████████████████░] AUC: 0.981
+P17 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
+P17 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
+P17 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P17 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
+P17 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.981
+P17 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.981
+P17 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.981
+P17 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.981
+P17 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P17 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
+P17 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
+P17 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
+P18 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
+P18 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.981
+P18 [IMAGE] cifake                   [████████████████████████░] AUC: 0.981
+P18 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
+P18 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
+P18 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P18 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
+P18 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.981
+P18 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.981
+P18 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.981
+P18 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.981
+P18 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P18 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
 ```
 
 ## 🔧 Environment & Hyperparameters
