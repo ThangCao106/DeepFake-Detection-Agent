@@ -3,189 +3,161 @@
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_001.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "ee86005f9f5d9e5537d7f070b62b3bad",
-    "dhash": "2242651325029367615"
+    "md5": "b079f2a2900b11b1f3e1c4a66590b34a",
+    "dhash": "18446603336221196287"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_002.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "6509bf53fbf4c87597fcb782043a32f3",
-    "dhash": "1085102626796670735"
+    "md5": "0c7b76df22e64d9371ea5f11eab1c0b7",
+    "dhash": "18446739675629486079"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_004.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "eb8511c2ca86d87135d8adca597d56cd",
-    "dhash": "217020518514230019"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_005.jpg",
-    "label": "FAKE",
-    "source": "New_Generators_Test",
-    "md5": "c71f669a75e479ae5283a4e293d21c62",
-    "dhash": "13798887968871546879"
+    "md5": "5684125a753c30c76eaeaab573027d0d",
+    "dhash": "1089623853911449375"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_006.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "65a42eb367dfa6aeb649721ecee83c55",
-    "dhash": "2242633526149070623"
+    "md5": "d58c8084bf876efee8ee8e0c363391cd",
+    "dhash": "18446735277549420543"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_007.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "030147ec149beb1b3882ac2604eb0a94",
-    "dhash": "16082281495346544639"
+    "md5": "ffe6e1847661b58e4ae08897c87b3720",
+    "dhash": "1085102661962768159"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_008.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "5bb11df87262e82cd2d0a3f849af8bd7",
-    "dhash": "506376794572785415"
+    "md5": "e901fa22952df2ff9fadc8639fb06618",
+    "dhash": "2242571883967880991"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_009.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "c8375798d64f9d0e4a94951d83c44a1c",
+    "dhash": "2238024304953335583"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_010.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "5ce01d5887b81c2571089e375ace16b9",
-    "dhash": "1085102593242238735"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_011.jpg",
-    "label": "FAKE",
-    "source": "New_Generators_Test",
-    "md5": "ee83f6339adfbeaa6698b37d71ab9a83",
-    "dhash": "13789933546007166975"
+    "md5": "5c9629f4b12c83c28e455d558efa882c",
+    "dhash": "506385642273312527"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_012.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "6786b7b6a2f2909d82200e3d0bf13256",
-    "dhash": "2251640931830677311"
+    "md5": "c359f8df536dfcb14a3b16c65ef2c9a7",
+    "dhash": "9223230678710091775"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_013.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_014.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "c922f7b34644804485270501c35f0dc2",
-    "dhash": "9187201950435737599"
+    "md5": "9002d65ec1a248bf30aa3bbd21be03d8",
+    "dhash": "18446735277616529407"
+  },
+  {
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_015.jpg",
+    "label": "FAKE",
+    "source": "New_Generators_Test",
+    "md5": "fa3cab0e497fa9f8b2afc2a50a1670fd",
+    "dhash": "9187201881456214015"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_016.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "90ac3be647fec3e37d0e28380627fbfd",
-    "dhash": "506381244360494863"
+    "md5": "44e3ee8c5aa055785bf8c13013e2e17e",
+    "dhash": "18446744065119617023"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_017.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "20d5640869f8a5617e5dab1329f70e52",
-    "dhash": "506381192753776391"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_018.jpg",
-    "label": "FAKE",
-    "source": "New_Generators_Test",
-    "md5": "3c0b3b7bf5154e37cd5add650d9ddf5f",
-    "dhash": "18446603334073712639"
+    "md5": "911576c34f14001312d5015f96af9cd6",
+    "dhash": "506376794572785415"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_019.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "a03660e9dafe532aee8cb01d3df93a56",
-    "dhash": "1082850792690355983"
+    "md5": "c8d9a7ddd83b21ccc53a9a2ae69a3234",
+    "dhash": "217020518514230023"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_020.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "7655a9087b646a3e81533c42854ee821",
-    "dhash": "4557501533230432063"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_021.jpg",
-    "label": "FAKE",
-    "source": "New_Generators_Test",
-    "md5": "8a99509f23ba018d08f28cc706f6b69a",
-    "dhash": "217020518514493191"
+    "md5": "1b9733f47e112cad91570eac55c684d6",
+    "dhash": "506381209866274567"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_022.jpg",
     "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "d79a731d1241a6323dbffbc0a49d10a2",
-    "dhash": "18446744064783941631"
+    "md5": "9837aec5281c4f6bdd18df2aa984a259",
+    "dhash": "2242545358517247807"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_001.jpg",
-    "label": "REAL",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_025.jpg",
+    "label": "FAKE",
     "source": "New_Generators_Test",
-    "md5": "6a37cde1e8b7ea12db1404f1ae3e8a64",
-    "dhash": "2242580680328298303"
+    "md5": "53a06ad338bb6190f439e5ca96383798",
+    "dhash": "2242651325030416191"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_005.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_008.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "2515a0a39bdfbadd67b2196b01154a6e",
-    "dhash": "9187202502339067903"
+    "md5": "d6816c6f778fc3c4feedd258c4d5a92f",
+    "dhash": "1089623784654053151"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_007.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_009.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "1ac62bf1a2d3bbb32f0a0c70a91b45ff",
-    "dhash": "8052295394102607871"
+    "md5": "74602af65a38398bd5ba30dde471f2cf",
+    "dhash": "1085102661560114975"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_011.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_010.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "3dcff345557d2e69a4822a6e1721e7eb",
-    "dhash": "6899373891643244543"
+    "md5": "4390ff5f7707cb84c42e7e9c1a0ec4e6",
+    "dhash": "506390040454041359"
   },
   {
     "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_012.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "5f8f8a2822db8a9c153b2a1578437ed7",
-    "dhash": "4557430888798830399"
+    "md5": "323f0feeadefdc77cb388bfd5b662aaf",
+    "dhash": "9187342687932514303"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_013.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_021.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "751bd880c616cb33249dc6760f3e6dae",
-    "dhash": "4557501532425125695"
+    "md5": "05ec87e98c9ba156a4d69ced1fa70df4",
+    "dhash": "217024933807982343"
   },
   {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_019.jpg",
+    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_025.jpg",
     "label": "REAL",
     "source": "New_Generators_Test",
-    "md5": "1f5e796e2b99d228c2885b2e63f66aba",
-    "dhash": "508641840267726607"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_020.jpg",
-    "label": "REAL",
-    "source": "New_Generators_Test",
-    "md5": "9a6f3d0492fc57573fa98ad9acae22c2",
-    "dhash": "4557430889876766527"
-  },
-  {
-    "filepath": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_023.jpg",
-    "label": "REAL",
-    "source": "New_Generators_Test",
-    "md5": "1e1ad1c92509d4b73f6138aaa55332f4",
-    "dhash": "4548423689544089407"
+    "md5": "3226b4c9356d116e7542414db20cbe20",
+    "dhash": "2242545357982482239"
   }
 ]
