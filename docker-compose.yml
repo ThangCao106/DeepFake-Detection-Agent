@@ -51,6 +51,30 @@ services:
     networks:
       - deepfake-agent-network
 
+  # =========================================================
+  # 🔑 CLAUDE CLI LOGIN AUTHENTICATION SERVICE
+  # =========================================================
+  login:
+    image: node:22-slim
+    container_name: claude_login
+    profiles: ["login"]
+    user: "1000:1000"
+    environment:
+      - HOME=/home/agent
+      - NPM_CONFIG_PREFIX=/home/agent/.npm-global
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+    volumes:
+      - claude_agent_home:/home/agent
+    working_dir: /home/agent
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        mkdir -p "$$HOME/.npm-global" &&
+        export PATH="$$HOME/.npm-global/bin:$$PATH" &&
+        npm install -g @anthropic-ai/claude-code &&
+        claude login
+
 networks:
   deepfake-agent-network:
     driver: bridge
@@ -60,4 +84,3 @@ volumes:
     driver: local
   claude_agent_home:
     driver: local
-

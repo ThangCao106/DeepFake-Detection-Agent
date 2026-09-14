@@ -1,38 +1,32 @@
 services:
   ai-agent:
-    image: ai-agent:v1.0.0 
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: ai-agent
     env_file:
       - .env
     environment:
-      # Proxy
-      - HTTP_PROXY=http://10.33.4.1:3128
-      - HTTPS_PROXY=http://10.33.4.1:3128
-      - http_proxy=http://10.33.4.1:3128
-      - https_proxy=http://10.33.4.1:3128
-      - NO_PROXY=localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.hsc.com.vn,host.docker.internal,10.33.3.131,sth-login-app
-
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - https_proxy=${HTTPS_PROXY}
     ports:
       - "8787:8787"
     volumes:
       - claude-home:/home/agent
     restart: unless-stopped
+
   login:
     image: node:22-slim
+    container_name: claude_login
     profiles: ["login"]
-    # Same UID:GID as the `agent` user in the main Dockerfile — MUST match, or
-    # whichever container touches the claude-home volume/mount first ends up
-    # owning it, and the other one gets "Permission denied" (this is exactly
-    # what happened when login ran as root and ai-agent ran as UID 1000).
     user: "1000:1000"
     environment:
       - HOME=/home/agent
-      # Non-root can't write npm's default global prefix (/usr/local/lib/...),
-      # so point the global install somewhere under $HOME instead — keeps
-      # everything under one UID, no root step needed anywhere in this flow.
       - NPM_CONFIG_PREFIX=/home/agent/.npm-global
-      - HTTP_PROXY=http://10.33.4.1:3128
-      - HTTPS_PROXY=http://10.33.4.1:3128
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
     volumes:
       - claude-home:/home/agent
     working_dir: /home/agent
