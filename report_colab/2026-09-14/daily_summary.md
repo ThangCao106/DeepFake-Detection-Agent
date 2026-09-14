@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:58:34
-**Total Training Runs Completed:** 372
+**Last Updated:** 2026-09-14 17:58:48
+**Total Training Runs Completed:** 376
 
 ## 📈 Performance Metric Comparison Table
 
@@ -378,6 +378,10 @@
 | 6 | `AUDIO` | `asvspoof_2021` | 0.919 | 0.998 | 0.022 | 1.7825 | 0.8058 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `IMAGE` | `dima806_deepfake` | 0.994 | 0.998 | 0.012 | 1.4928 | 0.7353 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `IMAGE` | `cifake` | 0.994 | 0.998 | 0.012 | 1.5784 | 0.7817 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `IMAGE` | `dffd_image` | 0.958 | 0.998 | 0.012 | 1.2816 | 0.8582 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `IMAGE` | `ifakefacedb` | 0.994 | 0.998 | 0.012 | 1.3711 | 0.7847 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `faceforensics_pp` | 0.971 | 0.998 | 0.018 | 1.6935 | 0.7256 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `celeb_df_v2` | 0.959 | 0.998 | 0.018 | 1.7371 | 0.6781 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -757,6 +761,10 @@ P6 [AUDIO] wavefake                 [██████████████�
 P6 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.998
 P7 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
 P7 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
+P7 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
+P7 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
+P7 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.998
+P7 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
