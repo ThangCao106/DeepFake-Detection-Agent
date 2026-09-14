@@ -223,7 +223,7 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
         print("\n🛑 Smart Auto-Runner Loop stopped by user.")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Colab Automated Continuous Training & Feedback Loop")
     parser.add_argument("--modality", type=str, default="IMAGE", choices=["IMAGE", "VIDEO", "AUDIO"], help="Dataset modality")
     parser.add_argument("--dataset-key", type=str, default="ntire_robust_detection", help="Dataset registry key")
@@ -258,3 +258,7 @@ if __name__ == "__main__":
             github_token=args.github_token,
             auto_pull=not args.no_pull
         )
+
+
+if __name__ == "__main__":
+    main()
