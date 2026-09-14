@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 18:00:01
-**Total Training Runs Completed:** 398
+**Last Updated:** 2026-09-14 18:00:22
+**Total Training Runs Completed:** 403
 
 ## 📈 Performance Metric Comparison Table
 
@@ -404,6 +404,11 @@
 | 8 | `AUDIO` | `deepspeak_audio` | 0.912 | 0.981 | 0.022 | 1.4555 | 0.7711 | ✅ COMPLETED_SUCCESSFULLY |
 | 8 | `AUDIO` | `fakeavceleb_audio` | 0.913 | 0.998 | 0.022 | 1.7258 | 0.8244 | ✅ COMPLETED_SUCCESSFULLY |
 | 8 | `AUDIO` | `wavefake` | 0.972 | 0.998 | 0.022 | 1.7059 | 0.8899 | ✅ COMPLETED_SUCCESSFULLY |
+| 8 | `AUDIO` | `asvspoof_2021` | 0.958 | 0.968 | 0.022 | 1.5428 | 0.6794 | ✅ COMPLETED_SUCCESSFULLY |
+| 9 | `IMAGE` | `dima806_deepfake` | 0.955 | 0.998 | 0.012 | 1.6555 | 0.6302 | ✅ COMPLETED_SUCCESSFULLY |
+| 9 | `IMAGE` | `ntire_robust_detection` | 0.964 | 0.998 | 0.012 | 1.4051 | 0.5938 | ✅ COMPLETED_SUCCESSFULLY |
+| 9 | `IMAGE` | `cifake` | 0.961 | 0.998 | 0.012 | 1.2109 | 0.6161 | ✅ COMPLETED_SUCCESSFULLY |
+| 9 | `IMAGE` | `dffd_image` | 0.992 | 0.998 | 0.012 | 1.5478 | 0.6740 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -809,6 +814,11 @@ P8 [VIDEO] deepspeak_video          [██████████████�
 P8 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
 P8 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.998
 P8 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.998
+P8 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.968
+P9 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
+P9 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.998
+P9 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
+P9 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
