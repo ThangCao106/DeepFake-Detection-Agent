@@ -78,19 +78,30 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
 
 
 def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000):
-    """Run continuous auto loop over Image, Video, and Audio modalities."""
+    """Run continuous auto loop sequentially over Image, Video, and Audio modalities."""
     queue = [
+        # Phase 1: IMAGE Modality Deepfake Detection
         ("IMAGE", "ntire_robust_detection"),
+        ("IMAGE", "cifake"),
+        
+        # Phase 2: VIDEO Modality (Keyframes -> ViT Fine-Tuning)
         ("VIDEO", "faceforensics_pp"),
-        ("AUDIO", "deepspeak_audio")
+        ("VIDEO", "celeb_df_v2"),
+        
+        # Phase 3: AUDIO Modality (Mel-Spectrograms -> Audio ViT Fine-Tuning)
+        ("AUDIO", "deepspeak_audio"),
+        ("AUDIO", "wavefake")
     ]
 
-    print("==========================================")
-    print(f"🔄 Starting Continuous Multi-Modality Training Loop ({len(queue)} jobs)")
-    print("==========================================")
+    print("======================================================================")
+    print(f"🔄 STARTING SEQUENTIAL MULTI-MODALITY AUTO-RUNNER LOOP ({len(queue)} STAGES)")
+    print("   Sequence: [IMAGE] ➔ [VIDEO] ➔ [AUDIO]")
+    print("======================================================================")
 
     for idx, (modality, dataset_key) in enumerate(queue, 1):
-        print(f"\n---> Running Job [{idx}/{len(queue)}]: {modality} | {dataset_key}")
+        print(f"\n======================================================================")
+        print(f"🚀 STAGE [{idx}/{len(queue)}]: MODALITY = [{modality}] | DATASET = [{dataset_key}]")
+        print("======================================================================")
         run_colab_auto_pipeline(
             modality=modality,
             dataset_key=dataset_key,
