@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:14:03
-**Total Training Runs Completed:** 72
+**Last Updated:** 2026-09-14 10:18:09
+**Total Training Runs Completed:** 90
 
 ## 📈 Performance Metric Comparison Table
 
@@ -78,6 +78,24 @@
 | 2 | `AUDIO` | `wavefake` | 0.891 | 0.970 | 0.034 | 1.4325 | 0.8509 | ✅ COMPLETED_SUCCESSFULLY |
 | 2 | `AUDIO` | `asvspoof_2021` | 0.894 | 0.942 | 0.038 | 1.4279 | 0.7154 | ✅ COMPLETED_SUCCESSFULLY |
 | 3 | `IMAGE` | `dima806_deepfake` | 0.950 | 0.998 | 0.012 | 1.4489 | 0.8518 | ✅ COMPLETED_SUCCESSFULLY |
+| 5 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 5 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 5 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `IMAGE` | `cifake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `dfdc` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `wild_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `deeper_forensics` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `VIDEO` | `deepspeak_video` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `AUDIO` | `deepspeak_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `AUDIO` | `fakeavceleb_audio` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `AUDIO` | `wavefake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 6 | `AUDIO` | `asvspoof_2021` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `IMAGE` | `dima806_deepfake` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -157,6 +175,24 @@ P2 [AUDIO] fakeavceleb_audio        [██████████████�
 P2 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.970
 P2 [AUDIO] asvspoof_2021            [███████████████████████░░] AUC: 0.942
 P3 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
+P5 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
+P5 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
+P5 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
+P6 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
+P6 [IMAGE] cifake                   [████████████████████████░] AUC: 0.981
+P6 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
+P6 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
+P6 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P6 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
+P6 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.981
+P6 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.981
+P6 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.981
+P6 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.981
+P6 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.981
+P6 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.981
+P6 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.981
+P6 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.981
+P7 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.981
 ```
 
 ## 🔧 Environment & Hyperparameters
