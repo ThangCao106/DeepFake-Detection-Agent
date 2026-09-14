@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 17:58:48
-**Total Training Runs Completed:** 376
+**Last Updated:** 2026-09-14 17:59:02
+**Total Training Runs Completed:** 380
 
 ## 📈 Performance Metric Comparison Table
 
@@ -382,6 +382,10 @@
 | 7 | `IMAGE` | `ifakefacedb` | 0.994 | 0.998 | 0.012 | 1.3711 | 0.7847 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `VIDEO` | `faceforensics_pp` | 0.971 | 0.998 | 0.018 | 1.6935 | 0.7256 | ✅ COMPLETED_SUCCESSFULLY |
 | 7 | `VIDEO` | `celeb_df_v2` | 0.959 | 0.998 | 0.018 | 1.7371 | 0.6781 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `dfdc` | 0.986 | 0.998 | 0.018 | 1.7490 | 0.8584 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `wild_deepfake` | 0.926 | 0.998 | 0.018 | 1.4102 | 0.7207 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `deeper_forensics` | 0.978 | 0.998 | 0.018 | 1.6912 | 0.7585 | ✅ COMPLETED_SUCCESSFULLY |
+| 7 | `VIDEO` | `deepspeak_video` | 0.965 | 0.993 | 0.018 | 1.3976 | 0.5995 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -765,6 +769,10 @@ P7 [IMAGE] dffd_image               [██████████████�
 P7 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
 P7 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.998
 P7 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.998
+P7 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.998
+P7 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.998
+P7 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.998
+P7 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.993
 ```
 
 ## 🔧 Environment & Hyperparameters
