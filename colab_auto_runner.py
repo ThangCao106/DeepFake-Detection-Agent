@@ -77,6 +77,60 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
     print("==========================================")
 
 
+import time
+import subprocess
+
+
+def get_commit_sha(ref="HEAD"):
+    """Get current git commit SHA hash."""
+    try:
+        res = subprocess.run(["git", "rev-parse", ref], capture_output=True, text=True, check=True)
+        return res.stdout.strip()
+    except Exception:
+        return ""
+
+
+def run_auto_listen_daemon(hf_token=None, github_token=None, max_samples=1000, poll_interval=30):
+    """
+    Auto-Listen Daemon: Continuously polls GitHub origin/main.
+    Whenever a new commit is pushed from Local, Colab automatically pulls it,
+    executes training, uploads weights to Hugging Face, and syncs metrics back to GitHub.
+    """
+    print("======================================================================")
+    print(f"📡 STARTING COLAB AUTO-LISTEN DAEMON (Polling every {poll_interval}s)")
+    print("   Colab will automatically trigger training whenever you push code from Local!")
+    print("======================================================================")
+
+    last_processed_sha = get_commit_sha("HEAD")
+    print(f"[daemon] Initial HEAD commit SHA: {last_processed_sha}")
+
+    try:
+        while True:
+            print(f"\n[daemon] Checking for new code pushes on GitHub origin/main...")
+            os.system("git fetch origin main 2>/dev/null")
+            remote_sha = get_commit_sha("origin/main")
+
+            if remote_sha and remote_sha != last_processed_sha:
+                print(f"\n🔔 NEW COMMIT DETECTED ON GITHUB!")
+                print(f"   Old SHA: {last_processed_sha}")
+                print(f"   New SHA: {remote_sha}")
+                print("   🚀 Triggering Automated Training Pipeline...")
+
+                run_continuous_auto_loop(
+                    hf_token=hf_token,
+                    github_token=github_token,
+                    max_samples=max_samples
+                )
+                last_processed_sha = get_commit_sha("HEAD")
+                print(f"\n✅ Job finished for commit {last_processed_sha}. Resuming Auto-Listen Daemon...")
+            else:
+                print(f"[daemon] No new code pushed (current: {last_processed_sha[:7]}). Standing by...")
+
+            time.sleep(poll_interval)
+    except KeyboardInterrupt:
+        print("\n🛑 Auto-Listen Daemon stopped by user.")
+
+
 def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000):
     """Run continuous auto loop sequentially over Image, Video, and Audio modalities."""
     queue = [
@@ -121,9 +175,18 @@ if __name__ == "__main__":
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Classic Access Token for auto-pushing metrics")
     parser.add_argument("--no-pull", action="store_true", help="Disable auto-pulling code from GitHub")
     parser.add_argument("--loop", action="store_true", help="Run continuous loop over all modalities")
+    parser.add_argument("--listen", action="store_true", help="Auto-Listen Daemon mode: Polls GitHub continuously and triggers training on every git push")
+    parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds for --listen mode")
     args = parser.parse_args()
 
-    if args.loop:
+    if args.listen:
+        run_auto_listen_daemon(
+            hf_token=args.hf_token,
+            github_token=args.github_token,
+            max_samples=args.max_samples,
+            poll_interval=args.poll_interval
+        )
+    elif args.loop:
         run_continuous_auto_loop(hf_token=args.hf_token, github_token=args.github_token, max_samples=args.max_samples)
     else:
         run_colab_auto_pipeline(
