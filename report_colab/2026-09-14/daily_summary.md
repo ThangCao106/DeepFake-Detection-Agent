@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-14)
-**Last Updated:** 2026-09-14 14:11:46
-**Total Training Runs Completed:** 904
+**Last Updated:** 2026-09-14 14:12:12
+**Total Training Runs Completed:** 905
 
 ## 📈 Performance Metric Comparison Table
 
@@ -910,6 +910,7 @@
 | 53 | `IMAGE` | `dffd_image` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 | 53 | `IMAGE` | `ifakefacedb` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 | 53 | `VIDEO` | `faceforensics_pp` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
+| 53 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.981 | 0.038 | 1.6178 | 0.8118 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1821,6 +1822,7 @@ P53 [IMAGE] cifake                   [██████████████
 P53 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.981
 P53 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.981
 P53 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.981
+P53 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.981
 ```
 
 ## 🔧 Environment & Hyperparameters
