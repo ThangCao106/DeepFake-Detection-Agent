@@ -112,6 +112,19 @@ async def _read_subprocess_output(proc):
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
 
+            # Auto-respond to Workspace Safety Check (select '2. Yes, I trust this folder')
+            if any(k in buffer for k in ["Quick safety check", "Is this a project you created", "trust this folder"]):
+                if proc.stdin:
+                    try:
+                        if not getattr(proc, "_auto_approved_safety", False):
+                            proc.stdin.write(b"\x1b[B\r\n")
+                            proc.stdin.write(b"2\r\n")
+                            await proc.stdin.drain()
+                            proc._auto_approved_safety = True
+                            _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically selected '2. Yes, I trust this folder' for workspace safety check.")
+                    except Exception as e_stdin:
+                        _LOGIN_LOGS.append(f"⚠️ Warning sending workspace trust selection: {e_stdin}")
+
             # Also check raw buffer directly for OAuth URLs
             raw_matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', buffer)
             for url in raw_matches:
@@ -265,7 +278,18 @@ async def trigger_login() -> dict:
             try:
                 agent_home = Path("/home/agent")
                 agent_home.mkdir(parents=True, exist_ok=True)
-                cfg_payload = json.dumps({"theme": "dark", "hasCompletedOnboarding": True, "hasSeenWelcome": True, "hasCompletedTour": True})
+                cfg_data = {
+                    "theme": "dark",
+                    "hasCompletedOnboarding": True,
+                    "hasSeenWelcome": True,
+                    "hasCompletedTour": True,
+                    "trustedDirectories": ["/app", "/home/agent", "."],
+                    "projects": {
+                        "/app": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
+                        "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
+                    }
+                }
+                cfg_payload = json.dumps(cfg_data, indent=2)
                 
                 (agent_home / ".claude.json").write_text(cfg_payload, encoding="utf-8")
                 
