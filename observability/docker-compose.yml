@@ -9,10 +9,10 @@ services:
     environment:
       - HOME=/home/agent
       - NPM_CONFIG_PREFIX=/home/agent/.npm-global
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - http_proxy=${HTTP_PROXY}
-      - https_proxy=${HTTPS_PROXY}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${HTTP_PROXY:-}
+      - https_proxy=${HTTPS_PROXY:-}
     ports:
       - "8787:8787"
     volumes:
@@ -23,14 +23,13 @@ services:
     image: node:22-slim
     container_name: claude_login
     profiles: ["login"]
-    user: "1000:1000"
     stdin_open: true
     tty: true
     environment:
       - HOME=/home/agent
       - NPM_CONFIG_PREFIX=/home/agent/.npm-global
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
     volumes:
       - claude-home:/home/agent
     working_dir: /home/agent
@@ -45,6 +44,7 @@ services:
         export PATH="$$HOME/.npm-global/bin:$$PATH" &&
         echo "📦 [2/3] Installing @anthropic-ai/claude-code CLI package..." &&
         npm install -g @anthropic-ai/claude-code &&
+        chown -R 1000:1000 "$$HOME" 2>/dev/null || true &&
         echo "🚀 [3/3] Launching interactive 'claude login'..." &&
         echo "👉 Copy/paste the OAuth authorization link below into your browser:" &&
         echo "------------------------------------------------------------------" &&
