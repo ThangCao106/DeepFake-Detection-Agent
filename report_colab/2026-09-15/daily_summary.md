@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 04:39:53
-**Total Training Runs Completed:** 368
+**Last Updated:** 2026-09-15 04:40:04
+**Total Training Runs Completed:** 369
 
 ## 📈 Performance Metric Comparison Table
 
@@ -374,6 +374,7 @@
 | 20 | `VIDEO` | `deepspeak_video` | 0.939 | 0.998 | 0.018 | 1.6804 | 0.6925 | ✅ COMPLETED_SUCCESSFULLY |
 | 20 | `VIDEO` | `mega_mmdf` | 0.938 | 0.991 | 0.018 | 1.5618 | 0.7412 | ✅ COMPLETED_SUCCESSFULLY |
 | 20 | `VIDEO` | `df40` | 0.968 | 0.998 | 0.018 | 1.7185 | 0.7362 | ✅ COMPLETED_SUCCESSFULLY |
+| 20 | `AUDIO` | `deepspeak_audio` | 0.935 | 0.997 | 0.022 | 1.8002 | 0.7673 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -749,6 +750,7 @@ P20 [VIDEO] deeper_forensics         [██████████████
 P20 [VIDEO] deepspeak_video          [████████████████████████░] AUC: 0.998
 P20 [VIDEO] mega_mmdf                [████████████████████████░] AUC: 0.991
 P20 [VIDEO] df40                     [████████████████████████░] AUC: 0.998
+P20 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.997
 ```
 
 ## 🔧 Environment & Hyperparameters
