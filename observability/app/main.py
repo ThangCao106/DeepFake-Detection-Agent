@@ -64,7 +64,7 @@ async def gate_login(req: GateLoginRequest) -> dict:
 
 
 def _has_valid_credentials() -> bool:
-    """Check if actual API keys or OAuth authentication credentials exist."""
+    """Check if actual API keys or OAuth authentication credentials exist on disk or in environment."""
     api_key = (os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or "").strip()
     if api_key.startswith("sk-ant-"):
         return True
@@ -76,37 +76,34 @@ def _has_valid_credentials() -> bool:
     ]
 
     for h in home_candidates:
-        # Check credentials files for non-empty auth fields
-        for cred_name in ["credentials.json", ".credentials.json", "session.json", "auth.json", "keys.json"]:
-            for cred_path in [h / ".claude" / cred_name, h / cred_name]:
-                try:
-                    if cred_path.exists():
-                        content = cred_path.read_text(encoding="utf-8").strip()
-                        if content:
-                            data = json.loads(content)
-                            if isinstance(data, dict):
-                                for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid"]:
-                                    if key in data and data[key]:
-                                        return True
-                except Exception:
-                    pass
-
-        # Check config json files for actual OAuth auth fields
-        for json_path in [
+        target_files = [
             h / ".claude.json",
             h / ".claude" / "config.json",
+            h / ".claude" / "credentials.json",
+            h / ".claude" / ".credentials.json",
+            h / ".claude" / "session.json",
+            h / ".claude" / "auth.json",
             h / ".config" / "claude-code" / "config.json",
-            h / ".config" / "claude" / "config.json"
-        ]:
+            h / ".config" / "claude-code" / "credentials.json",
+            h / ".config" / "claude" / "config.json",
+            h / "credentials.json",
+            h / "session.json",
+        ]
+        for json_path in target_files:
             try:
                 if json_path.exists():
                     content = json_path.read_text(encoding="utf-8").strip()
                     if content:
                         data = json.loads(content)
                         if isinstance(data, dict):
-                            for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "session", "account", "userID", "email", "access_token"]:
-                                if key in data and data[key]:
-                                    return True
+                            # Require genuine OAuth sessionKey, valid primaryApiKey, or oauthAccount
+                            if data.get("sessionKey"):
+                                return True
+                            if data.get("primaryApiKey") and str(data["primaryApiKey"]).startswith("sk-ant-"):
+                                return True
+                            oauth_acc = data.get("oauthAccount")
+                            if isinstance(oauth_acc, dict) and (oauth_acc.get("accountUuid") or oauth_acc.get("emailAddress")):
+                                return True
             except Exception:
                 pass
 

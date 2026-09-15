@@ -182,9 +182,13 @@ def _has_oauth_credentials_on_disk() -> bool:
                     if content:
                         data = json.loads(content)
                         if isinstance(data, dict):
-                            for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid", "session", "account", "userID", "email"]:
-                                if key in data and data[key]:
-                                    return True
+                            if data.get("sessionKey"):
+                                return True
+                            if data.get("primaryApiKey") and str(data["primaryApiKey"]).startswith("sk-ant-"):
+                                return True
+                            oauth_acc = data.get("oauthAccount")
+                            if isinstance(oauth_acc, dict) and (oauth_acc.get("accountUuid") or oauth_acc.get("emailAddress")):
+                                return True
             except Exception:
                 pass
     return False
