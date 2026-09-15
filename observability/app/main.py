@@ -300,6 +300,17 @@ async def _read_subprocess_output(proc):
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending workspace trust selection: {e_stdin}")
 
+            # Auto-respond with Enter (\r\n) when Claude CLI displays 'Login successful. Press Enter to continue...'
+            if any(k in buffer_nospace for k in ["loginsuccessful", "pressentertocontinue", "loggedinas"]):
+                if proc.stdin and not getattr(proc, "_auto_sent_success_enter", False):
+                    try:
+                        proc.stdin.write(b"\r\n")
+                        await proc.stdin.drain()
+                        proc._auto_sent_success_enter = True
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically sent Enter (\\r\\n) to confirm 'Login successful. Press Enter to continue...'.")
+                    except Exception as e_stdin:
+                        _LOGIN_LOGS.append(f"⚠️ Warning sending success enter: {e_stdin}")
+
             # Also check raw buffer directly for OAuth URLs
             raw_matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', buffer)
             for url in raw_matches:
