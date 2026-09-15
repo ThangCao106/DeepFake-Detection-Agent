@@ -99,8 +99,11 @@ async def _read_subprocess_output(proc):
                             if not _LAST_OAUTH_URL:
                                 _LAST_OAUTH_URL = url_clean
 
+            # Space-collapsed matching to handle ANSI stripped terminal text
+            buffer_nospace = re.sub(r'\s+', '', buffer.lower())
+
             # Auto-respond with Enter (\r\n) if Claude CLI pauses at initial Theme selection screen
-            if any(k in buffer for k in ["Choose the text style", "Let's get started", "MonokaiExtended"]):
+            if any(k in buffer_nospace for k in ["choosethetextstyle", "letsgetstarted", "monokaiextended", "textstylethatlooksbest"]):
                 if proc.stdin:
                     try:
                         proc.stdin.write(b"\r\n")
@@ -113,7 +116,7 @@ async def _read_subprocess_output(proc):
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
 
             # Auto-respond to Workspace Safety Check (select '2. Yes, I trust this folder')
-            if any(k in buffer for k in ["Quick safety check", "Is this a project you created", "trust this folder"]):
+            if any(k in buffer_nospace for k in ["quicksafetycheck", "isthisaproject", "trustthisfolder", "securityguide", "entertoconfirm"]):
                 if proc.stdin:
                     try:
                         if not getattr(proc, "_auto_approved_safety", False):
@@ -175,6 +178,38 @@ async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
         "message": "Đã lưu CLAUDE_API_KEY thành công vào hệ thống!",
         "authenticated": True,
     }
+
+
+class SendInputRequest(BaseModel):
+    input_text: str
+
+
+@app.post("/api/auth/send-input")
+async def send_input_to_proc(req: SendInputRequest) -> dict:
+    """Send interactive keyboard inputs (e.g. down_enter, enter, '2\n') to running login process stdin."""
+    global _ACTIVE_LOGIN_PROC, _LOGIN_LOGS
+    if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
+        raise HTTPException(status_code=400, detail="Không có tiến trình login nào đang chạy.")
+
+    if _ACTIVE_LOGIN_PROC.stdin:
+        try:
+            inp = req.input_text.strip()
+            if inp == "down_enter":
+                _ACTIVE_LOGIN_PROC.stdin.write(b"\x1b[B\r\n2\r\n")
+            elif inp == "enter":
+                _ACTIVE_LOGIN_PROC.stdin.write(b"\r\n")
+            else:
+                _ACTIVE_LOGIN_PROC.stdin.write(f"{inp}\n".encode("utf-8"))
+            await _ACTIVE_LOGIN_PROC.stdin.drain()
+            _LOGIN_LOGS.append(f"➡️ [MANUAL-INPUT] Sent input '{inp}' to process stdin")
+            return {
+                "status": "SUCCESS",
+                "message": f"Đã gửi lệnh '{inp}' tới tiến trình!",
+                "logs": _LOGIN_LOGS[-25:]
+            }
+        except Exception as e_inp:
+            raise HTTPException(status_code=500, detail=f"Lỗi gửi input: {e_inp}")
+    raise HTTPException(status_code=500, detail="Process stdin is not writable.")
 
 
 class SubmitAuthCodeRequest(BaseModel):

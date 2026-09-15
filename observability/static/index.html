@@ -462,6 +462,8 @@
 
     <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
       <button class="btn-login" style="background: #00c853;" onclick="triggerAutoLogin()">⚡ Auto Launch Docker Login</button>
+      <button class="btn-login" style="background: #7c4dff;" onclick="sendInputCmd('down_enter')">✅ Trust Folder (Yes)</button>
+      <button class="btn-login" style="background: #ff9100;" onclick="sendInputCmd('enter')">⏎ Gửi Enter</button>
       <button class="btn-login" style="display: inline-flex;" onclick="checkAuthStatus(); closeLoginModal();">✅ Refresh Auth Status</button>
     </div>
 
@@ -757,6 +759,24 @@ async function saveClaudeApiKey() {
     }
   } catch (err) {
     alert("❌ Lỗi kết nối: " + err.message);
+  }
+}
+
+async function sendInputCmd(inputType) {
+  try {
+    const res = await fetch(getApiUrl("api/auth/send-input"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input_text: inputType })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      fetchDebugLogs();
+    } else {
+      alert("❌ " + (data.detail || "Lỗi gửi lệnh input"));
+    }
+  } catch (err) {
+    console.error("Lỗi gửi input:", err);
   }
 }
 
