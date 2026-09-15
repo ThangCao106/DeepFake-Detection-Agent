@@ -315,7 +315,7 @@ async def trigger_login() -> dict:
                 _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
 
             _LOGIN_LOGS.append(f"🚀 [DEBUG] Launching login command: '{cmd}'")
-            _LOGIN_LOGS.append(f"📂 [DEBUG] Project Root: '{PROJECT_ROOT}', HOME: '{env.get('HOME')}'")
+            _LOGIN_LOGS.append(f"📂 [DEBUG] Login Working Dir: '/tmp', HOME: '{env.get('HOME')}'")
             _LOGIN_LOGS.append(f"🔑 [DEBUG] API Key present in env: {bool(env.get('CLAUDE_API_KEY') or env.get('ANTHROPIC_API_KEY'))}")
 
             _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
@@ -323,7 +323,7 @@ async def trigger_login() -> dict:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=PROJECT_ROOT,
+                cwd="/tmp",
                 env=env
             )
             asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
