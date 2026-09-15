@@ -23,9 +23,14 @@
             </div>
             
             <div class="nav-links">
+                <div class="lang-switcher">
+                    <button type="button" class="lang-btn active" id="langBtnEn" onclick="switchLanguage('en')">🌐 EN</button>
+                    <button type="button" class="lang-btn" id="langBtnVi" onclick="switchLanguage('vi')">🇻🇳 VI</button>
+                </div>
+
                 <div class="status-indicator">
                     <span class="status-dot" id="statusDot"></span>
-                    <span id="statusText">Connecting...</span>
+                    <span id="statusText" data-i18n="status_connecting">Connecting...</span>
                 </div>
             </div>
         </div>
@@ -37,13 +42,13 @@
             
             <!-- Hero Top Header Section (Centered Description at Top) -->
             <section class="hero-header">
-                <h2 class="hero-title">Detect AI-Generated Images with Intelligence</h2>
-                <p class="hero-subtitle">Multi-agent system powered by Vision Transformers and Google Gemini</p>
+                <h2 class="hero-title" data-i18n="hero_title">Detect AI-Generated Images with Intelligence</h2>
+                <p class="hero-subtitle" data-i18n="hero_subtitle">Multi-agent system powered by Vision Transformers and Google Gemini</p>
 
                 <!-- Feature Description Pill -->
                 <div class="feature-pills-centered">
                     <div class="feature-pill">
-                        <p>Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
+                        <p data-i18n="hero_feature">Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
                     </div>
                 </div>
             </section>
@@ -55,7 +60,7 @@
                 <section class="card upload-card" id="uploadCard">
                     <h3 class="card-title">
                         <span class="icon">📸</span>
-                        Upload Image / Media
+                        <span data-i18n="upload_title">Upload Image / Media</span>
                     </h3>
                     
                     <div class="upload-area" id="uploadArea">
@@ -67,9 +72,9 @@
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
                                 </svg>
                             </div>
-                            <p class="upload-headline">Drag and drop your file here or browse to upload</p>
-                            <p class="upload-subheadline">Supports image, video and audio formats</p>
-                            <button type="button" class="btn btn-browse" id="browseBtn">Browse Files</button>
+                            <p class="upload-headline" data-i18n="upload_headline">Drag and drop your file here or browse to upload</p>
+                            <p class="upload-subheadline" data-i18n="upload_subheadline">Supports image, video and audio formats</p>
+                            <button type="button" class="btn btn-browse" id="browseBtn" data-i18n="browse_btn">Browse Files</button>
                             <input type="file" id="fileInput" accept="image/*,video/*,audio/*" hidden>
                         </div>
 
@@ -87,27 +92,27 @@
 
                     <!-- Divider line -->
                     <div class="divider-or">
-                        <span>or</span>
+                        <span data-i18n="divider_or">or</span>
                     </div>
 
                     <!-- Media URL Input Field -->
                     <div class="url-input-group">
                         <span class="url-icon">🔗</span>
-                        <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL...">
+                        <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL..." data-i18n-ph="url_placeholder">
                     </div>
 
                     <!-- Analyze Button -->
                     <button class="btn btn-primary" id="analyzeBtn" disabled>
                         <span class="btn-icon">🔍</span>
-                        Analyze Media
+                        <span id="analyzeBtnText" data-i18n="analyze_btn">Analyze Media</span>
                     </button>
                     
                     <!-- Footnote Formats -->
                     <div class="upload-footer-info" style="margin-top: 14px;">
 
-                        <p class="formats-text"><strong>Supported Image:</strong> PNG, JPG, JPEG, WEBP</p>
-                        <p class="formats-text"><strong>Video:</strong> QuickTime, 1080i, MP4, WEBM, AVI, MOV, MKV</p>
-                        <p class="formats-text"><strong>Audio:</strong> FLAC, MP3, OGG, WAV, AAC</p>
+                        <p class="formats-text"><strong data-i18n="fmt_img">Supported Image:</strong> PNG, JPG, JPEG, WEBP</p>
+                        <p class="formats-text"><strong data-i18n="fmt_vid">Video:</strong> QuickTime, 1080i, MP4, WEBM, AVI, MOV, MKV</p>
+                        <p class="formats-text"><strong data-i18n="fmt_aud">Audio:</strong> FLAC, MP3, OGG, WAV, AAC</p>
                     </div>
                 </section>
 
@@ -115,12 +120,12 @@
                 <section class="card chat-card">
                     <h3 class="card-title">
                         <span class="icon">💬</span>
-                        Chat with Agent
+                        <span data-i18n="chat_title">Chat with Agent</span>
                     </h3>
                     
                     <div class="chat-messages" id="chatMessages">
                         <div class="welcome-message">
-                            <p>👋 Welcome! Upload an image or video to start detection.</p>
+                            <p data-i18n="welcome_msg">👋 Welcome! Upload an image or video to start detection.</p>
                         </div>
                     </div>
                     
@@ -130,6 +135,7 @@
                             class="chat-input" 
                             id="chatInput" 
                             placeholder="Ask a question about the results..."
+                            data-i18n-ph="chat_placeholder"
                             disabled
                         >
                         <button class="btn-send" id="sendBtn" disabled>
@@ -144,7 +150,7 @@
             <section class="card results-card" id="resultsCard" style="display: none; margin-top: 30px;">
                 <h3 class="card-title">
                     <span class="icon">📊</span>
-                    Detection & Forensic Results
+                    <span data-i18n="results_title">Detection & Forensic Results</span>
                 </h3>
                 
                 <div class="results-content">
@@ -152,7 +158,7 @@
                     <div class="result-prediction">
                         <div class="prediction-label" id="predictionLabel">-</div>
                         <div class="prediction-confidence">
-                            <span>Confidence Score:</span>
+                            <span data-i18n="confidence_label">Confidence Score:</span>
                             <span id="confidenceValue">0%</span>
                         </div>
                     </div>
@@ -169,31 +175,31 @@
 
                     <!-- Video Frame-by-Frame Results Container -->
                     <div class="video-frames-section" id="videoFramesSection" style="display: none; margin-top: 15px;">
-                        <h4 style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;">🎬 Frame-by-Frame Video Analysis</h4>
+                        <h4 style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;" data-i18n="video_frames_title">🎬 Frame-by-Frame Video Analysis</h4>
                         <div class="frames-grid" id="framesGrid" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;"></div>
                     </div>
 
                     <!-- Auditable Forensic Certificate Section -->
                     <div class="forensic-cert-card" id="forensicCertCard" style="margin-top: 20px; padding: 18px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; display: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px;">
-                            <h4 style="margin: 0; color: #166534; font-size: 0.95rem; font-weight: 700;">📜 Auditable Digital Forensic Certificate</h4>
+                            <h4 style="margin: 0; color: #166534; font-size: 0.95rem; font-weight: 700;" data-i18n="cert_title">📜 Auditable Digital Forensic Certificate</h4>
                             <span id="certBadge" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #fff;">-</span>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;" id="certMetricsGrid">
                             <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Certificate ID</div>
+                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_id_label">Certificate ID</div>
                                 <div id="certIdVal" style="font-family: monospace; font-weight: bold; color: #1e293b; font-size: 0.85rem;">-</div>
                             </div>
                             <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Composite Risk</div>
+                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_risk_label">Composite Risk</div>
                                 <div id="certRiskVal" style="font-weight: bold; color: #d97706; font-size: 0.85rem;">-</div>
                             </div>
                             <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Spectral Anomaly (FFT 2D)</div>
+                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_spectral_label">Spectral Anomaly (FFT 2D)</div>
                                 <div id="certSpectralVal" style="font-weight: bold; color: #2563eb; font-size: 0.85rem;">-</div>
                             </div>
                             <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Spatial Noise Inconsistency</div>
+                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_spatial_label">Spatial Noise Inconsistency</div>
                                 <div id="certSpatialVal" style="font-weight: bold; color: #db2777; font-size: 0.85rem;">-</div>
                             </div>
                         </div>
@@ -201,7 +207,7 @@
                     
                     <!-- Explanation -->
                     <div class="explanation-section" id="explanationSection" style="display: none;">
-                        <h4>🧠 AI Forensic Analysis & Multi-Agent Explanation</h4>
+                        <h4 data-i18n="explanation_title">🧠 AI Forensic Analysis & Multi-Agent Explanation</h4>
                         <div class="explanation-text" id="explanationText"></div>
                     </div>
 

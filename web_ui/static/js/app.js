@@ -1,6 +1,117 @@
 // WebSocket connection
 const socket = io();
 
+// ===== Multi-Language (i18n) Translations =====
+const TRANSLATIONS = {
+    en: {
+        status_connecting: "Connecting...",
+        status_connected: "Connected",
+        status_disconnected: "Disconnected",
+        hero_title: "Detect AI-Generated Images with Intelligence",
+        hero_subtitle: "Multi-agent system powered by Vision Transformers and Google Gemini",
+        hero_feature: "Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.",
+        upload_title: "Upload Image / Media",
+        upload_headline: "Drag and drop your file here or browse to upload",
+        upload_subheadline: "Supports image, video and audio formats",
+        browse_btn: "Browse Files",
+        divider_or: "or",
+        url_placeholder: "Enter Media URL...",
+        analyze_btn: "Analyze Media",
+        analyzing_btn: "Analyzing...",
+        fmt_img: "Supported Image:",
+        fmt_vid: "Video:",
+        fmt_aud: "Audio:",
+        chat_title: "Chat with Agent",
+        welcome_msg: "👋 Welcome! Upload an image or video to start detection.",
+        chat_placeholder: "Ask a question about the results...",
+        results_title: "Detection & Forensic Results",
+        confidence_label: "Confidence Score:",
+        video_frames_title: "🎬 Frame-by-Frame Video Analysis",
+        cert_title: "📜 Auditable Digital Forensic Certificate",
+        cert_id_label: "Certificate ID",
+        cert_risk_label: "Composite Risk",
+        cert_spectral_label: "Spectral Anomaly (FFT 2D)",
+        cert_spatial_label: "Spatial Noise Inconsistency",
+        explanation_title: "🧠 AI Forensic Analysis & Multi-Agent Explanation",
+        summary_verdict_title: "1. Executive Verdict & Certificate Summary",
+        badge_real: "✅ REAL / AUTHENTIC",
+        badge_fake: "🚨 FAKE / DEEPFAKE",
+        conf_score_label: "Confidence Score",
+        system_connected: "Connected to Deepfake Detection Agent System",
+        upload_analyzing_media: "Analyzing media content: "
+    },
+    vi: {
+        status_connecting: "Đang kết nối...",
+        status_connected: "Đã kết nối",
+        status_disconnected: "Mất kết nối",
+        hero_title: "Phát hiện hình ảnh & truyền thông AI thông minh",
+        hero_subtitle: "Hệ thống đa Agent dựa trên Vision Transformers và Google Gemini",
+        hero_feature: "Tải lên hình ảnh, video hoặc âm thanh để phát hiện nội dung giả mạo (Deepfake) bằng các mô hình hàng đầu.",
+        upload_title: "Tải lên Hình ảnh / Truyền thông",
+        upload_headline: "Kéo thả tệp vào đây hoặc duyệt để tải lên",
+        upload_subheadline: "Hỗ trợ định dạng hình ảnh, video và âm thanh",
+        browse_btn: "Chọn tệp",
+        divider_or: "hoặc",
+        url_placeholder: "Nhập đường dẫn URL...",
+        analyze_btn: "Phân tích Truyền thông",
+        analyzing_btn: "Đang phân tích...",
+        fmt_img: "Hình ảnh hỗ trợ:",
+        fmt_vid: "Video:",
+        fmt_aud: "Âm thanh:",
+        chat_title: "Trò chuyện với Agent",
+        welcome_msg: "👋 Xin chào! Tải lên hình ảnh hoặc video để bắt đầu giám định.",
+        chat_placeholder: "Đặt câu hỏi về kết quả giám định...",
+        results_title: "Kết quả Phát hiện & Giám định",
+        confidence_label: "Độ tin cậy:",
+        video_frames_title: "🎬 Phân tích từng khung hình Video",
+        cert_title: "📜 Chứng thư Giám định Kỹ thuật số",
+        cert_id_label: "Mã chứng thư",
+        cert_risk_label: "Rủi ro tổng hợp",
+        cert_spectral_label: "Dấu vết phổ (FFT 2D)",
+        cert_spatial_label: "Bất biến nhiễu không gian",
+        explanation_title: "🧠 Phân tích Giám định AI & Giải trình Đa Agent",
+        summary_verdict_title: "1. Kết luận Giám định & Tóm tắt Chứng thư",
+        badge_real: "✅ CHÂN THỰC / ẢNH THỰC",
+        badge_fake: "🚨 GIẢ MẠO / DEEPFAKE",
+        conf_score_label: "Độ tin cậy",
+        system_connected: "Đã kết nối với Hệ thống Agent Phát hiện Deepfake",
+        upload_analyzing_media: "Đang phân tích nội dung: "
+    }
+};
+
+let currentLang = localStorage.getItem('app_lang') || (navigator.language && navigator.language.startsWith('vi') ? 'vi' : 'en');
+
+function switchLanguage(lang) {
+    if (!TRANSLATIONS[lang]) return;
+    currentLang = lang;
+    localStorage.setItem('app_lang', lang);
+
+    const btnEn = document.getElementById('langBtnEn');
+    const btnVi = document.getElementById('langBtnVi');
+    if (btnEn && btnVi) {
+        btnEn.classList.toggle('active', lang === 'en');
+        btnVi.classList.toggle('active', lang === 'vi');
+    }
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (TRANSLATIONS[lang][key]) {
+            el.textContent = TRANSLATIONS[lang][key];
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        const key = el.getAttribute('data-i18n-ph');
+        if (TRANSLATIONS[lang][key]) {
+            el.placeholder = TRANSLATIONS[lang][key];
+        }
+    });
+
+    if (statusDot.classList.contains('connected')) {
+        statusText.textContent = TRANSLATIONS[lang].status_connected;
+    }
+}
+
 // DOM Elements
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -32,14 +143,14 @@ let analysisComplete = false;
 socket.on('connect', () => {
     console.log('Connected to server');
     statusDot.classList.add('connected');
-    statusText.textContent = 'Connected';
-    addSystemMessage('Connected to Deepfake Detection Agent System');
+    statusText.textContent = TRANSLATIONS[currentLang].status_connected;
+    addSystemMessage(TRANSLATIONS[currentLang].system_connected);
 });
 
 socket.on('disconnect', () => {
     console.log('Disconnected from server');
     statusDot.classList.remove('connected');
-    statusText.textContent = 'Disconnected';
+    statusText.textContent = TRANSLATIONS[currentLang].status_disconnected;
 });
 
 socket.on('status', (data) => {
@@ -227,11 +338,12 @@ analyzeBtn.addEventListener('click', async () => {
             resultsCard.style.display = 'none';
 
             const mediaName = uploadedFile ? uploadedFile.name : urlInput.value;
-            addUserMessage(`Analyzing media content: ${mediaName}`);
+            addUserMessage(`${TRANSLATIONS[currentLang].upload_analyzing_media}${mediaName}`);
 
             socket.emit('analyze_image', {
                 filepath: uploadedFilePath,
-                query: ''
+                query: '',
+                language: currentLang
             });
         } else {
             throw new Error(data.error || `Upload failed with status ${response.status}`);
@@ -240,7 +352,7 @@ analyzeBtn.addEventListener('click', async () => {
         console.error('Upload error:', error);
         addSystemMessage(`Upload failed: ${error.message}`, 'error');
         analyzeBtn.disabled = false;
-        analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Media';
+        analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
     }
 });
 
@@ -261,7 +373,7 @@ function sendMessage() {
     chatInput.disabled = true;
     sendBtn.disabled = true;
 
-    socket.emit('ask_question', { question: message });
+    socket.emit('ask_question', { question: message, language: currentLang });
 }
 
 // ===== Message Display =====
@@ -392,7 +504,7 @@ function displayResults(data) {
     resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     analyzeBtn.disabled = false;
-    analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Another Media';
+    analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
 }
 
 let latestDetectionResult = null;
@@ -403,7 +515,8 @@ displayResults = function(data) {
     originalDisplayResults(data);
 };
 
-function formatAgentChatSummary(text, data) {
+function formatAgentChatSummary(text, data, lang = currentLang) {
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
     if (!data) return renderMarkdown(text);
 
     const cert = data.forensic_certificate || {};
@@ -411,7 +524,7 @@ function formatAgentChatSummary(text, data) {
 
     const label = data.label || 'Unknown';
     const isFake = label.toLowerCase().includes('fake') || label.toLowerCase().includes('synthetic') || label.toLowerCase().includes('manipulate');
-    const labelBadgeText = isFake ? '🚨 FAKE / DEEPFAKE' : '✅ REAL / AUTHENTIC';
+    const labelBadgeText = isFake ? t.badge_fake : t.badge_real;
     const labelBadgeBg = isFake ? '#fee2e2' : '#dcfce7';
     const labelBadgeColor = isFake ? '#b91c1c' : '#15803d';
 
@@ -431,17 +544,17 @@ function formatAgentChatSummary(text, data) {
                     ${labelBadgeText}
                 </span>
                 <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
-                    Confidence Score: <strong style="color: #0f172a;">${confidence}</strong>
+                    ${t.conf_score_label}: <strong style="color: #0f172a;">${confidence}</strong>
                 </span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 0.82rem; color: #334155;">
-                <div><span style="color: #64748b;">Certificate ID:</span> <code style="font-family: monospace; font-weight: 700; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; color: #0f172a;">${certId}</code></div>
-                <div><span style="color: #64748b;">Composite Risk:</span> <strong style="color: ${isFake ? '#dc2626' : '#16a34a'};">${compositeRisk}</strong></div>
-                <div><span style="color: #64748b;">Spectral Anomaly (FFT 2D):</span> <strong>${spectral}</strong></div>
-                <div><span style="color: #64748b;">Spatial Noise Inconsistency:</span> <strong>${spatial}</strong></div>
+                <div><span style="color: #64748b;">${t.cert_id_label}:</span> <code style="font-family: monospace; font-weight: 700; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; color: #0f172a;">${certId}</code></div>
+                <div><span style="color: #64748b;">${t.cert_risk_label}:</span> <strong style="color: ${isFake ? '#dc2626' : '#16a34a'};">${compositeRisk}</strong></div>
+                <div><span style="color: #64748b;">${t.cert_spectral_label}:</span> <strong>${spectral}</strong></div>
+                <div><span style="color: #64748b;">${t.cert_spatial_label}:</span> <strong>${spatial}</strong></div>
             </div>
         </div>
-        <div style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 6px; border-left: 3px solid #5c46e5; padding-left: 8px;">1. Executive Verdict & Certificate Summary</div>
+        <div style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 6px; border-left: 3px solid #5c46e5; padding-left: 8px;">${t.summary_verdict_title}</div>
         <div class="explanation-text-body" style="font-size: 0.88rem; line-height: 1.55;">${cleanExplanation}</div>
     `;
 }
@@ -453,10 +566,10 @@ function displayExplanation(text) {
     explanationSection.style.display = 'block';
     explanationText.innerHTML = renderMarkdown(text);
 
-    // Format chat agent message as clean summary card
+    // Format chat agent message as clean summary card with active language
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message agent';
-    messageDiv.innerHTML = `<div class="message-content markdown-body">${formatAgentChatSummary(text, latestDetectionResult)}</div>`;
+    messageDiv.innerHTML = `<div class="message-content markdown-body">${formatAgentChatSummary(text, latestDetectionResult, currentLang)}</div>`;
     chatMessages.appendChild(messageDiv);
     scrollToBottom();
 
@@ -480,4 +593,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('Deepfake Detection Web App initialized with video & media support');
+document.addEventListener('DOMContentLoaded', () => {
+    switchLanguage(currentLang);
+});
+
+console.log('Deepfake Detection Web App initialized with multi-language i18n support');

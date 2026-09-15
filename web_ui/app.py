@@ -141,6 +141,7 @@ def handle_analyze_image(data):
     try:
         filepath = data.get('filepath')
         user_query = data.get('query', '')
+        language = data.get('language', 'en')
         
         if not filepath or not os.path.exists(filepath):
             emit('error', {'message': 'Image file not found'})
@@ -182,11 +183,18 @@ def handle_analyze_image(data):
             })
             
             # Send basic explanation (no LLM)
-            explanation = f"The image was classified as '{result['label']}' with {result['confidence']:.1%} confidence. "
-            if result['label'] == 'Realism':
-                explanation += "This suggests the image is likely a real photograph, not AI-generated."
+            if language == 'vi':
+                explanation = f"Tệp truyền thông được phân loại là '{result['label']}' với độ tin cậy {result['confidence']:.1%}. "
+                if result['label'] == 'Realism':
+                    explanation += "Cho thấy đây nhiều khả năng là hình ảnh thực tế, không phải tạo bằng AI."
+                else:
+                    explanation += "Cho thấy hình ảnh có dấu vết tạo bằng AI hoặc bị thao túng."
             else:
-                explanation += "This suggests the image may be AI-generated or manipulated."
+                explanation = f"The image was classified as '{result['label']}' with {result['confidence']:.1%} confidence. "
+                if result['label'] == 'Realism':
+                    explanation += "This suggests the image is likely a real photograph, not AI-generated."
+                else:
+                    explanation += "This suggests the image may be AI-generated or manipulated."
             
             emit('analysis_result', {'explanation': explanation})
         
@@ -199,7 +207,7 @@ def handle_analyze_image(data):
             })
             
             # Process through orchestrator
-            analysis = orchestrator.process_image(filepath, user_query)
+            analysis = orchestrator.process_image(filepath, user_query, language=language)
             
             # Get the last detection result from memory
             detection_result = None
@@ -231,6 +239,7 @@ def handle_ask_question(data):
     """Handle follow-up question via WebSocket."""
     try:
         question = data.get('question', '')
+        language = data.get('language', 'en')
         
         if not question:
             emit('error', {'message': 'No question provided'})
@@ -246,7 +255,7 @@ def handle_ask_question(data):
             'message': 'Processing your question...'
         })
         
-        answer = orchestrator.ask_question(question)
+        answer = orchestrator.ask_question(question, language=language)
         
         emit('agent_status', {
             'agent': 'Analysis Agent',

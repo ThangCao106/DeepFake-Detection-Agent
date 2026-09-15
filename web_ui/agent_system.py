@@ -295,11 +295,11 @@ class AnalysisAgent:
         return None
 
     def analyze(self, detection_result: Dict[str, Any], user_query: str = None, 
-                conversation_context: str = "") -> str:
+                conversation_context: str = "", language: str = 'en') -> str:
         """
         Analyze detection results or lookup Certificate ID and provide authoritative LLM explanation.
         """
-        logger.info("AnalysisAgent processing request")
+        logger.info(f"AnalysisAgent processing request (language: {language})")
         
         # Check if user query specifies a Certificate ID to check
         cert_id_match = re.search(r'(CERT-\d{8}-[A-Z0-9]+)', user_query or '', re.IGNORECASE)
@@ -311,9 +311,11 @@ class AnalysisAgent:
                 detection_result = stored_result
                 user_query = f"Provide detailed forensic verification for Certificate ID: {target_cert_id}. Question: {user_query}"
             else:
+                if language == 'vi':
+                    return f"🔍 Không tìm thấy Certificate ID '{target_cert_id}' trong Observability Memory Store. Vui lòng đảm bảo hình ảnh đã được phân tích."
                 return f"🔍 Certificate ID '{target_cert_id}' not found in Observability Memory Store. Please ensure the media has been analyzed."
 
-        prompt = self._build_prompt(detection_result, user_query, conversation_context)
+        prompt = self._build_prompt(detection_result, user_query, conversation_context, language=language)
         
         # Try Claude first if configured
         claude_response = self._call_claude_llm(prompt)
@@ -334,13 +336,20 @@ class AnalysisAgent:
         return f"Analytic Report: Media classified as '{detection_result.get('label')}' with {detection_result.get('confidence', 0):.1%} confidence. Certificate ID: {detection_result.get('forensic_certificate', {}).get('certificate_id', 'N/A')}."
     
     def _build_prompt(self, detection_result: Dict[str, Any], 
-                     user_query: str = None, context: str = "") -> str:
+                     user_query: str = None, context: str = "", language: str = 'en') -> str:
         """Build the prompt for the LLM based on Auditable Forensic Decision Record."""
         
         cert = detection_result.get("forensic_certificate", {})
         evidence = cert.get("multi_dimensional_evidence", {})
+
+        lang_instruction = (
+            "IMPORTANT LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in VIETNAMESE (Tiếng Việt). Use precise, professional Vietnamese forensic terminology."
+            if language == 'vi'
+            else "IMPORTANT LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in ENGLISH. Use precise, professional forensic terminology."
+        )
         
         base_prompt = f"""You are an Expert AI Media Forensics Investigator certifying synthetic media authenticity under EU AI Act Article 50 & DSA Auditable Media Standards.
+{lang_instruction}
 
 AUDITABLE DIGITAL FORENSIC DECISION RECORD:
 - Certificate ID: {cert.get('certificate_id', 'N/A')}
@@ -397,7 +406,7 @@ class DeepfakeDetectionOrchestrator:
         print(f"{Fore.GREEN}🤖 Deepfake Detection Agent System Initialized{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Session ID: {self.memory.session_id}{Style.RESET_ALL}\n")
     
-    def process_image(self, image_path: str, user_query: str = None) -> str:
+    def process_image(self, image_path: str, user_query: str = None, language: str = 'en') -> str:
         """
         Process an image through the multi-agent workflow.
         
@@ -411,11 +420,12 @@ class DeepfakeDetectionOrchestrator:
         Args:
             image_path: Path to image to analyze
             user_query: Optional question from user
+            language: Language preference ('en' or 'vi')
             
         Returns:
             Analysis and explanation
         """
-        logger.info(f"Processing image: {image_path}")
+        logger.info(f"Processing image: {image_path} (language: {language})")
         
         # Add user message to memory
         user_msg = f"Analyze image: {image_path}"
@@ -449,7 +459,8 @@ class DeepfakeDetectionOrchestrator:
         analysis = self.analysis_agent.analyze(
             detection_result, 
             user_query, 
-            conversation_context
+            conversation_context,
+            language=language
         )
         
         # Add analysis to memory
@@ -457,12 +468,12 @@ class DeepfakeDetectionOrchestrator:
         
         return analysis
     
-    def ask_question(self, question: str) -> str:
+    def ask_question(self, question: str, language: str = 'en') -> str:
         """
         Ask a follow-up question about previous detections.
         Uses conversation memory for context.
         """
-        logger.info(f"User question: {question}")
+        logger.info(f"User question: {question} (language: {language})")
         self.memory.add_message("user", question)
         
         print(f"{Fore.YELLOW}🧠 Analysis Agent: Processing question...{Style.RESET_ALL}")
@@ -475,10 +486,14 @@ class DeepfakeDetectionOrchestrator:
                 break
         
         if not last_detection:
-            response = "No previous detection results found. Please analyze an image first."
+            response = (
+                "Chưa tìm thấy kết quả phân tích nào trước đó. Vui lòng tải lên và phân tích hình ảnh trước."
+                if language == 'vi'
+                else "No previous detection results found. Please analyze an image first."
+            )
         else:
             context = self.memory.get_context()
-            response = self.analysis_agent.analyze(last_detection, question, context)
+            response = self.analysis_agent.analyze(last_detection, question, context, language=language)
         
         self.memory.add_message("agent", response)
         return response
