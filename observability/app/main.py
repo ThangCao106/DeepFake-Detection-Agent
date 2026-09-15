@@ -46,19 +46,9 @@ async def gate_login(req: GateLoginRequest) -> dict:
 
 def _has_valid_credentials() -> bool:
     """Check if actual API keys or OAuth authentication credentials exist."""
-    has_api_key = bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
-    if has_api_key:
+    api_key = (os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+    if api_key.startswith("sk-ant-"):
         return True
-
-    # Check if login logs confirm successful login
-    global _LOGIN_LOGS
-    log_text = "\n".join(_LOGIN_LOGS).lower()
-    if "not logged in" not in log_text and "please run /login" not in log_text:
-        if any(k in log_text for k in [
-            "logged in as ", "successfully logged in", "authentication successful",
-            "login successful", "welcome to claude", "authenticated as ", "successfully authenticated"
-        ]):
-            return True
 
     home_candidates = [
         Path("/home/agent"),
@@ -336,6 +326,18 @@ async def send_input_to_proc(req: SendInputRequest) -> dict:
     raise HTTPException(status_code=500, detail="Process stdin is not writable.")
 
 
+def _clean_oauth_code(raw: str) -> str:
+    """Extract clean code string if user pasted a full callback URL or formatted param."""
+    code = raw.strip().strip("'\"")
+    if "code=" in code:
+        part = code.split("code=")[1]
+        for sep in ["&", "#", " ", "\n", "\r"]:
+            if sep in part:
+                part = part.split(sep)[0]
+        code = part.strip()
+    return code
+
+
 class SubmitAuthCodeRequest(BaseModel):
     code: str
 
@@ -344,7 +346,7 @@ class SubmitAuthCodeRequest(BaseModel):
 async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
     """Submit OAuth authorization code or API key to running claude login subprocess stdin or environment."""
     global _ACTIVE_LOGIN_PROC, _LOGIN_LOGS
-    code_input = req.code.strip().strip("'\"")
+    code_input = _clean_oauth_code(req.code)
     if not code_input:
         raise HTTPException(status_code=400, detail="Vui lòng nhập mã code hoặc API Key hợp lệ.")
 
