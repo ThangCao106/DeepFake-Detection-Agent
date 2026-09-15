@@ -55718,5 +55718,61 @@
       "optimal_threshold_tau": 0.6195
     },
     "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-15T08:56:53.640509",
+    "date": "2026-09-15",
+    "pass_number": 55,
+    "modality": "IMAGE",
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.994
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.994,
+      "auc_score": 0.998,
+      "eer_score": 0.012,
+      "precision": 0.995,
+      "recall": 0.9908,
+      "f1_score": 0.9929,
+      "temperature_scaling_T": 1.4211,
+      "optimal_threshold_tau": 0.8297
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
   }
 ]
