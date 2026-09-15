@@ -115,6 +115,17 @@ async def _read_subprocess_output(proc):
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
 
+            # Auto-respond with /login if Claude CLI is waiting at 'Not logged in · Run /login' prompt
+            if any(k in buffer_nospace for k in ["notloggedin", "run/login", "pleaserun/login"]):
+                if proc.stdin and not getattr(proc, "_auto_sent_slash_login", False):
+                    try:
+                        proc.stdin.write(b"/login\r\n")
+                        await proc.stdin.drain()
+                        proc._auto_sent_slash_login = True
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically sent '/login\\r\\n' command to Claude CLI REPL.")
+                    except Exception as e_stdin:
+                        _LOGIN_LOGS.append(f"⚠️ Warning sending /login command: {e_stdin}")
+
             # Auto-respond to Workspace Safety Check (select '2. Yes, I trust this folder')
             if any(k in buffer_nospace for k in ["quicksafetycheck", "isthisaproject", "trustthisfolder", "securityguide", "entertoconfirm"]):
                 if proc.stdin:
@@ -308,6 +319,10 @@ async def trigger_login() -> dict:
             env.pop("CI", None)
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
+            env["DISABLE_CLAUDE_AUTO_UPDATE"] = "1"
+            env["DISABLE_AUTO_UPDATE"] = "1"
+            env["CLAUDE_AUTO_UPDATE_DISABLE"] = "1"
+            env["NO_UPDATE_NOTIFIER"] = "1"
 
             # Pre-create default theme config in all Claude CLI config locations across all candidate home directories
             try:
