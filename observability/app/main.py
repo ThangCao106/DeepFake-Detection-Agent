@@ -66,10 +66,20 @@ def _has_valid_credentials() -> bool:
     ]
 
     for h in home_candidates:
-        # Check credentials files
+        # Check credentials files for non-empty auth fields
         for cred_name in ["credentials.json", ".credentials.json", "session.json", "auth.json", "keys.json"]:
-            if (h / ".claude" / cred_name).exists() or (h / cred_name).exists():
-                return True
+            for cred_path in [h / ".claude" / cred_name, h / cred_name]:
+                if cred_path.exists():
+                    try:
+                        content = cred_path.read_text(encoding="utf-8").strip()
+                        if content:
+                            data = json.loads(content)
+                            if isinstance(data, dict):
+                                for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid"]:
+                                    if key in data and data[key]:
+                                        return True
+                    except Exception:
+                        pass
 
         # Check config json files for actual OAuth auth fields
         for json_path in [

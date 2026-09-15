@@ -478,6 +478,7 @@
       <button class="btn-login" style="background: #29b6f6;" onclick="sendInputCmd('/login')">🔑 Gửi /login</button>
       <button class="btn-login" style="background: #7c4dff;" onclick="sendInputCmd('down_enter')">✅ Trust Folder (Yes)</button>
       <button class="btn-login" style="background: #ff9100;" onclick="sendInputCmd('enter')">⏎ Gửi Enter</button>
+      <button class="btn-login" style="background: #455a64;" onclick="fetchDebugLogs(true)">📜 Xem Log Debug</button>
       <button class="btn-login" style="display: inline-flex;" onclick="checkAuthStatus(); closeLoginModal();">✅ Refresh Auth Status</button>
     </div>
 
@@ -691,15 +692,12 @@ async function triggerAutoLogin() {
         oauthBox.style.display = "block";
         loginCmdText.textContent = data.command;
 
-        // Try opening in new browser tab
-        try {
-          window.open(data.oauth_url, '_blank');
-        } catch (e) {
-          console.log("Popup blocked:", e);
+        const codeStatusText = document.getElementById("codeStatusText");
+        if (codeStatusText) {
+          codeStatusText.style.display = "block";
+          codeStatusText.style.color = "#2e7d32";
+          codeStatusText.textContent = "👉 Đã bắt được link OAuth! Nhấp vào nút 'Open Anthropic OAuth Login Page' trên để lấy mã xác thực, dán vào ô dưới và bấm Submit Code.";
         }
-
-        // Auto-poll auth status every 3s to confirm when user finishes login
-        startAuthStatusPolling();
       } else if (attempts < maxAttempts) {
         setTimeout(pollApi, 1500);
       } else {
@@ -714,17 +712,35 @@ async function triggerAutoLogin() {
   pollApi();
 }
 
-function startAuthStatusPolling() {
-  if (authPollInterval) clearInterval(authPollInterval);
-  authPollInterval = setInterval(async () => {
-    const isAuth = await checkAuthStatus();
-    if (isAuth) {
-      clearInterval(authPollInterval);
-      authPollInterval = null;
-      alert("🎉 Claude CLI Authentication Successful! You are now logged in.");
-      closeLoginModal();
+async function fetchDebugLogs(manual = false) {
+  const consoleLogContainer = document.getElementById("consoleLogContainer");
+  if (consoleLogContainer) consoleLogContainer.style.display = "block";
+  
+  try {
+    const res = await fetch(getApiUrl("api/auth/debug-logs"));
+    if (res.ok) {
+      const data = await res.json();
+      let header = `📊 [DEBUG DIAGNOSTICS]\n`;
+      header += `Process Status: ${data.process_status}\n`;
+      header += `Captured OAuth URL: ${data.oauth_url || "None"}\n`;
+      header += `Claude Dir Exists (/home/agent/.claude): ${data.claude_dir_exists}\n`;
+      header += `User Claude Dir Exists (~/.claude): ${data.user_claude_dir_exists}\n`;
+      header += `CLAUDE_API_KEY Present: ${data.has_api_key}\n`;
+      header += `Total Log Lines: ${data.total_log_lines}\n`;
+      header += `----------------------------------------\n`;
+      
+      const logsText = data.logs && data.logs.length > 0 ? data.logs.slice(-30).join("\n") : "(No logs captured yet)";
+      if (consoleLogContainer) {
+        consoleLogContainer.textContent = header + logsText;
+        consoleLogContainer.scrollTop = consoleLogContainer.scrollHeight;
+      }
+      if (manual) {
+        alert(`📜 Debug trace logs updated! (${data.total_log_lines} log lines, Process: ${data.process_status})`);
+      }
     }
-  }, 3000);
+  } catch (err) {
+    if (consoleLogContainer) consoleLogContainer.textContent += `\n❌ Error fetching debug logs: ${err.message}`;
+  }
 }
 
 function copyOauthUrl() {
