@@ -99,6 +99,17 @@ async def _read_subprocess_output(proc):
                             if not _LAST_OAUTH_URL:
                                 _LAST_OAUTH_URL = url_clean
 
+            # Auto-respond with Enter (\n) if Claude CLI pauses at initial Theme selection screen
+            if any(k in buffer for k in ["Choose the text style", "Let's get started", "MonokaiExtended"]):
+                if proc.stdin and not getattr(proc, "_auto_entered_theme", False):
+                    proc._auto_entered_theme = True
+                    try:
+                        proc.stdin.write(b"\n")
+                        await proc.stdin.drain()
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically selected default Dark mode theme.")
+                    except Exception as e_stdin:
+                        _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
+
             # Also check raw buffer directly for OAuth URLs
             raw_matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', buffer)
             for url in raw_matches:
@@ -247,6 +258,16 @@ async def trigger_login() -> dict:
             env.pop("CI", None)
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
+
+            # Pre-create default theme config in /home/agent/.claude.json to bypass Theme onboarding prompt
+            try:
+                agent_home = Path("/home/agent")
+                agent_home.mkdir(parents=True, exist_ok=True)
+                cfg_file = agent_home / ".claude.json"
+                if not cfg_file.exists():
+                    cfg_file.write_text(json.dumps({"theme": "dark", "hasCompletedOnboarding": True}), encoding="utf-8")
+            except Exception as e_cfg:
+                _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
 
             _LOGIN_LOGS.append(f"🚀 [DEBUG] Launching login command: '{cmd}'")
             _LOGIN_LOGS.append(f"📂 [DEBUG] Project Root: '{PROJECT_ROOT}', HOME: '{env.get('HOME')}'")
