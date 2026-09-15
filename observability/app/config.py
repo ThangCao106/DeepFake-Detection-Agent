@@ -9,9 +9,9 @@ load_dotenv(Path(PROJECT_ROOT) / ".env")
 
 API_KEY = os.environ.get("API_KEY", "observability-agent-key")
 
-# Read-only connection — existing log/metrics queries. Unchanged.
-CLICKHOUSE_MCP = {
-    "clickhouse": {
+# Read-only connection — Deepfake Detection Telemetry & System Analytics
+DEEPFAKE_ANALYTICS_MCP = {
+    "deepfake-analytics": {
         "command": "uvx",
         "args": ["--with", "mcp-clickhouse", "--python", "3.10", "mcp-clickhouse"],
         "env": {
@@ -24,12 +24,10 @@ CLICKHOUSE_MCP = {
     }
 }
 
-# Separate read-write connection, scoped (via ClickHouse GRANT — see MEMORY_SETUP.md) to ONLY
-# hsc.agent_memory / hsc.agent_memory_dist. Deliberately a different MCP server + different
-# ClickHouse user than CLICKHOUSE_MCP above, so a mistake here can't touch real log/production
-# tables — same host, but agent_smith has no write grant anywhere except the memory tables.
-CLICKHOUSE_MEMORY_MCP = {
-    "clickhouse-memory": {
+# Persistent Read-Write Deepfake Agent Memory Table Store (deepfake_agent_memory)
+# Scoped for benchmark runs, Colab training reports, and model weight history tracking.
+DEEPFAKE_MEMORY_MCP = {
+    "deepfake-agent-memory": {
         "command": "uvx",
         "args": ["--with", "mcp-clickhouse", "--python", "3.10", "mcp-clickhouse"],
         "env": {
@@ -76,14 +74,12 @@ ANTIGRAVITY_MCP = {
 }
 
 # Merge all connections into one dict for ClaudeAgentOptions(mcp_servers=...) in agent.py.
-ALL_MCP_SERVERS = {**CLICKHOUSE_MCP, **CLICKHOUSE_MEMORY_MCP, **GRAFANA_MCP, **ANTIGRAVITY_MCP}
+ALL_MCP_SERVERS = {**DEEPFAKE_ANALYTICS_MCP, **DEEPFAKE_MEMORY_MCP, **GRAFANA_MCP, **ANTIGRAVITY_MCP}
 
-# Whitelist — agent CHỈ được dùng đúng các tool liệt kê dưới đây, không hơn. Grafana liệt kê
-# TỪNG tool đọc thay vì "mcp__grafana__*" — wildcard sẽ vô tình mở luôn update_dashboard,
-# patch_dashboard, alerting_manage_rules/routing, create_incident, list_teams/users/roles.
+# Whitelist — agent CHỈ được dùng đúng các tool liệt kê dưới đây, không hơn.
 ALLOWED_TOOLS = [
-    "mcp__clickhouse__*",          # đọc log/metrics thật (read-only)
-    "mcp__clickhouse-memory__*",   # đọc/ghi hsc.agent_memory_dist (read-write, scoped)
+    "mcp__deepfake-analytics__*",      # đọc log/metrics deepfake (read-only)
+    "mcp__deepfake-agent-memory__*",   # đọc/ghi deepfake_agent_memory (read-write, scoped)
     "mcp__grafana__search_dashboards",
     "mcp__grafana__get_dashboard_by_uid",
     "mcp__grafana__get_dashboard_summary",

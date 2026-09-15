@@ -291,6 +291,13 @@ def run_daily_benchmark():
     with open(md_output_path, "w", encoding="utf-8") as f:
         f.write(md_content)
 
+    # Auto-sync report into Deepfake Agent Memory SQLite Database
+    try:
+        from benchmark.deepfake_memory import save_daily_benchmark
+        save_daily_benchmark(report_data)
+    except Exception as e_mem:
+        print(f"⚠️ Warning saving to deepfake_memory: {e_mem}")
+
     print(f"[daily_benchmark] Daily Benchmark Report saved to:")
     print(f"  - JSON: {json_output_path}")
     print(f"  - Markdown: {md_output_path}")

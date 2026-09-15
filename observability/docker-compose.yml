@@ -17,6 +17,7 @@ services:
       - "8787:8787"
     volumes:
       - claude-home-new:/home/agent
+      - ../report_colab:/app/report_colab
     restart: unless-stopped
 
   login:

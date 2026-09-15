@@ -17,9 +17,9 @@
 | NVIDIA Synthetic Video | Video (NIM Microservice) | 0.986 | 2.1% | 45 ms | NIM Frame Score |
 
 ## 2. Thống Kê Mẫu Đánh Giá Ngày 2026-09-15
-- **Tổng số mẫu quét trong ngày**: 0
+- **Tổng số mẫu quét trong ngày**: 23
 - **Số mẫu phát hiện tạp nhiễu tần số cao (FFT Residual Spikes)**: 0
-- **Độ trễ trung bình per-sample**: 115.0 ms
+- **Độ trễ trung bình per-sample**: 109.67 ms
 
 ## 3. Đề Xuất Chỉ Số Tối Ưu Cho Chu Kỳ Huấn Luyện Tiếp Theo
 1. **Target AUC**: $\ge 0.992$ (Vượt trội NVIDIA Synthetic Video & Sensity AI).
