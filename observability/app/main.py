@@ -406,13 +406,29 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
             await _ACTIVE_LOGIN_PROC.stdin.drain()
             _LOGIN_LOGS.append(f"➡️ [SUBMIT-CODE] Sent OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
             
-            await asyncio.sleep(1.2)
-            return {
-                "status": "SUCCESS",
-                "message": "Đã dán mã xác thực OAuth tới tiến trình CLI! Đang thực hiện đăng nhập...",
-                "authenticated": False,
-                "logs": _LOGIN_LOGS[-25:],
-            }
+            # Wait up to 10 seconds for Claude CLI to verify token with Anthropic and write credentials
+            is_verified = False
+            for step in range(10):
+                await asyncio.sleep(1.0)
+                if _has_valid_credentials():
+                    is_verified = True
+                    _LOGIN_LOGS.append("🎉 [SUBMIT-CODE VERIFIED] Claude CLI successfully verified OAuth token and saved credentials!")
+                    break
+
+            if is_verified:
+                return {
+                    "status": "SUCCESS",
+                    "message": "🎉 Đăng nhập Claude CLI thành công! Đã xác thực token với Anthropic.",
+                    "authenticated": True,
+                    "logs": _LOGIN_LOGS[-25:],
+                }
+            else:
+                return {
+                    "status": "PENDING",
+                    "message": "Đã dán mã xác thực OAuth vào CLI stdin. Đang tiếp tục kiểm tra phản hồi...",
+                    "authenticated": False,
+                    "logs": _LOGIN_LOGS[-25:],
+                }
         except Exception as exc:
             _LOGIN_LOGS.append(f"⚠️ Warning writing stdin: {exc}")
             raise HTTPException(status_code=500, detail=f"Lỗi ghi mã vào stdin: {exc}")

@@ -781,8 +781,15 @@ async function submitAuthCode() {
     });
     const data = await res.json();
     if (res.ok) {
-      codeStatusText.textContent = "✅ " + data.message + " Đang kiểm tra phản hồi từ CLI...";
+      codeStatusText.textContent = "✅ " + data.message;
       codeInput.value = "";
+      
+      if (data.authenticated) {
+        checkAuthStatus();
+        alert("🎉 Claude CLI Authentication Successful! You are now logged in.");
+        setTimeout(() => closeLoginModal(), 1200);
+        return;
+      }
       
       let attempts = 0;
       const maxAttempts = 12;
@@ -809,7 +816,7 @@ async function submitAuthCode() {
           setTimeout(() => closeLoginModal(), 1200);
         } else if (attempts >= maxAttempts) {
           clearInterval(pollSub);
-          codeStatusText.textContent = "✅ Đã gửi mã xác thực. Bấm '✅ Refresh Auth Status' để cập nhật.";
+          codeStatusText.textContent = "⚠️ Đã gửi mã xác thực vào CLI. Bấm '✅ Refresh Auth Status' để kiểm tra lại.";
           checkAuthStatus();
         }
       }, 1000);
