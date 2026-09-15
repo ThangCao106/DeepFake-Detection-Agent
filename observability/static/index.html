@@ -916,6 +916,11 @@ chatForm.addEventListener("submit", async (e) => {
   
   addMessage("user", message);
   messageInput.value = "";
+  
+  // Show temporary loading indicator
+  const loadingEl = addMessage("system", "⏳ AI Deepfake Detection Agent đang xử lý (Connecting + Thinking)...");
+  const sendBtn = chatForm.querySelector("button[type=submit]");
+  if (sendBtn) sendBtn.disabled = true;
 
   try {
     const resp = await fetch(getApiUrl("api/chat"), {
@@ -926,6 +931,11 @@ chatForm.addEventListener("submit", async (e) => {
       },
       body: JSON.stringify({ session_id: sessionId, message }),
     });
+    
+    // Remove loading indicator
+    if (loadingEl && loadingEl.parentNode) {
+      loadingEl.parentNode.removeChild(loadingEl);
+    }
     
     let data;
     try {
@@ -946,7 +956,12 @@ chatForm.addEventListener("submit", async (e) => {
     }
     addMessage("agent", data.reply || data.response || data.message || "Done.");
   } catch (err) {
+    if (loadingEl && loadingEl.parentNode) {
+      loadingEl.parentNode.removeChild(loadingEl);
+    }
     addMessage("agent", "❌ Connection error: " + err.message);
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
   }
 });
 
