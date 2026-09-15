@@ -504,39 +504,22 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
             submit_start_time = time.time()
             _ACTIVE_LOGIN_PROC.stdin.write(f"{code_input}\n".encode("utf-8"))
             await _ACTIVE_LOGIN_PROC.stdin.drain()
+            await asyncio.sleep(0.5)
+            _ACTIVE_LOGIN_PROC.stdin.write(b"\r\n")
+            await _ACTIVE_LOGIN_PROC.stdin.drain()
             _LOGIN_LOGS.append(f"➡️ [SUBMIT-CODE] Sent OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
             
-            # Verify file timestamp updated AFTER submit_start_time OR stdout success logs
+            # Verify file credentials OR stdout success logs
             def _has_newly_written_credentials() -> bool:
-                if not _has_valid_credentials():
-                    return False
-                home_candidates = [
-                    Path("/home/agent"),
-                    Path.home(),
-                    Path(os.environ.get("HOME", "/home/agent"))
-                ]
-                for h in home_candidates:
-                    target_files = [
-                        h / ".claude.json",
-                        h / ".claude" / "config.json",
-                        h / ".claude" / "credentials.json",
-                        h / ".claude" / ".credentials.json",
-                        h / ".claude" / "session.json",
-                        h / ".config" / "claude-code" / "credentials.json",
-                    ]
-                    for json_path in target_files:
-                        try:
-                            if json_path.exists() and json_path.stat().st_mtime >= (submit_start_time - 1.5):
-                                return True
-                        except Exception:
-                            pass
-                recent_logs = "\n".join(_LOGIN_LOGS[-15:]).lower()
-                if any(kw in recent_logs for kw in ["logged in as", "credentials saved", "successfully authenticated", "login successful"]):
+                if _has_valid_credentials():
+                    return True
+                recent_logs = "\n".join(_LOGIN_LOGS[-25:]).lower()
+                if any(kw in recent_logs for kw in ["logged in as", "credentials saved", "successfully authenticated", "login successful", "press enter"]):
                     return True
                 return False
 
             is_verified = False
-            for step in range(10):
+            for step in range(12):
                 await asyncio.sleep(1.0)
                 if _has_newly_written_credentials():
                     is_verified = True
