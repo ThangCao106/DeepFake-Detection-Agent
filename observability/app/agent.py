@@ -155,7 +155,6 @@ def _has_oauth_credentials_on_disk() -> bool:
     home_candidates = [
         Path("/home/agent"),
         Path.home(),
-        Path("/root"),
         Path(os.environ.get("HOME", "/home/agent"))
     ]
     for h in home_candidates:
@@ -165,8 +164,8 @@ def _has_oauth_credentials_on_disk() -> bool:
             h / ".config" / "claude-code" / "config.json",
             h / ".config" / "claude" / "config.json"
         ]:
-            if json_path.exists():
-                try:
+            try:
+                if json_path.exists():
                     content = json_path.read_text(encoding="utf-8").strip()
                     if content:
                         data = json.loads(content)
@@ -174,13 +173,20 @@ def _has_oauth_credentials_on_disk() -> bool:
                             for key in ["oauthAccount", "sessionKey", "oauthToken", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid"]:
                                 if key in data and data[key]:
                                     return True
-                except Exception:
-                    pass
+            except Exception:
+                pass
     return False
 
 
 def _build_options(system_prompt: str, partial: bool = False) -> ClaudeAgentOptions:
     env_dict = dict(os.environ)
+    
+    # Ensure HOME environment variable points to a writable directory for non-root agent user
+    current_home = env_dict.get("HOME", "")
+    if not current_home or current_home == "/root" or not os.access(current_home, os.W_OK):
+        if os.access("/home/agent", os.W_OK):
+            env_dict["HOME"] = "/home/agent"
+
     api_key = (os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or "").strip()
     has_oauth = _has_oauth_credentials_on_disk()
 

@@ -61,7 +61,6 @@ def _has_valid_credentials() -> bool:
     home_candidates = [
         Path("/home/agent"),
         Path.home(),
-        Path("/root"),
         Path(os.environ.get("HOME", "/home/agent"))
     ]
 
@@ -69,8 +68,8 @@ def _has_valid_credentials() -> bool:
         # Check credentials files for non-empty auth fields
         for cred_name in ["credentials.json", ".credentials.json", "session.json", "auth.json", "keys.json"]:
             for cred_path in [h / ".claude" / cred_name, h / cred_name]:
-                if cred_path.exists():
-                    try:
+                try:
+                    if cred_path.exists():
                         content = cred_path.read_text(encoding="utf-8").strip()
                         if content:
                             data = json.loads(content)
@@ -78,8 +77,8 @@ def _has_valid_credentials() -> bool:
                                 for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid"]:
                                     if key in data and data[key]:
                                         return True
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
 
         # Check config json files for actual OAuth auth fields
         for json_path in [
@@ -88,8 +87,8 @@ def _has_valid_credentials() -> bool:
             h / ".config" / "claude-code" / "config.json",
             h / ".config" / "claude" / "config.json"
         ]:
-            if json_path.exists():
-                try:
+            try:
+                if json_path.exists():
                     content = json_path.read_text(encoding="utf-8").strip()
                     if content:
                         data = json.loads(content)
@@ -97,8 +96,8 @@ def _has_valid_credentials() -> bool:
                             for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "session", "account", "userID", "email", "access_token"]:
                                 if key in data and data[key]:
                                     return True
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
     return False
 
