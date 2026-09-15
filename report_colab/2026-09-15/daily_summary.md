@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 08:07:11
-**Total Training Runs Completed:** 906
+**Last Updated:** 2026-09-15 08:14:10
+**Total Training Runs Completed:** 918
 
 ## 📈 Performance Metric Comparison Table
 
@@ -912,6 +912,18 @@
 | 49 | `AUDIO` | `deepspeak_audio` | 0.941 | 0.996 | 0.022 | 1.5030 | 0.8075 | ✅ COMPLETED_SUCCESSFULLY |
 | 49 | `AUDIO` | `fakeavceleb_audio` | 0.907 | 0.998 | 0.022 | 1.5457 | 0.7304 | ✅ COMPLETED_SUCCESSFULLY |
 | 49 | `AUDIO` | `wavefake` | 0.972 | 0.998 | 0.022 | 1.8087 | 0.7495 | ✅ COMPLETED_SUCCESSFULLY |
+| 49 | `AUDIO` | `omni_fake` | 0.955 | 0.991 | 0.022 | 1.7764 | 0.6967 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `dima806_deepfake` | 0.955 | 0.998 | 0.012 | 1.3829 | 0.5912 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `ntire_robust_detection` | 0.977 | 0.998 | 0.012 | 1.2702 | 0.6467 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `cifake` | 0.958 | 0.998 | 0.012 | 1.3903 | 0.7163 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `dffd_image` | 0.953 | 0.998 | 0.012 | 1.2832 | 0.6682 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `ifakefacedb` | 0.990 | 0.998 | 0.012 | 1.4829 | 0.6786 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `IMAGE` | `dfbench_lmm` | 0.970 | 0.998 | 0.012 | 1.6988 | 0.5907 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `VIDEO` | `faceforensics_pp` | 0.977 | 0.998 | 0.018 | 1.7501 | 0.7738 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `VIDEO` | `celeb_df_v2` | 0.971 | 0.998 | 0.018 | 1.7587 | 0.7429 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `VIDEO` | `dfdc` | 0.948 | 0.987 | 0.018 | 1.3516 | 0.8614 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `VIDEO` | `wild_deepfake` | 0.932 | 0.987 | 0.018 | 1.4660 | 0.5878 | ✅ COMPLETED_SUCCESSFULLY |
+| 50 | `VIDEO` | `deeper_forensics` | 0.945 | 0.998 | 0.018 | 1.5579 | 0.6303 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1825,6 +1837,18 @@ P49 [VIDEO] df40                     [██████████████
 P49 [AUDIO] deepspeak_audio          [████████████████████████░] AUC: 0.996
 P49 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.998
 P49 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.998
+P49 [AUDIO] omni_fake                [████████████████████████░] AUC: 0.991
+P50 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
+P50 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.998
+P50 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
+P50 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
+P50 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
+P50 [IMAGE] dfbench_lmm              [████████████████████████░] AUC: 0.998
+P50 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.998
+P50 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.998
+P50 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.987
+P50 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.987
+P50 [VIDEO] deeper_forensics         [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
