@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 05:21:17
-**Total Training Runs Completed:** 509
+**Last Updated:** 2026-09-15 05:21:32
+**Total Training Runs Completed:** 510
 
 ## 📈 Performance Metric Comparison Table
 
@@ -515,6 +515,7 @@
 | 28 | `IMAGE` | `ntire_robust_detection` | 0.994 | 0.998 | 0.012 | 1.4065 | 0.5822 | ✅ COMPLETED_SUCCESSFULLY |
 | 28 | `IMAGE` | `cifake` | 0.958 | 0.998 | 0.012 | 1.3244 | 0.5980 | ✅ COMPLETED_SUCCESSFULLY |
 | 28 | `IMAGE` | `dffd_image` | 0.961 | 0.998 | 0.012 | 1.5438 | 0.5865 | ✅ COMPLETED_SUCCESSFULLY |
+| 28 | `IMAGE` | `ifakefacedb` | 0.972 | 0.998 | 0.012 | 1.4606 | 0.6253 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1031,6 +1032,7 @@ P28 [IMAGE] dima806_deepfake         [██████████████
 P28 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.998
 P28 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
 P28 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
+P28 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
