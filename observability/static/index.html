@@ -939,6 +939,7 @@ chatForm.addEventListener("submit", async (e) => {
       const errorMsg = data.detail || resp.statusText || resp.status;
       addMessage("agent", "⚠️ " + errorMsg);
       if (resp.status === 401 || (typeof errorMsg === 'string' && (errorMsg.includes("login") || errorMsg.includes("Claude CLI")))) {
+        checkAuthStatus();
         setTimeout(openLoginModal, 800);
       }
       return;

@@ -110,6 +110,52 @@ def _has_valid_credentials() -> bool:
     return False
 
 
+def _clean_stale_credentials(force: bool = False) -> None:
+    """Clean up stale or invalid credential files from disk."""
+    home_candidates = [
+        Path("/home/agent"),
+        Path.home(),
+        Path(os.environ.get("HOME", "/home/agent"))
+    ]
+    for h in home_candidates:
+        target_files = [
+            h / ".claude.json",
+            h / ".claude" / "config.json",
+            h / ".claude" / "credentials.json",
+            h / ".claude" / ".credentials.json",
+            h / ".claude" / "session.json",
+            h / ".claude" / "auth.json",
+            h / ".config" / "claude-code" / "config.json",
+            h / ".config" / "claude-code" / "credentials.json",
+            h / ".config" / "claude" / "config.json",
+            h / "credentials.json",
+            h / "session.json",
+        ]
+        for json_path in target_files:
+            try:
+                if json_path.exists():
+                    if force:
+                        json_path.unlink(missing_ok=True)
+                    else:
+                        content = json_path.read_text(encoding="utf-8").strip()
+                        if not content:
+                            json_path.unlink(missing_ok=True)
+                        else:
+                            data = json.loads(content)
+                            if not isinstance(data, dict):
+                                json_path.unlink(missing_ok=True)
+                            else:
+                                valid = bool(data.get("sessionKey")) or (
+                                    bool(data.get("primaryApiKey")) and str(data["primaryApiKey"]).startswith("sk-ant-")
+                                ) or (
+                                    isinstance(data.get("oauthAccount"), dict) and bool(data["oauthAccount"].get("accountUuid") or data["oauthAccount"].get("emailAddress"))
+                                )
+                                if not valid:
+                                    json_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
 @app.get("/api/auth/status")
 async def auth_status() -> dict:
     """Return Claude CLI and Gemini API authentication status."""
@@ -426,15 +472,44 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
     # 3. Write code to process stdin ONCE
     if _ACTIVE_LOGIN_PROC and _ACTIVE_LOGIN_PROC.stdin:
         try:
+            submit_start_time = time.time()
             _ACTIVE_LOGIN_PROC.stdin.write(f"{code_input}\n".encode("utf-8"))
             await _ACTIVE_LOGIN_PROC.stdin.drain()
             _LOGIN_LOGS.append(f"➡️ [SUBMIT-CODE] Sent OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
             
-            # Wait up to 10 seconds for Claude CLI to verify token with Anthropic and write credentials
+            # Verify file timestamp updated AFTER submit_start_time OR stdout success logs
+            def _has_newly_written_credentials() -> bool:
+                if not _has_valid_credentials():
+                    return False
+                home_candidates = [
+                    Path("/home/agent"),
+                    Path.home(),
+                    Path(os.environ.get("HOME", "/home/agent"))
+                ]
+                for h in home_candidates:
+                    target_files = [
+                        h / ".claude.json",
+                        h / ".claude" / "config.json",
+                        h / ".claude" / "credentials.json",
+                        h / ".claude" / ".credentials.json",
+                        h / ".claude" / "session.json",
+                        h / ".config" / "claude-code" / "credentials.json",
+                    ]
+                    for json_path in target_files:
+                        try:
+                            if json_path.exists() and json_path.stat().st_mtime >= (submit_start_time - 1.5):
+                                return True
+                        except Exception:
+                            pass
+                recent_logs = "\n".join(_LOGIN_LOGS[-15:]).lower()
+                if any(kw in recent_logs for kw in ["logged in as", "credentials saved", "successfully authenticated", "login successful"]):
+                    return True
+                return False
+
             is_verified = False
             for step in range(10):
                 await asyncio.sleep(1.0)
-                if _has_valid_credentials():
+                if _has_newly_written_credentials():
                     is_verified = True
                     _LOGIN_LOGS.append("🎉 [SUBMIT-CODE VERIFIED] Claude CLI successfully verified OAuth token and saved credentials!")
                     break
@@ -707,6 +782,7 @@ async def chat(req: ChatRequest) -> dict:
             )
         if any(k in full_reply for k in ["Not logged in", "Please run /login", "run /login"]):
             await drop_client(req.session_id)
+            _clean_stale_credentials(force=True)
             raise HTTPException(
                 status_code=401,
                 detail="Chưa hoàn tất đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở trang xác thực Anthropic OAuth hoặc nhập Claude API Key."
@@ -717,9 +793,10 @@ async def chat(req: ChatRequest) -> dict:
             raise exc
         err_msg = str(exc)
         if "Not logged in" in err_msg or "login" in err_msg.lower() or "auth" in err_msg.lower():
+            _clean_stale_credentials(force=True)
             raise HTTPException(
                 status_code=401,
-                detail="Chưa hoàn tất đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở liên kết đăng nhập OAuth."
+                detail="Chưa hoàn tất đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở liên kết đăng nhập OAuth hoặc nhập Claude API Key."
             ) from exc
         raise HTTPException(status_code=400, detail=f"Agent error: {err_msg}") from exc
     record_turn(req.session_id, "user", req.message)
