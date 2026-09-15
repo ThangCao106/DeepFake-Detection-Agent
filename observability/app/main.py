@@ -82,11 +82,10 @@ def _has_valid_credentials() -> bool:
                     content = json_path.read_text(encoding="utf-8").strip()
                     if content:
                         data = json.loads(content)
-                        for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "session", "account", "user", "userID", "email", "access_token"]:
-                            if key in data and data[key]:
-                                return True
-                        if isinstance(data, dict) and len(data) > 0:
-                            return True
+                        if isinstance(data, dict):
+                            for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "session", "account", "userID", "email", "access_token"]:
+                                if key in data and data[key]:
+                                    return True
                 except Exception:
                     pass
 
@@ -123,7 +122,41 @@ _LOGIN_LOGS = []
 
 
 def _strip_ansi(text: str) -> str:
-    return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+    # Strip OSC escape sequences like \x1b]8;;url\x1b\ or \x1b]...\x07
+    text = re.sub(r'\x1B\][^\x07\x1B]*[\x07|\x1B\\]', '', text)
+    # Strip CSI escape sequences like \x1b[31m
+    text = re.sub(r'\x1B\[[0-?]*[ -/]*[@-~]', '', text)
+    # Strip general escape sequences
+    text = re.sub(r'\x1B[@-Z\\-_]', '', text)
+    return text
+
+
+def _extract_oauth_url(text: str) -> str | None:
+    if not text:
+        return None
+    clean = _strip_ansi(text)
+    
+    # Priority 1: Match exact Anthropic/Claude OAuth authorization URL
+    match = re.search(r'(https://(?:claude\.ai|console\.anthropic\.com)/[^\s"\'\`<>\)\(\]\[]+)', clean, re.IGNORECASE)
+    if match:
+        url = match.group(1).rstrip('.,;:;\\')
+        if "claude.com/cai" in url:
+            url = url.replace("claude.com/cai", "claude.ai")
+        return url
+
+    # Priority 2: Match any http/https URL containing anthropic/claude/oauth/authorize
+    matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', clean, re.IGNORECASE)
+    for url in matches:
+        url_clean = url.rstrip('.,;:;\\')
+        url_lower = url_clean.lower()
+        if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize"]):
+            if "claude.com/cai" in url_lower:
+                url_clean = url_clean.replace("claude.com/cai", "claude.ai")
+            elif "claude.com" in url_lower and "oauth" in url_lower:
+                url_clean = url_clean.replace("claude.com", "claude.ai")
+            return url_clean
+            
+    return None
 
 
 async def _read_subprocess_output(proc):
@@ -148,13 +181,9 @@ async def _read_subprocess_output(proc):
                     if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != clean_line:
                         _LOGIN_LOGS.append(clean_line)
                     
-                    matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', clean_line)
-                    for url in matches:
-                        url_clean = url.rstrip('.,;:')
-                        url_lower = url_clean.lower()
-                        if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize", "login", "account"]):
-                            if not _LAST_OAUTH_URL:
-                                _LAST_OAUTH_URL = url_clean
+                    found_url = _extract_oauth_url(clean_line)
+                    if found_url and not _LAST_OAUTH_URL:
+                        _LAST_OAUTH_URL = found_url
 
             # Space-collapsed matching to handle ANSI stripped terminal text
             buffer_nospace = re.sub(r'\s+', '', buffer.lower())
@@ -519,13 +548,9 @@ async def trigger_login() -> dict:
         # Fallback regex check over captured logs
         if not _LAST_OAUTH_URL:
             for log in _LOGIN_LOGS:
-                match = re.search(
-                    r'(https?://[^\s"\'\`]+(?:claude|anthropic|oauth|authorize)[^\s"\'\`]*)',
-                    log,
-                    re.IGNORECASE,
-                )
-                if match:
-                    _LAST_OAUTH_URL = match.group(1)
+                found_url = _extract_oauth_url(log)
+                if found_url:
+                    _LAST_OAUTH_URL = found_url
                     break
 
         return {
@@ -579,24 +604,30 @@ async def chat(req: ChatRequest) -> dict:
     try:
         client, is_new = await get_client(req.session_id, CHAT_SYSTEM_PROMPT)
         if is_new:
-            # Client vừa được tạo mới (session đầu tiên, hoặc client cũ đã bị TTL/lỗi
-            # drop — xem agent.py _SESSION_TTL_SECONDS) — không có ngữ cảnh gì, phải
-            # chèn lại lịch sử đã lưu trước đó để agent không "mất trí nhớ" hội thoại cũ.
             content = prepend_history(content, req.session_id)
         answer_parts: list[str] = []
         text_parts = [chunk async for chunk in stream_turn(client, content, answer_parts=answer_parts)]
+        full_reply = "".join(text_parts)
+        if any(k in full_reply for k in ["Not logged in", "Please run /login", "run /login"]):
+            await drop_client(req.session_id)
+            raise HTTPException(
+                status_code=401,
+                detail="Chưa hoàn tất đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở trang xác thực Anthropic OAuth hoặc nhập Claude API Key."
+            )
     except Exception as exc:
         await drop_client(req.session_id)
+        if isinstance(exc, HTTPException):
+            raise exc
         err_msg = str(exc)
         if "Not logged in" in err_msg or "login" in err_msg.lower() or "auth" in err_msg.lower():
             raise HTTPException(
                 status_code=401,
-                detail="Chưa đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở liên kết đăng nhập OAuth."
+                detail="Chưa hoàn tất đăng nhập Claude CLI. Vui lòng nhấn nút '🔑 Claude Login' trên giao diện để mở liên kết đăng nhập OAuth."
             ) from exc
         raise HTTPException(status_code=400, detail=f"Agent error: {err_msg}") from exc
     record_turn(req.session_id, "user", req.message)
-    record_turn(req.session_id, "assistant", "".join(answer_parts))
-    return {"reply": "".join(text_parts)}
+    record_turn(req.session_id, "assistant", full_reply)
+    return {"reply": full_reply}
 
 
 @app.post("/api/alert", dependencies=[Depends(check_api_key)])
