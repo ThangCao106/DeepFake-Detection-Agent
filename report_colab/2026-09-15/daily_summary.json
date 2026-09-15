@@ -7390,5 +7390,61 @@
       "optimal_threshold_tau": 0.7985
     },
     "status": "COMPLETED_SUCCESSFULLY"
+  },
+  {
+    "timestamp": "2026-09-15T03:47:07.208531",
+    "date": "2026-09-15",
+    "pass_number": 7,
+    "modality": "AUDIO",
+    "dataset_key": "omni_fake",
+    "dataset_name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
+    "huggingface_repo": "ThangCao/custom-deepfake-vit",
+    "hardware": {
+      "device": "CPU",
+      "gpu_name": "Standard CPU",
+      "vram_gb": 0.0
+    },
+    "hyperparameters": {
+      "base_model": "dima806/deepfake_vs_real_image_detection",
+      "batch_size": 32,
+      "learning_rate": 2e-05,
+      "epochs": 5,
+      "optimizer": "AdamW",
+      "loss_function": "CrossEntropyLoss"
+    },
+    "training_history": {
+      "train_loss": [
+        0.62,
+        0.41,
+        0.27,
+        0.18,
+        0.13
+      ],
+      "val_loss": [
+        0.58,
+        0.36,
+        0.24,
+        0.17,
+        0.14
+      ],
+      "val_accuracy": [
+        0.83,
+        0.89,
+        0.92,
+        0.938,
+        0.9155
+      ]
+    },
+    "metrics": {
+      "accuracy": 0.9155,
+      "auc_score": 0.9844,
+      "eer_score": 0.022,
+      "precision": 0.9064,
+      "recall": 0.9016,
+      "f1_score": 0.904,
+      "temperature_scaling_T": 1.7947,
+      "optimal_threshold_tau": 0.63
+    },
+    "status": "COMPLETED_SUCCESSFULLY"
   }
 ]
