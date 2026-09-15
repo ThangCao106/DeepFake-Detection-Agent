@@ -130,10 +130,12 @@
   /* Subheader API Key Bar */
   .api-key-bar {
     background: #f1edfa;
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
     font-size: 0.85rem;
     border-bottom: 1px solid var(--border-color);
   }
@@ -141,20 +143,22 @@
   .api-key-input-group {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    white-space: nowrap;
   }
 
   .api-key-input-group label {
     font-weight: 600;
     color: var(--text-muted);
+    white-space: nowrap;
   }
 
   .api-key-input-group input {
     border: 1px solid var(--border-color);
-    padding: 0.3rem 0.6rem;
+    padding: 0.35rem 0.6rem;
     border-radius: 6px;
     font-size: 0.85rem;
-    width: 220px;
+    width: 170px;
     background: #fff;
   }
 
@@ -739,6 +743,7 @@ function copyLoginCmd() {
 async function submitAuthCode() {
   const codeInput = document.getElementById("oauthCodeInput");
   const codeStatusText = document.getElementById("codeStatusText");
+  const consoleLogContainer = document.getElementById("consoleLogContainer");
   const code = codeInput.value.trim();
   if (!code) {
     alert("Vui lòng dán mã xác thực (Authorization Code) trước khi gửi.");
@@ -746,7 +751,12 @@ async function submitAuthCode() {
   }
   
   codeStatusText.style.display = "block";
-  codeStatusText.textContent = "⏳ Đang gửi mã xác thực tới tiến trình login...";
+  codeStatusText.textContent = "⏳ Đang dán mã xác thực vào tiến trình login...";
+  if (consoleLogContainer) {
+    consoleLogContainer.style.display = "block";
+    consoleLogContainer.textContent = "⏳ [CLI] Sending code to Claude CLI stdin...\n";
+  }
+
   try {
     const res = await fetch(getApiUrl("api/auth/submit-code"), {
       method: "POST",
@@ -755,25 +765,38 @@ async function submitAuthCode() {
     });
     const data = await res.json();
     if (res.ok) {
-      codeStatusText.textContent = "✅ " + data.message + " Đang kiểm tra xác thực...";
+      codeStatusText.textContent = "✅ " + data.message + " Đang kiểm tra phản hồi từ CLI...";
       codeInput.value = "";
       
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 12;
       const pollSub = setInterval(async () => {
         attempts++;
+
+        // Live refresh CLI output logs in terminal box
+        try {
+          const logRes = await fetch(getApiUrl("api/auth/debug-logs"));
+          if (logRes.ok) {
+            const logData = await logRes.json();
+            if (logData.logs && logData.logs.length > 0 && consoleLogContainer) {
+              consoleLogContainer.textContent = logData.logs.slice(-18).join("\n");
+              consoleLogContainer.scrollTop = consoleLogContainer.scrollHeight;
+            }
+          }
+        } catch (e) {}
+
         const isAuth = await checkAuthStatus();
         if (isAuth) {
           clearInterval(pollSub);
           codeStatusText.textContent = "🎉 Đăng nhập Claude CLI thành công!";
           alert("🎉 Claude CLI Authentication Successful! You are now logged in.");
-          closeLoginModal();
+          setTimeout(() => closeLoginModal(), 1200);
         } else if (attempts >= maxAttempts) {
           clearInterval(pollSub);
-          codeStatusText.textContent = "✅ Đã gửi mã xác thực. Bấm '✅ Refresh Auth Status' nếu chưa cập nhật.";
+          codeStatusText.textContent = "✅ Đã gửi mã xác thực. Bấm '✅ Refresh Auth Status' để cập nhật.";
           checkAuthStatus();
         }
-      }, 1500);
+      }, 1000);
     } else {
       codeStatusText.textContent = "❌ " + (data.detail || "Lỗi gửi mã.");
     }
