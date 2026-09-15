@@ -1,12 +1,13 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 03:28:24
-**Total Training Runs Completed:** 1
+**Last Updated:** 2026-09-15 03:29:53
+**Total Training Runs Completed:** 2
 
 ## 📈 Performance Metric Comparison Table
 
 | Pass # | Modality | Dataset Key | Accuracy | AUC Score | EER Score | Temp (T) | Tau (τ) | Status |
 |-------:|:--------|:------------|---------:|----------:|----------:|---------:|--------:|:-------|
 | 1 | `IMAGE` | `dima806_deepfake` | 0.924 | 0.979 | 0.030 | 1.6747 | 0.6791 | ✅ COMPLETED_SUCCESSFULLY |
+| 1 | `IMAGE` | `ntire_robust_detection` | 0.912 | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -15,6 +16,7 @@
 ### ASCII Bar Chart (AUC Progression Across Runs)
 ```text
 P1 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.979
+P1 [IMAGE] ntire_robust_detection   [████████████████████████░] AUC: 0.987
 ```
 
 ## 🔧 Environment & Hyperparameters
