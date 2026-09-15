@@ -6,12 +6,20 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   run-daily-benchmark:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
