@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 04:13:17
-**Total Training Runs Completed:** 263
+**Last Updated:** 2026-09-15 04:13:41
+**Total Training Runs Completed:** 265
 
 ## 📈 Performance Metric Comparison Table
 
@@ -269,6 +269,8 @@
 | 14 | `AUDIO` | `fakeavceleb_audio` | 0.949 | 0.998 | 0.022 | 1.5770 | 0.8883 | ✅ COMPLETED_SUCCESSFULLY |
 | 14 | `AUDIO` | `wavefake` | 0.947 | 0.997 | 0.022 | 1.6480 | 0.7199 | ✅ COMPLETED_SUCCESSFULLY |
 | 14 | `AUDIO` | `asvspoof_2021` | 0.907 | 0.998 | 0.022 | 1.7895 | 0.8868 | ✅ COMPLETED_SUCCESSFULLY |
+| 14 | `AUDIO` | `omni_fake` | 0.932 | 0.998 | 0.022 | 1.7993 | 0.7691 | ✅ COMPLETED_SUCCESSFULLY |
+| 15 | `IMAGE` | `dima806_deepfake` | 0.955 | 0.998 | 0.012 | 1.2007 | 0.6115 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -539,6 +541,8 @@ P14 [AUDIO] deepspeak_audio          [██████████████
 P14 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.998
 P14 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.997
 P14 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.998
+P14 [AUDIO] omni_fake                [████████████████████████░] AUC: 0.998
+P15 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
