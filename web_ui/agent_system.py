@@ -374,12 +374,8 @@ YOUR TASK: """
         if user_query:
             base_prompt += f"Answer the user's specific query: '{user_query}' using the Auditable Forensic Certificate evidence provided above."
         else:
-            base_prompt += """Provide an authoritative, clear, and structured Auditable Forensic Analysis Report in natural language.
-Formatting Requirements:
-1. **Executive Verdict & Certificate Summary**: State the Certificate ID, Verdict, and Composite Risk Score clearly.
-2. **Multi-Dimensional Evidence Synthesis**: Explain how the Neural Classifier, Frequency FFT Spectral Anomaly, and Spatial Noise Inconsistency confirm or contradict each other.
-3. **Forensic Explanation**: Explain in plain language why the media appears authentic or synthetic (mentioning periodic grid artifacts or noise variance if detected).
-4. **Regulatory & Audit Statement**: Briefly comment on transparency marking compliance under EU AI Act Article 50 and actionable recommendations."""
+            base_prompt += """Provide a concise Executive Verdict & Certificate Summary in clear natural language (2-3 short paragraphs max).
+Explain key forensic findings (whether passive neural model, FFT 2D spectral anomaly, or spatial noise inconsistency detected synthetic artifacts or authentic patterns). Do not generate repetitive markdown tables, as key metrics are formatted separately."""
         
         return base_prompt
 

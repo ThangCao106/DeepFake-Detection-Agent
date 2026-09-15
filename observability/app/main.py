@@ -213,15 +213,22 @@ async def trigger_login() -> dict:
     import re
     import shutil
 
-    # Smart command selection based on available executables in environment
+    # Smart command selection based on available executables in environment.
+    # Wraps in 'script -q -c ... /dev/null' if available to allocate a pseudo-TTY for non-interactive containers,
+    # preventing Claude CLI from failing with 'Warning: no stdin data received in 3s'.
     if shutil.which("claude"):
-        cmd = "claude login"
+        base_cmd = "claude login"
     elif shutil.which("npx"):
-        cmd = "npx -y @anthropic-ai/claude-code login"
+        base_cmd = "npx -y @anthropic-ai/claude-code login"
     elif shutil.which("docker"):
-        cmd = "docker compose run --rm login"
+        base_cmd = "docker compose run --rm login"
     else:
-        cmd = "npx -y @anthropic-ai/claude-code login"
+        base_cmd = "npx -y @anthropic-ai/claude-code login"
+
+    if shutil.which("script") and not base_cmd.startswith("docker"):
+        cmd = f'script -q -c "{base_cmd}" /dev/null'
+    else:
+        cmd = base_cmd
 
     # Return cached URL if available
     if _LAST_OAUTH_URL:

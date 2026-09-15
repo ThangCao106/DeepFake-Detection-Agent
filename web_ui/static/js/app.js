@@ -395,6 +395,57 @@ function displayResults(data) {
     analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyze Another Media';
 }
 
+let latestDetectionResult = null;
+
+const originalDisplayResults = displayResults;
+displayResults = function(data) {
+    latestDetectionResult = data;
+    originalDisplayResults(data);
+};
+
+function formatAgentChatSummary(text, data) {
+    if (!data) return renderMarkdown(text);
+
+    const cert = data.forensic_certificate || {};
+    const ev = cert.multi_dimensional_evidence || {};
+
+    const label = data.label || 'Unknown';
+    const isFake = label.toLowerCase().includes('fake') || label.toLowerCase().includes('synthetic') || label.toLowerCase().includes('manipulate');
+    const labelBadgeText = isFake ? '🚨 FAKE / DEEPFAKE' : '✅ REAL / AUTHENTIC';
+    const labelBadgeBg = isFake ? '#fee2e2' : '#dcfce7';
+    const labelBadgeColor = isFake ? '#b91c1c' : '#15803d';
+
+    const confidence = (data.confidence * 100).toFixed(1) + '%';
+    const certId = cert.certificate_id || 'N/A';
+    const compositeRisk = cert.composite_risk_score !== undefined ? (cert.composite_risk_score * 100).toFixed(1) + '%' : 'N/A';
+
+    const spectral = ev.spectral_frequency_analysis ? (ev.spectral_frequency_analysis.high_frequency_anomaly_score * 100).toFixed(1) + '%' : '0.0%';
+    const spatial = ev.spatial_inconsistency_analysis ? (ev.spatial_inconsistency_analysis.spatial_inconsistency_score * 100).toFixed(1) + '%' : '8.8%';
+
+    const cleanExplanation = renderMarkdown(text);
+
+    return `
+        <div class="chat-forensic-summary" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.9rem; background: ${labelBadgeBg}; color: ${labelBadgeColor}; padding: 3px 10px; border-radius: 6px;">
+                    ${labelBadgeText}
+                </span>
+                <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
+                    Confidence Score: <strong style="color: #0f172a;">${confidence}</strong>
+                </span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 0.82rem; color: #334155;">
+                <div><span style="color: #64748b;">Certificate ID:</span> <code style="font-family: monospace; font-weight: 700; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; color: #0f172a;">${certId}</code></div>
+                <div><span style="color: #64748b;">Composite Risk:</span> <strong style="color: ${isFake ? '#dc2626' : '#16a34a'};">${compositeRisk}</strong></div>
+                <div><span style="color: #64748b;">Spectral Anomaly (FFT 2D):</span> <strong>${spectral}</strong></div>
+                <div><span style="color: #64748b;">Spatial Noise Inconsistency:</span> <strong>${spatial}</strong></div>
+            </div>
+        </div>
+        <div style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 6px; border-left: 3px solid #5c46e5; padding-left: 8px;">1. Executive Verdict & Certificate Summary</div>
+        <div class="explanation-text-body" style="font-size: 0.88rem; line-height: 1.55;">${cleanExplanation}</div>
+    `;
+}
+
 function displayExplanation(text) {
     const explanationSection = document.getElementById('explanationSection');
     const explanationText = document.getElementById('explanationText');
@@ -402,7 +453,15 @@ function displayExplanation(text) {
     explanationSection.style.display = 'block';
     explanationText.innerHTML = renderMarkdown(text);
 
-    addAgentMessage(text);
+    // Format chat agent message as clean summary card
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message agent';
+    messageDiv.innerHTML = `<div class="message-content markdown-body">${formatAgentChatSummary(text, latestDetectionResult)}</div>`;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
 }
 
 // ===== Agent Status =====

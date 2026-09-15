@@ -178,31 +178,31 @@ body {
 
 /* Main Layout */
 .main-content {
-    padding: 40px 0;
+    padding: 20px 0;
 }
 
 /* Hero Header (Centered Top Description) */
 .hero-header {
     text-align: center;
     max-width: 860px;
-    margin: 0 auto 36px auto;
+    margin: 0 auto 16px auto;
 }
 
 .hero-title {
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     font-weight: 800;
     line-height: 1.25;
     color: var(--text-primary);
     letter-spacing: -0.03em;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .hero-subtitle {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 .feature-pills-centered {
@@ -213,10 +213,10 @@ body {
 .feature-pill {
     background: var(--pill-bg);
     border: 1px solid var(--pill-border);
-    padding: 14px 24px;
-    border-radius: 16px;
+    padding: 8px 18px;
+    border-radius: 12px;
     color: var(--pill-text);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
     line-height: 1.4;
     display: inline-block;
@@ -277,21 +277,21 @@ body {
 .hero-upload-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 .card {
     background: var(--card-bg);
-    border-radius: var(--radius-xl);
-    padding: 28px;
+    border-radius: 16px;
+    padding: 18px;
     border: 1px solid var(--card-border);
     box-shadow: var(--shadow-lg);
 }
 
 .upload-area {
     border: 2px dashed #c7d2fe;
-    border-radius: 16px;
-    padding: 32px 20px;
+    border-radius: 14px;
+    padding: 16px 14px;
     text-align: center;
     background: #faf9ff;
     transition: all 0.2s ease;
@@ -304,47 +304,47 @@ body {
 }
 
 .upload-icon-wrapper {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     background: #eef2ff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
 }
 
 .upload-headline {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .upload-subheadline {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
-    margin-bottom: 18px;
+    margin-bottom: 10px;
 }
 
 .btn {
     font-family: inherit;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .btn-browse {
     background: var(--primary-purple);
     color: #ffffff;
-    padding: 10px 24px;
-    font-size: 0.9rem;
+    padding: 8px 18px;
+    font-size: 0.85rem;
 }
 
 .btn-browse:hover {
@@ -356,9 +356,9 @@ body {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 16px 0;
+    margin: 10px 0;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
@@ -369,7 +369,7 @@ body {
 }
 
 .divider-or span {
-    padding: 0 12px;
+    padding: 0 10px;
 }
 
 .url-input-group {
@@ -377,14 +377,14 @@ body {
     align-items: center;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 8px 14px;
-    margin-bottom: 16px;
+    border-radius: 10px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
 }
 
 .url-icon {
-    font-size: 1.1rem;
-    margin-right: 8px;
+    font-size: 0.95rem;
+    margin-right: 6px;
     color: var(--text-muted);
 }
 
@@ -393,7 +393,7 @@ body {
     border: none;
     background: transparent;
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-primary);
     outline: none;
 }
@@ -402,10 +402,10 @@ body {
     background: var(--primary-purple);
     color: #ffffff;
     width: 100%;
-    padding: 14px;
-    font-size: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(92, 70, 229, 0.25);
+    padding: 10px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(92, 70, 229, 0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -422,9 +422,9 @@ body {
 /* Upload Footer Info */
 .upload-footer-info {
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.4;
 }
 
 .upload-footer-info a {
