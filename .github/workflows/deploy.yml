@@ -12,7 +12,7 @@ on:
 jobs:
   deploy:
     name: Deploy Docker Compose to Server
-    if: "!contains(github.event.head_commit.message, 'Auto-Bot') && !contains(github.event.head_commit.message, 'Auto-sync') && !contains(github.event.head_commit.message, '[skip ci]')"
+    if: "!contains(github.event.head_commit.message, '[Auto-Bot]') && !contains(github.event.head_commit.message, '[Auto-sync]') && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     environment: DTP_DEV
 
