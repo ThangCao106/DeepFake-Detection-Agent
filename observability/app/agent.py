@@ -151,26 +151,38 @@ def prepend_history(content: UserContent, key: str) -> UserContent:
 
 
 def _has_oauth_credentials_on_disk() -> bool:
-    """Check if actual OAuth session credentials exist in ~/.claude.json or config files."""
+    """Check if actual OAuth session credentials exist in ~/.claude.json or config/credential files."""
     home_candidates = [
         Path("/home/agent"),
         Path.home(),
         Path(os.environ.get("HOME", "/home/agent"))
     ]
     for h in home_candidates:
-        for json_path in [
+        target_files = [
             h / ".claude.json",
             h / ".claude" / "config.json",
+            h / ".claude" / "credentials.json",
+            h / ".claude" / ".credentials.json",
+            h / ".claude" / "session.json",
+            h / ".claude" / "auth.json",
+            h / ".claude" / "keys.json",
             h / ".config" / "claude-code" / "config.json",
-            h / ".config" / "claude" / "config.json"
-        ]:
+            h / ".config" / "claude-code" / "credentials.json",
+            h / ".config" / "claude" / "config.json",
+            h / ".config" / "claude" / "credentials.json",
+            h / "credentials.json",
+            h / ".credentials.json",
+            h / "session.json",
+            h / "auth.json",
+        ]
+        for json_path in target_files:
             try:
                 if json_path.exists():
                     content = json_path.read_text(encoding="utf-8").strip()
                     if content:
                         data = json.loads(content)
                         if isinstance(data, dict):
-                            for key in ["oauthAccount", "sessionKey", "oauthToken", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid"]:
+                            for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "sessionToken", "accessToken", "access_token", "accountUuid", "session", "account", "userID", "email"]:
                                 if key in data and data[key]:
                                     return True
             except Exception:
