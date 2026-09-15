@@ -479,6 +479,7 @@
       <button class="btn-login" style="background: #7c4dff;" onclick="sendInputCmd('down_enter')">✅ Trust Folder (Yes)</button>
       <button class="btn-login" style="background: #ff9100;" onclick="sendInputCmd('enter')">⏎ Gửi Enter</button>
       <button class="btn-login" style="background: #455a64;" onclick="fetchDebugLogs(true)">📜 Xem Log Debug</button>
+      <button class="btn-login" style="background: #37474f;" onclick="downloadDebugLog()">📥 Tải File Log Debug</button>
       <button class="btn-login" style="display: inline-flex;" onclick="checkAuthStatus(); closeLoginModal();">✅ Refresh Auth Status</button>
     </div>
 
@@ -754,6 +755,10 @@ function copyOauthUrl() {
 function copyLoginCmd() {
   navigator.clipboard.writeText(loginCmdText.textContent);
   alert("Login command copied to clipboard!");
+}
+
+function downloadDebugLog() {
+  window.open(getApiUrl("api/auth/download-debug-log"), "_blank");
 }
 
 async function submitAuthCode() {

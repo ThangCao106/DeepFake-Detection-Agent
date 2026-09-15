@@ -4,11 +4,30 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+DEBUG_LOG_FILE = Path("/tmp/claude_login_debug.log")
+
+
+def _log_debug(msg: str) -> None:
+    """Log message both to in-memory _LOGIN_LOGS list and persistent /tmp/claude_login_debug.log file."""
+    global _LOGIN_LOGS
+    line = str(msg)
+    if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != line:
+        _LOGIN_LOGS.append(line)
+    try:
+        DEBUG_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with open(DEBUG_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {line}\n")
+    except Exception:
+        pass
 
 from app.agent import (
     build_user_content,
@@ -462,8 +481,33 @@ async def get_debug_logs() -> dict:
         "user_claude_dir_exists": user_claude_dir.exists(),
         "has_api_key": bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")),
         "total_log_lines": len(_LOGIN_LOGS),
+        "debug_log_file": str(DEBUG_LOG_FILE),
         "logs": _LOGIN_LOGS,
     }
+
+
+@app.get("/api/auth/debug-file")
+async def get_debug_file_text() -> PlainTextResponse:
+    """Return raw text content of the persistent debug log file."""
+    if DEBUG_LOG_FILE.exists():
+        try:
+            content = DEBUG_LOG_FILE.read_text(encoding="utf-8")
+            return PlainTextResponse(content)
+        except Exception as e:
+            return PlainTextResponse(f"Error reading debug log file: {e}")
+    return PlainTextResponse("Debug log file /tmp/claude_login_debug.log does not exist yet.")
+
+
+@app.get("/api/auth/download-debug-log")
+async def download_debug_log():
+    """Download the persistent debug log file."""
+    if DEBUG_LOG_FILE.exists():
+        return FileResponse(
+            path=str(DEBUG_LOG_FILE),
+            filename="claude_login_debug.log",
+            media_type="text/plain"
+        )
+    raise HTTPException(status_code=404, detail="Debug log file not found.")
 
 
 @app.post("/api/auth/trigger-login")
