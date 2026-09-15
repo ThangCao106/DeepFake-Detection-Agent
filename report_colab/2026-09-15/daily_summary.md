@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 12:46:45
-**Total Training Runs Completed:** 1355
+**Last Updated:** 2026-09-15 12:47:21
+**Total Training Runs Completed:** 1356
 
 ## 📈 Performance Metric Comparison Table
 
@@ -1361,6 +1361,7 @@
 | 74 | `AUDIO` | `fakeavceleb_audio` | 0.939 | 0.998 | 0.022 | 1.5298 | 0.6410 | ✅ COMPLETED_SUCCESSFULLY |
 | 74 | `AUDIO` | `wavefake` | 0.909 | 0.978 | 0.022 | 1.5146 | 0.6795 | ✅ COMPLETED_SUCCESSFULLY |
 | 74 | `AUDIO` | `asvspoof_2021` | 0.929 | 0.998 | 0.022 | 1.6808 | 0.8779 | ✅ COMPLETED_SUCCESSFULLY |
+| 74 | `AUDIO` | `omni_fake` | 0.932 | 0.974 | 0.022 | 1.4515 | 0.7888 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -2723,6 +2724,7 @@ P74 [AUDIO] deepspeak_audio          [██████████████
 P74 [AUDIO] fakeavceleb_audio        [████████████████████████░] AUC: 0.998
 P74 [AUDIO] wavefake                 [████████████████████████░] AUC: 0.978
 P74 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.998
+P74 [AUDIO] omni_fake                [████████████████████████░] AUC: 0.974
 ```
 
 ## 🔧 Environment & Hyperparameters
