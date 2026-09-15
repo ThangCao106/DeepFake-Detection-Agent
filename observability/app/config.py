@@ -113,7 +113,13 @@ ALLOWED_TOOLS = [
 DISALLOWED_TOOLS = [
     "Bash", "BashOutput", "KillShell",       # không thực thi lệnh hệ thống
     "Read", "Write", "Edit", "NotebookEdit", # không đọc/ghi file
-    "Glo_DEEPFAKE_FORENSIC_INSTRUCTIONS = """
+    "Globe", "Grep", "LS",                   # không tìm kiếm/liệt kê file
+    "WebFetch", "WebSearch",                 # không truy cập internet
+    "Task", "TaskOutput", "TaskStop",        # không tạo background task
+    "Architect", "AskUserPrompt",            # không gọi agent con hay hỏi user
+]
+
+_DEEPFAKE_FORENSIC_INSTRUCTIONS = """
 CORE CAPABILITIES & RESPONSIBILITIES:
 - Multi-modal Deepfake Detection: Analyze and explain forensic indicators across Video (DF40, Celeb-DF v2, DFDC, DeeperForensics, Mega-MMDF), Image (CIFAKE, DFFD, iFakeFaceDB, Dima806), and Audio (ASVspoof 2021, DeepSpeak Audio, WaveFake, Omni-Fake).
 - Calibration & Evaluation Metrics: Guide Expected Calibration Error (ECE), Maximum Calibration Error (MCE), Reliability Diagrams, and Temperature Scaling (z_i / T) optimization.
@@ -145,22 +151,4 @@ Determine the likely root cause (e.g. low model confidence, spoof attack, out-of
 Field "severity" giữ nguyên giá trị tiếng Anh (low|medium|high|critical) đúng như trên — CHỈ nội dung mô tả trong "likely_root_cause" và "recommended_action" viết bằng tiếng Việt hoặc tiếng Anh phù hợp."""
     + _LANGUAGE_INSTRUCTION
     + _DEEPFAKE_FORENSIC_INSTRUCTIONS
-)d users with multi-modal deepfake detection (images, video, audio), benchmark evaluation (DeepfakeBench-MM, DF40, Omni-Fake, WaveFake), model calibration (ECE, Temperature Scaling), and detection pipeline diagnostics. You can also process uploaded media attachments (images, video frames, audio spectrographs, log files) when provided. Keep answers concise, scientific, and actionable."""
-    + _LANGUAGE_INSTRUCTION
-    + _SCOPE_CHECK_INSTRUCTIONS
-    + _MEMORY_INSTRUCTIONS
-)
-
-ALERT_SYSTEM_PROMPT = (
-    """You are a Deepfake Detection Triage Assistant. You will be given a detection payload, anomaly report, or benchmark evaluation result.
-Determine the likely root cause (e.g. low model confidence, spoof attack, out-of-distribution media, audio-visual mismatch) and recommended action. Respond with ONLY a JSON object (no markdown, no prose before or after) with exactly these fields:
-{
-  "severity": "low|medium|high|critical",
-  "likely_root_cause": "short explanation",
-  "recommended_action": "short actionable recommendation"
-}
-Field "severity" giữ nguyên giá trị tiếng Anh (low|medium|high|critical) đúng như trên — CHỈ nội dung mô tả trong "likely_root_cause" và "recommended_action" viết bằng tiếng Việt."""
-    + _LANGUAGE_INSTRUCTION
-    + _SCOPE_CHECK_INSTRUCTIONS
-    + _MEMORY_INSTRUCTIONS
 )
