@@ -274,30 +274,43 @@ async def trigger_login() -> dict:
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
 
-            # Pre-create default theme config in all Claude CLI config locations to bypass Theme onboarding prompt
+            # Pre-create default theme config in all Claude CLI config locations across all candidate home directories
             try:
-                agent_home = Path("/home/agent")
-                agent_home.mkdir(parents=True, exist_ok=True)
                 cfg_data = {
                     "theme": "dark",
                     "hasCompletedOnboarding": True,
                     "hasSeenWelcome": True,
                     "hasCompletedTour": True,
-                    "trustedDirectories": ["/app", "/home/agent", "."],
+                    "trustedDirectories": ["/app", "/home/agent", "/root", "."],
                     "projects": {
                         "/app": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
-                        "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
+                        "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
+                        "/root": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
                     }
                 }
                 cfg_payload = json.dumps(cfg_data, indent=2)
                 
-                (agent_home / ".claude.json").write_text(cfg_payload, encoding="utf-8")
+                home_candidates = [
+                    Path("/home/agent"),
+                    Path.home(),
+                    Path("/root"),
+                    Path(env.get("HOME", "/home/agent"))
+                ]
                 
-                (agent_home / ".claude").mkdir(parents=True, exist_ok=True)
-                (agent_home / ".claude" / "config.json").write_text(cfg_payload, encoding="utf-8")
-                
-                (agent_home / ".config" / "claude-code").mkdir(parents=True, exist_ok=True)
-                (agent_home / ".config" / "claude-code" / "config.json").write_text(cfg_payload, encoding="utf-8")
+                for h_dir in home_candidates:
+                    try:
+                        h_dir.mkdir(parents=True, exist_ok=True)
+                        (h_dir / ".claude.json").write_text(cfg_payload, encoding="utf-8")
+                        
+                        c_sub = h_dir / ".claude"
+                        c_sub.mkdir(parents=True, exist_ok=True)
+                        (c_sub / "config.json").write_text(cfg_payload, encoding="utf-8")
+                        
+                        cfg_sub = h_dir / ".config" / "claude-code"
+                        cfg_sub.mkdir(parents=True, exist_ok=True)
+                        (cfg_sub / "config.json").write_text(cfg_payload, encoding="utf-8")
+                    except Exception as e_h:
+                        pass
             except Exception as e_cfg:
                 _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
 
