@@ -302,29 +302,6 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
 
     # Persist to .env file in project root
     env_file = Path(PROJECT_ROOT) / ".env"
-    try:
-        env_lines = []
-        if env_file.exists():
-            env_lines = env_file.read_text(encoding="utf-8").splitlines()
-
-        new_lines = [
-            line for line in env_lines
-            if not line.startswith("GEMINI_API_KEY=")
-        ]
-        new_lines.append(f"GEMINI_API_KEY={key}")
-        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-    except Exception as e:
-        _LOGIN_LOGS.append(f"⚠️ Warning saving .env: {e}")
-
-    _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment!")
-    return {
-        "status": "SUCCESS",
-        "message": "Đã cập nhật Gemini API Key thành công!",
-        "gemini_authenticated": True,
-        "gemini_key_masked": (key[:8] + "...") if len(key) > 8 else "***",
-    }
-
-
 class SendInputRequest(BaseModel):
     input_text: str
 
@@ -391,34 +368,56 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
             "logs": _LOGIN_LOGS[-25:],
         }
 
-    # 2. If subprocess is running, pass code to stdin
-    if _ACTIVE_LOGIN_PROC is not None and _ACTIVE_LOGIN_PROC.returncode is None:
+    # 2. OAuth Code: If login process isn't active, launch fresh login process
+    if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
+        _LOGIN_LOGS.append("🔄 [SUBMIT-CODE] Launching Claude CLI login process for OAuth code exchange...")
+        cmd = "claude login" if shutil.which("claude") else "npx -y @anthropic-ai/claude-code login"
+        if shutil.which("script"):
+            cmd = f'script -q -c "{cmd}" /dev/null'
+        
+        env = os.environ.copy()
+        env.pop("CI", None)
+        env["FORCE_COLOR"] = "0"
+        env["HOME"] = "/home/agent"
+        env["DISABLE_CLAUDE_AUTO_UPDATE"] = "1"
+        env["DISABLE_AUTO_UPDATE"] = "1"
+        env["CLAUDE_AUTO_UPDATE_DISABLE"] = "1"
+        env["NO_UPDATE_NOTIFIER"] = "1"
+
         try:
-            if _ACTIVE_LOGIN_PROC.stdin:
-                _ACTIVE_LOGIN_PROC.stdin.write(code_input.encode("utf-8") + b"\r\n")
-                _ACTIVE_LOGIN_PROC.stdin.write(code_input.encode("utf-8") + b"\n")
-                await _ACTIVE_LOGIN_PROC.stdin.drain()
-                _LOGIN_LOGS.append(f"➡️ [DEBUG] Submitted OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
-                
-                await asyncio.sleep(1.2)
-                return {
-                    "status": "SUCCESS",
-                    "message": "Đã dán mã xác thực OAuth tới tiến trình login!",
-                    "logs": _LOGIN_LOGS[-25:],
-                }
+            _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
+                cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd="/tmp",
+                env=env
+            )
+            asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
+            await asyncio.sleep(1.5)
+        except Exception as proc_exc:
+            _LOGIN_LOGS.append(f"❌ [SUBMIT-CODE ERROR] Failed to start login process: {proc_exc}")
+            raise HTTPException(status_code=500, detail=f"Không thể khởi chạy tiến trình login: {proc_exc}")
+
+    # 3. Write code to process stdin ONCE
+    if _ACTIVE_LOGIN_PROC and _ACTIVE_LOGIN_PROC.stdin:
+        try:
+            _ACTIVE_LOGIN_PROC.stdin.write(f"{code_input}\n".encode("utf-8"))
+            await _ACTIVE_LOGIN_PROC.stdin.drain()
+            _LOGIN_LOGS.append(f"➡️ [SUBMIT-CODE] Sent OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
+            
+            await asyncio.sleep(1.2)
+            return {
+                "status": "SUCCESS",
+                "message": "Đã dán mã xác thực OAuth tới tiến trình CLI! Đang thực hiện đăng nhập...",
+                "authenticated": False,
+                "logs": _LOGIN_LOGS[-25:],
+            }
         except Exception as exc:
             _LOGIN_LOGS.append(f"⚠️ Warning writing stdin: {exc}")
+            raise HTTPException(status_code=500, detail=f"Lỗi ghi mã vào stdin: {exc}")
 
-    # 3. Fallback: Save as CLAUDE_API_KEY if process isn't active
-    os.environ["CLAUDE_API_KEY"] = code_input
-    os.environ["ANTHROPIC_API_KEY"] = code_input
-    _LOGIN_LOGS.append(f"➡️ [DEBUG] Subprocess ended; saved code as CLAUDE_API_KEY in environment.")
-    return {
-        "status": "SUCCESS",
-        "message": "Đã lưu mã xác thực vào cấu hình môi trường!",
-        "authenticated": True,
-        "logs": _LOGIN_LOGS[-25:],
-    }
+    raise HTTPException(status_code=500, detail="Tiến trình login CLI không sẵn sàng ghi stdin.")
 
 
 @app.get("/api/auth/debug-logs")
