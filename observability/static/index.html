@@ -584,6 +584,13 @@ async function checkAuthStatus() {
     const res = await fetch(getApiUrl("api/auth/status"));
     if (res.ok) {
       const data = await res.json();
+      if (data.default_key && apiKeyInput.value === "observability-agent-key") {
+        apiKeyInput.value = data.default_key;
+      }
+      if (data.login_command && loginCmdText) {
+        loginCmdText.textContent = data.login_command;
+      }
+
       if (data.authenticated) {
         statusDot.className = "dot active";
         statusText.textContent = "Claude Authenticated";
@@ -593,17 +600,11 @@ async function checkAuthStatus() {
         statusText.textContent = "Claude Login Needed";
         return false;
       }
-      if (data.default_key && apiKeyInput.value === "observability-agent-key") {
-        apiKeyInput.value = data.default_key;
-      }
-      if (data.login_command) {
-        loginCmdText.textContent = data.login_command;
-      }
     }
   } catch (err) {
-    statusDot.className = "dot active";
-    statusText.textContent = "Claude CLI Ready";
-    return true;
+    statusDot.className = "dot inactive";
+    statusText.textContent = "Claude Login Needed";
+    return false;
   }
   return false;
 }

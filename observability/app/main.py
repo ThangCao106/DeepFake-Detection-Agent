@@ -42,15 +42,43 @@ async def gate_login(req: GateLoginRequest) -> dict:
     raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không chính xác")
 
 
+def _has_valid_credentials() -> bool:
+    """Check if actual API keys or OAuth authentication credentials exist."""
+    has_api_key = bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
+    if has_api_key:
+        return True
+
+    home_candidates = [
+        Path("/home/agent"),
+        Path.home(),
+        Path("/root"),
+        Path(os.environ.get("HOME", "/home/agent"))
+    ]
+
+    for h in home_candidates:
+        # Check credentials files
+        for cred_name in ["credentials.json", ".credentials.json", "session.json"]:
+            if (h / ".claude" / cred_name).exists() or (h / cred_name).exists():
+                return True
+
+        # Check config json files for actual OAuth auth fields
+        for json_path in [h / ".claude.json", h / ".claude" / "config.json", h / ".config" / "claude-code" / "config.json"]:
+            if json_path.exists():
+                try:
+                    data = json.loads(json_path.read_text(encoding="utf-8"))
+                    for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "session"]:
+                        if key in data and data[key]:
+                            return True
+                except Exception:
+                    pass
+
+    return False
+
+
 @app.get("/api/auth/status")
 async def auth_status() -> dict:
     """Return Claude CLI authentication status and login instructions."""
-    home_dir = os.environ.get("HOME", "/home/agent")
-    claude_dir = Path(home_dir) / ".claude"
-    user_claude_dir = Path.home() / ".claude"
-
-    has_api_key = bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
-    is_authenticated = claude_dir.exists() or user_claude_dir.exists() or has_api_key
+    is_authenticated = _has_valid_credentials()
     return {
         "authenticated": is_authenticated,
         "status": "AUTHENTICATED" if is_authenticated else "NOT_LOGGED_IN",
