@@ -5,10 +5,11 @@
 ![Modality](https://img.shields.io/badge/Modality-Image%20%7C%20Video%20%7C%20Audio-purple)
 ![Architecture](https://img.shields.io/badge/Architecture-Vision%20%26%20Audio%20Transformer-orange)
 ![Calibration](https://img.shields.io/badge/Calibration-Temperature%20Scaling%20(T*)%20%2B%20Youden's%20J%20(%CF%84*)-red)
+![Language](https://img.shields.io/badge/Language-English%20%7C%20Ti%E1%BA%BFng%20Vi%E1%BB%87t-blueviolet)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Deployment](https://img.shields.io/badge/Deployment-Docker%20%26%20GitHub%20Actions%20CI%2FCD-brightgreen)
 
-System phát hiện và giám định **DeepFake Đa Phương Thức (Multi-Modal DeepFake Detection: Image, Video, Audio)** dựa trên kiến trúc **Vision & Audio Transformer**, quy trình hiệu chỉnh xác suất **Post-Hoc Temperature Scaling ($T^*$)**, tối ưu hóa ngưỡng quyết định **Youden's J Index ($\tau^*$)**, kết hợp với **Hệ thống Đa Tác thể (Multi-Agent System)** và **Agent SRE Quan sát (Observability Subsystem Agent)**.
+System phát hiện và giám định **DeepFake Đa Phương Thức (Multi-Modal DeepFake Detection: Image, Video, Audio)** dựa trên kiến trúc **Vision & Audio Transformer**, quy trình hiệu chỉnh xác suất **Post-Hoc Temperature Scaling ($T^*$)**, tối ưu hóa ngưỡng quyết định **Youden's J Index ($\tau^*$)**, hỗ trợ **Đa Ngôn Ngữ (Tiếng Việt 🇻🇳 & Tiếng Anh 🇬🇧)**, kết hợp với **Hệ thống Đa Tác thể (Multi-Agent System)** và **Agent SRE Quan sát (Observability Subsystem Agent)**.
 
 ---
 
@@ -115,18 +116,18 @@ Hệ thống tích hợp **14 Bộ dữ liệu chuẩn quốc tế** mở rộng
 
 ---
 
-## 🏛️ 3. Hệ thống Đa Tác Thể (Multi-Agent System Design)
+## 🏛️ 3. Hệ thống Đa Tác Thể (Multi-Agent System Design) & Hỗ trợ Đa Ngôn Ngữ
 
 Mô hình hoạt động dựa trên sự phối hợp giữa 5 Agent chính:
 
 ```mermaid
 graph TD
-    A[User / Client] -->|Media File + Query| B[Orchestrator Agent]
+    A[User / Client] -->|Media File + Query + Language EN/VI| B[Orchestrator Agent]
     B -->|Preprocessed Payload| C[Detection Agent - ViT / ONNX Engine]
     C -->|Raw Logits & Keyframes| D[Calibration Engine - T* & τ*]
     D -->|Calibrated Probabilities| B
     B -->|Structured Forensic Context| E[Analysis Agent - Gemini / Claude LLM]
-    E -->|Natural Language Explanation| B
+    E -->|Natural Language Explanation EN/VI| B
     B -->|Generate| F[Auditable Forensic Certificate]
     B <-->|Persistent Memory| G[SRE Observability Agent - ClickHouse & Grafana]
 
@@ -137,22 +138,28 @@ graph TD
     style G fill:#9C27B0,color:#fff
 ```
 
-1. **Orchestrator Agent**: Tiếp nhận file media (Image, Video, Audio), phân luồng xử lý và phối hợp các agent con.
+### 🔹 3.1 Các Tác thể Thành phần
+1. **Orchestrator Agent**: Tiếp nhận file media (Image, Video, Audio), ngôn ngữ tùy chọn (`vi` hoặc `en`), phân luồng xử lý và phối hợp các agent con.
 2. **Detection Agent (ML/ONNX Engine)**: Chạy mô hình ViT fine-tuned và ONNX Runtime (`custom_deepfake_vit.onnx`) trích xuất điểm số dự đoán raw logits.
 3. **Calibration Engine**: Áp dụng $T^*$ và $\tau^*$ để tính toán tỷ lệ phần trăm tin cậy chính xác cho từng phương thức.
-4. **Analysis Agent (LLM)**: Sử dụng Google Gemini / Claude LLM tổng hợp báo cáo giải thích bằng ngôn ngữ tự nhiên và cấp **Auditable Forensic Certificate** (tuân thủ EU AI Act & DSA).
+4. **Analysis Agent (LLM)**: Sử dụng Google Gemini / Claude LLM tổng hợp báo cáo giải thích bằng ngôn ngữ tự nhiên theo Tiếng Việt 🇻🇳 hoặc Tiếng Anh 🇬🇧 và cấp **Auditable Forensic Certificate** (tuân thủ EU AI Act Article 50 & DSA).
 5. **Observability SRE Agent (Subsystem Port 8787)**:
    * Giám sát hệ thống thời gian thực qua **ClickHouse Agent Memory** và **Grafana Metrics**.
    * Cung cấp **Hệ thống Đăng nhập 2 Chế độ (Dual Authentication Gateway)**:
      - *Chế độ 1*: Nhập trực tiếp `CLAUDE_API_KEY` (`sk-ant-...`) trên giao diện web bar và lưu vào container session.
-     - *Chế độ 2*: Đăng nhập tự động OAuth Anthropic (`claude login`) tích hợp modal **Nhập Authorization Code** trực tiếp trên Web Interface.
-     - Xử lý lỗi hệ thống chuẩn xác: Trả lời lại mã `401 Unauthorized` dạng JSON thay vì HTML Nginx 502 Bad Gateway.
+     - *Chế độ 2*: Đăng nhập tự động OAuth Anthropic (`claude login`) tích hợp modal **Nhập Authorization Code** và các nút điều khiển trực tiếp trên Web Interface.
+     - Tự động pre-trust thư mục `/app` đa đường dẫn (`/root`, `/home/agent`) và chạy trong `/tmp` để bypass 100% màn hình Workspace Safety Check.
+
+### 🔹 3.2 Hỗ trợ Đa Ngôn ngữ (English & Vietnamese i18n)
+* **Web UI Language Switcher**: Nút bấm `🌐 EN | 🇻🇳 VI` trên Header ứng dụng Web, tự động lưu lựa chọn vào `localStorage`.
+* **LLM Dynamic Localization**: Tác thể Analysis Agent tự động nhận biết tham số `language` và sinh văn bản giải thích chuẩn mực bằng Tiếng Việt hoặc Tiếng Anh.
+* **Tinh gọn 6 chỉ số Forensic Certificate**: Dù ở ngôn ngữ nào, thẻ tóm tắt kết quả phân tích luôn giữ định dạng 6 chỉ số định lượng chính (Real/Fake label, Confidence Score, Certificate ID, Composite Risk, Spectral Anomaly FFT 2D, Spatial Noise Inconsistency).
 
 ---
 
 ## 📈 4. Kết quả Thực nghiệm & Metrics Huấn luyện Động (Experimental Results)
 
-Dưới đây là tóm tắt diễn biến hiệu năng huấn luyện mô hình qua các Pass liên tục trên tập Benchmark:
+Dưới đây là tóm tắt diễn biến hiệu năng huấn luyện mô hình qua các Pass liên tục trên tập Benchmark (Cập nhật Pass 18):
 
 | Pass # | Modality | Dataset | Accuracy | AUC Score | EER Score | Temp ($T^*$) | Tau ($\tau^*$) | Trạng thái |
 |-------:|:--------|:--------|---------:|----------:|----------:|-------------:|---------------:|:-----------|
@@ -166,6 +173,7 @@ Dưới đây là tóm tắt diễn biến hiệu năng huấn luyện mô hình
 | **Pass 6** | `IMAGE` | `dima806_deepfake` | **99.4%** | **0.998** | **0.012** | 1.4956 | 0.7285 | 🚀 SOTA Peak |
 | **Pass 6** | `VIDEO` | `celeb_df_v2` | **98.2%** | **0.998** | **0.018** | 1.4586 | 0.8449 | 🚀 SOTA Peak |
 | **Pass 6** | `AUDIO` | `deepspeak_audio` | **97.9%** | **0.998** | **0.022** | 1.7598 | 0.6365 | 🚀 SOTA Peak |
+| **Pass 18**| `VIDEO` | `mega_mmdf` | **98.7%** | **0.999** | **0.011** | 1.4210 | 0.7150 | 🚀 SOTA Peak |
 
 ---
 
@@ -174,10 +182,10 @@ Dưới đây là tóm tắt diễn biến hiệu năng huấn luyện mô hình
 ```text
 DeepFake-Detection-Agent/
 ├── 🌐 web_ui/                            (Ứng dụng Web Suy luận Multi-Modality - Port 5000)
-│   ├── app.py                            - Server Flask & SocketIO
-│   ├── templates/ & static/              - Giao diện Light Lavender UI & Multi-Modality Viewer
+│   ├── app.py                            - Server Flask & SocketIO với tham số language
+│   ├── templates/ & static/              - Giao diện Light Lavender UI, i18n & Multi-Modality Viewer
 │   ├── deepfake_detector.py              - Engine suy luận Image, Video, Audio & Certificate ID
-│   ├── agent_system.py                   - Multi-Agent Orchestrator
+│   ├── agent_system.py                   - Multi-Agent Orchestrator (hỗ trợ Tiếng Việt & Tiếng Anh)
 │   └── config.py                         - Quản lý cấu hình hệ thống
 │
 ├── 🧠 colab_training/                    (Tự động hóa Huấn luyện Colab GPU & Sync GitHub)
@@ -190,17 +198,17 @@ DeepFake-Detection-Agent/
 │
 ├── 🔍 observability/                     (Subsystem Agent Quan sát & Persistent Memory - Port 8787)
 │   ├── Dockerfile & docker-compose.yml   - SRE Claude Agent Service (Port 8787)
-│   ├── app/main.py                       - Backend API, Dual Auth (API Key & OAuth Submit Modal)
+│   ├── app/main.py                       - Backend API, Dual Auth, PTY /login Auto-Responder
 │   ├── app/agent.py                      - Integration với Claude Agent SDK
 │   └── static/index.html                 - Obsagent Web Dashboard & Modal Code Submitter
 │
 ├── 📊 report_colab/                      (Báo cáo Động Đa Phương Thức)
-│   └── 2026-09-14/
+│   └── 2026-09-15/
 │       ├── daily_summary.md              - Bảng tổng hợp metrics động theo từng Pass & Modality
 │       └── daily_summary_chart.png       - Biểu đồ xu hướng nâng cao hiệu năng
 │
 ├── 🐳 docker-compose.yml                 - File Docker Compose chính quản lý Web UI & Obsagent
-└── 🚀 .github/workflows/deploy.yml       - GitHub Actions CI/CD Auto-Deploy SSH Server
+└── 🚀 .github/workflows/deploy.yml       - GitHub Actions CI/CD (paths-ignore report_colab/**)
 ```
 
 ---
@@ -230,7 +238,7 @@ Khi truy cập giao diện Observability Agent:
 1. Đăng nhập Subsystem Gate: Tên đăng nhập `thang.cd` / Mật khẩu `Thang@123`.
 2. Chọn 1 trong 2 phương thức xác thực:
    * **Cách 1 (Nhập API Key - Nhanh nhất)**: Dán `CLAUDE_API_KEY` (`sk-ant-api03-...`) vào ô nhập ở góc phải thanh API Key Bar và bấm **Lưu Key**.
-   * **Cách 2 (Xác thực OAuth)**: Bấm **`🔑 Claude Login`** $\rightarrow$ Bấm **`⚡ Auto Launch Docker Login`** $\rightarrow$ Nhấp link Anthropic OAuth để lấy mã Authorization Code $\rightarrow$ Dán vào ô **`🔑 Nhập mã xác thực`** và bấm **`Submit Code`**.
+   * **Cách 2 (Xác thực OAuth)**: Bấm **`🔑 Claude Login`** $\rightarrow$ Bấm **`⚡ Auto Launch Docker Login`** $\rightarrow$ Nhấp link Anthropic OAuth để lấy mã Authorization Code $\rightarrow$ Dán vào ô **`🔑 Nhập mã xác thực`** và bấm **`Submit Code`**. Hoặc bấm nút **`✅ Trust Folder (Yes)`** / **`🔑 Gửi /login`** trên giao diện modal.
 
 ---
 
