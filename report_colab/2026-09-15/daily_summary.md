@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 07:32:39
-**Total Training Runs Completed:** 839
+**Last Updated:** 2026-09-15 07:36:32
+**Total Training Runs Completed:** 845
 
 ## 📈 Performance Metric Comparison Table
 
@@ -845,6 +845,12 @@
 | 45 | `AUDIO` | `asvspoof_2021` | 0.938 | 0.988 | 0.022 | 1.7410 | 0.6995 | ✅ COMPLETED_SUCCESSFULLY |
 | 45 | `AUDIO` | `omni_fake` | 0.943 | 0.992 | 0.022 | 1.4139 | 0.6128 | ✅ COMPLETED_SUCCESSFULLY |
 | 46 | `IMAGE` | `dima806_deepfake` | 0.985 | 0.998 | 0.012 | 1.3682 | 0.6457 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `IMAGE` | `cifake` | 0.963 | 0.998 | 0.012 | 1.3364 | 0.5881 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `IMAGE` | `dffd_image` | 0.976 | 0.998 | 0.012 | 1.3975 | 0.5964 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `IMAGE` | `ifakefacedb` | 0.994 | 0.998 | 0.012 | 1.4626 | 0.6802 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `IMAGE` | `dfbench_lmm` | 0.994 | 0.998 | 0.012 | 1.3947 | 0.6873 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `VIDEO` | `faceforensics_pp` | 0.923 | 0.998 | 0.018 | 1.7268 | 0.7773 | ✅ COMPLETED_SUCCESSFULLY |
+| 46 | `VIDEO` | `celeb_df_v2` | 0.948 | 0.998 | 0.018 | 1.6533 | 0.7911 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1691,6 +1697,12 @@ P45 [AUDIO] wavefake                 [██████████████
 P45 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.988
 P45 [AUDIO] omni_fake                [████████████████████████░] AUC: 0.992
 P46 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
+P46 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
+P46 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
+P46 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
+P46 [IMAGE] dfbench_lmm              [████████████████████████░] AUC: 0.998
+P46 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.998
+P46 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
