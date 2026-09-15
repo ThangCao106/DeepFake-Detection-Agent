@@ -4,6 +4,7 @@ import os
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, TypedDict
 
 from claude_agent_sdk import (
