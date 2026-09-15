@@ -350,7 +350,7 @@ def _clean_oauth_code(raw: str) -> str:
     code = raw.strip().strip("'\"")
     if "code=" in code:
         part = code.split("code=")[1]
-        for sep in ["&", "#", " ", "\n", "\r"]:
+        for sep in ["&", " ", "\n", "\r"]:
             if sep in part:
                 part = part.split(sep)[0]
         code = part.strip()
@@ -390,6 +390,10 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
             "authenticated": True,
             "logs": _LOGIN_LOGS[-25:],
         }
+
+    # Clear any stale/invalid API keys from environment when attempting OAuth Code submission
+    os.environ.pop("CLAUDE_API_KEY", None)
+    os.environ.pop("ANTHROPIC_API_KEY", None)
 
     # 2. OAuth Code: If login process isn't active, launch fresh login process
     if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
@@ -504,26 +508,25 @@ async def get_debug_logs() -> dict:
 
 @app.get("/api/auth/debug-file")
 async def get_debug_file_text() -> PlainTextResponse:
-    """Return raw text content of the persistent debug log file."""
-    if DEBUG_LOG_FILE.exists():
-        try:
-            content = DEBUG_LOG_FILE.read_text(encoding="utf-8")
-            return PlainTextResponse(content)
-        except Exception as e:
-            return PlainTextResponse(f"Error reading debug log file: {e}")
-    return PlainTextResponse("Debug log file /tmp/claude_login_debug.log does not exist yet.")
+    """Return raw text content of all captured debug trace logs."""
+    global _LOGIN_LOGS
+    content = "\n".join(_LOGIN_LOGS)
+    if not content:
+        content = "No debug logs captured yet."
+    return PlainTextResponse(content)
 
 
 @app.get("/api/auth/download-debug-log")
-async def download_debug_log():
-    """Download the persistent debug log file."""
-    if DEBUG_LOG_FILE.exists():
-        return FileResponse(
-            path=str(DEBUG_LOG_FILE),
-            filename="claude_login_debug.log",
-            media_type="text/plain"
-        )
-    raise HTTPException(status_code=404, detail="Debug log file not found.")
+async def download_debug_log() -> PlainTextResponse:
+    """Download full captured debug trace logs as a plain text file attachment."""
+    global _LOGIN_LOGS
+    content = "\n".join(_LOGIN_LOGS)
+    if not content:
+        content = "No debug logs captured yet."
+    return PlainTextResponse(
+        content,
+        headers={"Content-Disposition": "attachment; filename=claude_login_debug.log"}
+    )
 
 
 @app.post("/api/auth/trigger-login")
