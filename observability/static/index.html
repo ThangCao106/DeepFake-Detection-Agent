@@ -393,10 +393,16 @@
   <!-- Header Bar -->
   <div class="header">
     <div class="header-title">
-      <h1>🛡️ Deepfake Detection Agent</h1>
-      <span class="badge">Claude CLI AI Subsystem</span>
+      <a href="https://detection.dtpsoft.vn/" class="btn-home" title="Trở về Trang chủ" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.12); padding: 0.45rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); margin-right: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+        🏠 <span id="txtHome">Trang chủ</span>
+      </a>
+      <h1 id="txtHeaderTitle">🛡️ Deepfake Detection Agent</h1>
+      <span class="badge" id="txtSubsystemBadge">Claude CLI AI Subsystem</span>
     </div>
     <div class="auth-status-bar">
+      <button class="btn-login" id="langBtn" onclick="toggleLanguage()" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); font-weight: 700;">
+        🇻🇳 VN
+      </button>
       <div class="status-tag" id="statusTag">
         <div class="dot inactive" id="statusDot"></div>
         <span id="statusText">Checking Auth...</span>
@@ -405,48 +411,46 @@
         <div class="dot inactive" id="geminiStatusDot"></div>
         <span id="geminiStatusText">Checking Gemini...</span>
       </div>
-      <button class="btn-login" onclick="openLoginModal()">🔑 Claude Login</button>
-      <button class="btn-login" style="background: rgba(255,255,255,0.15);" onclick="logoutGate()">🚪 Logout</button>
+      <button class="btn-login" id="txtLoginBtn" onclick="openLoginModal()">🔑 Claude Login</button>
+      <button class="btn-login" id="txtLogoutBtn" style="background: rgba(255,255,255,0.15);" onclick="logoutGate()">🚪 Logout</button>
     </div>
   </div>
 
   <!-- API Key Bar -->
   <div class="api-key-bar">
     <div class="api-key-input-group">
-      <label for="apiKey">Agent Key:</label>
+      <label for="apiKey" id="lblAgentKey">Agent Key:</label>
       <input type="password" id="apiKey" value="observability-agent-key" placeholder="X-API-Key" />
     </div>
     <div class="api-key-input-group">
-      <label for="claudeKeyInput">Claude API Key (sk-ant-...):</label>
+      <label for="claudeKeyInput" id="lblClaudeKey">Claude API Key (sk-ant-...):</label>
       <input type="password" id="claudeKeyInput" placeholder="sk-ant-api03-..." style="width: 170px;" />
-      <button class="btn-login" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="saveClaudeApiKey()">Lưu Key</button>
+      <button class="btn-login" id="btnSaveClaude" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="saveClaudeApiKey()">Lưu Key</button>
     </div>
     <div class="api-key-input-group">
-      <label for="geminiKeyInput">Gemini API Key (AIzaSy...):</label>
+      <label for="geminiKeyInput" id="lblGeminiKey">Gemini API Key (AIzaSy...):</label>
       <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." style="width: 170px;" />
-      <button class="btn-login" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #2563eb;" onclick="saveGeminiApiKey()">Lưu Key Gemini</button>
+      <button class="btn-login" id="btnSaveGemini" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #2563eb;" onclick="saveGeminiApiKey()">Lưu Key Gemini</button>
     </div>
     <span style="color: var(--text-muted);">Session: <strong id="sessionIdLabel">...</strong></span>
   </div>
 
   <!-- Chat Log Box -->
   <div class="chat-box" id="chatBox">
-    <div class="msg system">
-      👋 AI Deepfake Detection Agent ready. Powered by Claude CLI Authentication.
+    <div class="msg system" id="welcomeMsg">
+      👋 AI Deepfake Detection Agent đã sẵn sàng. Hỗ trợ tra cứu Báo cáo Benchmark, Báo cáo Colab & Trọng số mô hình.
     </div>
   </div>
 
   <!-- Quick Pills -->
-  <div class="quick-pills">
-    <button class="pill-btn" onclick="sendQuickPrompt('Evaluate DeepfakeBench-MM, DF40 and Omni-Fake benchmark metrics')">📊 Model Benchmarks</button>
-    <button class="pill-btn" onclick="sendQuickPrompt('Inspect audio-visual deepfake detection forensic reports')">📜 Forensic Reports</button>
-    <button class="pill-btn" onclick="sendQuickPrompt('Verify ECE and Temperature Scaling calibration metrics')">🏥 Model Calibration</button>
+  <div class="quick-pills" id="quickPillsContainer">
+    <!-- Rendered dynamically by renderQuickPills() -->
   </div>
 
   <!-- Input Form -->
   <form class="input-form" id="chatForm">
-    <input type="text" id="messageInput" placeholder="Ask Deepfake Detection Agent about Benchmark Performance / Video Artifacts / Audio Spoofing..." autocomplete="off" />
-    <button type="submit">Send</button>
+    <input type="text" id="messageInput" placeholder="Hỏi Deepfake Agent về Báo cáo Benchmark / Cập nhật Trọng số Colab / ECE Calibration..." autocomplete="off" />
+    <button type="submit" id="btnSubmitChat">Gửi</button>
   </form>
 </div>
 
@@ -525,6 +529,132 @@ const apiKeyInput = document.getElementById("apiKey");
 const statusDot = document.getElementById("statusDot");
 const statusText = document.getElementById("statusText");
 const loginCmdText = document.getElementById("loginCmdText");
+
+let currentLang = localStorage.getItem("obsagent_lang") || "vi";
+
+const I18N = {
+  vi: {
+    home: "Trang chủ",
+    headerTitle: "🛡️ Deepfake Detection Agent",
+    subsystemBadge: "Claude CLI AI Subsystem",
+    langBtn: "🇻🇳 VN",
+    authChecking: "Đang kiểm tra Auth...",
+    authSuccess: "Claude Authenticated",
+    authNeeded: "Cần Claude Login",
+    geminiChecking: "Đang kiểm tra Gemini...",
+    geminiSuccess: "Gemini Active",
+    geminiMissing: "Gemini Missing",
+    loginBtn: "🔑 Claude Login",
+    logoutBtn: "🚪 Đăng xuất",
+    lblAgentKey: "Agent Key:",
+    lblClaudeKey: "Claude API Key (sk-ant-...):",
+    lblGeminiKey: "Gemini API Key (AIzaSy...):",
+    btnSaveClaude: "Lưu Key",
+    btnSaveGemini: "Lưu Key Gemini",
+    welcomeMsg: "👋 AI Deepfake Detection Agent đã sẵn sàng. Hỗ trợ tra cứu Báo cáo Benchmark, Báo cáo Colab & Trọng số mô hình.",
+    inputPlaceholder: "Hỏi Deepfake Agent về Báo cáo Benchmark / Cập nhật Trọng số Colab / ECE Calibration...",
+    btnSubmitChat: "Gửi",
+    pills: [
+      { label: "📊 Báo cáo Daily Benchmark", prompt: "Tổng hợp và phân tích chi tiết báo cáo Daily Benchmark mới nhất từ thư mục report_colab/daily_benchmark/" },
+      { label: "📈 Báo cáo Colab & Trọng số", prompt: "Kiểm tra báo cáo huấn luyện Colab mới nhất và cập nhật trọng số mô hình trong report_colab/" },
+      { label: "📅 Cập nhật Trọng số (Tuần)", prompt: "Tổng hợp biến động và lịch sử cập nhật trọng số mô hình theo Ngày hoặc Tuần gần nhất" },
+      { label: "🏥 Hiệu chỉnh ECE & Calibration", prompt: "Kiểm định chỉ số Expected Calibration Error (ECE), Reliability Diagram và Temperature Scaling" }
+    ]
+  },
+  en: {
+    home: "Home",
+    headerTitle: "🛡️ Deepfake Detection Agent",
+    subsystemBadge: "Claude CLI AI Subsystem",
+    langBtn: "🇬🇧 EN",
+    authChecking: "Checking Auth...",
+    authSuccess: "Claude Authenticated",
+    authNeeded: "Claude Login Needed",
+    geminiChecking: "Checking Gemini...",
+    geminiSuccess: "Gemini Active",
+    geminiMissing: "Gemini Missing",
+    loginBtn: "🔑 Claude Login",
+    logoutBtn: "🚪 Logout",
+    lblAgentKey: "Agent Key:",
+    lblClaudeKey: "Claude API Key (sk-ant-...):",
+    lblGeminiKey: "Gemini API Key (AIzaSy...):",
+    btnSaveClaude: "Save Key",
+    btnSaveGemini: "Save Gemini Key",
+    welcomeMsg: "👋 AI Deepfake Detection Agent ready. Supports Benchmark Reports, Colab Training & Weight Audits.",
+    inputPlaceholder: "Ask Deepfake Agent about Benchmark Performance / Colab Weight Updates / ECE Calibration...",
+    btnSubmitChat: "Send",
+    pills: [
+      { label: "📊 Daily Benchmark Reports", prompt: "Summarize and analyze the latest Daily Benchmark report from report_colab/daily_benchmark/" },
+      { label: "📈 Colab Reports & Weights", prompt: "Inspect the latest Colab training report and model weight updates in report_colab/" },
+      { label: "📅 Weekly Weight Trends", prompt: "Synthesize model weight update trends and history by date and weekly summary" },
+      { label: "🏥 Calibration & ECE Audit", prompt: "Audit Expected Calibration Error (ECE) and Temperature Scaling across deepfake detectors" }
+    ]
+  }
+};
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("obsagent_lang", lang);
+  const t = I18N[lang];
+  if (!t) return;
+
+  const elHome = document.getElementById("txtHome");
+  if (elHome) elHome.textContent = t.home;
+
+  const elTitle = document.getElementById("txtHeaderTitle");
+  if (elTitle) elTitle.textContent = t.headerTitle;
+
+  const elBadge = document.getElementById("txtSubsystemBadge");
+  if (elBadge) elBadge.textContent = t.subsystemBadge;
+
+  const elLangBtn = document.getElementById("langBtn");
+  if (elLangBtn) elLangBtn.textContent = t.langBtn;
+
+  const elLoginBtn = document.getElementById("txtLoginBtn");
+  if (elLoginBtn) elLoginBtn.textContent = t.loginBtn;
+
+  const elLogoutBtn = document.getElementById("txtLogoutBtn");
+  if (elLogoutBtn) elLogoutBtn.textContent = t.logoutBtn;
+
+  const elAgentKey = document.getElementById("lblAgentKey");
+  if (elAgentKey) elAgentKey.textContent = t.lblAgentKey;
+
+  const elClaudeKey = document.getElementById("lblClaudeKey");
+  if (elClaudeKey) elClaudeKey.textContent = t.lblClaudeKey;
+
+  const elGeminiKey = document.getElementById("lblGeminiKey");
+  if (elGeminiKey) elGeminiKey.textContent = t.lblGeminiKey;
+
+  const elSaveClaude = document.getElementById("btnSaveClaude");
+  if (elSaveClaude) elSaveClaude.textContent = t.btnSaveClaude;
+
+  const elSaveGemini = document.getElementById("btnSaveGemini");
+  if (elSaveGemini) elSaveGemini.textContent = t.btnSaveGemini;
+
+  const elWelcome = document.getElementById("welcomeMsg");
+  if (elWelcome) elWelcome.textContent = t.welcomeMsg;
+
+  const elMsgInput = document.getElementById("messageInput");
+  if (elMsgInput) elMsgInput.placeholder = t.inputPlaceholder;
+
+  const elSubmitChat = document.getElementById("btnSubmitChat");
+  if (elSubmitChat) elSubmitChat.textContent = t.btnSubmitChat;
+
+  renderQuickPills();
+}
+
+function toggleLanguage() {
+  const newLang = currentLang === "vi" ? "en" : "vi";
+  applyLanguage(newLang);
+}
+
+function renderQuickPills() {
+  const container = document.getElementById("quickPillsContainer");
+  if (!container) return;
+  const t = I18N[currentLang] || I18N.vi;
+  container.innerHTML = t.pills.map(p => 
+    `<button class="pill-btn" onclick="sendQuickPrompt('${p.prompt.replace(/'/g, "\\'")}')">${p.label}</button>`
+  ).join("");
+}
 
 let authPollInterval = null;
 
@@ -965,7 +1095,8 @@ chatForm.addEventListener("submit", async (e) => {
   }
 });
 
-// Run subsystem gate auth check on page load
+// Run language apply and subsystem gate auth check on page load
+applyLanguage(currentLang);
 checkGateAuth();
 </script>
 </body>
