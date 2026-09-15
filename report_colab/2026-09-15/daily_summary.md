@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 08:40:58
-**Total Training Runs Completed:** 965
+**Last Updated:** 2026-09-15 08:41:24
+**Total Training Runs Completed:** 966
 
 ## 📈 Performance Metric Comparison Table
 
@@ -971,6 +971,7 @@
 | 53 | `IMAGE` | `dffd_image` | 0.994 | 0.998 | 0.012 | 1.3998 | 0.7714 | ✅ COMPLETED_SUCCESSFULLY |
 | 53 | `IMAGE` | `ifakefacedb` | 0.978 | 0.998 | 0.012 | 1.2864 | 0.6184 | ✅ COMPLETED_SUCCESSFULLY |
 | 53 | `IMAGE` | `dfbench_lmm` | 0.994 | 0.998 | 0.012 | 1.5776 | 0.7920 | ✅ COMPLETED_SUCCESSFULLY |
+| 53 | `VIDEO` | `faceforensics_pp` | 0.984 | 0.998 | 0.018 | 1.5394 | 0.8436 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1943,6 +1944,7 @@ P53 [IMAGE] cifake                   [██████████████
 P53 [IMAGE] dffd_image               [████████████████████████░] AUC: 0.998
 P53 [IMAGE] ifakefacedb              [████████████████████████░] AUC: 0.998
 P53 [IMAGE] dfbench_lmm              [████████████████████████░] AUC: 0.998
+P53 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
