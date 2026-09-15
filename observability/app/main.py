@@ -99,14 +99,16 @@ async def _read_subprocess_output(proc):
                             if not _LAST_OAUTH_URL:
                                 _LAST_OAUTH_URL = url_clean
 
-            # Auto-respond with Enter (\n) if Claude CLI pauses at initial Theme selection screen
+            # Auto-respond with Enter (\r\n) if Claude CLI pauses at initial Theme selection screen
             if any(k in buffer for k in ["Choose the text style", "Let's get started", "MonokaiExtended"]):
-                if proc.stdin and not getattr(proc, "_auto_entered_theme", False):
-                    proc._auto_entered_theme = True
+                if proc.stdin:
                     try:
-                        proc.stdin.write(b"\n")
+                        proc.stdin.write(b"\r\n")
+                        proc.stdin.write(b"\r")
                         await proc.stdin.drain()
-                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically selected default Dark mode theme.")
+                        if not getattr(proc, "_auto_entered_theme", False):
+                            proc._auto_entered_theme = True
+                            _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Sent carriage return (\\r\\n) to select default Dark mode theme.")
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
 
@@ -259,13 +261,19 @@ async def trigger_login() -> dict:
             env["FORCE_COLOR"] = "0"
             env["HOME"] = "/home/agent"
 
-            # Pre-create default theme config in /home/agent/.claude.json to bypass Theme onboarding prompt
+            # Pre-create default theme config in all Claude CLI config locations to bypass Theme onboarding prompt
             try:
                 agent_home = Path("/home/agent")
                 agent_home.mkdir(parents=True, exist_ok=True)
-                cfg_file = agent_home / ".claude.json"
-                if not cfg_file.exists():
-                    cfg_file.write_text(json.dumps({"theme": "dark", "hasCompletedOnboarding": True}), encoding="utf-8")
+                cfg_payload = json.dumps({"theme": "dark", "hasCompletedOnboarding": True, "hasSeenWelcome": True, "hasCompletedTour": True})
+                
+                (agent_home / ".claude.json").write_text(cfg_payload, encoding="utf-8")
+                
+                (agent_home / ".claude").mkdir(parents=True, exist_ok=True)
+                (agent_home / ".claude" / "config.json").write_text(cfg_payload, encoding="utf-8")
+                
+                (agent_home / ".config" / "claude-code").mkdir(parents=True, exist_ok=True)
+                (agent_home / ".config" / "claude-code" / "config.json").write_text(cfg_payload, encoding="utf-8")
             except Exception as e_cfg:
                 _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
 
