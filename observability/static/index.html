@@ -727,9 +727,25 @@ async function submitAuthCode() {
     });
     const data = await res.json();
     if (res.ok) {
-      codeStatusText.textContent = "✅ " + data.message;
+      codeStatusText.textContent = "✅ " + data.message + " Đang kiểm tra xác thực...";
       codeInput.value = "";
-      setTimeout(checkAuthStatus, 2000);
+      
+      let attempts = 0;
+      const maxAttempts = 10;
+      const pollSub = setInterval(async () => {
+        attempts++;
+        const isAuth = await checkAuthStatus();
+        if (isAuth) {
+          clearInterval(pollSub);
+          codeStatusText.textContent = "🎉 Đăng nhập Claude CLI thành công!";
+          alert("🎉 Claude CLI Authentication Successful! You are now logged in.");
+          closeLoginModal();
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollSub);
+          codeStatusText.textContent = "✅ Đã gửi mã xác thực. Bấm '✅ Refresh Auth Status' nếu chưa cập nhật.";
+          checkAuthStatus();
+        }
+      }, 1500);
     } else {
       codeStatusText.textContent = "❌ " + (data.detail || "Lỗi gửi mã.");
     }

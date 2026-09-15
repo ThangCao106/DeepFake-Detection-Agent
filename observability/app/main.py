@@ -48,6 +48,12 @@ def _has_valid_credentials() -> bool:
     if has_api_key:
         return True
 
+    # Check if login logs confirm successful login
+    global _LOGIN_LOGS
+    log_text = "\n".join(_LOGIN_LOGS).lower()
+    if any(k in log_text for k in ["logged in as", "successfully logged in", "authentication successful", "logged in."]):
+        return True
+
     home_candidates = [
         Path("/home/agent"),
         Path.home(),
@@ -57,7 +63,7 @@ def _has_valid_credentials() -> bool:
 
     for h in home_candidates:
         # Check credentials files
-        for cred_name in ["credentials.json", ".credentials.json", "session.json"]:
+        for cred_name in ["credentials.json", ".credentials.json", "session.json", "auth.json", "keys.json"]:
             if (h / ".claude" / cred_name).exists() or (h / cred_name).exists():
                 return True
 
@@ -66,7 +72,7 @@ def _has_valid_credentials() -> bool:
             if json_path.exists():
                 try:
                     data = json.loads(json_path.read_text(encoding="utf-8"))
-                    for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "session"]:
+                    for key in ["oauthAccount", "sessionKey", "oauthToken", "primaryApiKey", "authToken", "session", "account", "user"]:
                         if key in data and data[key]:
                             return True
                 except Exception:
