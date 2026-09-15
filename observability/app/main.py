@@ -619,6 +619,14 @@ async def chat(req: ChatRequest) -> dict:
         answer_parts: list[str] = []
         text_parts = [chunk async for chunk in stream_turn(client, content, answer_parts=answer_parts)]
         full_reply = "".join(text_parts)
+        if any(k in full_reply for k in ["Invalid API key", "Fix external API key", "invalid api key"]):
+            await drop_client(req.session_id)
+            os.environ.pop("CLAUDE_API_KEY", None)
+            os.environ.pop("ANTHROPIC_API_KEY", None)
+            raise HTTPException(
+                status_code=401,
+                detail="Lỗi API Key không hợp lệ. Hệ thống đã tự động dọn dẹp Key hỏng. Vui lòng thử lại hoặc bấm '🔑 Claude Login' để dùng phiên OAuth."
+            )
         if any(k in full_reply for k in ["Not logged in", "Please run /login", "run /login"]):
             await drop_client(req.session_id)
             raise HTTPException(
