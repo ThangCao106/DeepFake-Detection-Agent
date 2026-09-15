@@ -146,6 +146,101 @@ def verify_certificate(cert_id):
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
 
+@app.route('/certificate/<cert_id>', methods=['GET'])
+def view_certificate_page(cert_id):
+    """Server-Side Rendered (SSR) Public Certificate Page with Schema.org ClaimReview JSON-LD for Googlebot."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from benchmark.deepfake_memory import get_forensic_certificate
+
+        cert = get_forensic_certificate(cert_id)
+        if cert.get("status") == "NOT_FOUND":
+            return jsonify({"error": f"Certificate '{cert_id}' not found"}), 404
+
+        template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "observability", "static", "certificate.html"))
+        if not os.path.exists(template_path):
+            return verify_certificate(cert_id)
+
+        with open(template_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        verdict = cert.get("auditable_verdict", "VERIFIED")
+        is_fake = "SUSPECTED" in verdict or "DETECTED" in verdict
+        badge_class = "verdict-fake" if is_fake else "verdict-authentic"
+        risk_color = "#dc2626" if is_fake else "#16a34a"
+
+        risk_val = float(cert.get("composite_risk_score", 0.0))
+        risk_percent = f"{risk_val * 100:.2f}"
+        rating_val = f"{max(1, min(5, int((1.0 - risk_val) * 5)))}"
+
+        ev = cert.get("multi_dimensional_evidence", {})
+        sha256_hash = cert.get("media_integrity", {}).get("sha256") or cert.get("media_sha256") or "UNKNOWN_HASH"
+
+        html_content = html_content.replace("{{CERTIFICATE_ID}}", str(cert.get("certificate_id", cert_id)))
+        html_content = html_content.replace("{{VERDICT}}", verdict)
+        html_content = html_content.replace("{{BADGE_CLASS}}", badge_class)
+        html_content = html_content.replace("{{COMPOSITE_RISK_PERCENT}}", risk_percent)
+        html_content = html_content.replace("{{RISK_COLOR}}", risk_color)
+        html_content = html_content.replace("{{TIMESTAMP}}", str(cert.get("timestamp", "")))
+        html_content = html_content.replace("{{TIMESTAMP_ISO}}", datetime.utcnow().isoformat() + "Z")
+        html_content = html_content.replace("{{SHA256_HASH}}", str(sha256_hash))
+        html_content = html_content.replace("{{RATING_VALUE}}", rating_val)
+
+        pass_p = ev.get("passive_model_score", {})
+        html_content = html_content.replace("{{PASSIVE_PRED}}", str(pass_p.get("prediction", "N/A")))
+        html_content = html_content.replace("{{PASSIVE_CONF}}", f"{float(pass_p.get('confidence', 0.0))*100:.1f}%")
+
+        spec_s = ev.get("spectral_frequency_analysis", {})
+        html_content = html_content.replace("{{SPECTRAL_SCORE}}", str(spec_s.get("high_frequency_anomaly_score", "0.0")))
+
+        spat_s = ev.get("spatial_inconsistency_analysis", {})
+        html_content = html_content.replace("{{SPATIAL_SCORE}}", str(spat_s.get("spatial_inconsistency_score", "0.0")))
+
+        ent_s = ev.get("model_uncertainty_entropy", {})
+        html_content = html_content.replace("{{ENTROPY_SCORE}}", str(ent_s.get("entropy", "0.0")))
+
+        html_content = html_content.replace("{{COMPLIANCE_STANDARD}}", str(cert.get("compliance_standard", "EU AI Act Article 50 & DSA Auditable Media")))
+
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except Exception as e:
+        logger.error(f"SSR cert error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/sitemap.xml', methods=['GET'])
+def get_sitemap_xml():
+    """Generate dynamic XML sitemap listing all published certificates for Googlebot."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from benchmark.deepfake_memory import get_all_certificates
+
+        certs = get_all_certificates(limit=1000)
+        xml_lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        ]
+
+        today_iso = datetime.now().strftime("%Y-%m-%d")
+        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
+        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/obsagent/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
+
+        for c in certs:
+            cid = c.get("certificate_id")
+            created_at = (c.get("created_at") or today_iso)[:10]
+            if cid:
+                loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
+                xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+
+        xml_lines.append('</urlset>')
+        xml_content = "\n".join(xml_lines)
+        return xml_content, 200, {'Content-Type': 'application/xml; charset=utf-8'}
+    except Exception as e:
+        logger.error(f"Sitemap error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # WebSocket Events
 @socketio.on('connect')
 def handle_connect():

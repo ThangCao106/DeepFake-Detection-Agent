@@ -301,6 +301,28 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
     }
 
 
+def get_all_certificates(limit: int = 1000, db_path=None) -> list:
+    """Fetch list of all certificate summary records for dynamic XML sitemap generation."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT certificate_id, created_at, auditable_verdict, composite_risk_score, media_sha256 
+    FROM forensic_certificates 
+    ORDER BY created_at DESC 
+    LIMIT ?
+    """, (limit,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    result = []
+    for r in rows:
+        result.append(dict(r))
+    return result
+
+
 if __name__ == "__main__":
     init_db()
     print("Deepfake Agent Memory Database initialized successfully.")

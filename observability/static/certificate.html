@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chứng thư Giám định Kỹ thuật số {{CERTIFICATE_ID}} | DTP Deepfake Detection</title>
+
+  <!-- OpenGraph Metadata for Social & Search Indexing -->
+  <meta property="og:title" content="📜 Chứng thư Giám định Kỹ thuật số {{CERTIFICATE_ID}} - {{VERDICT}}">
+  <meta property="og:description" content="Kết quả giám định pháp y kỹ thuật số đa chiều 4D đối với tệp media mang mã {{CERTIFICATE_ID}}. Kết luận: {{VERDICT}} (Điểm rủi ro: {{COMPOSITE_RISK_PERCENT}}%).">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}">
+  <meta name="description" content="Hồ sơ bằng chứng giám định Deepfake/Authentic Media mã {{CERTIFICATE_ID}} tuân thủ EU AI Act Article 50 & DSA Auditable Media.">
+
+  <!-- Schema.org Structured Data (ClaimReview & MediaReview for Googlebot) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ClaimReview",
+    "url": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}",
+    "claimReviewed": "Xác thực tính nguyên bản / Phương tiện truyền thông kỹ thuật số",
+    "datePublished": "{{TIMESTAMP_ISO}}",
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": "{{RATING_VALUE}}",
+      "bestRating": "5",
+      "worstRating": "1",
+      "alternateName": "{{VERDICT}}"
+    },
+    "itemReviewed": {
+      "@type": "MediaObject",
+      "name": "Media Asset {{CERTIFICATE_ID}}",
+      "sha256": "{{SHA256_HASH}}"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "DTP Digital Forensic AI System",
+      "url": "https://detection.dtpsoft.vn"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --primary: #00897b;
+      --primary-hover: #00695c;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .cert-card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 800px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .cert-header {
+      background: linear-gradient(135deg, #1e1b2e 0%, #2a243d 100%);
+      color: #fff;
+      padding: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .cert-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .cert-id {
+      font-family: monospace;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      color: #80dfea;
+    }
+    .verdict-badge {
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 30px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .verdict-authentic { background: #dcfce7; color: #15803d; border: 1.5px solid #22c55e; }
+    .verdict-fake { background: #fee2e2; color: #b91c1c; border: 1.5px solid #ef4444; }
+
+    .cert-body { padding: 2rem; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      background: #f1f5f9;
+      padding: 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .meta-item label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .meta-item value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .evidence-section {
+      margin-top: 1.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .evidence-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .evidence-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .evidence-item:last-child { border-bottom: none; }
+    .evidence-label { font-size: 0.9rem; color: #334155; font-weight: 500; }
+    .evidence-val { font-size: 0.9rem; font-weight: 700; font-family: monospace; }
+
+    .cert-footer {
+      background: #f8fafc;
+      padding: 1.25rem 2rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .btn-download {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-download:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+
+  <div class="cert-card">
+    <div class="cert-header">
+      <div class="cert-title">
+        <h1>📜 Chứng thư Giám định Kỹ thuật số</h1>
+        <span class="cert-id">{{CERTIFICATE_ID}}</span>
+      </div>
+      <div class="verdict-badge {{BADGE_CLASS}}">
+        {{VERDICT}}
+      </div>
+    </div>
+
+    <div class="cert-body">
+      <div class="meta-grid">
+        <div class="meta-item">
+          <label>Mã Chứng nhận</label>
+          <value>{{CERTIFICATE_ID}}</value>
+        </div>
+        <div class="meta-item">
+          <label>Mốc thời gian (UTC)</label>
+          <value>{{TIMESTAMP}}</value>
+        </div>
+        <div class="meta-item">
+          <label>Điểm rủi ro tổng hợp</label>
+          <value style="color: {{RISK_COLOR}};">{{COMPOSITE_RISK_PERCENT}}%</value>
+        </div>
+        <div class="meta-item">
+          <label>Trạng thái xác minh</label>
+          <value style="color: #16a34a;">✅ VERIFIED_VALID</value>
+        </div>
+        <div class="meta-item" style="grid-column: 1 / -1;">
+          <label>Mã SHA-256 Media Hash</label>
+          <value style="font-family: monospace; font-size: 0.85rem; background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 4px;">{{SHA256_HASH}}</value>
+        </div>
+      </div>
+
+      <div class="evidence-section">
+        <div class="evidence-title">📊 Bằng chứng Giám định 4D (4D Multi-Dimensional Evidence)</div>
+        
+        <div class="evidence-item">
+          <span class="evidence-label">1. Mô hình Phân loại Thụ động (ViT / CNN):</span>
+          <span class="evidence-val">{{PASSIVE_PRED}} (Conf: {{PASSIVE_CONF}})</span>
+        </div>
+        <div class="evidence-item">
+          <span class="evidence-label">2. Dị thường Tần số 2D-FFT (Spectral Anomaly):</span>
+          <span class="evidence-val">{{SPECTRAL_SCORE}}</span>
+        </div>
+        <div class="evidence-item">
+          <span class="evidence-label">3. Bất tương đồng Không gian (Spatial Noise):</span>
+          <span class="evidence-val">{{SPATIAL_SCORE}}</span>
+        </div>
+        <div class="evidence-item">
+          <span class="evidence-label">4. Độ bất định Entropy (Prediction Entropy):</span>
+          <span class="evidence-val">{{ENTROPY_SCORE}}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cert-footer">
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Tiêu chuẩn: {{COMPLIANCE_STANDARD}}</span>
+      <a href="https://detection.dtpsoft.vn/api/verify/{{CERTIFICATE_ID}}" target="_blank" class="btn-download">
+        📥 Tải File JSON Chứng thư
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -7,8 +7,9 @@ import subprocess
 import time
 from pathlib import Path
 
+from datetime import datetime
 from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -845,6 +846,7 @@ async def verify_certificate_api(cert_id: str) -> dict:
                 status_code=404,
                 detail=f"No valid digital forensic certificate found for ID '{cert_id}'."
             )
+
         return {
             "status": "VERIFIED_VALID",
             "valid": True,
@@ -855,6 +857,100 @@ async def verify_certificate_api(cert_id: str) -> dict:
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Certificate verification error: {str(e)}") from e
+
+
+@app.get("/certificate/{cert_id}")
+async def view_certificate_page(cert_id: str):
+    """Server-Side Rendered (SSR) Public Certificate Page with Schema.org ClaimReview JSON-LD for Googlebot."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+        from benchmark.deepfake_memory import get_forensic_certificate
+
+        cert = get_forensic_certificate(cert_id)
+        if cert.get("status") == "NOT_FOUND":
+            raise HTTPException(status_code=404, detail=f"Certificate '{cert_id}' not found.")
+
+        template_path = Path(__file__).resolve().parent.parent / "static" / "certificate.html"
+        if not template_path.exists():
+            return await verify_certificate_api(cert_id)
+
+        html_content = template_path.read_text(encoding="utf-8")
+
+        verdict = cert.get("auditable_verdict", "VERIFIED")
+        is_fake = "SUSPECTED" in verdict or "DETECTED" in verdict
+        badge_class = "verdict-fake" if is_fake else "verdict-authentic"
+        risk_color = "#dc2626" if is_fake else "#16a34a"
+
+        risk_val = float(cert.get("composite_risk_score", 0.0))
+        risk_percent = f"{risk_val * 100:.2f}"
+        rating_val = f"{max(1, min(5, int((1.0 - risk_val) * 5)))}"
+
+        ev = cert.get("multi_dimensional_evidence", {})
+        sha256_hash = cert.get("media_integrity", {}).get("sha256") or cert.get("media_sha256") or "UNKNOWN_HASH"
+
+        html_content = html_content.replace("{{CERTIFICATE_ID}}", str(cert.get("certificate_id", cert_id)))
+        html_content = html_content.replace("{{VERDICT}}", verdict)
+        html_content = html_content.replace("{{BADGE_CLASS}}", badge_class)
+        html_content = html_content.replace("{{COMPOSITE_RISK_PERCENT}}", risk_percent)
+        html_content = html_content.replace("{{RISK_COLOR}}", risk_color)
+        html_content = html_content.replace("{{TIMESTAMP}}", str(cert.get("timestamp", "")))
+        html_content = html_content.replace("{{TIMESTAMP_ISO}}", datetime.utcnow().isoformat() + "Z")
+        html_content = html_content.replace("{{SHA256_HASH}}", str(sha256_hash))
+        html_content = html_content.replace("{{RATING_VALUE}}", rating_val)
+
+        pass_p = ev.get("passive_model_score", {})
+        html_content = html_content.replace("{{PASSIVE_PRED}}", str(pass_p.get("prediction", "N/A")))
+        html_content = html_content.replace("{{PASSIVE_CONF}}", f"{float(pass_p.get('confidence', 0.0))*100:.1f}%")
+
+        spec_s = ev.get("spectral_frequency_analysis", {})
+        html_content = html_content.replace("{{SPECTRAL_SCORE}}", str(spec_s.get("high_frequency_anomaly_score", "0.0")))
+
+        spat_s = ev.get("spatial_inconsistency_analysis", {})
+        html_content = html_content.replace("{{SPATIAL_SCORE}}", str(spat_s.get("spatial_inconsistency_score", "0.0")))
+
+        ent_s = ev.get("model_uncertainty_entropy", {})
+        html_content = html_content.replace("{{ENTROPY_SCORE}}", str(ent_s.get("entropy", "0.0")))
+
+        html_content = html_content.replace("{{COMPLIANCE_STANDARD}}", str(cert.get("compliance_standard", "EU AI Act Article 50 & DSA Auditable Media")))
+
+        return HTMLResponse(content=html_content, status_code=200)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SSR certificate error: {str(e)}") from e
+
+
+@app.get("/sitemap.xml")
+async def get_sitemap_xml():
+    """Generate dynamic XML sitemap listing all published certificates for Googlebot."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+        from benchmark.deepfake_memory import get_all_certificates
+
+        certs = get_all_certificates(limit=1000)
+        xml_lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        ]
+
+        today_iso = datetime.utcnow().strftime("%Y-%m-%d")
+        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
+        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/obsagent/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
+
+        for c in certs:
+            cid = c.get("certificate_id")
+            created_at = (c.get("created_at") or today_iso)[:10]
+            if cid:
+                loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
+                xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+
+        xml_lines.append('</urlset>')
+        xml_content = "\n".join(xml_lines)
+        return Response(content=xml_content, media_type="application/xml")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sitemap generation error: {str(e)}") from e
 
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

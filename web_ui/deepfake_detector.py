@@ -11,13 +11,16 @@ import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import numpy as np
 
-# Import persistent memory saver for forensic certificates
+# Import persistent memory saver and google indexing publisher for forensic certificates
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from benchmark.deepfake_memory import save_forensic_certificate
+    from benchmark.google_indexing import publish_google_indexing_url
 except Exception:
     def save_forensic_certificate(cert, db_path=None):
         return cert.get("certificate_id")
+    def publish_google_indexing_url(cert_url):
+        pass
 
 # optional face cropping (fast/simple) using face_recognition if available
 try:
@@ -303,8 +306,9 @@ class DeepfakeDetector:
             # Save certificate persistently to SQLite memory for internet query lookup
             try:
                 save_forensic_certificate(forensic_certificate)
+                publish_google_indexing_url(f"https://detection.dtpsoft.vn/certificate/{cert_id}")
             except Exception as se:
-                print(f"[warning] Failed to save forensic certificate to SQLite memory: {se}")
+                print(f"[warning] Failed to save forensic certificate or notify Google indexer: {se}")
 
             return {
                 "label": label,
