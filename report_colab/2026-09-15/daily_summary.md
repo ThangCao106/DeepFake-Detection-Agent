@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 04:29:27
-**Total Training Runs Completed:** 327
+**Last Updated:** 2026-09-15 04:29:38
+**Total Training Runs Completed:** 328
 
 ## 📈 Performance Metric Comparison Table
 
@@ -333,6 +333,7 @@
 | 18 | `VIDEO` | `faceforensics_pp` | 0.986 | 0.997 | 0.018 | 1.7605 | 0.7012 | ✅ COMPLETED_SUCCESSFULLY |
 | 18 | `VIDEO` | `celeb_df_v2` | 0.942 | 0.984 | 0.018 | 1.5386 | 0.7925 | ✅ COMPLETED_SUCCESSFULLY |
 | 18 | `VIDEO` | `dfdc` | 0.947 | 0.998 | 0.018 | 1.6058 | 0.7669 | ✅ COMPLETED_SUCCESSFULLY |
+| 18 | `VIDEO` | `wild_deepfake` | 0.948 | 0.998 | 0.018 | 1.4116 | 0.5948 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -667,6 +668,7 @@ P18 [IMAGE] dfbench_lmm              [██████████████
 P18 [VIDEO] faceforensics_pp         [████████████████████████░] AUC: 0.997
 P18 [VIDEO] celeb_df_v2              [████████████████████████░] AUC: 0.984
 P18 [VIDEO] dfdc                     [████████████████████████░] AUC: 0.998
+P18 [VIDEO] wild_deepfake            [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
