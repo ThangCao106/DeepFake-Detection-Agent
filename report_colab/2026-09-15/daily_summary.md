@@ -1,6 +1,6 @@
 # 📊 Colab Auto-Training Multi-Modality Summary Report (2026-09-15)
-**Last Updated:** 2026-09-15 07:15:31
-**Total Training Runs Completed:** 804
+**Last Updated:** 2026-09-15 07:17:24
+**Total Training Runs Completed:** 805
 
 ## 📈 Performance Metric Comparison Table
 
@@ -810,6 +810,7 @@
 | 43 | `AUDIO` | `asvspoof_2021` | 0.920 | 0.998 | 0.022 | 1.7407 | 0.6796 | ✅ COMPLETED_SUCCESSFULLY |
 | 43 | `AUDIO` | `omni_fake` | 0.968 | 0.981 | 0.022 | 1.4922 | 0.7715 | ✅ COMPLETED_SUCCESSFULLY |
 | 44 | `IMAGE` | `dima806_deepfake` | 0.994 | 0.998 | 0.012 | 1.6807 | 0.7284 | ✅ COMPLETED_SUCCESSFULLY |
+| 44 | `IMAGE` | `cifake` | 0.965 | 0.998 | 0.012 | 1.4780 | 0.6342 | ✅ COMPLETED_SUCCESSFULLY |
 
 ## 📊 Visual Performance Chart
 
@@ -1621,6 +1622,7 @@ P43 [AUDIO] wavefake                 [██████████████
 P43 [AUDIO] asvspoof_2021            [████████████████████████░] AUC: 0.998
 P43 [AUDIO] omni_fake                [████████████████████████░] AUC: 0.981
 P44 [IMAGE] dima806_deepfake         [████████████████████████░] AUC: 0.998
+P44 [IMAGE] cifake                   [████████████████████████░] AUC: 0.998
 ```
 
 ## 🔧 Environment & Hyperparameters
