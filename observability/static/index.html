@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Observability Agent — SRE Claude Subsystem</title>
+<title>Deepfake Detection Agent — Claude AI Subsystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -362,9 +362,9 @@
 <div class="modal-overlay active" id="gateOverlay" style="z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); display: flex;">
   <div class="modal" style="max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center;">
     <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
-    <h2 style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem;">Observability Subsystem</h2>
+    <h2 style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem;">AI Deepfake Subsystem</h2>
     <p style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem;">
-      Vui lòng đăng nhập tài khoản hệ thống để truy cập SRE Observability Agent & Claude Subsystem.
+      Vui lòng đăng nhập tài khoản hệ thống để truy cập Deepfake Detection Agent & Claude Subsystem.
     </p>
 
     <form id="gateForm" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">
@@ -393,8 +393,8 @@
   <!-- Header Bar -->
   <div class="header">
     <div class="header-title">
-      <h1>🔍 Observability Agent</h1>
-      <span class="badge">Claude CLI SRE Subsystem</span>
+      <h1>🛡️ Deepfake Detection Agent</h1>
+      <span class="badge">Claude CLI AI Subsystem</span>
     </div>
     <div class="auth-status-bar">
       <div class="status-tag" id="statusTag">
@@ -413,7 +413,7 @@
   <!-- API Key Bar -->
   <div class="api-key-bar">
     <div class="api-key-input-group">
-      <label for="apiKey">Obsagent Key:</label>
+      <label for="apiKey">Agent Key:</label>
       <input type="password" id="apiKey" value="observability-agent-key" placeholder="X-API-Key" />
     </div>
     <div class="api-key-input-group">
@@ -432,20 +432,20 @@
   <!-- Chat Log Box -->
   <div class="chat-box" id="chatBox">
     <div class="msg system">
-      👋 Observability SRE Agent ready. Powered by Claude CLI Authentication (No API Key Required).
+      👋 AI Deepfake Detection Agent ready. Powered by Claude CLI Authentication.
     </div>
   </div>
 
   <!-- Quick Pills -->
   <div class="quick-pills">
-    <button class="pill-btn" onclick="sendQuickPrompt('Check active ClickHouse log anomalies in the last 15 minutes')">📊 Log Anomalies</button>
-    <button class="pill-btn" onclick="sendQuickPrompt('Inspect HSC agent_memory knowledge base records')">📜 Forensic Memory</button>
-    <button class="pill-btn" onclick="sendQuickPrompt('Verify Grafana Prometheus system health metrics')">🏥 Health Metrics</button>
+    <button class="pill-btn" onclick="sendQuickPrompt('Evaluate DeepfakeBench-MM, DF40 and Omni-Fake benchmark metrics')">📊 Model Benchmarks</button>
+    <button class="pill-btn" onclick="sendQuickPrompt('Inspect audio-visual deepfake detection forensic reports')">📜 Forensic Reports</button>
+    <button class="pill-btn" onclick="sendQuickPrompt('Verify ECE and Temperature Scaling calibration metrics')">🏥 Model Calibration</button>
   </div>
 
   <!-- Input Form -->
   <form class="input-form" id="chatForm">
-    <input type="text" id="messageInput" placeholder="Ask Observability Agent about ClickHouse / Log Errors / System Traces..." autocomplete="off" />
+    <input type="text" id="messageInput" placeholder="Ask Deepfake Detection Agent about Benchmark Performance / Video Artifacts / Audio Spoofing..." autocomplete="off" />
     <button type="submit">Send</button>
   </form>
 </div>

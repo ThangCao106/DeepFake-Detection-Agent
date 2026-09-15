@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
