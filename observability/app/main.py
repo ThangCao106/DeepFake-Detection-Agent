@@ -198,29 +198,28 @@ def _strip_ansi(text: str) -> str:
 def _extract_oauth_url(text: str) -> str | None:
     if not text:
         return None
-    clean = _strip_ansi(text)
-    
-    # Priority 1: Match exact Anthropic/Claude OAuth authorization URL
-    match = re.search(r'(https://(?:claude\.ai|console\.anthropic\.com)/[^\s"\'\`<>\)\(\]\[]+)', clean, re.IGNORECASE)
-    if match:
-        url = match.group(1).rstrip('.,;:;\\')
-        if "claude.com/cai" in url:
-            url = url.replace("claude.com/cai", "claude.ai")
-        return url
 
-    # Priority 2: Match any http/https URL containing anthropic/claude/oauth/authorize
-    matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', clean, re.IGNORECASE)
-    for url in matches:
+    # Extract candidate URLs directly from raw text before ANSI strip removes OSC 8 escape sequence
+    urls = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[;\\]+)', text, re.IGNORECASE)
+
+    best_url = None
+    for url in urls:
         url_clean = url.rstrip('.,;:;\\')
         url_lower = url_clean.lower()
         if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize"]):
-            if "claude.com/cai" in url_lower:
+            # Normalize domain while preserving all query parameters
+            if "claude.com/cai" in url_clean:
                 url_clean = url_clean.replace("claude.com/cai", "claude.ai")
-            elif "claude.com" in url_lower and "oauth" in url_lower:
+            elif "claude.com" in url_lower and "oauth" in url_lower and "claude.ai" not in url_lower:
                 url_clean = url_clean.replace("claude.com", "claude.ai")
-            return url_clean
-            
-    return None
+
+            # Prioritize URL containing complete PKCE state and code_challenge
+            if "state=" in url_clean and "code_challenge=" in url_clean:
+                return url_clean
+            if best_url is None or len(url_clean) > len(best_url):
+                best_url = url_clean
+
+    return best_url
 
 
 async def _read_subprocess_output(proc):
@@ -230,10 +229,19 @@ async def _read_subprocess_output(proc):
     buffer = ""
     try:
         while True:
-            chunk = await proc.stdout.read(256)
+            chunk = await proc.stdout.read(4096)
             if not chunk:
                 break
             raw_text = chunk.decode("utf-8", errors="ignore")
+
+            # Extract OAuth URL directly from raw chunk (including OSC 8 escape sequences)
+            found_url = _extract_oauth_url(raw_text)
+            if found_url:
+                if not _LAST_OAUTH_URL:
+                    _LAST_OAUTH_URL = found_url
+                elif len(found_url) > len(_LAST_OAUTH_URL) and "state=" in found_url:
+                    _LAST_OAUTH_URL = found_url
+
             clean_text = _strip_ansi(raw_text)
             buffer += clean_text
 
@@ -244,10 +252,13 @@ async def _read_subprocess_output(proc):
                 if clean_line:
                     if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != clean_line:
                         _LOGIN_LOGS.append(clean_line)
-                    
-                    found_url = _extract_oauth_url(clean_line)
-                    if found_url and not _LAST_OAUTH_URL:
-                        _LAST_OAUTH_URL = found_url
+
+                    line_url = _extract_oauth_url(clean_line)
+                    if line_url:
+                        if not _LAST_OAUTH_URL:
+                            _LAST_OAUTH_URL = line_url
+                        elif len(line_url) > len(_LAST_OAUTH_URL) and "state=" in line_url:
+                            _LAST_OAUTH_URL = line_url
 
             # Space-collapsed matching to handle ANSI stripped terminal text
             buffer_nospace = re.sub(r'\s+', '', buffer.lower())
