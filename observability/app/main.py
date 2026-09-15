@@ -51,11 +51,12 @@ def _has_valid_credentials() -> bool:
     # Check if login logs confirm successful login
     global _LOGIN_LOGS
     log_text = "\n".join(_LOGIN_LOGS).lower()
-    if any(k in log_text for k in [
-        "logged in as", "successfully logged in", "authentication successful",
-        "logged in.", "login successful", "welcome to claude", "authenticated as"
-    ]):
-        return True
+    if "not logged in" not in log_text and "please run /login" not in log_text:
+        if any(k in log_text for k in [
+            "logged in as ", "successfully logged in", "authentication successful",
+            "login successful", "welcome to claude", "authenticated as ", "successfully authenticated"
+        ]):
+            return True
 
     home_candidates = [
         Path("/home/agent"),
