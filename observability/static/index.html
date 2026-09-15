@@ -397,6 +397,10 @@
         <div class="dot inactive" id="statusDot"></div>
         <span id="statusText">Checking Auth...</span>
       </div>
+      <div class="status-tag" id="geminiStatusTag" style="background: rgba(255, 255, 255, 0.08);">
+        <div class="dot inactive" id="geminiStatusDot"></div>
+        <span id="geminiStatusText">Checking Gemini...</span>
+      </div>
       <button class="btn-login" onclick="openLoginModal()">🔑 Claude Login</button>
       <button class="btn-login" style="background: rgba(255,255,255,0.15);" onclick="logoutGate()">🚪 Logout</button>
     </div>
@@ -410,8 +414,13 @@
     </div>
     <div class="api-key-input-group">
       <label for="claudeKeyInput">Claude API Key (sk-ant-...):</label>
-      <input type="password" id="claudeKeyInput" placeholder="sk-ant-api03-..." style="width: 220px;" />
+      <input type="password" id="claudeKeyInput" placeholder="sk-ant-api03-..." style="width: 170px;" />
       <button class="btn-login" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="saveClaudeApiKey()">Lưu Key</button>
+    </div>
+    <div class="api-key-input-group">
+      <label for="geminiKeyInput">Gemini API Key (AIzaSy...):</label>
+      <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." style="width: 170px;" />
+      <button class="btn-login" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #2563eb;" onclick="saveGeminiApiKey()">Lưu Key Gemini</button>
     </div>
     <span style="color: var(--text-muted);">Session: <strong id="sessionIdLabel">...</strong></span>
   </div>
@@ -594,16 +603,35 @@ async function checkAuthStatus() {
       if (data.authenticated) {
         statusDot.className = "dot active";
         statusText.textContent = "Claude Authenticated";
-        return true;
       } else {
         statusDot.className = "dot inactive";
         statusText.textContent = "Claude Login Needed";
-        return false;
       }
+
+      const geminiStatusDot = document.getElementById("geminiStatusDot");
+      const geminiStatusText = document.getElementById("geminiStatusText");
+      const geminiKeyInput = document.getElementById("geminiKeyInput");
+
+      if (data.gemini_authenticated) {
+        if (geminiStatusDot) geminiStatusDot.className = "dot active";
+        if (geminiStatusText) geminiStatusText.textContent = "Gemini Active";
+        if (geminiKeyInput && !geminiKeyInput.value && data.gemini_key_masked) {
+          geminiKeyInput.placeholder = data.gemini_key_masked;
+        }
+      } else {
+        if (geminiStatusDot) geminiStatusDot.className = "dot inactive";
+        if (geminiStatusText) geminiStatusText.textContent = "Gemini Missing";
+      }
+
+      return data.authenticated;
     }
   } catch (err) {
     statusDot.className = "dot inactive";
     statusText.textContent = "Claude Login Needed";
+    const geminiStatusDot = document.getElementById("geminiStatusDot");
+    const geminiStatusText = document.getElementById("geminiStatusText");
+    if (geminiStatusDot) geminiStatusDot.className = "dot inactive";
+    if (geminiStatusText) geminiStatusText.textContent = "Gemini Missing";
     return false;
   }
   return false;
@@ -774,6 +802,33 @@ async function saveClaudeApiKey() {
       checkAuthStatus();
     } else {
       alert("❌ " + (data.detail || "Không thể lưu API Key."));
+    }
+  } catch (err) {
+    alert("❌ Lỗi kết nối: " + err.message);
+  }
+}
+
+async function saveGeminiApiKey() {
+  const input = document.getElementById("geminiKeyInput");
+  const key = input ? input.value.trim() : "";
+  if (!key) {
+    alert("Vui lòng nhập Gemini API Key (dạng AIzaSy...).");
+    return;
+  }
+
+  try {
+    const res = await fetch(getApiUrl("api/auth/set-gemini-key"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gemini_api_key: key })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ " + data.message);
+      if (input) input.value = "";
+      checkAuthStatus();
+    } else {
+      alert("❌ " + (data.detail || "Không thể lưu Gemini API Key."));
     }
   } catch (err) {
     alert("❌ Lỗi kết nối: " + err.message);

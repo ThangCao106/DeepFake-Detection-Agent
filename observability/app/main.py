@@ -83,11 +83,22 @@ def _has_valid_credentials() -> bool:
 
 @app.get("/api/auth/status")
 async def auth_status() -> dict:
-    """Return Claude CLI authentication status and login instructions."""
+    """Return Claude CLI and Gemini API authentication status."""
     is_authenticated = _has_valid_credentials()
+    gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    has_gemini = bool(gemini_key)
+    gemini_masked = (gemini_key[:8] + "...") if len(gemini_key) > 8 else ("***" if has_gemini else "")
+
+    claude_key = os.environ.get("CLAUDE_API_KEY", "").strip() or os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    claude_masked = (claude_key[:8] + "...") if len(claude_key) > 8 else ("***" if claude_key else "")
+
     return {
         "authenticated": is_authenticated,
         "status": "AUTHENTICATED" if is_authenticated else "NOT_LOGGED_IN",
+        "gemini_authenticated": has_gemini,
+        "gemini_status": "AUTHENTICATED" if has_gemini else "NOT_CONFIGURED",
+        "gemini_key_masked": gemini_masked,
+        "claude_key_masked": claude_masked,
         "default_key": API_KEY,
         "login_command": "docker compose run --rm login",
         "cli_command": "npx @anthropic-ai/claude-code login",
@@ -222,6 +233,44 @@ async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
         "status": "SUCCESS",
         "message": "Đã lưu CLAUDE_API_KEY thành công vào hệ thống!",
         "authenticated": True,
+    }
+
+
+class SetGeminiKeyRequest(BaseModel):
+    gemini_api_key: str
+
+
+@app.post("/api/auth/set-gemini-key")
+async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
+    """Dynamically set GEMINI_API_KEY environment variable and persist to .env."""
+    key = req.gemini_api_key.strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập Gemini API Key hợp lệ.")
+
+    os.environ["GEMINI_API_KEY"] = key
+
+    # Persist to .env file in project root
+    env_file = Path(PROJECT_ROOT) / ".env"
+    try:
+        env_lines = []
+        if env_file.exists():
+            env_lines = env_file.read_text(encoding="utf-8").splitlines()
+
+        new_lines = [
+            line for line in env_lines
+            if not line.startswith("GEMINI_API_KEY=")
+        ]
+        new_lines.append(f"GEMINI_API_KEY={key}")
+        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as e:
+        _LOGIN_LOGS.append(f"⚠️ Warning saving .env: {e}")
+
+    _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment!")
+    return {
+        "status": "SUCCESS",
+        "message": "Đã cập nhật Gemini API Key thành công!",
+        "gemini_authenticated": True,
+        "gemini_key_masked": (key[:8] + "...") if len(key) > 8 else "***",
     }
 
 
