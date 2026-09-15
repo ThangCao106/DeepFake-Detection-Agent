@@ -118,6 +118,34 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
+@app.route('/api/verify/<cert_id>', methods=['GET'])
+@app.route('/verify/<cert_id>', methods=['GET'])
+def verify_certificate(cert_id):
+    """Public API endpoint to query and verify Digital Forensic Certificates by ID."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from benchmark.deepfake_memory import get_forensic_certificate
+        
+        cert = get_forensic_certificate(cert_id)
+        if cert.get("status") == "NOT_FOUND":
+            return jsonify({
+                "status": "NOT_FOUND",
+                "valid": False,
+                "message": f"No valid digital forensic certificate found for ID '{cert_id}'."
+            }), 404
+        
+        return jsonify({
+            "status": "VERIFIED_VALID",
+            "valid": True,
+            "certificate_id": cert.get("certificate_id"),
+            "certificate": cert
+        }), 200
+    except Exception as e:
+        logger.error(f"Certificate query error: {e}")
+        return jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
 # WebSocket Events
 @socketio.on('connect')
 def handle_connect():

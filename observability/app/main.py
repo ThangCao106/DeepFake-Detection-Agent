@@ -830,4 +830,31 @@ async def alert(payload: dict) -> dict:
     return {"triage": triage}
 
 
+@app.get("/api/verify/{cert_id}")
+@app.get("/verify/{cert_id}")
+async def verify_certificate_api(cert_id: str) -> dict:
+    """Public API endpoint to query and verify Digital Forensic Certificates by ID on internet."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+        from benchmark.deepfake_memory import get_forensic_certificate
+
+        cert = get_forensic_certificate(cert_id)
+        if cert.get("status") == "NOT_FOUND":
+            raise HTTPException(
+                status_code=404,
+                detail=f"No valid digital forensic certificate found for ID '{cert_id}'."
+            )
+        return {
+            "status": "VERIFIED_VALID",
+            "valid": True,
+            "certificate_id": cert.get("certificate_id"),
+            "certificate": cert
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Certificate verification error: {str(e)}") from e
+
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

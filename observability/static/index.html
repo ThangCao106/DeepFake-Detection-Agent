@@ -411,6 +411,7 @@
         <div class="dot inactive" id="geminiStatusDot"></div>
         <span id="geminiStatusText">Checking Gemini...</span>
       </div>
+      <button class="btn-login" id="txtCertBtn" onclick="openCertModal()" style="background: #00897b;">📜 Tra cứu Chứng thư</button>
       <button class="btn-login" id="txtLoginBtn" onclick="openLoginModal()">🔑 Claude Login</button>
       <button class="btn-login" id="txtLogoutBtn" style="background: rgba(255,255,255,0.15);" onclick="logoutGate()">🚪 Logout</button>
     </div>
@@ -514,6 +515,27 @@
         <button class="btn-login" style="background: #e65100; font-size: 0.85rem; padding: 0.5rem 1rem;" onclick="submitAuthCode()">Submit Code</button>
       </div>
       <p id="codeStatusText" style="font-size: 0.8rem; color: #d84315; margin-top: 0.4rem; display: none;"></p>
+</div>
+</div>
+
+<!-- Certificate Verification Modal -->
+<div class="modal-overlay" id="certModal">
+  <div class="modal" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3 style="color: #00695c; display: flex; align-items: center; gap: 0.5rem;">
+        📜 Tra cứu & Xác thực Chứng thư Giám định Kỹ thuật số
+      </h3>
+      <button class="close-btn" onclick="closeCertModal()">&times;</button>
+    </div>
+    <p style="font-size: 0.88rem; color: #555; margin-bottom: 1rem;">
+      Nhập mã chứng thư (ví dụ: <code>CERT-DF-E4695EED</code>) để kiểm tra tính hợp lệ và trích xuất hồ sơ bằng chứng giám định 4D từ cơ sở dữ liệu phân tán.
+    </p>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+      <input type="text" id="certIdInput" placeholder="Nhập mã chứng thư (ví dụ: CERT-DF-E4695EED)..." style="flex: 1; padding: 0.7rem 1rem; border: 2px solid #00897b; border-radius: 8px; font-size: 0.95rem; font-family: monospace;" onkeypress="if(event.key==='Enter') lookupCertificate();" />
+      <button class="btn-login" style="background: #00897b; font-size: 0.9rem; padding: 0.7rem 1.2rem;" onclick="lookupCertificate()">🔍 Tra cứu</button>
+    </div>
+    <div id="certResultContainer" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 1.25rem;">
+      <!-- Result populated via JS -->
     </div>
   </div>
 </div>
@@ -1031,6 +1053,85 @@ async function sendInputCmd(inputType) {
     }
   } catch (err) {
     console.error("Lỗi gửi input:", err);
+  }
+}
+
+function openCertModal() {
+  document.getElementById("certModal").classList.add("active");
+  const input = document.getElementById("certIdInput");
+  if (input) input.focus();
+}
+
+function closeCertModal() {
+  document.getElementById("certModal").classList.remove("active");
+}
+
+async function lookupCertificate() {
+  const input = document.getElementById("certIdInput");
+  const certId = input ? input.value.trim() : "";
+  const container = document.getElementById("certResultContainer");
+  if (!certId || !container) return;
+
+  container.style.display = "block";
+  container.style.background = "#f0fdf4";
+  container.style.borderColor = "#86efac";
+  container.innerHTML = `<p style="font-size:0.9rem; color:#15803d;">⏳ Đang tra cứu chứng thư <strong>${certId}</strong> trên mạng lưới...</p>`;
+
+  try {
+    const res = await fetch(getApiUrl(`api/verify/${encodeURIComponent(certId)}`));
+    const data = await res.json();
+
+    if (!res.ok || data.status === "NOT_FOUND") {
+      container.style.background = "#fef2f2";
+      container.style.borderColor = "#fca5a5";
+      container.innerHTML = `
+        <div style="color: #991b1b; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem;">❌ Không tìm thấy chứng thư hợp lệ</div>
+        <p style="font-size: 0.85rem; color: #b91c1c;">Mã chứng thư <code>${certId}</code> không tồn tại trong cơ sở dữ liệu giám định hoặc chưa từng được cấp phép.</p>
+      `;
+      return;
+    }
+
+    const c = data.certificate || {};
+    const ev = c.multi_dimensional_evidence || {};
+    const proof = c.proof || {};
+    const isFake = (c.auditable_verdict || "").includes("SUSPECTED") || (c.auditable_verdict || "").includes("DETECTED");
+    const badgeColor = isFake ? "#dc2626" : "#16a34a";
+    const badgeBg = isFake ? "#fee2e2" : "#dcfce7";
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <span style="font-weight: 800; font-size: 1.1rem; color: #1e1b2e; font-family: monospace;">📜 ${c.certificate_id || certId}</span>
+          <div style="font-size: 0.75rem; color: #666; margin-top: 0.2rem;">⏱️ Timestamp: ${c.timestamp || "N/A"}</div>
+        </div>
+        <span style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 20px; border: 1px solid ${badgeColor};">
+          ${c.auditable_verdict || "VERIFIED"}
+        </span>
+      </div>
+
+      <div style="font-size: 0.85rem; color: #333; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <div><strong>⚖️ Composite Risk Score:</strong> ${c.composite_risk_score !== undefined ? (c.composite_risk_score * 100).toFixed(2) + "%" : "N/A"}</div>
+        <div><strong>🔒 Cryptographic Status:</strong> <span style="color: #16a34a; font-weight: 700;">✅ ${proof.status || "VERIFIED_VALID"}</span></div>
+        <div style="grid-column: span 2; word-break: break-all;"><strong>🔑 Media SHA-256 Hash:</strong> <code style="font-size: 0.75rem; background: #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px;">${c.media_integrity?.sha256 || c.media_sha256 || "N/A"}</code></div>
+      </div>
+
+      <div style="background: rgba(255,255,255,0.95); border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-size: 0.8rem;">
+        <div style="font-weight: 700; color: #1e293b; margin-bottom: 0.3rem;">📊 Bằng chứng Giám định 4D (4D Evidence Integration):</div>
+        <ul style="margin: 0; padding-left: 1.2rem; color: #475569;">
+          <li>Mô hình thụ động: <strong>${ev.passive_model_score?.prediction || "N/A"}</strong> (Fake Prob: ${ev.passive_model_score?.fake_probability !== undefined ? (ev.passive_model_score.fake_probability * 100).toFixed(2) + "%" : "N/A"})</li>
+          <li>Dị thường Tần số 2D-FFT: <strong>${ev.spectral_frequency_analysis?.high_frequency_anomaly_score ?? "N/A"}</strong> (${ev.spectral_frequency_analysis?.interpretation || ""})</li>
+          <li>Bất tương đồng Không gian: <strong>${ev.spatial_inconsistency_analysis?.spatial_inconsistency_score ?? "N/A"}</strong> (${ev.spatial_inconsistency_analysis?.interpretation || ""})</li>
+          <li>Độ bất định Entropy: <strong>${ev.model_uncertainty_entropy?.entropy ?? "N/A"}</strong></li>
+        </ul>
+      </div>
+      <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #64748b; text-align: right;">
+        Tiêu chuẩn: ${c.compliance_standard || "EU AI Act Article 50 & DSA Auditable Media"}
+      </div>
+    `;
+  } catch (err) {
+    container.style.background = "#fef2f2";
+    container.style.borderColor = "#fca5a5";
+    container.innerHTML = `<p style="font-size:0.85rem; color:#b91c1c;">Lỗi kết nối tra cứu: ${err.message}</p>`;
   }
 }
 

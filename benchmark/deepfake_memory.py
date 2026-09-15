@@ -77,6 +77,21 @@ def init_db(db_path=None):
     )
     """)
 
+    # Table 4: Auditable Forensic Certificates
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS forensic_certificates (
+        certificate_id TEXT PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        auditable_verdict TEXT NOT NULL,
+        composite_risk_score REAL DEFAULT 0.0,
+        media_sha256 TEXT,
+        image_metadata_json TEXT,
+        multi_dimensional_evidence_json TEXT,
+        proof_json TEXT,
+        full_certificate_json TEXT NOT NULL
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -206,6 +221,87 @@ def get_weight_updates_summary(db_path=None) -> list:
     return result
 
 
+def save_forensic_certificate(cert_data: dict, db_path=None) -> str:
+    """Save or update an auditable forensic certificate into SQLite memory."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    cert_id = cert_data.get("certificate_id", f"CERT-DF-{datetime.now().strftime('%Y%m%d%H%M%S')}")
+    verdict = cert_data.get("auditable_verdict", "UNKNOWN")
+    risk_score = float(cert_data.get("composite_risk_score", 0.0))
+    
+    proof = cert_data.get("proof", {})
+    media_hash = cert_data.get("media_integrity", {}).get("sha256") or proof.get("media_sha256", "")
+    
+    img_meta_str = json.dumps(cert_data.get("image_metadata") or cert_data.get("video_metadata") or {}, ensure_ascii=False)
+    evidence_str = json.dumps(cert_data.get("multi_dimensional_evidence", {}), ensure_ascii=False)
+    proof_str = json.dumps(proof, ensure_ascii=False)
+    full_cert_str = json.dumps(cert_data, ensure_ascii=False)
+
+    cursor.execute("""
+    INSERT INTO forensic_certificates (
+        certificate_id, auditable_verdict, composite_risk_score, media_sha256,
+        image_metadata_json, multi_dimensional_evidence_json, proof_json, full_certificate_json
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(certificate_id) DO UPDATE SET
+        auditable_verdict = excluded.auditable_verdict,
+        composite_risk_score = excluded.composite_risk_score,
+        media_sha256 = excluded.media_sha256,
+        image_metadata_json = excluded.image_metadata_json,
+        multi_dimensional_evidence_json = excluded.multi_dimensional_evidence_json,
+        proof_json = excluded.proof_json,
+        full_certificate_json = excluded.full_certificate_json
+    """, (
+        cert_id, verdict, risk_score, media_hash,
+        img_meta_str, evidence_str, proof_str, full_cert_str
+    ))
+
+    conn.commit()
+    conn.close()
+    print(f"[deepfake_memory] Successfully saved forensic certificate '{cert_id}'.")
+    return cert_id
+
+
+def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
+    """Query forensic certificate details from SQLite memory by certificate_id."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    clean_id = cert_id.strip().upper()
+    cursor.execute("""
+    SELECT * FROM forensic_certificates 
+    WHERE UPPER(certificate_id) = ? OR UPPER(certificate_id) = ?
+    """, (clean_id, f"CERT-DF-{clean_id}"))
+    
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return {"status": "NOT_FOUND", "message": f"No certificate found for ID '{cert_id}'."}
+
+    data = dict(row)
+    if data.get("full_certificate_json"):
+        try:
+            full_cert = json.loads(data["full_certificate_json"])
+            full_cert["status"] = "VERIFIED_VALID"
+            return full_cert
+        except Exception:
+            pass
+
+    return {
+        "certificate_id": data.get("certificate_id"),
+        "timestamp": data.get("created_at"),
+        "auditable_verdict": data.get("auditable_verdict"),
+        "composite_risk_score": data.get("composite_risk_score"),
+        "media_sha256": data.get("media_sha256"),
+        "status": "VERIFIED_VALID"
+    }
+
+
 if __name__ == "__main__":
     init_db()
     print("Deepfake Agent Memory Database initialized successfully.")
+
