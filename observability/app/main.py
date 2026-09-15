@@ -237,9 +237,9 @@ async def _read_subprocess_output(proc):
             clean_text = _strip_ansi(raw_text)
             buffer += clean_text
 
-            # Extract lines from buffer
-            lines = buffer.splitlines()
-            for line in lines:
+            # Extract lines from buffer (handling both \r and \n from PTY terminal UI)
+            raw_lines = re.split(r'[\r\n]+', buffer)
+            for line in raw_lines:
                 clean_line = line.strip()
                 if clean_line:
                     if not _LOGIN_LOGS or _LOGIN_LOGS[-1] != clean_line:
@@ -389,14 +389,21 @@ async def send_input_to_proc(req: SendInputRequest) -> dict:
 
 
 def _clean_oauth_code(raw: str) -> str:
-    """Extract clean code string if user pasted a full callback URL or formatted param."""
+    """Extract clean CODE#STATE string if user pasted a full callback URL or query parameters."""
     code = raw.strip().strip("'\"")
     if "code=" in code:
-        part = code.split("code=")[1]
-        for sep in ["&", " ", "\n", "\r"]:
-            if sep in part:
-                part = part.split(sep)[0]
-        code = part.strip()
+        code_val = ""
+        state_val = ""
+        query_str = code.split("?", 1)[1] if "?" in code else code
+        for param in query_str.split("&"):
+            if param.startswith("code="):
+                code_val = param.split("code=")[1].split("#")[0].strip()
+            elif param.startswith("state="):
+                state_val = param.split("state=")[1].split("#")[0].strip()
+        if code_val:
+            if state_val:
+                return f"{code_val}#{state_val}"
+            return code_val
     return code
 
 
