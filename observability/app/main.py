@@ -474,6 +474,21 @@ async def get_debug_logs() -> dict:
     claude_dir = Path(home_dir) / ".claude"
     user_claude_dir = Path.home() / ".claude"
 
+    # Scan persistent volume /home/agent for diagnostic audit
+    volume_files = []
+    for h in [Path("/home/agent"), Path.home(), Path(home_dir)]:
+        try:
+            if h.exists():
+                for p in h.rglob("*"):
+                    if p.is_file() and any(k in str(p) for k in [".claude", "config", "cred", "auth", "session", "keys"]):
+                        volume_files.append({
+                            "path": str(p),
+                            "size": p.stat().st_size,
+                            "mtime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
+                        })
+        except Exception as exc_vol:
+            volume_files.append({"error": str(exc_vol)})
+
     return {
         "process_status": proc_status,
         "oauth_url": _LAST_OAUTH_URL,
@@ -482,6 +497,7 @@ async def get_debug_logs() -> dict:
         "has_api_key": bool(os.environ.get("CLAUDE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")),
         "total_log_lines": len(_LOGIN_LOGS),
         "debug_log_file": str(DEBUG_LOG_FILE),
+        "volume_shared_files": volume_files,
         "logs": _LOGIN_LOGS,
     }
 

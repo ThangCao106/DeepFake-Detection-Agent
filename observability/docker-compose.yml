@@ -7,6 +7,8 @@ services:
     env_file:
       - .env
     environment:
+      - HOME=/home/agent
+      - NPM_CONFIG_PREFIX=/home/agent/.npm-global
       - HTTP_PROXY=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - http_proxy=${HTTP_PROXY}
