@@ -78,6 +78,7 @@ ALL_MCP_SERVERS = {**DEEPFAKE_ANALYTICS_MCP, **DEEPFAKE_MEMORY_MCP, **GRAFANA_MC
 
 # Whitelist — agent CHỈ được dùng đúng các tool liệt kê dưới đây, không hơn.
 ALLOWED_TOOLS = [
+    "Read", "Grep", "Glob",            # Đọc file báo cáo benchmark, colab reports & log
     "mcp__deepfake-analytics__*",      # đọc log/metrics deepfake (read-only)
     "mcp__deepfake-agent-memory__*",   # đọc/ghi deepfake_agent_memory (read-write, scoped)
     "mcp__grafana__search_dashboards",
@@ -102,14 +103,10 @@ ALLOWED_TOOLS = [
 ]
 
 # Chặn cứng toàn bộ tool có sẵn của Claude Code (filesystem, shell, web, task/subagent...).
-# Đây là phòng thủ theo chiều sâu: dù ALLOWED_TOOLS ở trên không liệt kê các tool này,
-# nếu không disallow tường minh thì chúng vẫn "tồn tại" trong runtime và có thể bị gọi
-# nếu sau này lỡ đổi permission_mode/can_use_tool. disallowed_tools chặn ở tầng SDK,
-# không phụ thuộc allowed_tools hay permission logic khác.
+# Đã mở quyền Read, Grep, Glob để Agent đọc báo cáo report_colab/ và file log.
 DISALLOWED_TOOLS = [
     "Bash", "BashOutput", "KillShell",       # không thực thi lệnh hệ thống
-    "Read", "Write", "Edit", "NotebookEdit", # không đọc/ghi file
-    "Globe", "Grep", "LS",                   # không tìm kiếm/liệt kê file
+    "Write", "Edit", "NotebookEdit",        # không sửa file hệ thống
     "WebFetch", "WebSearch",                 # không truy cập internet
     "Task", "TaskOutput", "TaskStop",        # không tạo background task
     "Architect", "AskUserPrompt",            # không gọi agent con hay hỏi user
