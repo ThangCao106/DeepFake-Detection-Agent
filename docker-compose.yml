@@ -47,7 +47,7 @@ services:
       - ANTHROPIC_API_KEY=${CLAUDE_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
     volumes:
-      - claude_agent_home:/home/agent
+      - claude-home-new:/home/agent
     networks:
       - deepfake-agent-network
 
@@ -66,7 +66,7 @@ services:
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
     volumes:
-      - claude_agent_home:/home/agent
+      - claude-home-new:/home/agent
     working_dir: /home/agent
     entrypoint: ["sh", "-c"]
     command:
@@ -86,7 +86,7 @@ services:
         claude login &&
         echo "------------------------------------------------------------------" &&
         echo "✅ Claude Authentication Completed Successfully!" &&
-        echo "   Credentials saved to persistent volume 'claude_agent_home'." &&
+        echo "   Credentials saved to persistent volume 'claude-home-new'." &&
         echo "=========================================="
 
 networks:
@@ -96,5 +96,5 @@ networks:
 volumes:
   hf_model_cache:
     driver: local
-  claude_agent_home:
+  claude-home-new:
     driver: local

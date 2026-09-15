@@ -16,7 +16,7 @@ services:
     ports:
       - "8787:8787"
     volumes:
-      - claude-home:/home/agent
+      - claude-home-new:/home/agent
     restart: unless-stopped
 
   login:
@@ -31,7 +31,7 @@ services:
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
     volumes:
-      - claude-home:/home/agent
+      - claude-home-new:/home/agent
     working_dir: /home/agent
     entrypoint: ["sh", "-c"]
     command:
@@ -51,8 +51,8 @@ services:
         claude login &&
         echo "------------------------------------------------------------------" &&
         echo "✅ Claude Authentication Completed Successfully!" &&
-        echo "   Credentials saved to persistent volume 'claude-home'." &&
+        echo "   Credentials saved to persistent volume 'claude-home-new'." &&
         echo "=========================================="
 
 volumes:
-  claude-home:
+  claude-home-new:
