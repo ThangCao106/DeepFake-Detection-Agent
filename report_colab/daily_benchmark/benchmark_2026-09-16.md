@@ -19,7 +19,7 @@
 ## 2. Thống Kê Mẫu Đánh Giá Ngày 2026-09-16
 - **Tổng số mẫu quét trong ngày**: 14
 - **Số mẫu phát hiện tạp nhiễu tần số cao (FFT Residual Spikes)**: 0
-- **Độ trễ trung bình per-sample**: 594.97 ms
+- **Độ trễ trung bình per-sample**: 600.48 ms
 
 ## 3. Đề Xuất Chỉ Số Tối Ưu Cho Chu Kỳ Huấn Luyện Tiếp Theo
 1. **Target AUC**: $\ge 0.992$ (Vượt trội NVIDIA Synthetic Video & Sensity AI).
