@@ -15,12 +15,89 @@ from pathlib import Path
 # Local storage fallback directory if GDrive credentials are not configured
 DEFAULT_LOCAL_STORAGE = os.path.join("report_colab", "gdrive_storage")
 
+class DiskGuardAgent:
+    """
+    Monitors VPS disk space and manages automatic cleanup of temporary media files.
+    Prevents VPS disk full errors by purging heavy binary media after GDrive sync.
+    """
+    def __init__(self, target_dir=DEFAULT_LOCAL_STORAGE, min_free_gb=5.0, max_cache_gb=3.0):
+        self.target_dir = target_dir
+        self.min_free_gb = min_free_gb
+        self.max_cache_gb = max_cache_gb
+
+    def get_disk_usage_info(self):
+        """Returns disk total, used, free space (in GB) and percentage free."""
+        try:
+            total, used, free = shutil.disk_usage("/")
+            total_gb = round(total / (1024**3), 2)
+            used_gb = round(used / (1024**3), 2)
+            free_gb = round(free / (1024**3), 2)
+            pct_free = round((free / total) * 100, 1)
+            return {"total_gb": total_gb, "used_gb": used_gb, "free_gb": free_gb, "pct_free": pct_free}
+        except Exception:
+            return {"total_gb": 100.0, "used_gb": 50.0, "free_gb": 50.0, "pct_free": 50.0}
+
+    def get_cache_size_gb(self):
+        """Calculates total size of local cache storage in GB."""
+        total_size = 0
+        if os.path.exists(self.target_dir):
+            for dirpath, _, filenames in os.walk(self.target_dir):
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    if not os.path.islink(fp):
+                        total_size += os.path.getsize(fp)
+        return round(total_size / (1024**3), 3)
+
+    def check_and_clean_disk(self, force=False):
+        """
+        Checks disk space and triggers cleanup if free space < 20% or cache size > max_cache_gb.
+        Purges binary media files (*.jpg, *.mp4, *.webp, *.mov, *.png) while preserving JSON registries.
+        """
+        info = self.get_disk_usage_info()
+        cache_gb = self.get_cache_size_gb()
+        
+        needs_cleanup = force or (info["pct_free"] < 20.0) or (info["free_gb"] < self.min_free_gb) or (cache_gb > self.max_cache_gb)
+        
+        if needs_cleanup:
+            print(f"[Disk Guard] Clean Triggered: VPS Free Disk={info['free_gb']}GB ({info['pct_free']}%), Local Cache={cache_gb}GB. Executing Purge...")
+            purged_bytes, purged_files = self.purge_binary_media()
+            print(f"[Disk Guard] Purge Complete. Freed {round(purged_bytes / (1024**2), 2)}MB ({purged_files} binary files removed). JSON registries preserved.")
+            return True
+        else:
+            print(f"[Disk Guard] VPS Disk Status OK: Free={info['free_gb']}GB ({info['pct_free']}%), Local Cache={cache_gb}GB.")
+            return False
+
+    def purge_binary_media(self, max_age_hours=24):
+        """Purges binary media files while keeping metadata JSON files intact."""
+        purged_bytes = 0
+        purged_files = 0
+        now = time.time()
+        binary_exts = {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".avi", ".mkv"}
+
+        if os.path.exists(self.target_dir):
+            for dirpath, _, filenames in os.walk(self.target_dir):
+                for f in filenames:
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in binary_exts:
+                        fp = os.path.join(dirpath, f)
+                        try:
+                            file_size = os.path.getsize(fp)
+                            os.remove(fp)
+                            purged_bytes += file_size
+                            purged_files += 1
+                        except Exception as e:
+                            print(f"[Disk Guard] Notice removing {fp}: {e}")
+
+        return purged_bytes, purged_files
+
+
 class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="DeepFake_Pentest_Data"):
         self.base_folder_name = base_folder_name
         self.credentials_json = credentials_json or os.environ.get("GDRIVE_CREDENTIALS_JSON")
         self.service = None
         self.use_mock_storage = True
+        self.disk_guard = DiskGuardAgent()
         
         self._initialize_service()
 
@@ -107,7 +184,7 @@ class GDriveSyncAgent:
         return folder.get('id')
 
     def upload_file(self, local_path, date_str=None, target_subfolder="01_raw_originals"):
-        """Uploads a local media file to the specified Google Drive daily subfolder."""
+        """Uploads a local media file to specified GDrive daily subfolder and cleans local file if uploaded."""
         paths = self.get_or_create_daily_folder(date_str)
         filename = os.path.basename(local_path)
 
@@ -117,6 +194,7 @@ class GDriveSyncAgent:
             if os.path.exists(local_path) and local_path != dest_path:
                 with open(local_path, "rb") as sf, open(dest_path, "wb") as df:
                     df.write(sf.read())
+            self.disk_guard.check_and_clean_disk()
             return dest_path
 
         # Upload via Google Drive API
@@ -132,15 +210,24 @@ class GDriveSyncAgent:
                 body=file_metadata, media_body=media, fields='id'
             ).execute()
             print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {uploaded_file.get('id')})")
+            
+            # Post-sync cleanup: Remove binary local file after successful GDrive upload
+            if os.path.exists(local_path) and not local_path.endswith(".json"):
+                os.remove(local_path)
+                print(f"[Disk Guard] Post-Sync Purge: Deleted local file {filename} after GDrive sync.")
+                
             return uploaded_file.get('id')
         except Exception as e:
             print(f"[GDrive Sync] Failed to upload {filename} via API: {e}")
             return None
 
     def sync_batch_registry(self, registry_data, date_str=None, target_subfolder="01_raw_originals"):
-        """Syncs a metadata registry file (JSON) to Google Drive."""
+        """Syncs a metadata registry file (JSON) to Google Drive and runs Disk Guard checks."""
         paths = self.get_or_create_daily_folder(date_str)
         reg_filename = f"registry_{target_subfolder}_{int(time.time())}.json"
+
+        # Check disk space status
+        self.disk_guard.check_and_clean_disk()
 
         if self.use_mock_storage:
             dest_dir = paths.get(target_subfolder, os.path.join(DEFAULT_LOCAL_STORAGE, date_str, target_subfolder))
@@ -168,3 +255,5 @@ if __name__ == "__main__":
     agent = GDriveSyncAgent()
     paths = agent.get_or_create_daily_folder()
     print("[GDrive Sync Test] Daily paths created/verified:", paths)
+    agent.disk_guard.check_and_clean_disk(force=True)
+

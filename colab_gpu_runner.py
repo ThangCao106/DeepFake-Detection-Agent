@@ -17,7 +17,7 @@ from crawler.threads_crawler import crawl_threads_media
 from generators.faceswap_engine import FaceSwapEngine
 from generators.openweight_gen_engine import OpenWeightGenerativeEngine
 
-async def run_colab_gpu_pipeline(batch_images=5000, batch_videos=5000):
+async def run_colab_gpu_pipeline(batch_images=1000, batch_videos=1000):
     timestamp_str = time.strftime("%Y-%m-%d_%Hh")
     date_str = time.strftime("%Y-%m-%d")
 
@@ -63,4 +63,4 @@ async def run_colab_gpu_pipeline(batch_images=5000, batch_videos=5000):
     print("=" * 70)
 
 if __name__ == "__main__":
-    asyncio.run(run_colab_gpu_pipeline(batch_images=5000, batch_videos=5000))
+    asyncio.run(run_colab_gpu_pipeline(batch_images=1000, batch_videos=1000))

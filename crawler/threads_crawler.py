@@ -9,7 +9,7 @@ import asyncio
 import time
 from pathlib import Path
 
-from crawler.gdrive_sync import GDriveSyncAgent
+from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 
 THREADS_PUBLIC_TOPICS = [
     "deepfake", "aiart", "generativeai", "technology", "news", 
@@ -22,12 +22,16 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 ]
 
-async def crawl_threads_media(batch_size_images=5000, batch_size_videos=5000, output_dir="report_colab/pentest"):
+async def crawl_threads_media(batch_size_images=1000, batch_size_videos=1000, output_dir="report_colab/pentest"):
     """
     Crawls public Threads image and video media URLs.
     Falls back to structured synthetic dataset registry if live network endpoints are sandboxed or rate-limited.
     Automatically syncs batch registry to Google Drive '01_raw_originals' folder structured by date.
     """
+    # Pre-flight Disk Guard Check
+    disk_guard = DiskGuardAgent()
+    disk_guard.check_and_clean_disk()
+
     os.makedirs(output_dir, exist_ok=True)
     timestamp_str = time.strftime("%Y-%m-%d_%Hh")
     date_str = time.strftime("%Y-%m-%d")
