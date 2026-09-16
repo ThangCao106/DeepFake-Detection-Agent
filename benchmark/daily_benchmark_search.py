@@ -137,7 +137,8 @@ def search_daily_image_samples():
 
     # Fallback 3: Generate synthetic benchmark samples for CI/CD environment if no local files exist
     if not sample_files:
-        benchmark_dir = "benchmark_data"
+        import tempfile
+        benchmark_dir = os.path.join(tempfile.gettempdir(), "synthetic_benchmark_samples")
         os.makedirs(benchmark_dir, exist_ok=True)
         for i in range(1, 15):
             dummy_path = os.path.join(benchmark_dir, f"daily_sample_{i}.jpg")

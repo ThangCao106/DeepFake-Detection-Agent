@@ -14,7 +14,7 @@ from human_multimodal_detector import HumanMultiModalDetector
 
 def run_human_benchmark():
     print("=" * 70)
-    print("🧬 Executing Human-Centric Multi-Modal Deepfake Benchmark Evaluation")
+    print("[Human Benchmark] Executing Human-Centric Multi-Modal Deepfake Benchmark Evaluation")
     print("=" * 70)
     detector = HumanMultiModalDetector()
     

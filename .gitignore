@@ -69,7 +69,9 @@ uploads/
 *.pth
 *.h5
 
-# Dataset images
+# Dataset images & temporary benchmark data
 dataset_pipeline/raw_sources/
 dataset_pipeline/clean_data/
 colab_datasets/
+benchmark_data/
+report_colab/2026-*/

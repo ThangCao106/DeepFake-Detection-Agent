@@ -15,7 +15,7 @@ from eval_benchmark import run_benchmark
 
 def run_general_benchmark():
     print("=" * 70)
-    print("📊 Executing General AI Deepfake Benchmark Evaluation")
+    print("[General Benchmark] Executing General AI Deepfake Benchmark Evaluation")
     print("=" * 70)
     run_benchmark()
 
