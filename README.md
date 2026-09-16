@@ -72,10 +72,26 @@ Where:
 
 Every analysis generates a cryptographically signed, immutable Digital Forensic Certificate.
 
+### 2.1. Cryptographic Formulations & Media Integrity Hashing
+
+#### 1. Media Integrity Hash ($H_{media}$):
+The full binary SHA-256 cryptographic hash of the analyzed media asset is formulated as:
+
+$$H_{media} = \text{SHA-256}\left(\text{Asset}_{\text{binary}}\right) = \text{Digest}\left(\sum_{i=1}^{N} b_i\right)$$
+
+Where $\text{Asset}_{\text{binary}}$ represents the raw binary byte stream $b_i$ of the media file.
+
+#### 2. Non-Repudiable Cryptographic Signature Proof ($Sig_{proof}$):
+The tamper-evident digital signature protecting each forensic certificate is generated via:
+
+$$Sig_{proof} = \text{Ed25519}\Big(\text{SHA-256}\left(Cert_{ID} \parallel Timestamp \parallel H_{media} \parallel Risk_{composite}\right), K_{private}\Big)$$
+
+Where $K_{private}$ is the accredited private signing key and $\parallel$ denotes canonical string concatenation.
+
 ### Certificate Features
 - **Unique Certificate ID**: Deterministic UUID format `CERT-DF-XXXXXXXX` (e.g. `CERT-DF-662CBE7B`).
-- **Media Integrity Hash**: Full binary SHA-256 cryptographic hash of the analyzed media file ($H_{media} = \text{SHA256}(\text{Asset})$).
-- **Digital Signature Proof**: Signed using `Ed25519SHA256Signature2026` cryptographic signature.
+- **Media Integrity Hash**: Full binary SHA-256 cryptographic hash of the analyzed media asset ($H_{media}$).
+- **Digital Signature Proof**: Signed using Ed25519 cryptographic signature ($Sig_{proof}$).
 - **Verification Endpoint**: Embedded URL `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
 
 ### Sample Certificate JSON Schema

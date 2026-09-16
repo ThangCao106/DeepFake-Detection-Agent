@@ -72,10 +72,26 @@ Trong đó:
 
 Mỗi lượt phân tích tự động tạo ra một Chứng thư Giám định Kỹ thuật số có chữ ký mật mã hóa và lưu trữ bất biến.
 
+### 2.1. Công thức Mật mã hóa & Mã Hash Phương tiện (Cryptographic Formulations)
+
+#### 1. Mã Hash SHA-256 Phương tiện ($H_{media}$):
+Mã hóa SHA-256 bảo đảm tính nguyên vẹn tuyệt đối từng bit của tệp truyền thông đầu vào được định nghĩa:
+
+$$H_{media} = \text{SHA-256}\left(\text{Asset}_{\text{binary}}\right) = \text{Digest}\left(\sum_{i=1}^{N} b_i\right)$$
+
+Trong đó $\text{Asset}_{\text{binary}}$ đại diện cho chuỗi byte nhị phân $b_i$ của tệp ảnh hoặc video gốc.
+
+#### 2. Chữ ký Mật mã hóa Bảo mật ($Sig_{proof}$):
+Chữ ký số chống chối bỏ bảo vệ tính toàn vẹn của chứng thư `CERT-DF` được tính toán bởi:
+
+$$Sig_{proof} = \text{Ed25519}\Big(\text{SHA-256}\left(Cert_{ID} \parallel Timestamp \parallel H_{media} \parallel Risk_{composite}\right), K_{private}\Big)$$
+
+Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Giám định và $\parallel$ là phép nối chuỗi chuẩn hóa (Canonical Concatenation).
+
 ### Đặc tính Chứng thư
 - **Mã Chứng thư Độc bản**: Định dạng UUID chuẩn `CERT-DF-XXXXXXXX` (ví dụ: `CERT-DF-662CBE7B`).
-- **Mã Hash SHA-256 Phương tiện**: Mã hóa SHA-256 toàn vẹn tệp truyền thông ($H_{media} = \text{SHA256}(\text{Asset})$).
-- **Chữ ký Mật mã hóa**: Ký số bảo mật Ed25519 (`Ed25519SHA256Signature2026`).
+- **Mã Hash SHA-256 Phương tiện**: Mã hóa SHA-256 toàn vẹn tệp truyền thông ($H_{media}$).
+- **Chữ ký Mật mã hóa**: Ký số bảo mật Ed25519 ($Sig_{proof}$).
 - **Đường dẫn Tra cứu Trực tuyến**: URL nhúng `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
 
 ### Mẫu JSON Chứng thư Tiêu chuẩn
