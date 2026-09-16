@@ -1,250 +1,233 @@
-# 🤖 Deepfake Detection Agent System
+# 🛡️ AI Deepfake Detection & Digital Forensic Agent System
+> **An Auditable Multi-Agent Deepfake Detection System with 4D Evidence Spectrum, Cryptographic Forensic Certificates, and Google Search Indexing Architecture**
 
-![Track](https://img.shields.io/badge/Track-Agents%20for%20Good-green)
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Modality](https://img.shields.io/badge/Modality-Image%20%7C%20Video%20%7C%20Audio-purple)
-![Architecture](https://img.shields.io/badge/Architecture-Vision%20%26%20Audio%20Transformer-orange)
-![Calibration](https://img.shields.io/badge/Calibration-Temperature%20Scaling%20(T*)%20%2B%20Youden's%20J%20(%CF%84*)-red)
-![Language](https://img.shields.io/badge/Language-English%20%7C%20Ti%E1%BA%BFng%20Vi%E1%BB%87t-blueviolet)
-![License](https://img.shields.io/badge/License-MIT-yellow)
-![Deployment](https://img.shields.io/badge/Deployment-Docker%20%26%20GitHub%20Actions%20CI%2FCD-brightgreen)
-
-System phát hiện và giám định **DeepFake Đa Phương Thức (Multi-Modal DeepFake Detection: Image, Video, Audio)** dựa trên kiến trúc **Vision & Audio Transformer**, quy trình hiệu chỉnh xác suất **Post-Hoc Temperature Scaling ($T^*$)**, tối ưu hóa ngưỡng quyết định **Youden's J Index ($\tau^*$)**, hỗ trợ **Đa Ngôn Ngữ (Tiếng Việt 🇻🇳 & Tiếng Anh 🇬🇧)**, kết hợp với **Hệ thống Đa Tác thể (Multi-Agent System)** và **Agent SRE Quan sát (Observability Subsystem Agent)**.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![EU AI Act Compliant](https://img.shields.io/badge/Compliance-EU%20AI%20Act%20Art%2050-green.svg)](https://artificialintelligenceact.eu/)
+[![DSA Compliance](https://img.shields.io/badge/Compliance-EU%20DSA%20Auditable-purple.svg)](https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 📐 1. Tóm tắt Kiến trúc Mô hình (Model Architecture Summary)
+## 📌 Executive Summary
 
-Hệ thống được thiết kế theo mô hình **Đa Phương Thức 3 Luồng (Tri-Stream Multi-Modal Architecture)** xử lý toàn diện 3 dạng nội dung số:
+The **AI Deepfake Detection & Digital Forensic Agent System** is a production-grade, multi-agent AI framework designed to classify, audit, and certify synthetic media (GANs, Latent Diffusion, Face Swaps, Audio Clones, Deepfake Videos). 
+
+Unlike standard binary classifiers, this framework incorporates a **4D Multi-Dimensional Evidence Model** ($Risk_{composite}$), generates **Cryptographic Auditable Digital Forensic Certificates (`CERT-DF-XXXXXXXX`)**, and features a **Google Search Indexing Architecture** to enable public verification of authenticated media across search engines.
+
+---
+
+## 🔬 1. 4D Multi-Dimensional Evidence Integration Model
+
+To satisfy strict evidentiary standards (such as **EU AI Act Article 50** and **DSA Auditable Media** guidelines), the system integrates four independent digital forensic dimensions into a unified composite risk rating.
 
 ```
-                          ┌──────────────────────────┐
-                          │    Input Media Stream    │
-                          └────────────┬─────────────┘
-                                       │
-            ┌──────────────────────────┼──────────────────────────┐
-            ▼                          ▼                          ▼
-     ┌──────────────┐           ┌──────────────┐           ┌──────────────┐
-     │ IMAGE STREAM │           │ VIDEO STREAM │           │ AUDIO STREAM │
-     └──────┬───────┘           └──────┬───────┘           └──────┬───────┘
-            │                          │                          │
-   ┌────────┴────────┐        ┌────────┴────────┐        ┌────────┴────────┐
-   │ dhash / MD5     │        │ Keyframe        │        │ Mel-Spectrogram │
-   │ Deduplication   │        │ Extraction (CV) │        │ Feature Transform│
-   └────────┬────────┘        └────────┬────────┘        └────────┬────────┘
-            │                          │                          │
-   ┌────────┴────────┐        ┌────────┴────────┐        ┌────────┴────────┐
-   │ Vision          │        │ Temporal ViT    │        │ Audio ViT       │
-   │ Transformer     │        │ Aggregation     │        │ Classifier      │
-   └────────┬────────┘        └────────┬────────┘        └────────┬────────┘
-            │                          │                          │
-            └──────────────────────────┼──────────────────────────┘
-                                       │
-                                       ▼
-                       ┌───────────────────────────────┐
-                       │  Uncalibrated Raw Logits (z)  │
-                       └───────────────┬───────────────┘
-                                       │
-                                       ▼
-                       ┌───────────────────────────────┐
-                       │   Post-Hoc Calibration        │
-                       │   P(y=1|x) = σ(z / T*)        │
-                       └───────────────┬───────────────┘
-                                       │
-                                       ▼
-                       ┌───────────────────────────────┐
-                       │  Optimal Threshold Search     │
-                       │  J(τ) = TPR(τ) - FPR(τ)       │
-                       └───────────────┬───────────────┘
-                                       │
-                                       ▼
-                       ┌───────────────────────────────┐
-                       │  Auditable Forensic           │
-                       │  Certificate & Decision       │
-                       └───────────────────────────────┘
+                    ┌─────────────────────────────────────────┐
+                    │            Input Image / Video          │
+                    └────────────────────┬────────────────────┘
+                                         │
+       ┌───────────────────┬─────────────┴─────┬───────────────────┐
+       ▼                   ▼                   ▼                   ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│ Passive Model │   │ 2D-FFT High   │   │ Spatial Noise │   │ Prediction    │
+│ Classifier    │   │ Spectral Residual │ Variance Diff │   │ Entropy H(P)  │
+│  (Weight: 75%)│   │  (Weight: 15%)│   │  (Weight: 10%)│   │ (Uncertainty) │
+└───────┬───────┘   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
+        │                   │                   │                   │
+        └───────────────────┼───────────────────┘                   │
+                            ▼                                       ▼
+             ┌─────────────────────────────┐         ┌──────────────────────────────┐
+             │ Composite Risk Score Calculation      │ Uncertainty Boundary Check   │
+             │ Risk = 0.75*P + 0.15*S + 0.10*N      │ H(P) = -sum(P_i * log2(P_i)) │
+             └──────────────┬──────────────┘         └──────────────┬───────────────┘
+                            │                                       │
+                            └───────────────────┬───────────────────┘
+                                                ▼
+                               ┌──────────────────────────────────┐
+                               │  Auditable Forensic Certificate  │
+                               │        CERT-DF-XXXXXXXX          │
+                               └──────────────────────────────────┘
 ```
 
-### 🔹 1.1 Tri-Stream Backbone Transformers
-1. **Luồng Hình ảnh (Image Stream)**:
-   * **Backbone**: Vision Transformer (ViT-Base/ViT-Large) fine-tune 2 giai đoạn (Warmup Classifier Head + Full Fine-tuning với Cosine Annealing Learning Rate Schedule).
-   * **Tiền xử lý**: Khử trùng lặp `MD5` + Difference Hash (`dhash`), tự động phát hiện và crop vùng khuôn mặt chuẩn hóa.
-2. **Luồng Video (Video Stream)**:
-   * **Backbone**: OpenCV Keyframe Extraction (trích xuất 5–10 khung hình chính/giây) + ViT Temporal Feature Aggregation.
-   * **Phân tích**: Đánh giá biến thiên điểm số giữa các khung hình để phát hiện gián đoạn thời gian (Temporal Discontinuity / Face-Swap artifacts).
-3. **Luồng Âm thanh (Audio Stream)**:
-   * **Backbone**: Chuyển đổi tín hiệu giọng nói thành **Mel-Spectrogram 2D Feature Map** + Audio ViT Classification.
-   * **Phân tích**: Phát hiện nhân bản giọng nói (Voice Cloning), tổng hợp tiếng nói (TTS) và bất đồng bộ môi-tiếng (Lip-Sync Mismatch).
+### Mathematical Risk Formulation
 
-### 🔹 1.2 Hiệu chỉnh Xác suất Post-Hoc & Tối ưu Ngưỡng Quyết định
-Mạng nơ-ron sâu thường bị lỗi **Overconfidence** (độ tin cậy xác suất phát ra quá cao nhưng sai lệch với độ chính xác thực tế). Hệ thống tích hợp 2 thuật toán hiệu chỉnh:
+The Composite Risk Score ($Risk_{composite} \in [0.0, 1.0]$) is defined as:
 
-1. **Platt Temperature Scaling ($T^*$):**
-   $$P(y=1 \mid x) = \sigma\left(\frac{z}{T^*}\right) = \frac{1}{1 + e^{-z / T^*}}$$
-   *Tham số nhiệt độ $T^*$ được tối ưu hóa bằng thuật toán L-BFGS-B trên tập Validation để giảm thiểu Expected Calibration Error (ECE).*
+$$Risk_{composite} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
 
-2. **Youden's J Index Decision Threshold ($\tau^*$):**
-   $$J(\tau) = \text{TPR}(\tau) - \text{FPR}(\tau) = \text{Sensitivity}(\tau) + \text{Specificity}(\tau) - 1 \implies \tau^* = \arg\max_{\tau} J(\tau)$$
-   *Thay vì sử dụng ngưỡng mặc định $\tau=0.5$, hệ thống tự động tìm ngưỡng $\tau^*$ tối ưu theo từng tập dữ liệu và phương thức (Modality).*
+Where:
+1. **Passive Model Probability ($P_{fake}$)**: Probability output from the fine-tuned Vision Transformer / CNN backbone ($W_{model} = 0.75$).
+2. **Spectral Frequency Anomaly ($Score_{spectral}$)**: High-frequency Z-score energy residual derived from 2D Fast Fourier Transform ($W_{spectral} = 0.15$). Detects lattice grid artifacts typical of GANs and Latent Diffusion Models:
+   $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
+3. **Spatial Noise Inconsistency ($Score_{spatial}$)**: Noise variance discrepancy between center face region and peripheral background ($W_{spatial} = 0.10$).
+4. **Prediction Entropy ($H(P)$)**: Normalized entropy measuring model boundary uncertainty:
+   $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
+
+### Auditable Verdict Criteria
+- $Risk_{composite} \le 0.50 \implies$ **`AUTHENTIC_MEDIA_LIKELY`** (Genuine Media / Original)
+- $Risk_{composite} > 0.50 \implies$ **`SYNTHETIC_MEDIA_SUSPECTED`** (Synthetic / Manipulated Media)
 
 ---
 
-## 📦 2. Danh mục Dữ liệu Multi-Modality Registry & Benchmark 2025–2026
+## 📜 2. Auditable Digital Forensic Certificates (`CERT-DF-XXXXXXXX`)
 
-Hệ thống tích hợp **14 Bộ dữ liệu chuẩn quốc tế** mở rộng từ *Awesome-Deepfakes*, bao gồm các tập Benchmark SOTA mới nhất 2025–2026:
+Every analysis generates a cryptographically signed, immutable Digital Forensic Certificate.
 
-| Modality | Key Dataset | Mô tả & Đặc thù Benchmark |
-|:---|:---|:---|
-| `IMAGE` | `dima806_deepfake` | 140,000 ảnh thật & giả mặt StyleGAN/FFHQ |
-| `IMAGE` | `ntire_robust_detection` | NTIRE 2024 Robust AI-Gen Detection Benchmark (Diffusion & GANs) |
-| `IMAGE` | `cifake` | 120,000 ảnh CIFAR-10 vs Stable Diffusion Synthetic Images |
-| `IMAGE` | `dffd_image` | Diverse Fake Face Dataset (58k real, 240k fake) |
-| `IMAGE` | `ifakefacedb` | 87,000 ảnh StyleGAN đã xóa vân tay GANprintR |
-| `IMAGE` | **`dfbench_lmm`** | **SOTA 2025 Benchmark đánh giá Large Multimodal Models (LMMs)** |
-| `VIDEO` | `faceforensics_pp` | FaceForensics++ (1,000 real & 5,000 fake videos) |
-| `VIDEO` | `celeb_df_v2` | Celeb-DF v2 (5,639 video tráo mặt chất lượng cao) |
-| `VIDEO` | `dfdc` | DeepFake Detection Challenge (128,000+ video từ Meta) |
-| `VIDEO` | `wild_deepfake` | Wild Deepfake (7,314 video thực tế từ internet) |
-| `VIDEO` | `deeper_forensics` | DeeperForensics-1.0 (60,000 video với nhiễu thực tế) |
-| `VIDEO` | `deepspeak_video` | DeepSpeak Video (Lip-Sync & Face-Swap) |
-| `VIDEO` | **`mega_mmdf`** | **DeepfakeBench-MM / Mega-MMDF (2025/2026): 1.1M mẫu đa phương thức qua 21 forgery pipelines** |
-| `VIDEO` | **`df40`** | **DF40 Benchmark (2026): 40 thuật toán sinh DeepFake SOTA (Diffusion, Audio-driven Talking Head)** |
-| `AUDIO` | `deepspeak_audio` | Voice clone & audio deepfake speech clips |
-| `AUDIO` | `fakeavceleb_audio` | FakeAVCeleb Audio-Visual deepfake audio clips |
-| `AUDIO` | `wavefake` | 104,885 audio clips từ MelGAN, Parallel WaveGAN, WaveGlow |
-| `AUDIO` | `asvspoof_2021` | ASVspoof 2021 Logical & Physical access voice spoofing benchmark |
-| `AUDIO` | **`omni_fake`** | **Omni-Fake Benchmark (2026): 1.2M+ mẫu Đa phương thức & 200k+ tập Out-Of-Distribution (OOD)** |
+### Certificate Features
+- **Unique Certificate ID**: Deterministic UUID format `CERT-DF-XXXXXXXX` (e.g. `CERT-DF-662CBE7B`).
+- **Media Integrity Hash**: Full binary SHA-256 cryptographic hash of the analyzed media file ($H_{media} = \text{SHA256}(\text{Asset})$).
+- **Digital Signature Proof**: Signed using `Ed25519SHA256Signature2026` cryptographic signature.
+- **Verification Endpoint**: Embedded URL `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
+
+### Sample Certificate JSON Schema
+```json
+{
+  "certificate_id": "CERT-DF-662CBE7B",
+  "timestamp": "2026-09-16 08:23:40 UTC",
+  "forensic_version": "2.0-AUDITABLE",
+  "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
+  "media_integrity": {
+    "sha256": "662cbe7b89e24a8f902472e389b0129a7c6f0119b48f",
+    "verification_url": "https://detection.dtpsoft.vn/api/verify/CERT-DF-662CBE7B"
+  },
+  "image_metadata": {
+    "dimensions": "1024x1024",
+    "format": "JPEG",
+    "face_cropping_applied": true
+  },
+  "multi_dimensional_evidence": {
+    "passive_model_score": {
+      "prediction": "REAL",
+      "confidence": 0.9842,
+      "fake_probability": 0.0158
+    },
+    "spectral_frequency_analysis": {
+      "high_frequency_anomaly_score": 0.0821,
+      "interpretation": "Normal natural frequency spectrum"
+    },
+    "spatial_inconsistency_analysis": {
+      "spatial_inconsistency_score": 0.0412,
+      "interpretation": "Uniform spatial noise distribution"
+    },
+    "model_uncertainty_entropy": {
+      "entropy": 0.0851,
+      "interpretation": "High prediction certainty"
+    }
+  },
+  "composite_risk_score": 0.0283,
+  "auditable_verdict": "AUTHENTIC_MEDIA_LIKELY",
+  "proof": {
+    "type": "Ed25519SHA256Signature2026",
+    "verification_method": "https://detection.dtpsoft.vn/api/verify/CERT-DF-662CBE7B",
+    "status": "VERIFIED_VALID"
+  }
+}
+```
 
 ---
 
-## 🏛️ 3. Hệ thống Đa Tác Thể (Multi-Agent System Design) & Hỗ trợ Đa Ngôn Ngữ
+## 🌐 3. Google Search Indexing & Public Verification Architecture
 
-Mô hình hoạt động dựa trên sự phối hợp giữa 5 Agent chính:
+To allow search engines (Googlebot, Bingbot) and the general public to verify certificates directly via search queries (e.g., searching `"CERT-DF-662CBE7B"` on Google), the system integrates a complete SEO Indexing Architecture.
 
 ```mermaid
-graph TD
-    A[User / Client] -->|Media File + Query + Language EN/VI| B[Orchestrator Agent]
-    B -->|Preprocessed Payload| C[Detection Agent - ViT / ONNX Engine]
-    C -->|Raw Logits & Keyframes| D[Calibration Engine - T* & τ*]
-    D -->|Calibrated Probabilities| B
-    B -->|Structured Forensic Context| E[Analysis Agent - Gemini / Claude LLM]
-    E -->|Natural Language Explanation EN/VI| B
-    B -->|Generate| F[Auditable Forensic Certificate]
-    B <-->|Persistent Memory| G[SRE Observability Agent - ClickHouse & Grafana]
-
-    style B fill:#4CAF50,color:#fff
-    style C fill:#2196F3,color:#fff
-    style D fill:#E91E63,color:#fff
-    style E fill:#FF9800,color:#fff
-    style G fill:#9C27B0,color:#fff
+flowchart TD
+    A["📷 Media Asset Upload"] --> B["🤖 Deepfake Detection Detector"]
+    B --> C["📜 Generate Certificate CERT-DF-662CBE7B"]
+    C --> D[("🗄️ SQLite Memory Database\n(deepfake_agent_memory.db)")]
+    
+    D --> E1["🌐 Public SSR Page\n/certificate/CERT-DF-662CBE7B"]
+    D --> E2["🗺️ Dynamic XML Sitemap\n/sitemap.xml"]
+    
+    E1 --> F1["🏷️ Schema.org @graph\n(TechArticle + Breadcrumb + ClaimReview)"]
+    E2 --> F2["🤖 Googlebot Crawler"]
+    
+    C --> G["🚀 Google Indexing Publisher Engine\n(google_indexing.py)"]
+    G --> H["📡 Google Search Console & Indexing API Push"]
+    
+    F2 --> I["🔍 Google Search Index Results"]
+    H --> I
 ```
 
-### 🔹 3.1 Các Tác thể Thành phần
-1. **Orchestrator Agent**: Tiếp nhận file media (Image, Video, Audio), ngôn ngữ tùy chọn (`vi` hoặc `en`), phân luồng xử lý và phối hợp các agent con.
-2. **Detection Agent (ML/ONNX Engine)**: Chạy mô hình ViT fine-tuned và ONNX Runtime (`custom_deepfake_vit.onnx`) trích xuất điểm số dự đoán raw logits.
-3. **Calibration Engine**: Áp dụng $T^*$ và $\tau^*$ để tính toán tỷ lệ phần trăm tin cậy chính xác cho từng phương thức.
-4. **Analysis Agent (LLM)**: Sử dụng Google Gemini / Claude LLM tổng hợp báo cáo giải thích bằng ngôn ngữ tự nhiên theo Tiếng Việt 🇻🇳 hoặc Tiếng Anh 🇬🇧 và cấp **Auditable Forensic Certificate** (tuân thủ EU AI Act Article 50 & DSA).
-5. **Observability SRE Agent (Subsystem Port 8787)**:
-   * Giám sát hệ thống thời gian thực qua **ClickHouse Agent Memory** và **Grafana Metrics**.
-   * Cung cấp **Hệ thống Đăng nhập 2 Chế độ (Dual Authentication Gateway)**:
-     - *Chế độ 1*: Nhập trực tiếp `CLAUDE_API_KEY` (`sk-ant-...`) trên giao diện web bar và lưu vào container session.
-     - *Chế độ 2*: Đăng nhập tự động OAuth Anthropic (`claude login`) tích hợp modal **Nhập Authorization Code** và các nút điều khiển trực tiếp trên Web Interface.
-     - Tự động pre-trust thư mục `/app` đa đường dẫn (`/root`, `/home/agent`) và chạy trong `/tmp` để bypass 100% màn hình Workspace Safety Check.
+### Key Components
 
-### 🔹 3.2 Hỗ trợ Đa Ngôn ngữ (English & Vietnamese i18n)
-* **Web UI Language Switcher**: Nút bấm `🌐 EN | 🇻🇳 VI` trên Header ứng dụng Web, tự động lưu lựa chọn vào `localStorage`.
-* **LLM Dynamic Localization**: Tác thể Analysis Agent tự động nhận biết tham số `language` và sinh văn bản giải thích chuẩn mực bằng Tiếng Việt hoặc Tiếng Anh.
-* **Tinh gọn 6 chỉ số Forensic Certificate**: Dù ở ngôn ngữ nào, thẻ tóm tắt kết quả phân tích luôn giữ định dạng 6 chỉ số định lượng chính (Real/Fake label, Confidence Score, Certificate ID, Composite Risk, Spectral Anomaly FFT 2D, Spatial Noise Inconsistency).
+1. **Server-Side Rendered (SSR) Public Pages (`/certificate/{cert_id}`)**:
+   - Fast, server-side HTML rendering (`observability/static/certificate.html`) accessible to crawlers without JavaScript execution delays.
+2. **Multi-Type Schema.org `@graph` JSON-LD**:
+   - Includes `@type: "TechArticle"`, `"BreadcrumbList"`, `"ClaimReview"`, and `"Organization"` to ensure 100% compatibility with **Google Rich Results Test**.
+3. **Dynamic XML Sitemap (`/sitemap.xml`)**:
+   - Dynamically generated XML sitemap with `<lastmod>`, `<changefreq>`, and `<priority>` tags for all stored certificate IDs.
+4. **Google Indexing Publisher Engine (`benchmark/google_indexing.py`)**:
+   - Automatically pings Google Search Console and pushes instant indexing notifications to Google Indexing API v3.
 
 ---
 
-## 📈 4. Kết quả Thực nghiệm & Metrics Huấn luyện Động (Experimental Results)
+## 🗄️ 4. Persistent Agent Memory Engine (`deepfake_agent_memory.db`)
 
-Dưới đây là tóm tắt diễn biến hiệu năng huấn luyện mô hình qua các Pass liên tục trên tập Benchmark (Cập nhật Pass 18):
+All system operations, benchmark evaluations, training runs, and issued certificates are tracked in a persistent SQLite database located at `report_colab/deepfake_agent_memory.db`.
 
-| Pass # | Modality | Dataset | Accuracy | AUC Score | EER Score | Temp ($T^*$) | Tau ($\tau^*$) | Trạng thái |
-|-------:|:--------|:--------|---------:|----------:|----------:|-------------:|---------------:|:-----------|
-| **Pass 1** | `IMAGE` | `ntire_robust_detection` | 91.2% | 0.987 | 0.043 | 1.4620 | 0.7344 | ✅ Success |
-| **Pass 1** | `VIDEO` | `faceforensics_pp` | 88.6% | 0.961 | 0.040 | 1.7685 | 0.7117 | ✅ Success |
-| **Pass 1** | `AUDIO` | `wavefake` | 86.2% | 0.918 | 0.055 | 1.5625 | 0.7722 | ✅ Success |
-| **Pass 2** | `IMAGE` | `ntire_robust_detection` | 96.0% | 0.995 | 0.012 | 1.5947 | 0.7163 | ✅ Enhanced |
-| **Pass 2** | `VIDEO` | `celeb_df_v2` | 94.0% | 0.981 | 0.026 | 1.4431 | 0.6581 | ✅ Enhanced |
-| **Pass 2** | `AUDIO` | `fakeavceleb_audio` | 91.0% | 0.959 | 0.027 | 1.4163 | 0.6336 | ✅ Enhanced |
-| **Pass 5** | `AUDIO` | `wavefake` | 97.3% | 0.998 | 0.022 | 1.6384 | 0.7673 | ✅ Optimal |
-| **Pass 6** | `IMAGE` | `dima806_deepfake` | **99.4%** | **0.998** | **0.012** | 1.4956 | 0.7285 | 🚀 SOTA Peak |
-| **Pass 6** | `VIDEO` | `celeb_df_v2` | **98.2%** | **0.998** | **0.018** | 1.4586 | 0.8449 | 🚀 SOTA Peak |
-| **Pass 6** | `AUDIO` | `deepspeak_audio` | **97.9%** | **0.998** | **0.022** | 1.7598 | 0.6365 | 🚀 SOTA Peak |
-| **Pass 18**| `VIDEO` | `mega_mmdf` | **98.7%** | **0.999** | **0.011** | 1.4210 | 0.7150 | 🚀 SOTA Peak |
+| Table Name | Description |
+| :--- | :--- |
+| `forensic_certificates` | Stores full certificate payloads, SHA-256 hashes, risk scores, and 4D evidence. |
+| `daily_benchmarks` | Tracks daily evaluation runs (sample count, AUC, EER, latency, spectral spikes). |
+| `colab_train_reports` | Log Colab fine-tuning sessions, validation AUC/EER, and hyperparameter logs. |
+| `model_weights_registry` | Manages model weight versioning, backbone architecture, and active model status. |
 
 ---
 
-## 📂 5. Cấu trúc Thư mục Dự án
+## 🛠️ 5. REST API Reference
 
-```text
-DeepFake-Detection-Agent/
-├── 🌐 web_ui/                            (Ứng dụng Web Suy luận Multi-Modality - Port 5000)
-│   ├── app.py                            - Server Flask & SocketIO với tham số language
-│   ├── templates/ & static/              - Giao diện Light Lavender UI, i18n & Multi-Modality Viewer
-│   ├── deepfake_detector.py              - Engine suy luận Image, Video, Audio & Certificate ID
-│   ├── agent_system.py                   - Multi-Agent Orchestrator (hỗ trợ Tiếng Việt & Tiếng Anh)
-│   └── config.py                         - Quản lý cấu hình hệ thống
-│
-├── 🧠 colab_training/                    (Tự động hóa Huấn luyện Colab GPU & Sync GitHub)
-│   ├── colab_auto_runner.py              - Hybrid Continuous Auto-Runner Engine
-│   ├── colab_dataset_pipeline.py         - Quản lý đo đạc chỉ số động (Dynamic Metrics Generator)
-│   ├── train_pipeline.py                 - Two-Stage ViT Fine-Tuning Pipeline
-│   ├── data_pipeline.py                  - Registry 14 tập dữ liệu SOTA 2025-2026
-│   ├── upload_model_cloud.py             - Tự động đẩy trọng số lên Hugging Face Hub
-│   └── Colab_MultiModality_AutoTrainer.ipynb - Notebook huấn luyện Colab GPU
-│
-├── 🔍 observability/                     (Subsystem Agent Quan sát & Persistent Memory - Port 8787)
-│   ├── Dockerfile & docker-compose.yml   - SRE Claude Agent Service (Port 8787)
-│   ├── app/main.py                       - Backend API, Dual Auth, PTY /login Auto-Responder
-│   ├── app/agent.py                      - Integration với Claude Agent SDK
-│   └── static/index.html                 - Obsagent Web Dashboard & Modal Code Submitter
-│
-├── 📊 report_colab/                      (Báo cáo Động Đa Phương Thức)
-│   └── 2026-09-15/
-│       ├── daily_summary.md              - Bảng tổng hợp metrics động theo từng Pass & Modality
-│       └── daily_summary_chart.png       - Biểu đồ xu hướng nâng cao hiệu năng
-│
-├── 🐳 docker-compose.yml                 - File Docker Compose chính quản lý Web UI & Obsagent
-└── 🚀 .github/workflows/deploy.yml       - GitHub Actions CI/CD (paths-ignore report_colab/**)
-```
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `GET /certificate/{cert_id}` | `GET` | SSR Public Certificate Web Page with Schema.org JSON-LD |
+| `GET /api/verify/{cert_id}` | `GET` | JSON verification endpoint for third-party verification |
+| `GET /sitemap.xml` | `GET` | Dynamic XML Sitemap for Googlebot crawlers |
+| `POST /api/upload` | `POST` | Upload image/video for analysis |
+| `POST /api/colab/callback` | `POST` | Ingest fine-tuned weights & calibration params from Google Colab |
+| `GET /api/status` | `GET` | System health check and API key status |
 
 ---
 
-## ⚡ 6. Hướng dẫn Chạy Hệ thống (Quick Start)
+## 🚀 6. Quick Start & Local Setup
 
-### 🚀 6.1 Khởi chạy bằng Docker Compose Local / Server
+### Installation
+
 ```bash
-# 1. Clone repository
+# 1. Clone the repository
 git clone https://github.com/ThangCao106/DeepFake-Detection-Agent.git
 cd DeepFake-Detection-Agent
 
-# 2. Cấu hình file môi trường (.env)
-cp .env.example .env
-# Thêm GEMINI_API_KEY, CLAUDE_API_KEY (tùy chọn)
-
-# 3. Khởi chạy toàn bộ hệ thống bằng Docker Compose
-docker compose up -d --build
+# 2. Create virtual environment & install dependencies
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
-* **Web UI Inference App**: [http://localhost:5000](http://localhost:5000)
-* **Observability SRE Subsystem**: [http://localhost:8787](http://localhost:8787) (hoặc `/obsagent/` trên domain sản xuất)
+
+### Running with Docker Compose
+
+```bash
+cd observability
+docker compose up -d
+```
+Access the Web UI at: `http://localhost:8787` (or `https://detection.dtpsoft.vn/obsagent/`).
 
 ---
 
-### 🔑 6.2 Hướng dẫn Đăng nhập Subsystem Observability Agent (Port 8787)
-Khi truy cập giao diện Observability Agent:
-1. Đăng nhập Subsystem Gate: Tên đăng nhập `thang.cd` / Mật khẩu `Thang@123`.
-2. Chọn 1 trong 2 phương thức xác thực:
-   * **Cách 1 (Nhập API Key - Nhanh nhất)**: Dán `CLAUDE_API_KEY` (`sk-ant-api03-...`) vào ô nhập ở góc phải thanh API Key Bar và bấm **Lưu Key**.
-   * **Cách 2 (Xác thực OAuth)**: Bấm **`🔑 Claude Login`** $\rightarrow$ Bấm **`⚡ Auto Launch Docker Login`** $\rightarrow$ Nhấp link Anthropic OAuth để lấy mã Authorization Code $\rightarrow$ Dán vào ô **`🔑 Nhập mã xác thực`** và bấm **`Submit Code`**. Hoặc bấm nút **`✅ Trust Folder (Yes)`** / **`🔑 Gửi /login`** trên giao diện modal.
+## 📑 7. Citation & Academic Reference
+
+If you use this system or 4D evidence framework in your academic research, please cite:
+
+```bibtex
+@article{dtp_deepfake_forensic_2026,
+  author    = {Cao, Thang and Deepfake Detection Research Group},
+  title     = {Multidimensional Digital Forensic Framework and Auditable Watermarking Scheme for Deepfake Media Authentication under EU AI Act Compliance},
+  journal   = {IEEE Transactions on Information Forensics and Security (Draft)},
+  year      = {2026},
+  publisher = {DTP Software AI Research}
+}
+```
 
 ---
 
-## 📑 7. Tài liệu Tham khảo (Key References)
-1. **TRahulsingh/DeepfakeDetector**: [GitHub Repository](https://github.com/TRahulsingh/DeepfakeDetector)
-2. **Daisy-Zhang/Awesome-Deepfakes**: [GitHub Repository](https://github.com/Daisy-Zhang/Awesome-Deepfakes)
-3. **DeepfakeBench-MM / Mega-MMDF (2025/2026)**: [GitHub SOTA Benchmark](https://github.com/SOTA-Deepfake/DeepfakeBench-MM)
-4. **Omni-Fake Benchmark (2026)**: [AlphaXiv / GitHub Repository](https://github.com/Omni-Fake/Omni-Fake-Benchmark)
-5. **DF40 Benchmark (2026)**: [GitHub Repository](https://github.com/SOTA-Deepfake/DF40)
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
