@@ -9,6 +9,8 @@ import asyncio
 import time
 from pathlib import Path
 
+from crawler.gdrive_sync import GDriveSyncAgent
+
 THREADS_PUBLIC_TOPICS = [
     "deepfake", "aiart", "generativeai", "technology", "news", 
     "voicecloning", "flux1", "sora", "dit_model", "synthetic_media"
@@ -24,9 +26,11 @@ async def crawl_threads_media(batch_size_images=5000, batch_size_videos=5000, ou
     """
     Crawls public Threads image and video media URLs.
     Falls back to structured synthetic dataset registry if live network endpoints are sandboxed or rate-limited.
+    Automatically syncs batch registry to Google Drive '01_raw_originals' folder structured by date.
     """
     os.makedirs(output_dir, exist_ok=True)
     timestamp_str = time.strftime("%Y-%m-%d_%Hh")
+    date_str = time.strftime("%Y-%m-%d")
     
     print(f"[Threads Crawler] Initializing fetch for batch: Images={batch_size_images}, Videos={batch_size_videos}...")
     
@@ -62,18 +66,29 @@ async def crawl_threads_media(batch_size_images=5000, batch_size_videos=5000, ou
     registry_data = {
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "batch_tag": timestamp_str,
+        "date_folder": date_str,
         "total_images_crawled": len(crawled_images),
         "total_videos_crawled": len(crawled_videos),
         "topics_covered": THREADS_PUBLIC_TOPICS,
-        "images_sample": crawled_images[:10],
-        "videos_sample": crawled_videos[:10]
+        "images": crawled_images,
+        "videos": crawled_videos
     }
     
     registry_file = Path(output_dir) / f"crawled_registry_{timestamp_str}.json"
     with open(registry_file, "w", encoding="utf-8") as f:
         json.dump(registry_data, f, indent=2, ensure_ascii=False)
         
-    print(f"[Threads Crawler] Batch complete. Registry saved to {registry_file}")
+    print(f"[Threads Crawler] Batch complete. Registry saved locally to {registry_file}")
+    
+    # Sync raw batch to Google Drive (01_raw_originals)
+    try:
+        gdrive_agent = GDriveSyncAgent()
+        gdrive_res = gdrive_agent.sync_batch_registry(registry_data, date_str=date_str, target_subfolder="01_raw_originals")
+        print(f"[Threads Crawler] Synced raw media batch to GDrive '01_raw_originals': {gdrive_res}")
+    except Exception as e:
+        print(f"[Threads Crawler] Warning: GDrive sync encountered an issue: {e}")
+
+    return registry_file, len(crawled_images), len(crawled_videos)
     return registry_file, len(crawled_images), len(crawled_videos)
 
 if __name__ == "__main__":
