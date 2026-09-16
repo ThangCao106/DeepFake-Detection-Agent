@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Deepfake Detection Agent — Claude AI Subsystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
     --bg-main: #f8f6fc;
@@ -242,6 +246,77 @@
   .pill-btn:hover {
     background: var(--primary);
     color: #fff;
+  }
+
+  /* Option C R&D Hybrid Formatting Styles */
+  .audit-trail-accordion {
+    background: #faf5ff;
+    border: 1px solid #d8b4fe;
+    border-radius: 10px;
+    margin: 0.75rem 0;
+    overflow: hidden;
+  }
+
+  .audit-trail-summary {
+    background: #f3e8ff;
+    color: #581c87;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.9rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+
+  .audit-trail-summary:hover {
+    background: #e9d5ff;
+  }
+
+  .audit-trail-body {
+    padding: 0.75rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #3b0764;
+    background: #faf5ff;
+    border-top: 1px solid #e9d5ff;
+    max-height: 250px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .audit-badge {
+    background: #7e22ce;
+    color: #ffffff;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  /* Academic Table Formatting inside msg.agent */
+  .msg.agent table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 0.85rem;
+  }
+
+  .msg.agent th, .msg.agent td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  .msg.agent th {
+    background: #f1f5f9;
+    color: #1e293b;
+    font-weight: 700;
+  }
+
+  .msg.agent tr:nth-child(even) {
+    background: #f8fafc;
   }
 
   /* Input Form */
@@ -557,8 +632,8 @@ let currentLang = localStorage.getItem("obsagent_lang") || "vi";
 const I18N = {
   vi: {
     home: "Trang chủ",
-    headerTitle: "🛡️ Deepfake Detection Agent",
-    subsystemBadge: "Claude CLI AI Subsystem",
+    headerTitle: "🔬 AI Deepfake Forensic Agent",
+    subsystemBadge: "IEEE T-IFS & R&D Standard v2.4",
     langBtn: "🇻🇳 VN",
     authChecking: "Đang kiểm tra Auth...",
     authSuccess: "Claude Authenticated",
@@ -573,7 +648,7 @@ const I18N = {
     lblGeminiKey: "Gemini API Key (AIzaSy...):",
     btnSaveClaude: "Lưu Key",
     btnSaveGemini: "Lưu Key Gemini",
-    welcomeMsg: "👋 AI Deepfake Detection Agent đã sẵn sàng. Hỗ trợ tra cứu Báo cáo Benchmark, Báo cáo Colab & Trọng số mô hình.",
+    welcomeMsg: "🔬 [Option C Standard] AI Deepfake Forensic Agent đã sẵn sàng. Hỗ trợ tra cứu Báo cáo Benchmark, Báo cáo Colab & Hiệu chỉnh ECE Calibration.",
     inputPlaceholder: "Hỏi Deepfake Agent về Báo cáo Benchmark / Cập nhật Trọng số Colab / ECE Calibration...",
     btnSubmitChat: "Gửi",
     pills: [
@@ -585,8 +660,8 @@ const I18N = {
   },
   en: {
     home: "Home",
-    headerTitle: "🛡️ Deepfake Detection Agent",
-    subsystemBadge: "Claude CLI AI Subsystem",
+    headerTitle: "🔬 AI Deepfake Forensic Agent",
+    subsystemBadge: "IEEE T-IFS & R&D Standard v2.4",
     langBtn: "🇬🇧 EN",
     authChecking: "Checking Auth...",
     authSuccess: "Claude Authenticated",
@@ -601,7 +676,7 @@ const I18N = {
     lblGeminiKey: "Gemini API Key (AIzaSy...):",
     btnSaveClaude: "Save Key",
     btnSaveGemini: "Save Gemini Key",
-    welcomeMsg: "👋 AI Deepfake Detection Agent ready. Supports Benchmark Reports, Colab Training & Weight Audits.",
+    welcomeMsg: "🔬 [Option C Standard] AI Deepfake Forensic Agent Active. Supports Benchmark Audits, Colab Weight Updates & ECE Calibration.",
     inputPlaceholder: "Ask Deepfake Agent about Benchmark Performance / Colab Weight Updates / ECE Calibration...",
     btnSubmitChat: "Send",
     pills: [
@@ -612,6 +687,67 @@ const I18N = {
     ]
   }
 };
+
+function formatAgentResponse(text) {
+  if (!text) return "";
+  let formattedText = text;
+
+  // Process thinking + tool execution block if present
+  const traceRegex = /(🧠 Quá trình xử lý[\s\S]*?```[\s\S]*?```|🔧 Đang gọi[\s\S]*?(?=\n#|\n\n[A-Z]|$))/;
+  const match = formattedText.match(traceRegex);
+  if (match) {
+    const rawTrace = match[0];
+    const cleanTrace = rawTrace
+      .replace(/🧠 Quá trình xử lý.*?\n/g, "")
+      .replace(/```text/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const accordionHtml = `
+<details class="audit-trail-accordion" open>
+  <summary class="audit-trail-summary">
+    <span>🔬 Scientific Audit Trail & Execution Timeline</span>
+    <span class="audit-badge">R&D Trace Log</span>
+  </summary>
+  <div class="audit-trail-body">${cleanTrace}</div>
+</details>\n\n`;
+
+    formattedText = formattedText.replace(rawTrace, accordionHtml);
+  }
+
+  return formattedText;
+}
+
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  
+  if (role === "agent") {
+    const processed = formatAgentResponse(text);
+    const htmlContent = window.marked ? marked.parse(processed) : processed.replace(/\n/g, "<br/>");
+    div.innerHTML = `<strong style="color:var(--primary); font-size:0.9rem; display:block; margin-bottom:0.4rem;">🔬 AI Deepfake Forensic Agent (Option C Standard):</strong>` + htmlContent;
+    
+    if (window.renderMathInElement) {
+      setTimeout(() => {
+        renderMathInElement(div, {
+          delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false}
+          ],
+          throwOnError: false
+        });
+      }, 50);
+    }
+  } else if (role === "user") {
+    div.innerHTML = `<strong style="color:#6b21a8; font-size:0.85rem; display:block; margin-bottom:0.2rem;">You:</strong> ` + text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  } else {
+    div.innerHTML = text;
+  }
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return div;
+}
 
 function applyLanguage(lang) {
   currentLang = lang;
@@ -1149,7 +1285,7 @@ chatForm.addEventListener("submit", async (e) => {
   messageInput.value = "";
   
   // Show temporary loading indicator
-  const loadingEl = addMessage("system", "⏳ AI Deepfake Detection Agent đang xử lý (Connecting + Thinking)...");
+  const loadingEl = addMessage("system", "🔬 [Option C R&D Forensic Engine] Executing Multi-Modal Diagnostics, ECE Calibration & Audit Trail...");
   const sendBtn = chatForm.querySelector("button[type=submit]");
   if (sendBtn) sendBtn.disabled = true;
 
