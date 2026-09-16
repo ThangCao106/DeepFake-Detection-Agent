@@ -59,6 +59,7 @@ debug_imports.py
 # Web app uploads
 uploads/
 *.db
+!report_colab/deepfake_agent_memory.db
 
 # Heavy model binaries (>100MB)
 *.safetensors
