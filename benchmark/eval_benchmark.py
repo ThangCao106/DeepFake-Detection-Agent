@@ -82,6 +82,15 @@ def run_benchmark():
 
     print(f"[eval_benchmark] Saved benchmark results to {output_path}")
 
+    # Evaluate Human Multi-Modal Detector (2025-2026 Standards)
+    try:
+        from human_multimodal_detector import HumanMultiModalDetector
+        h_detector = HumanMultiModalDetector()
+        h_sample = h_detector.predict_media("human_benchmark_sample.mp4", modality="video")
+        print(f"[eval_benchmark] Human Multi-Modal Detector ECE Status: {h_sample['ece_target_status']} (T*={h_sample['platt_temperature_T']})")
+    except Exception as e:
+        print(f"[eval_benchmark] Human detector notice: {e}")
+
 
 if __name__ == "__main__":
     run_benchmark()
