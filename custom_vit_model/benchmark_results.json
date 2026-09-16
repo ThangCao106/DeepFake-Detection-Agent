@@ -1,16 +1,16 @@
 {
-  "total": 27,
-  "correct": 18,
-  "accuracy_percent": 66.67,
+  "total": 23,
+  "correct": 17,
+  "accuracy_percent": 73.91,
   "predictions": [
     {
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_001.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9905907511711121,
+      "confidence": 0.9889459013938904,
       "all_scores": {
-        "Real": 0.009409229271113873,
-        "Fake": 0.9905907511711121
+        "Real": 0.01105410885065794,
+        "Fake": 0.9889459013938904
       },
       "spectral_anomaly": null,
       "match": true
@@ -19,10 +19,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_002.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9941429495811462,
+      "confidence": 0.9926993250846863,
       "all_scores": {
-        "Real": 0.00585708674043417,
-        "Fake": 0.9941429495811462
+        "Real": 0.007300742901861668,
+        "Fake": 0.9926993250846863
       },
       "spectral_anomaly": null,
       "match": true
@@ -31,22 +31,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_004.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9944939017295837,
+      "confidence": 0.9942278861999512,
       "all_scores": {
-        "Real": 0.005506069399416447,
-        "Fake": 0.9944939017295837
-      },
-      "spectral_anomaly": null,
-      "match": true
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_005.jpg",
-      "ground_truth": "FAKE",
-      "predicted": "Fake",
-      "confidence": 0.9912192225456238,
-      "all_scores": {
-        "Real": 0.008780722506344318,
-        "Fake": 0.9912192225456238
+        "Real": 0.005772077944129705,
+        "Fake": 0.9942278861999512
       },
       "spectral_anomaly": null,
       "match": true
@@ -55,10 +43,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_006.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9943971633911133,
+      "confidence": 0.9917386174201965,
       "all_scores": {
-        "Real": 0.0056028906255960464,
-        "Fake": 0.9943971633911133
+        "Real": 0.008261461742222309,
+        "Fake": 0.9917386174201965
       },
       "spectral_anomaly": null,
       "match": true
@@ -67,10 +55,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_007.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9914796352386475,
+      "confidence": 0.9937915205955505,
       "all_scores": {
-        "Real": 0.008520382456481457,
-        "Fake": 0.9914796352386475
+        "Real": 0.00620855251327157,
+        "Fake": 0.9937915205955505
       },
       "spectral_anomaly": null,
       "match": true
@@ -79,10 +67,22 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_008.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.994616687297821,
+      "confidence": 0.9931976795196533,
       "all_scores": {
-        "Real": 0.005383339710533619,
-        "Fake": 0.994616687297821
+        "Real": 0.006802391726523638,
+        "Fake": 0.9931976795196533
+      },
+      "spectral_anomaly": null,
+      "match": true
+    },
+    {
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_009.jpg",
+      "ground_truth": "FAKE",
+      "predicted": "Fake",
+      "confidence": 0.995060384273529,
+      "all_scores": {
+        "Real": 0.004939616657793522,
+        "Fake": 0.995060384273529
       },
       "spectral_anomaly": null,
       "match": true
@@ -91,22 +91,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_010.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9936892986297607,
+      "confidence": 0.9932646751403809,
       "all_scores": {
-        "Real": 0.006310643628239632,
-        "Fake": 0.9936892986297607
-      },
-      "spectral_anomaly": null,
-      "match": true
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_011.jpg",
-      "ground_truth": "FAKE",
-      "predicted": "Fake",
-      "confidence": 0.9865559339523315,
-      "all_scores": {
-        "Real": 0.013444069772958755,
-        "Fake": 0.9865559339523315
+        "Real": 0.006735329981893301,
+        "Fake": 0.9932646751403809
       },
       "spectral_anomaly": null,
       "match": true
@@ -115,22 +103,34 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_012.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9936063289642334,
+      "confidence": 0.9931221604347229,
       "all_scores": {
-        "Real": 0.006393637973815203,
-        "Fake": 0.9936063289642334
+        "Real": 0.006877807434648275,
+        "Fake": 0.9931221604347229
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_013.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_014.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9939175844192505,
+      "confidence": 0.9917306303977966,
       "all_scores": {
-        "Real": 0.006082334090024233,
-        "Fake": 0.9939175844192505
+        "Real": 0.008269364945590496,
+        "Fake": 0.9917306303977966
+      },
+      "spectral_anomaly": null,
+      "match": true
+    },
+    {
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_015.jpg",
+      "ground_truth": "FAKE",
+      "predicted": "Fake",
+      "confidence": 0.9914291501045227,
+      "all_scores": {
+        "Real": 0.008570796810090542,
+        "Fake": 0.9914291501045227
       },
       "spectral_anomaly": null,
       "match": true
@@ -139,10 +139,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_016.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.993759274482727,
+      "confidence": 0.9941524863243103,
       "all_scores": {
-        "Real": 0.006240813061594963,
-        "Fake": 0.993759274482727
+        "Real": 0.00584746478125453,
+        "Fake": 0.9941524863243103
       },
       "spectral_anomaly": null,
       "match": true
@@ -151,22 +151,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_017.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.994634747505188,
+      "confidence": 0.9950022101402283,
       "all_scores": {
-        "Real": 0.005365231540054083,
-        "Fake": 0.994634747505188
-      },
-      "spectral_anomaly": null,
-      "match": true
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_018.jpg",
-      "ground_truth": "FAKE",
-      "predicted": "Fake",
-      "confidence": 0.9921423196792603,
-      "all_scores": {
-        "Real": 0.00785767287015915,
-        "Fake": 0.9921423196792603
+        "Real": 0.0049978154711425304,
+        "Fake": 0.9950022101402283
       },
       "spectral_anomaly": null,
       "match": true
@@ -175,10 +163,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_019.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9936493039131165,
+      "confidence": 0.9935413599014282,
       "all_scores": {
-        "Real": 0.006350663956254721,
-        "Fake": 0.9936493039131165
+        "Real": 0.006458650343120098,
+        "Fake": 0.9935413599014282
       },
       "spectral_anomaly": null,
       "match": true
@@ -187,22 +175,10 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_020.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9917523264884949,
+      "confidence": 0.9935835003852844,
       "all_scores": {
-        "Real": 0.008247697725892067,
-        "Fake": 0.9917523264884949
-      },
-      "spectral_anomaly": null,
-      "match": true
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_021.jpg",
-      "ground_truth": "FAKE",
-      "predicted": "Fake",
-      "confidence": 0.9943047165870667,
-      "all_scores": {
-        "Real": 0.005695225205272436,
-        "Fake": 0.9943047165870667
+        "Real": 0.006416519172489643,
+        "Fake": 0.9935835003852844
       },
       "spectral_anomaly": null,
       "match": true
@@ -211,58 +187,58 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_022.jpg",
       "ground_truth": "FAKE",
       "predicted": "Fake",
-      "confidence": 0.9916805624961853,
+      "confidence": 0.9927446842193604,
       "all_scores": {
-        "Real": 0.008319400250911713,
-        "Fake": 0.9916805624961853
+        "Real": 0.0072553763166069984,
+        "Fake": 0.9927446842193604
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_001.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\fake\\New_Generators_Test_fake_025.jpg",
+      "ground_truth": "FAKE",
+      "predicted": "Fake",
+      "confidence": 0.994274914264679,
+      "all_scores": {
+        "Real": 0.005725054070353508,
+        "Fake": 0.994274914264679
+      },
+      "spectral_anomaly": null,
+      "match": true
+    },
+    {
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_008.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.7785784602165222,
+      "confidence": 0.9177380204200745,
       "all_scores": {
-        "Real": 0.22142159938812256,
-        "Fake": 0.7785784602165222
+        "Real": 0.08226194977760315,
+        "Fake": 0.9177380204200745
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_005.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_009.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.7948938012123108,
+      "confidence": 0.7591243386268616,
       "all_scores": {
-        "Real": 0.2051062136888504,
-        "Fake": 0.7948938012123108
+        "Real": 0.24087561666965485,
+        "Fake": 0.7591243386268616
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_007.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_010.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.5407224297523499,
+      "confidence": 0.8165737986564636,
       "all_scores": {
-        "Real": 0.45927760004997253,
-        "Fake": 0.5407224297523499
-      },
-      "spectral_anomaly": null,
-      "match": false
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_011.jpg",
-      "ground_truth": "REAL",
-      "predicted": "Fake",
-      "confidence": 0.6660283803939819,
-      "all_scores": {
-        "Real": 0.33397164940834045,
-        "Fake": 0.6660283803939819
+        "Real": 0.18342623114585876,
+        "Fake": 0.8165737986564636
       },
       "spectral_anomaly": null,
       "match": false
@@ -271,58 +247,34 @@
       "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_012.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.5541061162948608,
+      "confidence": 0.6695834994316101,
       "all_scores": {
-        "Real": 0.44589388370513916,
-        "Fake": 0.5541061162948608
+        "Real": 0.3304165303707123,
+        "Fake": 0.6695834994316101
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_013.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_021.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.5402984023094177,
+      "confidence": 0.8736993074417114,
       "all_scores": {
-        "Real": 0.45970165729522705,
-        "Fake": 0.5402984023094177
+        "Real": 0.1263006627559662,
+        "Fake": 0.8736993074417114
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_019.jpg",
+      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_025.jpg",
       "ground_truth": "REAL",
       "predicted": "Fake",
-      "confidence": 0.8241664171218872,
+      "confidence": 0.6043583750724792,
       "all_scores": {
-        "Real": 0.1758335530757904,
-        "Fake": 0.8241664171218872
-      },
-      "spectral_anomaly": null,
-      "match": false
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_020.jpg",
-      "ground_truth": "REAL",
-      "predicted": "Fake",
-      "confidence": 0.9058501124382019,
-      "all_scores": {
-        "Real": 0.09414990246295929,
-        "Fake": 0.9058501124382019
-      },
-      "spectral_anomaly": null,
-      "match": false
-    },
-    {
-      "path": "dataset_pipeline\\clean_data\\New_Generators_Test\\real\\New_Generators_Test_real_023.jpg",
-      "ground_truth": "REAL",
-      "predicted": "Fake",
-      "confidence": 0.7765854597091675,
-      "all_scores": {
-        "Real": 0.22341449558734894,
-        "Fake": 0.7765854597091675
+        "Real": 0.39564159512519836,
+        "Fake": 0.6043583750724792
       },
       "spectral_anomaly": null,
       "match": false
