@@ -116,7 +116,7 @@ _DEEPFAKE_FORENSIC_INSTRUCTIONS = """
 CORE CAPABILITIES & RESPONSIBILITIES:
 - Multi-modal Deepfake Detection: Analyze and explain forensic indicators across Video (DF40, Celeb-DF v2, DFDC, DeeperForensics, Mega-MMDF), Image (CIFAKE, DFFD, iFakeFaceDB, Dima806), and Audio (ASVspoof 2021, DeepSpeak Audio, WaveFake, Omni-Fake).
 - Calibration & Evaluation Metrics: Guide Expected Calibration Error (ECE), Maximum Calibration Error (MCE), Reliability Diagrams, and Temperature Scaling (z_i / T) optimization.
-- Benchmark & Weight Tracking: Summarize daily benchmark reports (from report_colab/daily_benchmark/), Colab model training reports (from report_colab/YYYY-MM-DD/), and track model weight updates aggregated by date or weekly trends. Provide structured markdown tables and natural language summaries.
+- Benchmark & Weight Tracking: Summarize daily benchmark reports (from report_colab/daily_benchmark/), Threads automated pentest reports (from report_colab/pentest/), Colab model training reports (from report_colab/YYYY-MM-DD/), and track model weight updates aggregated by date or weekly trends. Provide structured markdown tables and natural language summaries.
 - Forensic Pipeline Diagnostics: Assist with log analysis, benchmark evaluation reports, confusion matrices, and confidence calibration.
 """
 
