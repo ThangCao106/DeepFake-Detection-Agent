@@ -190,7 +190,56 @@ Tất cả hoạt động hệ thống, kết quả kiểm thử benchmark, các
 
 ---
 
-## 🛠️ 5. Danh mục REST API
+## ⚡ 5. Quy trình Fine-Tune Mô hình & Tự động Cập nhật Trọng số từ Colab
+
+Hệ thống sở hữu hạ tầng **Học máy Liên tục (Continuous Machine Learning Pipeline)** giúp mô hình phân loại Deepfake luôn được cập nhật và hiệu chỉnh (calibrated) dựa trên các tệp mẫu giả mạo mới nhất.
+
+```mermaid
+flowchart TD
+    A["⏰ GitHub Actions Daily Benchmark (00:00 UTC)"] --> B["📊 Phân tích Metrics (AUC, EER, Spectral Spikes)"]
+    B --> C["💡 Đề xuất Siêu tham số Tối ưu (Optimal Tau, Temp T, Learning Rate)"]
+    C --> D[("🗄️ SQLite Memory (daily_benchmarks)")]
+    
+    C --> E["⚡ Google Colab GPU Fine-Tuning (colab_auto_runner.py)"]
+    E --> F["📡 POST /api/colab/callback (Gửi Trọng số & Calibration Params)"]
+    
+    F --> G["💾 Cập nhật custom_vit_model/calibration_params.json"]
+    G --> H["🔄 Hot-Reload Zero-Downtime DeepfakeDetector"]
+    F --> I[("🗄️ SQLite Registry (model_weights_registry)")]
+```
+
+### 5.1. Đánh giá Daily Benchmark & Đề xuất Siêu tham số
+- **Workflows Tự động**: GitHub Actions `.github/workflows/daily_benchmark.yml` chạy tự động vào 00:00 UTC (7:00 AM giờ VN) hàng ngày.
+- **Tính toán chỉ số**: Đánh giá trên tập mẫu mới nhất, tính điểm $AUC$, $EER$, độ trễ trung bình $ms$ và gai phổ tần số 2D-FFT.
+- **Xuất Đề xuất Siêu tham số**:
+  - Tốc độ học tối ưu $\eta$ (Learning Rate).
+  - Ngưỡng quyết định tối ưu $\tau \in [0.5, 0.9]$.
+  - Tham số hiệu chỉnh nhiệt độ $T$ (Temperature Scaling).
+
+### 5.2. Công thức Hiệu chỉnh Nhiệt độ (Temperature Scaling Formulation)
+Để tránh hiện tượng mô hình quá tự tin (overconfident predictions), xác suất sau khi hiệu chỉnh được tính bằng:
+
+$$P_i = \text{softmax}\left(\frac{z_i}{T}\right) = \frac{\exp(z_i / T)}{\sum_{j=1}^{K} \exp(z_j / T)}$$
+
+Trong đó $z_i$ là giá trị Logits đầu ra của mô hình ViT/EfficientNet và $T > 0$ là tham số nhiệt độ hiệu chỉnh từ Colab.
+
+### 5.3. Động cơ Colab GPU Fine-Tuning Bridge (`colab_auto_runner.py`)
+Người dùng hoặc hệ thống có thể chạy script `colab_auto_runner.py` trên môi trường Google Colab (GPU T4/A100):
+
+```bash
+# Động cơ tự động tải trọng số, fine-tune và đồng bộ về Server
+python colab_auto_runner.py --server_url https://detection.dtpsoft.vn
+```
+
+### 5.4. Nạp Trọng số & Hot-Reload Zero-Downtime
+Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệu về API `POST /api/colab/callback`:
+1. Server tiếp nhận và lưu thông số vào `custom_vit_model/calibration_params.json`.
+2. Tái nạp đối tượng `DeepfakeDetector` ngay lập tức trong bộ nhớ RAM mà không cần ngắt kết nối hay khởi động lại Server.
+3. Ghi nhận thông tin trọng số `vYYYY-MM-DD` vào cơ sở dữ liệu `model_weights_registry`.
+
+---
+
+## 🛠️ 6. Danh mục REST API
 
 | Đường dẫn (Endpoint) | Phương thức | Chức năng |
 | :--- | :--- | :--- |
@@ -203,7 +252,7 @@ Tất cả hoạt động hệ thống, kết quả kiểm thử benchmark, các
 
 ---
 
-## 🚀 6. Cài đặt & Khởi chạy Tự động
+## 🚀 7. Cài đặt & Khởi chạy Tự động
 
 ### Cài đặt Môi trường
 
@@ -228,7 +277,7 @@ Truy cập Giao diện Web tại: `http://localhost:8787` (hoặc `https://detec
 
 ---
 
-## 📑 7. Trích dẫn Học thuật (Citation)
+## 📑 8. Trích dẫn Học thuật (Citation)
 
 Nếu bạn sử dụng hệ thống này hoặc mô hình bằng chứng 4D trong các nghiên cứu khoa học, vui lòng trích dẫn theo định dạng BibTeX:
 
@@ -244,6 +293,6 @@ Nếu bạn sử dụng hệ thống này hoặc mô hình bằng chứng 4D tro
 
 ---
 
-## 📄 Giấy phép (License)
+## 📄 9. Giấy phép (License)
 
 Dự án được phát hành dưới bản quyền **MIT License** - xem chi tiết tại tệp [LICENSE](LICENSE).

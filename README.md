@@ -190,7 +190,56 @@ All system operations, benchmark evaluations, training runs, and issued certific
 
 ---
 
-## 🛠️ 5. REST API Reference
+## ⚡ 5. Automated Model Fine-Tuning & Colab Weight Synchronization
+
+The framework features a **Continuous Machine Learning Pipeline** that automatically updates detector weights and calibrates prediction parameters based on newly identified synthetic artifacts.
+
+```mermaid
+flowchart TD
+    A["⏰ GitHub Actions Daily Benchmark (00:00 UTC)"] --> B["📊 Evaluate Metrics (AUC, EER, Spectral Spikes)"]
+    B --> C["💡 Generate Optimal Proposals (Optimal Tau, Temp T, Learning Rate)"]
+    C --> D[("🗄️ SQLite Memory (daily_benchmarks)")]
+    
+    C --> E["⚡ Google Colab GPU Fine-Tuning (colab_auto_runner.py)"]
+    E --> F["📡 POST /api/colab/callback (Push Weights & Calibration Params)"]
+    
+    F --> G["💾 Save to custom_vit_model/calibration_params.json"]
+    G --> H["🔄 Zero-Downtime Hot-Reload DeepfakeDetector"]
+    F --> I[("🗄️ SQLite Registry (model_weights_registry)")]
+```
+
+### 5.1. Daily Benchmark & Optimal Hyperparameter Proposals
+- **Automated Workflow**: GitHub Actions `.github/workflows/daily_benchmark.yml` triggers daily at 00:00 UTC (7:00 AM VN time).
+- **Metric Computation**: Evaluates latest dataset splits, computes $AUC$, $EER$, average latency ($ms$), and 2D-FFT spectral spikes.
+- **Hyperparameter Proposals**:
+  - Optimal learning rate $\eta$ for fine-tuning.
+  - Optimal decision boundary threshold $\tau \in [0.5, 0.9]$.
+  - Temperature scaling factor $T$ for confidence calibration.
+
+### 5.2. Temperature Scaling & Confidence Calibration
+To prevent model overconfidence on unseen diffusion artifacts, calibrated probabilities are computed as:
+
+$$P_i = \text{softmax}\left(\frac{z_i}{T}\right) = \frac{\exp(z_i / T)}{\sum_{j=1}^{K} \exp(z_j / T)}$$
+
+Where $z_i$ represents raw logits from the Vision Transformer / EfficientNet backbone and $T > 0$ is the temperature parameter tuned on GPU.
+
+### 5.3. Google Colab GPU Fine-Tuning Bridge (`colab_auto_runner.py`)
+Run the automated training runner on Google Colab (T4/A100 GPU):
+
+```bash
+# Auto-downloads base weights, fine-tunes backbone, and posts calibration back to server
+python colab_auto_runner.py --server_url https://detection.dtpsoft.vn
+```
+
+### 5.4. Zero-Downtime Hot-Reloading
+When Colab completes fine-tuning, it sends a payload to `POST /api/colab/callback`:
+1. Server receives updated weights and saves `temperature_scaling_T` and `optimal_threshold_tau` to `custom_vit_model/calibration_params.json`.
+2. Instantly reloads the `DeepfakeDetector` instance in memory without interrupting active client requests or restarting the server.
+3. Registers weight version `vYYYY-MM-DD` in `model_weights_registry`.
+
+---
+
+## 🛠️ 6. REST API Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -203,7 +252,7 @@ All system operations, benchmark evaluations, training runs, and issued certific
 
 ---
 
-## 🚀 6. Quick Start & Local Setup
+## 🚀 7. Quick Start & Local Setup
 
 ### Installation
 
@@ -228,7 +277,7 @@ Access the Web UI at: `http://localhost:8787` (or `https://detection.dtpsoft.vn/
 
 ---
 
-## 📑 7. Citation & Academic Reference
+## 📑 8. Citation & Academic Reference
 
 If you use this system or 4D evidence framework in your academic research, please cite:
 
@@ -244,6 +293,6 @@ If you use this system or 4D evidence framework in your academic research, pleas
 
 ---
 
-## 📄 License
+## 📄 9. License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
