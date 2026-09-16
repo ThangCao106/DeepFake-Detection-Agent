@@ -652,10 +652,10 @@ const I18N = {
     inputPlaceholder: "Hỏi Deepfake Agent về Báo cáo Benchmark / Cập nhật Trọng số Colab / ECE Calibration...",
     btnSubmitChat: "Gửi",
     pills: [
-      { label: "📊 Báo cáo Daily Benchmark", prompt: "Tổng hợp và phân tích chi tiết báo cáo Daily Benchmark mới nhất từ thư mục report_colab/daily_benchmark/" },
-      { label: "🛡️ Pentest Threads (4h/lần)", prompt: "Tổng hợp và phân tích kết quả Pentest & Crawl 5k-10k Threads mới nhất từ thư mục report_colab/pentest/" },
+      { label: "📊 Pentest General Model", prompt: "Tổng hợp và phân tích báo cáo Pentest mô hình General AI mới nhất từ report_colab/pentest/pentest_general_*.md" },
+      { label: "👤 Pentest Human Model", prompt: "Tổng hợp và phân tích báo cáo Pentest mô hình Human Deepfake mới nhất từ report_colab/pentest/pentest_human_*.md" },
+      { label: "📊 Daily Benchmark Reports", prompt: "Tổng hợp và phân tích chi tiết báo cáo Daily Benchmark mới nhất từ thư mục report_colab/daily_benchmark/" },
       { label: "📈 Báo cáo Colab & Trọng số", prompt: "Kiểm tra báo cáo huấn luyện Colab mới nhất và cập nhật trọng số mô hình trong report_colab/" },
-      { label: "📅 Cập nhật Trọng số (Tuần)", prompt: "Tổng hợp biến động và lịch sử cập nhật trọng số mô hình theo Ngày hoặc Tuần gần nhất" },
       { label: "🏥 Hiệu chỉnh ECE & Calibration", prompt: "Kiểm định chỉ số Expected Calibration Error (ECE), Reliability Diagram và Temperature Scaling" }
     ]
   },
@@ -681,10 +681,10 @@ const I18N = {
     inputPlaceholder: "Ask Deepfake Agent about Benchmark Performance / Colab Weight Updates / ECE Calibration...",
     btnSubmitChat: "Send",
     pills: [
+      { label: "📊 Pentest General Model", prompt: "Summarize and analyze the latest General AI Model pentest report from report_colab/pentest/pentest_general_*.md" },
+      { label: "👤 Pentest Human Model", prompt: "Summarize and analyze the latest Human Deepfake Model pentest report from report_colab/pentest/pentest_human_*.md" },
       { label: "📊 Daily Benchmark Reports", prompt: "Summarize and analyze the latest Daily Benchmark report from report_colab/daily_benchmark/" },
-      { label: "🛡️ Threads Pentest (4h/run)", prompt: "Summarize and analyze the latest Threads 5k-10k media Pentest report from report_colab/pentest/" },
       { label: "📈 Colab Reports & Weights", prompt: "Inspect the latest Colab training report and model weight updates in report_colab/" },
-      { label: "📅 Weekly Weight Trends", prompt: "Synthesize model weight update trends and history by date and weekly summary" },
       { label: "🏥 Calibration & ECE Audit", prompt: "Audit Expected Calibration Error (ECE) and Temperature Scaling across deepfake detectors" }
     ]
   }
