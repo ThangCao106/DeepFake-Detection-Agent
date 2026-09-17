@@ -99,7 +99,7 @@ class DiskGuardAgent:
 DEFAULT_TARGET_FOLDER_ID = "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
 
 class GDriveSyncAgent:
-    def __init__(self, credentials_json=None, base_folder_name="DeepFake_Pentest_Data"):
+    def __init__(self, credentials_json=None, base_folder_name="Thread_Data"):
         self.base_folder_name = base_folder_name
         self.credentials_json = credentials_json or os.environ.get("GDRIVE_CREDENTIALS_JSON")
         self.target_folder_id = (
@@ -109,12 +109,35 @@ class GDriveSyncAgent:
         )
         self.service = None
         self.use_mock_storage = True
+        self.sync_mode = "MOCK_LOCAL_STORAGE"
+        self.colab_mount_path = None
         self.disk_guard = DiskGuardAgent()
         
         self._initialize_service()
 
     def _initialize_service(self):
-        """Initializes Google Drive API service if credentials exist, else uses local structured storage."""
+        """Initializes Google Drive connection via Colab Direct Mount or API v3, else uses local structured storage."""
+        # 1. Check if running on Google Colab with drive.mount('/content/drive')
+        colab_mydrive = Path("/content/drive/MyDrive")
+        if colab_mydrive.exists():
+            candidate_folders = ["Thread_Data", "DeepFake_Pentest_Data", "Deepfake Detection", self.base_folder_name]
+            found_folder = None
+            for cname in candidate_folders:
+                cand = colab_mydrive / cname
+                if cand.exists() and cand.is_dir():
+                    found_folder = cand
+                    break
+            if not found_folder:
+                found_folder = colab_mydrive / "Thread_Data"
+                found_folder.mkdir(parents=True, exist_ok=True)
+                
+            self.colab_mount_path = str(found_folder)
+            self.use_mock_storage = False
+            self.sync_mode = "COLAB_DIRECT_MOUNT"
+            print(f"[GDrive Sync] [AUTH SUCCESS] Connected directly to mounted Google Drive: {self.colab_mount_path}")
+            return
+
+        # 2. Check if Google Drive Service Account Credentials JSON is provided
         if self.credentials_json:
             try:
                 from google.oauth2 import service_account
@@ -136,6 +159,7 @@ class GDriveSyncAgent:
                     )
                     self.service = build('drive', 'v3', credentials=creds)
                     self.use_mock_storage = False
+                    self.sync_mode = "API_SERVICE_ACCOUNT"
                     bot_email = creds_dict.get("client_email", "service_account_bot")
                     print(f"[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via Service Account: {bot_email}")
                     if self.target_folder_id:
@@ -148,7 +172,8 @@ class GDriveSyncAgent:
         else:
             print("[GDrive Sync] [NOTICE] No GDRIVE_CREDENTIALS_JSON found. Falling back to local storage structure.")
         
-        print(f"[GDrive Sync] Active Mode: Structured Storage at {DEFAULT_LOCAL_STORAGE}")
+        self.sync_mode = "MOCK_LOCAL_STORAGE"
+        print(f"[GDrive Sync] Active Mode: Structured Local Storage at {DEFAULT_LOCAL_STORAGE}")
 
     def get_or_create_daily_folder(self, date_str=None):
         """Creates or gets daily folder structure YYYY-MM-DD."""
@@ -158,6 +183,16 @@ class GDriveSyncAgent:
         subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
         paths = {}
 
+        # Mode 1: Google Colab Direct Mount
+        if self.sync_mode == "COLAB_DIRECT_MOUNT" and self.colab_mount_path:
+            base_dir = os.path.join(self.colab_mount_path, date_str)
+            for sub in subfolders:
+                full_p = os.path.join(base_dir, sub)
+                os.makedirs(full_p, exist_ok=True)
+                paths[sub] = full_p
+            return paths
+
+        # Mode 2: Local Mock Storage
         if self.use_mock_storage:
             base_dir = os.path.join(DEFAULT_LOCAL_STORAGE, date_str)
             for sub in subfolders:
@@ -166,7 +201,7 @@ class GDriveSyncAgent:
                 paths[sub] = full_p
             return paths
 
-        # Google Drive API Implementation
+        # Mode 3: Google Drive API v3
         try:
             # Check or create base folder inside target_folder_id if specified
             base_id = self._find_or_create_drive_folder(self.base_folder_name, parent_id=self.target_folder_id)
@@ -184,6 +219,7 @@ class GDriveSyncAgent:
                 os.makedirs(full_p, exist_ok=True)
                 paths[sub] = full_p
             return paths
+
 
     def _find_or_create_drive_folder(self, folder_name, parent_id=None):
         """Helper to query or create folder on Google Drive via API v3 with Shared Drive support."""
@@ -225,6 +261,15 @@ class GDriveSyncAgent:
         paths = self.get_or_create_daily_folder(date_str)
         filename = os.path.basename(local_path)
 
+        # Mode 1: Colab Direct Mount (Direct copy into mounted Google Drive)
+        if self.sync_mode == "COLAB_DIRECT_MOUNT" and self.colab_mount_path:
+            dest_dir = paths.get(target_subfolder, os.path.join(self.colab_mount_path, date_str, target_subfolder))
+            dest_path = os.path.join(dest_dir, filename)
+            if os.path.exists(local_path) and local_path != dest_path:
+                shutil.copy2(local_path, dest_path)
+            return dest_path
+
+        # Mode 2: Local Mock Storage
         if self.use_mock_storage:
             dest_dir = paths.get(target_subfolder, os.path.join(DEFAULT_LOCAL_STORAGE, date_str, target_subfolder))
             dest_path = os.path.join(dest_dir, filename)
@@ -234,7 +279,7 @@ class GDriveSyncAgent:
             self.disk_guard.check_and_clean_disk()
             return dest_path
 
-        # Upload via Google Drive API
+        # Mode 3: Upload via Google Drive API
         try:
             from googleapiclient.http import MediaFileUpload
             folder_id = paths.get(target_subfolder)
@@ -270,6 +315,16 @@ class GDriveSyncAgent:
         # Check disk space status
         self.disk_guard.check_and_clean_disk()
 
+        # Mode 1: Colab Direct Mount
+        if self.sync_mode == "COLAB_DIRECT_MOUNT" and self.colab_mount_path:
+            dest_dir = paths.get(target_subfolder, os.path.join(self.colab_mount_path, date_str, target_subfolder))
+            dest_path = os.path.join(dest_dir, reg_filename)
+            with open(dest_path, "w", encoding="utf-8") as f:
+                json.dump(registry_data, f, indent=2, ensure_ascii=False)
+            print(f"[GDrive Sync] [COLAB DIRECT MOUNT] Synced {len(registry_data.get('images', []))} images & {len(registry_data.get('videos', []))} videos to Google Drive: {dest_path}")
+            return dest_path
+
+        # Mode 2: Local Mock Storage
         if self.use_mock_storage:
             dest_dir = paths.get(target_subfolder, os.path.join(DEFAULT_LOCAL_STORAGE, date_str, target_subfolder))
             dest_path = os.path.join(dest_dir, reg_filename)
@@ -277,6 +332,7 @@ class GDriveSyncAgent:
                 json.dump(registry_data, f, indent=2, ensure_ascii=False)
             print(f"[GDrive Sync] Synced {len(registry_data.get('images', []))} images & {len(registry_data.get('videos', []))} videos to {dest_path}")
             return dest_path
+
 
         # Upload JSON registry string via API
         try:

@@ -240,8 +240,15 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         uploaded_records["02_manipulated_faceswap"].append({"filename": fs_name, "gdrive_id": res_fs})
         uploaded_records["03_manipulated_openweight"].append({"filename": ow_name, "gdrive_id": res_ow})
         
-    print(f"[Media Generator] Completed sample upload: {num_samples} images uploaded to each of 3 GDrive folders!")
+    if getattr(gdrive_agent, "sync_mode", None) == "COLAB_DIRECT_MOUNT":
+        print(f"[Media Generator] [SUCCESS] Completed: {num_samples} images written directly into Google Drive ({gdrive_agent.colab_mount_path})!")
+    elif not gdrive_agent.use_mock_storage:
+        print(f"[Media Generator] [SUCCESS] Completed: {num_samples} images uploaded to Google Drive via Service Account API!")
+    else:
+        print(f"[Media Generator] [LOCAL CACHE] Completed: {num_samples} images generated & saved locally to '{gdrive_agent.get_or_create_daily_folder(date_str).get('01_raw_originals')}'.")
+        print("  [Notice] Google Drive connection not active. To sync directly, run inside Google Colab after drive.mount('/content/drive') or configure GDRIVE_CREDENTIALS_JSON.")
     return uploaded_records
+
 
 if __name__ == "__main__":
     generate_and_upload_pentest_sample_images(num_samples=5)

@@ -33,14 +33,13 @@ from crawler.threads_crawler import crawl_threads_media
 
 DEFAULT_LOCAL_STORAGE = PROJECT_ROOT / "report_colab" / "gdrive_storage"
 
-def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet", base_folder_name="DeepFake_Pentest_Data"):
+def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet", base_folder_name="Thread_Data"):
     """
     Locates mounted Google Drive path on Colab.
-    Checks for user's shared folder shortcut or default MyDrive directory.
+    Checks for user's exact shared folder shortcut Thread_Data or default MyDrive directory.
     """
     colab_mydrive = Path("/content/drive/MyDrive")
     if not colab_mydrive.exists():
-        # Fallback for local testing or alternative mount point
         alt_mount = Path("/content/drive/Shareddrives")
         if alt_mount.exists():
             colab_mydrive = alt_mount
@@ -51,8 +50,9 @@ def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet
             print("    drive.mount('/content/drive')")
             return None
 
-    # Search for known shortcut names
+    # Search for known shortcut names, prioritizing user's exact folder Thread_Data
     candidate_names = [
+        "Thread_Data",
         "Deepfake Detection",
         "DeepFake_Pentest_Data",
         "Deepfake_Pentest_Data",
@@ -64,16 +64,17 @@ def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet
         cand = colab_mydrive / name
         if cand.exists() and cand.is_dir():
             target_path = cand
-            print(f"[Colab GDrive Sync] Found existing Drive folder shortcut: {target_path}")
+            print(f"[Colab GDrive Sync] [MATCH] Found existing Google Drive folder: {target_path}")
             break
 
     if not target_path:
-        # Create DeepFake_Pentest_Data directly in MyDrive
+        # Create Thread_Data directly in MyDrive
         target_path = colab_mydrive / base_folder_name
         target_path.mkdir(parents=True, exist_ok=True)
-        print(f"[Colab GDrive Sync] Initialized Drive folder: {target_path}")
+        print(f"[Colab GDrive Sync] [CREATED] Initialized Google Drive folder: {target_path}")
 
     return target_path
+
 
 def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     """Copies all local generated media from report_colab/gdrive_storage to mounted Google Drive."""
