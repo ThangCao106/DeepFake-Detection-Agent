@@ -284,14 +284,16 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         uploaded_records["02_manipulated_faceswap"].append({"filename": fs_name, "local_path": str(fs_path), "gdrive_id": res_fs})
         uploaded_records["03_manipulated_openweight"].append({"filename": ow_name, "local_path": str(ow_path), "gdrive_id": res_ow})
         
-    # Option C: Build and upload dataset_manifest.jsonl and dataset_summary.md
+    # Option C: Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl and dataset_summary.md
     print("[Dataset Builder] Packaging Threads-DFBench manifest & computing biometric indicators...")
-    manifest_file = build_benchmark_manifest(uploaded_records, temp_dir, date_str=date_str)
+    manifest_file, hard_manifest_file = build_benchmark_manifest(uploaded_records, temp_dir, date_str=date_str)
     summary_file = temp_dir / "dataset_summary.md"
     
-    # Upload manifest & summary directly to date root folder
+    # Upload manifest, hard samples manifest & summary directly to date root folder
     if manifest_file.exists():
         gdrive_agent.upload_file(str(manifest_file), date_str=date_str, target_subfolder="")
+    if hard_manifest_file.exists():
+        gdrive_agent.upload_file(str(hard_manifest_file), date_str=date_str, target_subfolder="")
     if summary_file.exists():
         gdrive_agent.upload_file(str(summary_file), date_str=date_str, target_subfolder="")
         

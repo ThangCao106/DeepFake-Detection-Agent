@@ -118,18 +118,30 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     print(f"  📂 Destination: {drive_daily_dir}")
     return copied_count
 
-def run_option_a_pipeline(num_images=1000, num_videos=1000, num_audios=1000, num_samples=20):
+def run_option_a_pipeline(
+    num_images=1000, 
+    num_videos=1000, 
+    num_audios=1000, 
+    num_samples=20,
+    do_train=False,
+    epochs=3,
+    batch_size=16,
+    lr=1e-5
+):
     """
-    Executes end-to-end Option A pipeline:
+    Executes end-to-end Option A & Option C pipeline:
       1. Generates inspection images and crawls media
       2. Direct-syncs to mounted Google Drive
+      3. (Optional) Runs Active Continual Training on GPU & saves checkpoints to Google Drive
     """
     date_str = time.strftime("%Y-%m-%d")
     timestamp_tag = time.strftime("%Y-%m-%d_%Hh")
     
     print("=" * 75)
-    print(f"🚀 Option A: Google Colab Direct Mount & GDrive Sync ({timestamp_tag})")
+    print(f"🚀 Option A + Option C: Google Colab GDrive Direct Sync & Continual Training ({timestamp_tag})")
     print(f"⚙️ Config: Images={num_images}, Videos={num_videos}, Audios={num_audios} | Visual Samples={num_samples}")
+    if do_train:
+        print(f"🧠 Active Continual Training: ENABLED (Epochs={epochs}, BatchSize={batch_size}, LR={lr})")
     print("=" * 75)
 
     # 1. Check mounted Google Drive
@@ -149,17 +161,41 @@ def run_option_a_pipeline(num_images=1000, num_videos=1000, num_audios=1000, num
         print(f"   {DEFAULT_LOCAL_STORAGE / date_str}")
         print("   To push to Google Drive, run this script inside Google Colab after drive.mount('/content/drive').")
 
+    # 4. Optional Active Continual Training (Option C)
+    if do_train:
+        print(f"\n[Step 3] Initiating Active Continual Fine-Tuning on GPU (Epochs={epochs}, LR={lr})...")
+        from colab_training.train_threads_continual import run_threads_continual_training
+        ckpt_dir = (drive_root / "checkpoints") if drive_root else None
+        res = run_threads_continual_training(
+            drive_root=str(drive_root) if drive_root else None,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            output_checkpoint_dir=ckpt_dir
+        )
+        print(f"\n🎯 Continual Training Complete: OOD Acc={res.get('test_acc')}%, AUC={res.get('auc')}")
+        if drive_root:
+            print(f"   📁 Checkpoint is safely stored in Google Drive: {drive_root / 'checkpoints'}")
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Option A Google Colab GDrive Direct Synchronizer")
+    parser = argparse.ArgumentParser(description="Option A + C Google Colab GDrive Sync & Continual Trainer")
     parser.add_argument("--images", type=int, default=1000, help="Number of human images to crawl")
     parser.add_argument("--videos", type=int, default=1000, help="Number of human videos to crawl")
     parser.add_argument("--audios", type=int, default=1000, help="Number of human audio clips to crawl")
     parser.add_argument("--samples", type=int, default=20, help="Number of sample inspection images per bucket")
+    parser.add_argument("--train", action="store_true", help="Trigger GPU active continual fine-tuning after sync")
+    parser.add_argument("--epochs", type=int, default=3, help="Number of continual fine-tuning epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for fine-tuning")
+    parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate for fine-tuning")
     args = parser.parse_args()
     
     run_option_a_pipeline(
         num_images=args.images,
         num_videos=args.videos,
         num_audios=args.audios,
-        num_samples=args.samples
+        num_samples=args.samples,
+        do_train=args.train,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr
     )

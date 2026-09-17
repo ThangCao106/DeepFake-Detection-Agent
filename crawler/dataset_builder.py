@@ -3,11 +3,13 @@ Dataset Builder & Benchmark Manifest Generator (Option C - Threads-DFBench).
 Computes academic biometrics features:
   1. 2D Haar Discrete Wavelet Transform (DWT) Skin Pore Energy Ratio: E_high (WAVIE standard)
   2. 2D Fast Fourier Transform (FFT) Annular Spectral Peak: Z_peak
+  3. Entropy Uncertainty H(P) and Hard Negative Mining Detection
 Assigns standardized research splits: Train (70%), Val (15%), Test OOD (15%).
-Generates dataset_manifest.jsonl and dataset_summary.md for PhD Thesis reproducibility.
+Generates dataset_manifest.jsonl, hard_samples_manifest.jsonl, and dataset_summary.md for PhD Thesis reproducibility.
 """
 import os
 import json
+import math
 import time
 import numpy as np
 from pathlib import Path
@@ -66,17 +68,43 @@ def compute_fft_zpeak(img: Image.Image) -> float:
     z_peak = float((np.max(S_hf) - mu) / (sigma + 1e-8))
     return round(float(np.clip(z_peak, 1.8, 6.5)), 4)
 
-def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str: str) -> Path:
+def calculate_entropy_uncertainty(ehigh: float, zpeak: float, true_label: int):
     """
-    Builds and writes dataset_manifest.jsonl and dataset_summary.md
-    for the newly generated/uploaded samples.
+    Computes Shannon Information Entropy H(P) and checks if sample is a hard negative:
+      H(P) = - [P_fake * log2(P_fake) + (1 - P_fake) * log2(1 - P_fake)]
+    Hard sample if:
+      - H(P) >= 0.70 (borderline decision uncertainty)
+      - OR predicted class != true_label
+    """
+    # Estimate p_fake based on biometric WAVIE & FFT
+    risk_pore = 1.0 - np.clip((ehigh - 0.18) / (0.42 - 0.18 + 1e-8), 0.0, 1.0)
+    risk_spectral = np.clip((zpeak - 2.8) / (5.0 - 2.8 + 1e-8), 0.0, 1.0)
+    p_fake = float(np.clip(0.55 * risk_pore + 0.45 * risk_spectral, 0.01, 0.99))
+    
+    # Entropy H(P) normalized in [0, 1]
+    entropy = - (p_fake * math.log2(p_fake) + (1.0 - p_fake) * math.log2(1.0 - p_fake))
+    
+    pred_label = 1 if p_fake >= 0.50 else 0
+    is_hard = bool(entropy >= 0.70 or pred_label != true_label)
+    
+    return round(p_fake, 4), round(entropy, 4), is_hard
+
+def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str: str) -> tuple[Path, Path]:
+    """
+    Builds and writes:
+      1. dataset_manifest.jsonl (complete benchmark records)
+      2. hard_samples_manifest.jsonl (active learning hard negative records)
+      3. dataset_summary.md (forensic metric report)
+    Returns: (manifest_path, hard_manifest_path)
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = output_dir / "dataset_manifest.jsonl"
+    hard_manifest_path = output_dir / "hard_samples_manifest.jsonl"
     summary_path = output_dir / "dataset_summary.md"
     
     all_entries = []
+    hard_entries = []
     bucket_counts = {"01_raw_originals": 0, "02_manipulated_faceswap": 0, "03_manipulated_openweight": 0}
     ehigh_stats = {"real": [], "faceswap": [], "openweight": []}
     zpeak_stats = {"real": [], "faceswap": [], "openweight": []}
@@ -104,6 +132,8 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
                 except Exception:
                     pass
                     
+            p_fake, entropy_h, is_hard = calculate_entropy_uncertainty(ehigh, zpeak, label)
+            
             # Assign Split: 70% Train, 15% Val, 15% Test OOD
             r_val = (idx_counter * 17) % 100
             if r_val < 70:
@@ -122,12 +152,19 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
                 "manipulation_type": manipulation_type,
                 "dwt_e_high": ehigh,
                 "fft_z_peak": zpeak,
+                "p_fake_estimated": p_fake,
+                "entropy_uncertainty_H": entropy_h,
+                "is_hard_sample": is_hard,
                 "split": split,
                 "source": "Meta_Threads_InTheWild",
+                "local_path": local_path,
                 "gdrive_file_id": gdrive_id,
                 "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
             }
             all_entries.append(entry)
+            if is_hard:
+                hard_entries.append(entry)
+                
             bucket_counts[bucket] += 1
             idx_counter += 1
             
@@ -146,6 +183,11 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
         for entry in all_entries:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
             
+    # Write hard_samples_manifest.jsonl (Active Learning Hard Negatives)
+    with open(hard_manifest_path, "w", encoding="utf-8") as f:
+        for entry in hard_entries:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            
     # Write dataset_summary.md
     real_ehigh_mean = float(np.mean(ehigh_stats["real"])) if ehigh_stats["real"] else 0.38
     ow_ehigh_mean = float(np.mean(ehigh_stats["openweight"])) if ehigh_stats["openweight"] else 0.18
@@ -153,7 +195,7 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     ow_zpeak_mean = float(np.mean(zpeak_stats["openweight"])) if zpeak_stats["openweight"] else 4.65
     
     summary_md = f"""# Threads-DFBench: In-The-Wild Human Facial DeepFake Benchmark
-**Date**: {date_str} | **Total Samples**: {len(all_entries)} | **Modality**: High-Resolution Face RoI (512x512)
+**Date**: {date_str} | **Total Samples**: {len(all_entries)} | **Hard Samples (H(P) >= 0.70)**: {len(hard_entries)} ({len(hard_entries)/len(all_entries)*100 if all_entries else 0:.1f}%)
 
 ## 1. Phân Bố Tập Dữ Liệu
 | Nhóm Dữ Liệu | Thư Mục GDrive | Số Lượng Mẫu | Tỷ Lệ | Nhãn Huấn Luyện |
@@ -162,13 +204,14 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
 | **Biến Thể FaceSwap** | `02_manipulated_faceswap` | {bucket_counts['02_manipulated_faceswap']} | {bucket_counts['02_manipulated_faceswap']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
 | **Biến Thể Diffusion** | `03_manipulated_openweight` | {bucket_counts['03_manipulated_openweight']} | {bucket_counts['03_manipulated_openweight']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
 
-## 2. Đặc Trưng Toán Học Sinh Trắc Học (Biometric & Spectral Verification)
+## 2. Đặc Trưng Sinh Trắc Học & Độ Bất Định (Biometrics & Active Learning)
 - **Tỷ lệ Năng lượng Sóng Nhỏ 2D Haar DWT ($E_{{high}}$)**:
   - Ảnh Gốc Người Thật (`01_raw_originals`): $\\mu(E_{{high}}) = {real_ehigh_mean:.4f}$ (Bảo toàn chi tiết biểu bì/lỗ chân lông tự nhiên $\\ge 0.30$).
   - Ảnh Sinh Bởi AI (`03_manipulated_openweight`): $\\mu(E_{{high}}) = {ow_ehigh_mean:.4f}$ (Bị hiện tượng làm mịn da nhân tạo $< 0.22$).
 - **Độ Bất Thường Đỉnh Phổ 2D FFT ($Z_{{peak}}$)**:
   - Ảnh Gốc Người Thật: $\\mu(Z_{{peak}}) = {real_zpeak_mean:.4f}$ (Phổ dốc tự nhiên $< 3.40$).
   - Ảnh Sinh Bởi AI: $\\mu(Z_{{peak}}) = {ow_zpeak_mean:.4f}$ (Xuất hiện gai năng lượng sắc nhọn $> 4.20$).
+- **Tập Mẫu Khó (Hard Negatives)**: Đã trích xuất **{len(hard_entries)}** mẫu biên vào `hard_samples_manifest.jsonl` phục vụ Huấn luyện Tăng cường Focal Loss trên Google Colab.
 
 ## 3. Phân Chia Huấn Luyện (Data Splits)
 - **Train (70%)**: Dùng cho Fine-tuning Dual-Branch ViT & WAVIE.
@@ -178,4 +221,4 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     with open(summary_path, "w", encoding="utf-8") as f:
         f.write(summary_md)
         
-    return manifest_path
+    return manifest_path, hard_manifest_path
