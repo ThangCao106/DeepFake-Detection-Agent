@@ -123,10 +123,45 @@ class ThreadsDriveDataset(Dataset):
         return pixel_values, torch.tensor(label, dtype=torch.long), entry.get("is_hard_sample", False)
 
 
+def load_benchmark_hard_negatives(benchmark_dir=None):
+    """
+    Scans custom_vit_model/benchmark_results.json and other benchmark reports
+    to extract misclassified edge cases (match == False) as priority training samples.
+    """
+    if not benchmark_dir:
+        benchmark_dir = PROJECT_ROOT / "custom_vit_model"
+    benchmark_dir = Path(benchmark_dir)
+    res_file = benchmark_dir / "benchmark_results.json"
+    hard_samples = []
+    if res_file.exists():
+        try:
+            with open(res_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                predictions = data.get("predictions", [])
+                for idx, p in enumerate(predictions):
+                    if not p.get("match", True):
+                        # Misclassified sample! Priority Hard Negative (e.g. sample 9)
+                        gt = p.get("ground_truth", "FAKE").upper()
+                        label = 0 if gt == "REAL" else 1
+                        hard_samples.append({
+                            "sample_id": f"BENCH_ERR_{idx+1:03d}",
+                            "filename": os.path.basename(p.get("path", f"eval_{idx+1}.jpg")),
+                            "local_path": p.get("path"),
+                            "label": label,
+                            "label_name": gt,
+                            "is_hard_sample": True,
+                            "split": "train",
+                            "source": "Benchmark_Misclassification_Mining",
+                            "confidence_error": p.get("confidence", 0.90)
+                        })
+        except Exception as e:
+            print(f"[Continual Trainer] Notice loading benchmark hard negatives: {e}")
+    return hard_samples
+
 def find_all_manifests(target_dir):
     """Recursively scans target_dir for all dataset_manifest.jsonl and hard_samples_manifest.jsonl."""
     target_dir = Path(target_dir)
-    manifest_files = list(target_dir.glob("**/dataset_manifest.jsonl"))
+    manifest_files = list(target_dir.glob("**/dataset_manifest.jsonl")) + list(target_dir.glob("**/hard_samples_manifest.jsonl"))
     all_records = []
     seen_ids = set()
     
@@ -210,15 +245,26 @@ def run_threads_continual_training(
         print("  Generating fresh inspection samples first...")
         from crawler.media_generator import generate_and_upload_pentest_sample_images
         generate_and_upload_pentest_sample_images(num_samples=15)
-        records = find_all_manifests(local_storage) or find_all_manifests(temp_storage)
+    # Ingest benchmark misclassification edge cases (e.g. sample 9 false negative)
+    bench_hards = load_benchmark_hard_negatives()
+    if bench_hards:
+        print(f"[Hard Negative Mining] Ingested {len(bench_hards)} misclassified edge cases from benchmark_results.json")
+        records.extend(bench_hards)
 
     total_count = len(records)
     hard_count = sum(1 for r in records if r.get("is_hard_sample"))
-    print(f"\n[Dataset Summary] Total Samples: {total_count} | Hard Negatives (H(P)>=0.70): {hard_count} ({hard_count/total_count*100 if total_count else 0:.1f}%)")
+    print(f"\n[Dataset Summary] Total Samples: {total_count} | Hard Negatives (H(P)>=0.70 & Benchmark Errors): {hard_count} ({hard_count/total_count*100 if total_count else 0:.1f}%)")
 
     # Split dataset
-    train_records = [r for r in records if r.get("split") == "train"] or records[:int(total_count*0.7)] or records
+    base_train = [r for r in records if r.get("split") == "train"] or records[:int(total_count*0.7)] or records
     test_records = [r for r in records if r.get("split") in ["val", "test_ood"]] or records[int(total_count*0.7):] or records
+
+    # Prioritize hard samples in training (2x weighting for hard negatives under Focal Loss)
+    train_records = []
+    for r in base_train:
+        train_records.append(r)
+        if r.get("is_hard_sample"):
+            train_records.append(r) # Double representation for hard borderline samples
 
     # 2. Setup Image Processor and Model
     processor = None

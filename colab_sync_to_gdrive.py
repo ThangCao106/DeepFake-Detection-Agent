@@ -177,6 +177,64 @@ def run_option_a_pipeline(
         if drive_root:
             print(f"   📁 Checkpoint is safely stored in Google Drive: {drive_root / 'checkpoints'}")
 
+def parse_duration_seconds(dur_str: str) -> float:
+    """Parses duration string like '4h', '30m', '15s', or raw numeric hours into seconds."""
+    if not dur_str:
+        return 14400.0  # Default 4 hours
+    dur_str = str(dur_str).strip().lower()
+    if dur_str.endswith("h"):
+        return float(dur_str[:-1]) * 3600.0
+    elif dur_str.endswith("m"):
+        return float(dur_str[:-1]) * 60.0
+    elif dur_str.endswith("s"):
+        return float(dur_str[:-1])
+    else:
+        try:
+            return float(dur_str) * 3600.0
+        except ValueError:
+            return 14400.0
+
+def run_continuous_loop(args):
+    """Executes continuous 4h/scheduled daemon loop directly on Google Colab."""
+    interval_sec = parse_duration_seconds(args.loop)
+    loop_idx = 1
+    print("\n" + "=" * 75)
+    print(f"🔄 Starting Google Colab Continuous Daemon Loop (Interval: {args.loop} = {interval_sec}s)")
+    print(f"🛡️ Anti-Idle Keep-Alive: {'ENABLED' if args.keep_alive else 'DISABLED'}")
+    print("=" * 75)
+    
+    while True:
+        print(f"\n{'#' * 75}")
+        print(f"▶️ [Loop #{loop_idx}] Running Pentest Sync & Active Continual Training at {time.strftime('%Y-%m-%d %H:%M:%SZ')}...")
+        print(f"{'#' * 75}")
+        
+        run_option_a_pipeline(
+            num_images=args.images,
+            num_videos=args.videos,
+            num_audios=args.audios,
+            num_samples=args.samples,
+            do_train=args.train,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr
+        )
+        
+        if args.max_loops and loop_idx >= args.max_loops:
+            print(f"\n[Colab Loop] Reached max-loops limit ({args.max_loops}). Loop cleanly exited.")
+            break
+            
+        print(f"\n⏳ [Cycle Complete] Sleeping for {args.loop} ({interval_sec}s) until next run...")
+        countdown = interval_sec
+        tick = min(60, countdown) if countdown > 10 else 1
+        while countdown > 0:
+            sleep_chunk = min(tick, countdown)
+            time.sleep(sleep_chunk)
+            countdown -= sleep_chunk
+            if args.keep_alive and countdown > 0 and (countdown % 300 == 0 or countdown <= 10):
+                print(f"  💓 [Keep-Alive Heartbeat] {time.strftime('%H:%M:%S')} - Next cycle in {int(countdown)}s...")
+                
+        loop_idx += 1
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Option A + C Google Colab GDrive Sync & Continual Trainer")
     parser.add_argument("--images", type=int, default=1000, help="Number of human images to crawl")
@@ -187,15 +245,21 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=3, help="Number of continual fine-tuning epochs")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for fine-tuning")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate for fine-tuning")
+    parser.add_argument("--loop", type=str, default=None, help="Run recurring loop interval (e.g. 4h, 1h, 30m)")
+    parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
+    parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
     args = parser.parse_args()
     
-    run_option_a_pipeline(
-        num_images=args.images,
-        num_videos=args.videos,
-        num_audios=args.audios,
-        num_samples=args.samples,
-        do_train=args.train,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr
-    )
+    if args.loop:
+        run_continuous_loop(args)
+    else:
+        run_option_a_pipeline(
+            num_images=args.images,
+            num_videos=args.videos,
+            num_audios=args.audios,
+            num_samples=args.samples,
+            do_train=args.train,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr
+        )
