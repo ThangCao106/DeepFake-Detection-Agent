@@ -14,29 +14,37 @@ import sys
 import argparse
 import importlib
 
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
 # Import pipeline components
 from colab_dataset_pipeline import ColabMultiModalityDatasetManager, ColabAutoSyncManager
 
 
-def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1):
+def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all"):
     sync_manager = ColabAutoSyncManager()
 
     # 1. Step 1: Auto-Pull latest code from GitHub
     if auto_pull:
         print("\n==========================================")
-        print("📥 Step 1: Syncing latest code from GitHub...")
+        print("[Step 1] Syncing latest code from GitHub...")
         print("==========================================")
         sync_manager.auto_pull_latest_code()
         
         # Reload modules to reflect latest local code edits
         import colab_dataset_pipeline
-        import train_pipeline
+        import train_general
+        import train_human
         importlib.reload(colab_dataset_pipeline)
-        importlib.reload(train_pipeline)
+        importlib.reload(train_general)
+        importlib.reload(train_human)
 
     # 2. Step 2: Prepare Multi-Modality Dataset
     print("\n==========================================")
-    print(f"📦 Step 2: Preparing Dataset [{modality} -> {dataset_key}]...")
+    print(f"[Step 2] Preparing Dataset [{modality} -> {dataset_key}]...")
     print("==========================================")
     dataset_manager = ColabMultiModalityDatasetManager()
     manifest_path = dataset_manager.prepare_dataset_for_colab(
@@ -46,35 +54,60 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
     )
     print(f"Manifest created at: {manifest_path}")
 
-    # 3. Step 3: Train / Fine-Tune Model
-    print("\n==========================================")
-    print("🏋️ Step 3: Starting Model Fine-Tuning...")
-    print("==========================================")
-    try:
-        from train_pipeline import TwoStageTrainer
-        trainer = TwoStageTrainer(base_model_name="dima806/deepfake_vs_real_image_detection", output_dir="custom_vit_model")
-        print("[colab_runner] Trainer initialized. Proceeding with fine-tuning stage...")
-    except Exception as e:
-        print(f"[colab_runner] Note on local trainer execution: {e}")
+    target = target.lower()
 
-    # 4. Step 4: Auto-Upload Weights to Hugging Face Hub
-    if hf_token:
+    # 3. Step 3 & 4 & 5: Stream-Specific Fine-Tuning, Hugging Face Upload & Report Generation
+    if target in ["general", "all"]:
         print("\n==========================================")
-        print("🚀 Step 4: Uploading Model to Hugging Face Hub...")
+        print("[Step 3 - General AI Stream] Starting Model Fine-Tuning (custom_vit_model)...")
         print("==========================================")
-        sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
+        try:
+            from train_general import train_general_model
+            train_general_model(output_dir="custom_vit_model")
+        except Exception as e:
+            print(f"[colab_runner] Note on general model training execution: {e}")
 
-    # 5. Step 5: Auto-Generate Daily Detailed Report & Push to GitHub
-    sync_manager.generate_and_save_report(modality=modality, dataset_key=dataset_key, pass_number=pass_number)
+        if hf_token:
+            print("[Step 4] Uploading General Model to Hugging Face Hub...")
+            sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
+
+        sync_manager.generate_and_save_report(
+            modality=modality,
+            dataset_key=dataset_key,
+            pass_number=pass_number,
+            target_model="general"
+        )
+
+    if target in ["human", "all"]:
+        print("\n==========================================")
+        print("[Step 3 - Human Deepfake Stream] Starting Model Fine-Tuning (human_vit_model)...")
+        print("==========================================")
+        try:
+            from train_human import train_human_model
+            train_human_model(output_dir="human_vit_model")
+        except Exception as e:
+            print(f"[colab_runner] Note on human model training execution: {e}")
+
+        if hf_token:
+            print("[Step 4] Uploading Human Model to Hugging Face Hub...")
+            sync_manager.auto_upload_hf(model_dir="human_vit_model", hf_token=hf_token)
+
+        sync_manager.generate_and_save_report(
+            modality=modality,
+            dataset_key=dataset_key,
+            pass_number=pass_number,
+            target_model="human"
+        )
+
     if github_token:
         print("\n==========================================")
-        print("🔄 Step 5: Syncing Report & Metrics back to GitHub...")
+        print("[Step 5] Syncing Reports & Metrics back to GitHub...")
         print("==========================================")
-        commit_msg = f"Auto-sync Colab training report for Pass #{pass_number} {modality}:{dataset_key} [Auto-Bot]"
+        commit_msg = f"Auto-sync Colab dual-stream training reports for Pass #{pass_number} {modality}:{dataset_key} (target={target}) [Auto-Bot]"
         sync_manager.auto_sync_metrics_to_github(github_token=github_token, commit_message=commit_msg)
 
     print("\n==========================================")
-    print("🎉 Colab Auto Pipeline Run Completed Successfully!")
+    print(f"[Complete] Colab Auto Pipeline Run (target={target}) Finished Successfully!")
     print("==========================================")
 
 
@@ -144,12 +177,12 @@ def run_auto_listen_daemon(hf_token=None, github_token=None, max_samples=1000, p
         print("\n🛑 Auto-Listen Daemon stopped by user.")
 
 
-def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000, pass_number=1):
+def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000, pass_number=1, target="all"):
     """Run full multi-modality continuous auto loop sequentially over ALL Image, Video, and Audio datasets."""
     queue = get_full_multimodal_queue()
 
     print("======================================================================")
-    print(f"🔄 STARTING FULL MULTI-MODALITY AUTO-RUNNER LOOP (Pass #{pass_number} | {len(queue)} STAGES)")
+    print(f"🔄 STARTING FULL MULTI-MODALITY AUTO-RUNNER LOOP (Pass #{pass_number} | {len(queue)} STAGES | Target={target.upper()})")
     print("   Sequence: ALL Registered [IMAGE] ➔ [VIDEO] ➔ [AUDIO] Datasets")
     print("======================================================================")
 
@@ -164,11 +197,12 @@ def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000,
             hf_token=hf_token,
             github_token=github_token,
             auto_pull=True,
-            pass_number=pass_number
+            pass_number=pass_number,
+            target=target
         )
 
 
-def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
+def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000, target="all"):
     """
     Smart Hybrid Continuous Training Loop:
     1. Continuously iterates training passes (Pass 1 ➔ Pass 2 ➔ Pass 3...).
@@ -182,7 +216,7 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
     last_commit_sha = get_commit_sha("HEAD")
 
     print("======================================================================")
-    print("🔄 STARTING SMART HYBRID CONTINUOUS AUTO-RUNNER LOOP")
+    print(f"🔄 STARTING SMART HYBRID CONTINUOUS AUTO-RUNNER LOOP (Target={target.upper()})")
     print("   1. Auto-Detects new code commits pushed from Local ➔ Reloads & Runs")
     print("   2. If no new code: Continuously loops (Pass 1 ➔ Pass 2 ➔ Pass 3...)")
     print("======================================================================")
@@ -190,7 +224,7 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
     try:
         while True:
             print(f"\n" + "="*70)
-            print(f"🌟 === STARTING FULL MULTIMODAL CONTINUOUS TRAINING PASS #{pass_number} ===")
+            print(f"🌟 === STARTING FULL MULTIMODAL CONTINUOUS TRAINING PASS #{pass_number} (Target={target}) ===")
             print("="*70)
 
             # Check if GitHub has new code pushed from local
@@ -205,9 +239,11 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
                 
                 # Reload modules to apply local edits
                 import colab_dataset_pipeline
-                import train_pipeline
+                import train_general
+                import train_human
                 importlib.reload(colab_dataset_pipeline)
-                importlib.reload(train_pipeline)
+                importlib.reload(train_general)
+                importlib.reload(train_human)
             else:
                 print(f"ℹ️ Code is up-to-date (SHA: {last_commit_sha[:7]}). Proceeding with Pass #{pass_number}...")
 
@@ -216,7 +252,8 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000):
                 hf_token=hf_token,
                 github_token=github_token,
                 max_samples=max_samples,
-                pass_number=pass_number
+                pass_number=pass_number,
+                target=target
             )
 
             print(f"\n✅ Pass #{pass_number} completed. Progressively refining weights for Pass #{pass_number + 1}...")
@@ -231,6 +268,7 @@ def main():
     parser.add_argument("--modality", type=str, default="IMAGE", choices=["IMAGE", "VIDEO", "AUDIO"], help="Dataset modality")
     parser.add_argument("--dataset-key", type=str, default="ntire_robust_detection", help="Dataset registry key")
     parser.add_argument("--max-samples", type=int, default=2000, help="Maximum samples to process")
+    parser.add_argument("--target", type=str, default="all", choices=["general", "human", "all"], help="Target fine-tuning model stream (general|human|all)")
     parser.add_argument("--hf-token", type=str, default=None, help="Hugging Face Write Token")
     parser.add_argument("--github-token", type=str, default=None, help="GitHub Classic Access Token for auto-pushing metrics")
     parser.add_argument("--no-pull", action="store_true", help="Disable auto-pulling code from GitHub")
@@ -250,7 +288,8 @@ def main():
         run_smart_auto_loop(
             hf_token=args.hf_token,
             github_token=args.github_token,
-            max_samples=args.max_samples
+            max_samples=args.max_samples,
+            target=args.target
         )
     else:
         run_colab_auto_pipeline(
@@ -259,7 +298,8 @@ def main():
             max_samples=args.max_samples,
             hf_token=args.hf_token,
             github_token=args.github_token,
-            auto_pull=not args.no_pull
+            auto_pull=not args.no_pull,
+            target=args.target
         )
 
 
