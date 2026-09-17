@@ -137,14 +137,16 @@ class GDriveSyncAgent:
                     self.service = build('drive', 'v3', credentials=creds)
                     self.use_mock_storage = False
                     bot_email = creds_dict.get("client_email", "service_account_bot")
-                    print(f"[GDrive Sync] [AUTH] Connected to Google Drive API via Service Account: {bot_email}")
+                    print(f"[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via Service Account: {bot_email}")
                     if self.target_folder_id:
                         print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
                     else:
                         print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
                     return
             except Exception as e:
-                print(f"[GDrive Sync] Warning: Google Drive API init failed ({e}). Falling back to local storage structure.")
+                print(f"[GDrive Sync] [AUTH ERROR] Google Drive API init failed ({e}). Falling back to local storage structure.")
+        else:
+            print("[GDrive Sync] [NOTICE] No GDRIVE_CREDENTIALS_JSON found. Falling back to local storage structure.")
         
         print(f"[GDrive Sync] Active Mode: Structured Storage at {DEFAULT_LOCAL_STORAGE}")
 
@@ -184,7 +186,7 @@ class GDriveSyncAgent:
             return paths
 
     def _find_or_create_drive_folder(self, folder_name, parent_id=None):
-        """Helper to query or create folder on Google Drive via API v3."""
+        """Helper to query or create folder on Google Drive via API v3 with Shared Drive support."""
         if not self.service:
             return None
         
@@ -192,7 +194,12 @@ class GDriveSyncAgent:
         if parent_id:
             query += f" and '{parent_id}' in parents"
             
-        results = self.service.files().list(q=query, fields="files(id, name)").execute()
+        results = self.service.files().list(
+            q=query, 
+            fields="files(id, name)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True
+        ).execute()
         files = results.get('files', [])
         
         if files:
@@ -206,7 +213,11 @@ class GDriveSyncAgent:
         if parent_id:
             metadata['parents'] = [parent_id]
             
-        folder = self.service.files().create(body=metadata, fields='id').execute()
+        folder = self.service.files().create(
+            body=metadata, 
+            fields='id',
+            supportsAllDrives=True
+        ).execute()
         return folder.get('id')
 
     def upload_file(self, local_path, date_str=None, target_subfolder="01_raw_originals"):
@@ -233,7 +244,10 @@ class GDriveSyncAgent:
             }
             media = MediaFileUpload(local_path, resumable=True)
             uploaded_file = self.service.files().create(
-                body=file_metadata, media_body=media, fields='id'
+                body=file_metadata, 
+                media_body=media, 
+                fields='id',
+                supportsAllDrives=True
             ).execute()
             print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {uploaded_file.get('id')})")
             
@@ -246,6 +260,7 @@ class GDriveSyncAgent:
         except Exception as e:
             print(f"[GDrive Sync] Failed to upload {filename} via API: {e}")
             return None
+
 
     def sync_batch_registry(self, registry_data, date_str=None, target_subfolder="01_raw_originals"):
         """Syncs a metadata registry file (JSON) to Google Drive and runs Disk Guard checks."""
@@ -313,7 +328,12 @@ class GDriveSyncAgent:
             
             # Check if file exists in auth folder
             query = f"name = '{filename}' and '{auth_folder}' in parents and trashed = false"
-            results = self.service.files().list(q=query, fields="files(id, name)").execute()
+            results = self.service.files().list(
+                q=query, 
+                fields="files(id, name)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
             existing_files = results.get('files', [])
 
             content_bytes = json.dumps(auth_data, indent=2, ensure_ascii=False).encode('utf-8')
@@ -321,12 +341,21 @@ class GDriveSyncAgent:
 
             if existing_files:
                 file_id = existing_files[0]['id']
-                updated = self.service.files().update(fileId=file_id, media_body=media).execute()
+                updated = self.service.files().update(
+                    fileId=file_id, 
+                    media_body=media,
+                    supportsAllDrives=True
+                ).execute()
                 print(f"[GDrive Sync] [ROLLING-AUTH] Updated existing {filename} in GDrive auth/ (ID: {file_id})")
                 return file_id
             else:
                 file_metadata = {'name': filename, 'parents': [auth_folder]}
-                created = self.service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                created = self.service.files().create(
+                    body=file_metadata, 
+                    media_body=media, 
+                    fields='id',
+                    supportsAllDrives=True
+                ).execute()
                 print(f"[GDrive Sync] [ROLLING-AUTH] Created {filename} in GDrive auth/ (ID: {created.get('id')})")
                 return created.get('id')
         except Exception as e:
@@ -355,12 +384,18 @@ class GDriveSyncAgent:
             
             auth_folder = self.get_or_create_auth_folder()
             query = f"name = '{filename}' and '{auth_folder}' in parents and trashed = false"
-            results = self.service.files().list(q=query, fields="files(id, name)").execute()
+            results = self.service.files().list(
+                q=query, 
+                fields="files(id, name)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
             files = results.get('files', [])
 
             if files:
                 file_id = files[0]['id']
-                request = self.service.files().get_media(fileId=file_id)
+                request = self.service.files().get_media(fileId=file_id, supportsAllDrives=True)
+
                 fh = io.BytesIO()
                 downloader = MediaIoBaseDownload(fh, request)
                 done = False
