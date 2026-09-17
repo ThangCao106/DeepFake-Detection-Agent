@@ -277,15 +277,57 @@ $$P_i = \text{softmax}\left(\frac{z_i}{T}\right) = \frac{\exp(z_i / T)}{\sum_{j=
 
 Where $z_i$ represents raw logits from the Vision Transformer / EfficientNet backbone and $T > 0$ is the temperature parameter tuned on GPU.
 
-### 5.3. Google Colab GPU Fine-Tuning Bridge (`colab_auto_runner.py`)
-Run the automated training runner on Google Colab (T4/A100 GPU):
+### 5.3. Threads-DFBench: Vietnamese In-The-Wild Facial Benchmark Dataset
+To benchmark and adapt the detector against emerging in-the-wild social threats, the system features an autonomous crawler and academic benchmark generator (**Threads-DFBench**):
+- **Target Platform**: Meta Threads with Vietnamese locale targeting (`Accept-Language: vi-VN`) and localized query topics (`chan_dung_vietnam`, `anh_the_cccd`, `selfie_vietnam`, `duong_pho_vietnam`, `kinh_can_khau_trang`).
+- **Paired Counterfactual Architecture**: Generates triplets on the identical human identity:
+  1. `01_raw_originals`: Authentic human photographic portrait ($E_{high} \ge 0.30$).
+  2. `02_manipulated_faceswap`: Counterfactual identity swap with boundary seam blending.
+  3. `03_manipulated_openweight`: Latent diffusion synthesis with pore over-smoothing ($E_{high} < 0.22$) and high-frequency latent checkerboard spikes ($Z_{peak} > 4.20$).
 
-```bash
-# Auto-downloads base weights, fine-tunes backbone, and posts calibration back to server
-python colab_auto_runner.py --server_url https://detection.dtpsoft.vn
+#### 5-Category Vietnamese Facial Taxonomy
+| Category Key | Vietnamese Facial Taxonomy | Ratio | Academic Focus & Stress Testing |
+| :--- | :--- | :--- | :--- |
+| `vn_id_official` | Official ID / CCCD / Passport | 20% | Frontal $0^\circ$ studio lighting; assesses facial boundary blending artifacts. |
+| `vn_selfie_lifestyle` | Casual Lifestyle & Cafe Selfies | 20% | Natural indoor lighting & angles; tests robustness against ambient illumination. |
+| `vn_street_outdoor` | Street & Outdoor Portraits | 20% | Vietnamese daylight & outdoor street background; assesses optical frequency slopes. |
+| `vn_occlusion_glasses_mask` | Occlusions (Glasses, Masks, Helmets) | 20% | Prescription glasses, medical face masks, motorbike helmets; challenges facial landmarks. |
+| `vn_mature_aging` | Mature & Senior Aging | 20% | Natural smile lines & biological skin folds; prevents model false alarms on wrinkles. |
+
+### 5.4. Active Learning & Continual Fine-Tuning with Focal Loss
+To actively harden the backbone against subtle false negatives (such as sample 9 in OOD evaluations), the system implements an active learning loop:
+1. **Uncertainty Mining**: Samples with high Shannon Information Entropy $H(P) \ge 0.70$ or classifier disagreement are routed to `hard_samples_manifest.jsonl`:
+   $$H(P) = - \left[ P_{fake} \log_2(P_{fake}) + (1 - P_{fake}) \log_2(1 - P_{fake}) \right]$$
+2. **Focal Loss Objective**: Down-weights easily classified background samples and forces gradient updates on borderline hard negatives:
+   $$\mathcal{L}_{focal}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t) \quad (\gamma = 2.0, \; \alpha = 0.25)$$
+3. **Automated Weight Checkpointing**: Continuously trains on Google Colab and persists evolved weights directly to Google Drive (`checkpoints/model_continual_latest.pt`).
+
+### 5.5. Google Colab 1-Click Autonomous Daemon (`colab_sync_to_gdrive.py`)
+Run the all-in-one data ingestion, counterfactual generation, and continual training daemon on Google Colab:
+
+```python
+# 1. Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+# 2. Clone/Pull Repository & Install Dependencies
+!git clone https://github.com/ThangCao106/DeepFake-Detection-Agent.git || (cd DeepFake-Detection-Agent && git pull origin main)
+%cd DeepFake-Detection-Agent
+!pip install -r requirements.txt transformers timm
+
+# 3. 1-Click Recurring Execution (4h Loop + Continual Fine-Tuning + Anti-Idle Keep-Alive)
+!python colab_sync_to_gdrive.py \
+    --samples 25 \
+    --images 100 \
+    --videos 50 \
+    --audios 50 \
+    --train \
+    --epochs 3 \
+    --loop 4h \
+    --keep-alive
 ```
 
-### 5.4. Zero-Downtime Hot-Reloading
+### 5.6. Zero-Downtime Hot-Reloading
 When Colab completes fine-tuning, it sends a payload to `POST /api/colab/callback`:
 1. Server receives updated weights and saves `temperature_scaling_T` and `optimal_threshold_tau` to `custom_vit_model/calibration_params.json`.
 2. Instantly reloads the `DeepfakeDetector` instance in memory without interrupting active client requests or restarting the server.

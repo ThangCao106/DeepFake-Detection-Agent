@@ -278,15 +278,57 @@ $$P_i = \text{softmax}\left(\frac{z_i}{T}\right) = \frac{\exp(z_i / T)}{\sum_{j=
 
 Trong đó $z_i$ là giá trị Logits đầu ra của mô hình ViT/EfficientNet và $T > 0$ là tham số nhiệt độ hiệu chỉnh từ Colab.
 
-### 5.3. Động cơ Colab GPU Fine-Tuning Bridge (`colab_auto_runner.py`)
-Người dùng hoặc hệ thống có thể chạy script `colab_auto_runner.py` trên môi trường Google Colab (GPU T4/A100):
+### 5.3. Threads-DFBench: Tập Dữ liệu Đánh giá Chuẩn Thực chiến Khuôn mặt Người Việt
+Để đánh giá toàn diện và giúp mô hình thích ứng liên tục trước các biến thể Deepfake trên mạng xã hội, hệ thống tích hợp bộ sinh dữ liệu và benchmark học thuật (**Threads-DFBench**):
+- **Nền tảng Thu thập**: Meta Threads với cấu hình ngôn ngữ bản địa (`Accept-Language: vi-VN`) cùng hệ thống hashtag tiếng Việt (`chan_dung_vietnam`, `anh_the_cccd`, `selfie_vietnam`, `duong_pho_vietnam`, `kinh_can_khau_trang`).
+- **Mô hình Đối chứng Cặp (Paired Counterfactual)**: Tạo 3 tệp dữ liệu trên cùng một nhân vật khuôn mặt:
+  1. `01_raw_originals`: Ảnh chân dung thật 100% của người Việt Nam / Đông Á ($E_{high} \ge 0.30$).
+  2. `02_manipulated_faceswap`: Biến thể ghép mặt với đường biên làm mờ vi mô (Poisson blending seam).
+  3. `03_manipulated_openweight`: Biến thể sinh bởi mô hình khuếch tán làm mịn lỗ chân lông ($E_{high} < 0.22$) và xuất hiện gai phổ ẩn ($Z_{peak} > 4.20$).
 
-```bash
-# Động cơ tự động tải trọng số, fine-tune và đồng bộ về Server
-python colab_auto_runner.py --server_url https://detection.dtpsoft.vn
+#### Bảng Phân loại 5 Nhóm Khuôn mặt Người Việt (Vietnamese Facial Taxonomy)
+| Mã Phân loại | Nhóm Khuôn mặt Người Việt | Tỷ lệ | Mục tiêu Kiểm thử Thực nghiệm |
+| :--- | :--- | :--- | :--- |
+| `vn_id_official` | Ảnh thẻ / CCCD / Hộ chiếu | 20% | Chụp chính diện $0^\circ$, ánh sáng studio; kiểm tra đường biên ghép mặt. |
+| `vn_selfie_lifestyle` | Selfie đời thường, quán cafe | 20% | Ánh sáng vàng/trong nhà, góc nghiêng tự nhiên; kiểm tra độ chịu nhiễu ánh sáng. |
+| `vn_street_outdoor` | Đường phố & dã ngoại | 20% | Ánh sáng ngoài trời, bối cảnh giao thông Việt Nam; kiểm tra độ dốc phổ quang học. |
+| `vn_occlusion_glasses_mask` | Vật cản (Kính cận, khẩu trang) | 20% | Kính cận phản quang, khẩu trang y tế/vải, mũ bảo hiểm; thách thức mốc tọa độ Landmark. |
+| `vn_mature_aging` | Trung niên & nếp nhăn lão hóa | 20% | Nếp nhăn khóe mắt, rãnh cười sinh học; tránh hiện tượng cảnh báo nhầm (False Alarm). |
+
+### 5.4. Học Chủ động & Huấn luyện Tăng cường Liên tục (Focal Loss Continual Fine-Tuning)
+Nhằm giải quyết triệt để các ca âm tính giả tinh vi (như mẫu sample 9 trong báo cáo benchmark OOD):
+1. **Khai thác Mẫu Biên Khó (Hard Negative Mining)**: Tự động lọc các mẫu có độ bất định Shannon Entropy $H(P) \ge 0.70$ hoặc mô hình phân loại sai vào `hard_samples_manifest.jsonl`:
+   $$H(P) = - \left[ P_{fake} \log_2(P_{fake}) + (1 - P_{fake}) \log_2(1 - P_{fake}) \right]$$
+2. **Hàm Mất mát Focal Loss**: Tập trung trọng số gradient vào các mẫu biên khó, hạ thấp ảnh hưởng của các mẫu phân loại quá dễ dàng:
+   $$\mathcal{L}_{focal}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t) \quad (\gamma = 2.0, \; \alpha = 0.25)$$
+3. **Lưu Trữ Checkpoint Tự Động**: Huấn luyện trực tiếp trên Google Colab và tự động lưu phiên bản trọng số mới về Google Drive (`checkpoints/model_continual_latest.pt`).
+
+### 5.5. Lệnh Thực thi 1-Click Tự động trên Google Colab (`colab_sync_to_gdrive.py`)
+Khởi chạy toàn bộ chu trình cào dữ liệu, đóng gói benchmark và huấn luyện tăng cường 4 giờ/lần trên Google Colab:
+
+```python
+# 1. Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+# 2. Cập nhật mã nguồn từ GitHub & Cài đặt thư viện
+!git clone https://github.com/ThangCao106/DeepFake-Detection-Agent.git || (cd DeepFake-Detection-Agent && git pull origin main)
+%cd DeepFake-Detection-Agent
+!pip install -r requirements.txt transformers timm
+
+# 3. Lệnh 1-Click: Chạy vòng lặp Daemon 4h/lần + Fine-Tuning ViT + Chống ngắt kết nối
+!python colab_sync_to_gdrive.py \
+    --samples 25 \
+    --images 100 \
+    --videos 50 \
+    --audios 50 \
+    --train \
+    --epochs 3 \
+    --loop 4h \
+    --keep-alive
 ```
 
-### 5.4. Nạp Trọng số & Hot-Reload Zero-Downtime
+### 5.6. Nạp Trọng số & Hot-Reload Zero-Downtime
 Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệu về API `POST /api/colab/callback`:
 1. Server tiếp nhận và lưu thông số vào `custom_vit_model/calibration_params.json`.
 2. Tái nạp đối tượng `DeepfakeDetector` ngay lập tức trong bộ nhớ RAM mà không cần ngắt kết nối hay khởi động lại Server.
