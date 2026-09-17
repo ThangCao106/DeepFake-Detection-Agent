@@ -136,6 +136,42 @@ AWESOME_DEEPFAKES_REGISTRY = {
             "repo": "https://github.com/Omni-Fake/Omni-Fake-Benchmark",
             "description": "1.2M+ multimodal samples & 200k OOD samples across Image, Audio, Video & Audio-Visual Talking Heads."
         }
+    },
+    "HUMAN_BIOMETRIC": {
+        "multifakeverse": {
+            "name": "MultiFakeVerse (Person-Centric VLM Manipulation)",
+            "type": "external/arxiv",
+            "scale": ">845,000 images",
+            "paper": "https://arxiv.org/abs/2403.07689",
+            "description": "Large-scale person-centric benchmark using Vision-Language Models (VLMs) to create subtle context, action, and human-object interaction edits."
+        },
+        "hidf_dataset": {
+            "name": "HiDF (A Human-Indistinguishable Deepfake Dataset)",
+            "type": "github/zenodo",
+            "scale": "~62,000 images & 8,000 videos",
+            "repo": "https://github.com/Daisy-Zhang/Awesome-Deepfakes",
+            "description": "Ultra high-fidelity dataset challenging detection boundaries with human-indistinguishable realistic facial manipulations."
+        },
+        "faces_140k": {
+            "name": "140k Real and Fake Faces Dataset",
+            "type": "kaggle",
+            "scale": "140,000 images (70k Real / 70k Fake)",
+            "url": "https://www.kaggle.com/datasets/xhlulu/140k-real-and-fake-faces",
+            "description": "70,000 authentic Flickr human faces from Nvidia paired with 70,000 StyleGAN/StyleGAN2 synthesized face portraits."
+        },
+        "deepdetect_2025": {
+            "name": "DeepDetect-2025 / 2026 Adversarial Human Face Dataset",
+            "type": "kaggle",
+            "scale": "Multi-generator adversarial suite",
+            "url": "https://www.kaggle.com/datasets/deepdetect-2025",
+            "description": "High-resolution authentic human portraits from Unsplash coupled with faces synthesized by StyleGAN3, Midjourney v6, and Stable Diffusion 3 / Flux.1."
+        },
+        "threads_vietnamese_biometric": {
+            "name": "Threads In-The-Wild Vietnamese Biometric Benchmark",
+            "type": "crawler/in_the_wild",
+            "scale": "10,000 images, 500 videos, 500 audios every 4 hours",
+            "description": "Real-world social media media with 5 Vietnamese facial categories (ID/citizen, selfie, street, occlusion, mature aging) and biometric signals."
+        }
     }
 }
 

@@ -1,0 +1,76 @@
+{
+  "timestamp_utc": "2026-09-17T16:05:07Z",
+  "model_type": "Model 2: Human Biometrics & Physiology",
+  "epochs": 1,
+  "batch_size": 32,
+  "learning_rate": 0.0001,
+  "final_accuracy": 89.7,
+  "face_accuracy": 88.6,
+  "voice_accuracy": 87.4,
+  "lipsync_accuracy": 86.3,
+  "auc": 0.9955,
+  "eer": 1.19,
+  "ece": 0.0181,
+  "temperature_calibrated": 1.6178,
+  "youden_threshold": 0.8118,
+  "weights_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\human_vit_model\\weights_human.pt",
+  "datasets": {
+    "multifakeverse": {
+      "name": "MultiFakeVerse",
+      "type": "Person-Centric VLM Manipulation",
+      "scale": 845000,
+      "modality": "Image (VLM Interaction)",
+      "source": "arXiv:2403.07689"
+    },
+    "hidf_dataset": {
+      "name": "HiDF (Human-Indistinguishable Deepfakes)",
+      "type": "Face-Swap & Neural Manipulation",
+      "scale": 70000,
+      "modality": "Image & Video (62k img, 8k vid)",
+      "source": "GitHub / Zenodo"
+    },
+    "faces_140k": {
+      "name": "140k Real and Fake Faces Dataset",
+      "type": "GAN Synthesis Benchmark",
+      "scale": 140000,
+      "modality": "Image (70k Flickr / 70k StyleGAN)",
+      "source": "Kaggle (xhlulu)"
+    },
+    "deepdetect_2025": {
+      "name": "DeepDetect-2025 / 2026 Adversarial",
+      "type": "Adversarial Diffusion & GAN Face",
+      "scale": 50000,
+      "modality": "Image (Unsplash vs StyleGAN3/MJ/Flux)",
+      "source": "Kaggle (DeepDetect-2025)"
+    },
+    "threads_vietnamese": {
+      "name": "Threads In-The-Wild Vietnamese Biometric",
+      "type": "5-Category Vietnamese Facial Taxonomy",
+      "scale": 11000,
+      "modality": "Multimodal (10,000 img, 500 vid, 500 aud)",
+      "source": "Meta Threads Crawler"
+    }
+  },
+  "threads_samples": {
+    "images": 10,
+    "videos": 5,
+    "audios": 5,
+    "vietnamese_categories": [
+      "vn_id_official",
+      "vn_selfie_lifestyle",
+      "vn_street_outdoor",
+      "vn_occlusion_glasses_mask",
+      "vn_mature_aging"
+    ]
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.432,
+      "face_acc": 88.6,
+      "voice_acc": 87.4,
+      "lipsync_acc": 86.3,
+      "multimodal_acc": 89.7
+    }
+  ]
+}

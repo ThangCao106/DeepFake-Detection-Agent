@@ -303,32 +303,51 @@ Nhằm giải quyết triệt để các ca âm tính giả tinh vi (như mẫu 
    $$\mathcal{L}_{focal}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t) \quad (\gamma = 2.0, \; \alpha = 0.25)$$
 3. **Lưu Trữ Checkpoint Tự Động**: Huấn luyện trực tiếp trên Google Colab và tự động lưu phiên bản trọng số mới về Google Drive (`checkpoints/model_continual_latest.pt`).
 
-### 5.5. Lệnh Thực thi 1-Click Tự động trên Google Colab (`colab_sync_to_gdrive.py`)
-Khởi chạy toàn bộ chu trình cào dữ liệu, đóng gói benchmark và huấn luyện tăng cường 4 giờ/lần trên Google Colab:
+### 5.5. Phân Bổ Dataset Huấn Luyện Giữa 2 Mô Hình Độc Lập
+
+Để đảm bảo năng lực tổng quát hóa vượt trội và ngăn ngừa hiện tượng thiên vị đặc trưng (feature entanglement), dữ liệu huấn luyện được phân tách nghiêm ngặt thành 2 luồng chuyên biệt:
+
+| Mô Hình (Stream) | Bộ Dữ Liệu Huấn Luyện (Training Datasets) | Quy Mô Mẫu | Trọng Tâm Trích Xuất Đặc Trưng | Trọng Số Checkpoint |
+|:---|:---|:---:|:---|:---:|
+| **Mô Hình 1**<br>*(General Vision & Signal)* | • `NTIRE-RobustAIGenDetection` (MSU 2024)<br>• `CIFAKE` (CIFAR-10 vs Stable Diffusion)<br>• `DF40` (40 SOTA Forgery Suite)<br>• `DFFD` (Diverse Fake Face Dataset)<br>• Khai phá Mẫu Biên Khó từ Threads ($H(P) \ge 0.70$) | **>578,000+** | Vết tích thuật toán sinh AI, phổ tần số 2D FFT ($Z_{peak}$), nhiễu không gian, entropy ranh giới | `model_continual_latest.pt`<br>*(ViT Backbone)* |
+| **Mô Hình 2**<br>*(Human Biometric & Physiology)* | • **`MultiFakeVerse`** (Person-Centric VLM Manipulation)<br>• **`HiDF`** (Human-Indistinguishable Deepfakes)<br>• **`140k Real and Fake Faces`** (70k Flickr / 70k StyleGAN)<br>• **`DeepDetect-2025 / 2026`** (Unsplash vs MJ/SD3/Flux)<br>• **Meta Threads Vietnamese In-The-Wild** (10,000 ảnh, 500 video, 500 audio / 4h qua 5 phân lớp người Việt) | **>1,105,000+** | WAVIE 2D Haar DWT năng lượng lỗ chân lông ($E_{high}$), rPPG nhịp mạch mao mạch, HuBERT/WavLM Layer 12 đường thanh quản, DF26 đồng bộ môi | `weights_human.pt`<br>*(Biometric Fusion)* |
+
+### 5.6. Google Colab Pro Scheduled Runner (Kết Hợp Option 1 + Form Option B)
+
+File Notebook [`colab_training/Colab_Pro_Scheduled_Runner.ipynb`](colab_training/Colab_Pro_Scheduled_Runner.ipynb) hỗ trợ song song 2 phương thức vận hành:
+1. **Option 1 (Scheduled Run ngầm)**: Tự động kích hoạt định kỳ 4 giờ/lần trong môi trường headless của Google Colab Pro, cào 10,000 ảnh, 500 video, 500 audio và huấn luyện cả 2 mô hình mà không cần con người can thiệp.
+2. **Option B (Form Tương Tác #@param)**: Cung cấp giao diện form trực quan để nghiên cứu viên thử nghiệm thủ công, bật/tắt từng mô hình (`TRAIN_MODEL_1_GENERAL`, `TRAIN_MODEL_2_HUMAN`, `TRAIN_BOTH_MODELS`), điều chỉnh hạn mức cào và xem trực tiếp báo cáo.
 
 ```python
-# 1. Mount Google Drive
+# 1. Gắn kết Google Drive
 from google.colab import drive
 drive.mount('/content/drive')
 
 # 2. Cập nhật mã nguồn từ GitHub & Cài đặt thư viện
 !git clone https://github.com/ThangCao106/DeepFake-Detection-Agent.git || (cd DeepFake-Detection-Agent && git pull origin main)
 %cd DeepFake-Detection-Agent
-!pip install -r requirements.txt transformers timm
+!pip install -q -r requirements.txt transformers timm
 
-# 3. Lệnh 1-Click: Chạy vòng lặp Daemon 4h/lần + Fine-Tuning ViT + Chống ngắt kết nối
+# 3. Lệnh 1-Click: Huấn luyện cả 2 mô hình & Xuất báo cáo dữ liệu đầy đủ
 !python colab_sync_to_gdrive.py \
+    --images 10000 \
+    --videos 500 \
+    --audios 500 \
     --samples 25 \
-    --images 100 \
-    --videos 50 \
-    --audios 50 \
-    --train \
+    --train-both-models \
     --epochs 3 \
-    --loop 4h \
-    --keep-alive
+    --batch_size 32 \
+    --lr 1e-4
 ```
 
-### 5.6. Nạp Trọng số & Hot-Reload Zero-Downtime
+### 5.7. Báo Cáo Huấn Luyện Toàn Diện (`training_report_dual_stream.md`)
+Sau mỗi đợt huấn luyện, hệ thống tự động biên soạn báo cáo chi tiết và lưu trực tiếp vào:
+- **Local VPS**: `report_colab/training_report_dual_stream.md`
+- **Google Drive**: `/content/drive/MyDrive/Thread_Data/reports/training_report_dual_stream.md`
+
+Báo cáo phân tích toàn diện: số lượng mẫu từng dataset, tỷ lệ thật/giả, 5 phân lớp sinh trắc học người Việt (`vn_id_official`, `vn_selfie_lifestyle`, `vn_street_outdoor`, `vn_occlusion_glasses_mask`, `vn_mature_aging`), chỉ số đa phương thức (Loss, Acc, AUC, EER, ECE) và tham số hiệu chuẩn nhiệt độ Platt ($T^* = 1.6178, \tau^* = 0.8118$).
+
+### 5.8. Nạp Trọng số & Hot-Reload Zero-Downtime
 Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệu về API `POST /api/colab/callback`:
 1. Server tiếp nhận và lưu thông số vào `custom_vit_model/calibration_params.json`.
 2. Tái nạp đối tượng `DeepfakeDetector` ngay lập tức trong bộ nhớ RAM mà không cần ngắt kết nối hay khởi động lại Server.

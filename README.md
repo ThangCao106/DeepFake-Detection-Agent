@@ -302,8 +302,20 @@ To actively harden the backbone against subtle false negatives (such as sample 9
    $$\mathcal{L}_{focal}(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t) \quad (\gamma = 2.0, \; \alpha = 0.25)$$
 3. **Automated Weight Checkpointing**: Continuously trains on Google Colab and persists evolved weights directly to Google Drive (`checkpoints/model_continual_latest.pt`).
 
-### 5.5. Google Colab 1-Click Autonomous Daemon (`colab_sync_to_gdrive.py`)
-Run the all-in-one data ingestion, counterfactual generation, and continual training daemon on Google Colab:
+### 5.5. Dual-Stream Model Training & Dataset Allocation
+
+To ensure high generalizability and prevent feature entanglement, the framework strictly segregates training data into two specialized pipelines:
+
+| Mô Hình (Stream) | Bộ Dữ Liệu Huấn Luyện (Training Datasets) | Quy Mô Mẫu | Trọng Tâm Trích Xuất Đặc Trưng | Trọng Số Checkpoint |
+|:---|:---|:---:|:---|:---:|
+| **Mô Hình 1**<br>*(General Vision & Signal)* | • `NTIRE-RobustAIGenDetection` (MSU 2024)<br>• `CIFAKE` (CIFAR-10 vs Stable Diffusion)<br>• `DF40` (40 SOTA Forgery Suite)<br>• `DFFD` (Diverse Fake Face Dataset)<br>• Hard Negatives từ Threads ($H(P) \ge 0.70$) | **>578,000+** | Vết tích mô hình sinh AI, phổ tần số 2D FFT ($Z_{peak}$), nhiễu không gian, entropy biên | `model_continual_latest.pt`<br>*(ViT Backbone)* |
+| **Mô Hình 2**<br>*(Human Biometric & Physiology)* | • **`MultiFakeVerse`** (VLM Person-Centric Manipulation)<br>• **`HiDF`** (Human-Indistinguishable Deepfakes)<br>• **`140k Real and Fake Faces`** (70k Flickr / 70k StyleGAN)<br>• **`DeepDetect-2025 / 2026`** (Unsplash vs MJ/SD3/Flux)<br>• **Meta Threads Vietnamese In-The-Wild** (10,000 img, 500 vid, 500 aud / 4h qua 5 phân lớp người Việt) | **>1,105,000+** | WAVIE 2D Haar DWT pore energy ($E_{high}$), rPPG vascular pulse, HuBERT/WavLM Layer 12 vocal trajectory, DF26 lip-sync | `weights_human.pt`<br>*(Biometric Fusion)* |
+
+### 5.6. Google Colab Pro Scheduled Runner (Option 1 + Option B Form UI)
+
+The unified runner notebook [`colab_training/Colab_Pro_Scheduled_Runner.ipynb`](colab_training/Colab_Pro_Scheduled_Runner.ipynb) provides seamless dual-mode execution:
+1. **Option 1 (Headless Scheduled Run)**: Executes automatically every 4 hours in the background on Google Colab Pro without manual intervention, crawls 10,000 images, 500 videos, 500 audios, and fine-tunes both models.
+2. **Option B (Interactive Form UI)**: Colab `#@param` widgets allow researchers to run manual tests, choose individual models (`TRAIN_MODEL_1_GENERAL`, `TRAIN_MODEL_2_HUMAN`, `TRAIN_BOTH_MODELS`), adjust quotas, and visualize the full training report.
 
 ```python
 # 1. Mount Google Drive
@@ -313,21 +325,28 @@ drive.mount('/content/drive')
 # 2. Clone/Pull Repository & Install Dependencies
 !git clone https://github.com/ThangCao106/DeepFake-Detection-Agent.git || (cd DeepFake-Detection-Agent && git pull origin main)
 %cd DeepFake-Detection-Agent
-!pip install -r requirements.txt transformers timm
+!pip install -q -r requirements.txt transformers timm
 
-# 3. 1-Click Recurring Execution (4h Loop + Continual Fine-Tuning + Anti-Idle Keep-Alive)
+# 3. 1-Click Execution for Both Models & Full Data Reporting
 !python colab_sync_to_gdrive.py \
+    --images 10000 \
+    --videos 500 \
+    --audios 500 \
     --samples 25 \
-    --images 100 \
-    --videos 50 \
-    --audios 50 \
-    --train \
+    --train-both-models \
     --epochs 3 \
-    --loop 4h \
-    --keep-alive
+    --batch_size 32 \
+    --lr 1e-4
 ```
 
-### 5.6. Zero-Downtime Hot-Reloading
+### 5.7. Full Data Training & Verification Report (`training_report_dual_stream.md`)
+Upon training completion, the runner automatically compiles a comprehensive Markdown report directly to:
+- **Local Storage**: `report_colab/training_report_dual_stream.md`
+- **Google Drive**: `/content/drive/MyDrive/Thread_Data/reports/training_report_dual_stream.md`
+
+The report documents exact sample counts across datasets, real/fake ratios, 5 Vietnamese biometric categories (`vn_id_official`, `vn_selfie_lifestyle`, `vn_street_outdoor`, `vn_occlusion_glasses_mask`, `vn_mature_aging`), multi-modal metrics (Acc, Loss, AUC, EER, ECE), and Platt temperature calibration parameters ($T^* = 1.6178, \tau^* = 0.8118$).
+
+### 5.8. Zero-Downtime Hot-Reloading
 When Colab completes fine-tuning, it sends a payload to `POST /api/colab/callback`:
 1. Server receives updated weights and saves `temperature_scaling_T` and `optimal_threshold_tau` to `custom_vit_model/calibration_params.json`.
 2. Instantly reloads the `DeepfakeDetector` instance in memory without interrupting active client requests or restarting the server.
