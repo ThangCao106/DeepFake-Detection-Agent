@@ -16,51 +16,90 @@ Unlike standard binary classifiers, this framework incorporates a **4D Multi-Dim
 
 ---
 
-## 🔬 1. 4D Multi-Dimensional Evidence Integration Model
+## 🔬 1. Dual-Model Architecture & Dual-Stream Forensic Pipeline
 
-To satisfy strict evidentiary standards (such as **EU AI Act Article 50** and **DSA Auditable Media** guidelines), the system integrates four independent digital forensic dimensions into a unified composite risk rating.
+To satisfy strict evidentiary standards (such as **EU AI Act Article 50** and **DSA Auditable Media** guidelines), the system implements **two distinct trained models** coupled with an automated **Human Presence Detection Gate**:
+
+1. **Model 1 (General Vision & Signal Model)**: Custom fine-tuned Vision Transformer (ViT) coupled with 2D Fast Fourier Transform Spectral Residuals ($Score_{spectral}$), Spatial Noise Discrepancy ($Score_{spatial}$), and Prediction Entropy ($H(P)$).
+2. **Model 2 (Human-Centric Biometrics Model)**: High-resolution human multi-modal detector (`HumanMultiModalDetector`) featuring 2D Discrete Wavelet Transform facial skin texture analysis (WAVIE), remote photoplethysmography vascular pulse consistency (rPPG), self-supervised acoustic vocal dynamics (SSL Feature Extractor), and audio-visual lip-sync phoneme alignment (DF26).
 
 ```
                     ┌─────────────────────────────────────────┐
                     │            Input Image / Video          │
                     └────────────────────┬────────────────────┘
                                          │
-       ┌───────────────────┬─────────────┴─────┬───────────────────┐
-       ▼                   ▼                   ▼                   ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│ Passive Model │   │ 2D-FFT High   │   │ Spatial Noise │   │ Prediction    │
-│ Classifier    │   │ Spectral Residual │ Variance Diff │   │ Entropy H(P)  │
-│  (Weight: 75%)│   │  (Weight: 15%)│   │  (Weight: 10%)│   │ (Uncertainty) │
-└───────┬───────┘   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-        │                   │                   │                   │
-        └───────────────────┼───────────────────┘                   │
-                            ▼                                       ▼
-             ┌─────────────────────────────┐         ┌──────────────────────────────┐
-             │ Composite Risk Score Calculation      │ Uncertainty Boundary Check   │
-             │ Risk = 0.75*P + 0.15*S + 0.10*N      │ H(P) = -sum(P_i * log2(P_i)) │
-             └──────────────┬──────────────┘         └──────────────┬───────────────┘
-                            │                                       │
-                            └───────────────────┬───────────────────┘
-                                                ▼
-                               ┌──────────────────────────────────┐
-                               │  Auditable Forensic Certificate  │
-                               │        CERT-DF-XXXXXXXX          │
-                               └──────────────────────────────────┘
+                                         ▼
+                    ┌─────────────────────────────────────────┐
+                    │      Human Presence Detection Gate      │
+                    │      (Face / Skin YCbCr / Voice)        │
+                    └───────────┬─────────────────┬───────────┘
+                                │                 │
+                 [Human Detected]                 │   [Non-Human / Landscape]
+                                ▼                 ▼
+       ┌─────────────────────────────────┐   ┌─────────────────────────────────┐
+       │     DUAL-STREAM PIPELINE        │   │    SINGLE-STREAM PIPELINE       │
+       │                                 │   │                                 │
+       │  ┌───────────────────────────┐  │   │  ┌───────────────────────────┐  │
+       │  │ Stream A: General 4D ViT  │  │   │  │ General 4D ViT Model      │  │
+       │  │ - 4D Evidence (ViT, FFT,  │  │   │  │ - 4D Evidence (ViT, FFT,  │  │
+       │  │   Spatial Noise, Entropy) │  │   │  │   Spatial Noise, Entropy) │  │
+       │  │   => Risk_general (40%)   │  │   │  │   => Risk_composite (100%)│  │
+       │  └─────────────┬─────────────┘  │   │  └─────────────┬─────────────┘  │
+       │                │                │   └────────────────┼────────────────┘
+       │  ┌─────────────┴─────────────┐  │                    │
+       │  │ Stream B: Human Biometrics│  │                    │
+       │  │ - WAVIE 2D DWT Skin       │  │                    │
+       │  │ - rPPG Vascular Pulse     │  │                    │
+       │  │ - SSL Vocal Dynamics      │  │                    │
+       │  │ - DF26 Lip-Sync Synch     │  │                    │
+       │  │   => Risk_human (60%)     │  │                    │
+       │  └─────────────┬─────────────┘  │                    │
+       │                │                │                    │
+       │                ▼                │                    │
+       │  ┌───────────────────────────┐  │                    │
+       │  │ Cross-Stream Fusion:      │  │                    │
+       │  │ Risk = 0.40*Rg + 0.60*Rh  │  │                    │
+       │  └─────────────┬─────────────┘  │                    │
+       └────────────────┼────────────────┘                    │
+                        │                                     │
+                        └───────────────────┬─────────────────┘
+                                            ▼
+                           ┌──────────────────────────────────┐
+                           │  Auditable Forensic Certificate  │
+                           │        CERT-DF-XXXXXXXX          │
+                           └──────────────────────────────────┘
 ```
 
-### Mathematical Risk Formulation
+### 1.1. Evidence Fusion & Mathematical Formulations
 
-The Composite Risk Score ($Risk_{composite} \in [0.0, 1.0]$) is defined as:
+The system automatically switches pipeline routing depending on human presence:
 
-$$Risk_{composite} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+#### Case 1: Non-Human Media (Objects, Landscapes, Graphic Art)
+When no human face, skin tone, or voice is detected, the system executes **Single-Stream General Vision (`SINGLE_STREAM_GENERAL`)**:
+
+$$Risk_{composite} = 1.00 \cdot Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+
+#### Case 2: Human Media (Portraits, Face Swaps, Talking Head Videos)
+When human presence is verified, the system forks into **Dual-Stream Parallel Execution (`DUAL_STREAM_PARALLEL`)** and fuses evidence with calibrated weights:
+
+$$Risk_{composite} = 0.40 \cdot Risk_{general} + 0.60 \cdot Risk_{human}$$
 
 Where:
-1. **Passive Model Probability ($P_{fake}$)**: Probability output from the fine-tuned Vision Transformer / CNN backbone ($W_{model} = 0.75$).
-2. **Spectral Frequency Anomaly ($Score_{spectral}$)**: High-frequency Z-score energy residual derived from 2D Fast Fourier Transform ($W_{spectral} = 0.15$). Detects lattice grid artifacts typical of GANs and Latent Diffusion Models:
-   $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
-3. **Spatial Noise Inconsistency ($Score_{spatial}$)**: Noise variance discrepancy between center face region and peripheral background ($W_{spatial} = 0.10$).
-4. **Prediction Entropy ($H(P)$)**: Normalized entropy measuring model boundary uncertainty:
-   $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
+1. **$Risk_{general}$ (General 4D Vision Stream)**:
+   $$Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+   - **Passive Model Probability ($P_{fake}$)**: Probability output from the fine-tuned Vision Transformer backbone ($W_{model} = 0.75$).
+   - **Spectral Frequency Anomaly ($Score_{spectral}$)**: High-frequency Z-score energy residual derived from 2D Fast Fourier Transform ($W_{spectral} = 0.15$), exposing GAN/Diffusion grid artifacts:
+     $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
+   - **Spatial Noise Inconsistency ($Score_{spatial}$)**: Noise variance discrepancy between center face region and peripheral background ($W_{spatial} = 0.10$).
+   - **Prediction Entropy ($H(P)$)**: Normalized entropy measuring model boundary uncertainty:
+     $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
+
+2. **$Risk_{human}$ (Human Biometrics Stream - Model 2)**:
+   Well-calibrated probability (Platt scaling / Temperature ECE calibrated) evaluated across:
+   - Facial skin wavelet sub-band anomalies (WAVIE 2D DWT pore and sub-surface scattering disruptions).
+   - Remote photoplethysmography (rPPG micro-vascular blood volume pulse signals).
+   - Self-supervised acoustic vocal dynamics (glottal airflow irregularities).
+   - Audio-visual phoneme-viseme temporal synchrony (DF26 lip synchronization).
 
 ### Auditable Verdict Criteria
 - $Risk_{composite} \le 0.50 \implies$ **`AUTHENTIC_MEDIA_LIKELY`** (Genuine Media / Original)
@@ -90,6 +129,7 @@ Where $K_{private}$ is the accredited private signing key and $\parallel$ denote
 
 ### Certificate Features
 - **Unique Certificate ID**: Deterministic UUID format `CERT-DF-XXXXXXXX` (e.g. `CERT-DF-662CBE7B`).
+- **Forensic Pipeline Mode**: Transparently logged as `SINGLE_STREAM_GENERAL` or `DUAL_STREAM_PARALLEL`.
 - **Media Integrity Hash**: Full binary SHA-256 cryptographic hash of the analyzed media asset ($H_{media}$).
 - **Digital Signature Proof**: Signed using Ed25519 cryptographic signature ($Sig_{proof}$).
 - **Verification Endpoint**: Embedded URL `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
@@ -98,9 +138,10 @@ Where $K_{private}$ is the accredited private signing key and $\parallel$ denote
 ```json
 {
   "certificate_id": "CERT-DF-662CBE7B",
-  "timestamp": "2026-09-16 08:23:40 UTC",
+  "timestamp": "2026-09-17 08:23:40 UTC",
   "forensic_version": "2.0-AUDITABLE",
   "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
+  "analysis_mode": "DUAL_STREAM_PARALLEL",
   "media_integrity": {
     "sha256": "662cbe7b89e24a8f902472e389b0129a7c6f0119b48f",
     "verification_url": "https://detection.dtpsoft.vn/api/verify/CERT-DF-662CBE7B"
@@ -109,6 +150,19 @@ Where $K_{private}$ is the accredited private signing key and $\parallel$ denote
     "dimensions": "1024x1024",
     "format": "JPEG",
     "face_cropping_applied": true
+  },
+  "dual_stream_breakdown": {
+    "mode": "DUAL_STREAM_PARALLEL",
+    "human_gate_triggered": true,
+    "fusion_formula": "0.40 * Risk_general + 0.60 * Risk_human",
+    "stream_1_general_vision": {
+      "model_type": "Custom Fine-Tuned ViT + 2D-FFT + Noise Spectrum",
+      "risk_general": 0.0283
+    },
+    "stream_2_human_biometrics": {
+      "model_type": "HumanMultiModalDetector (WAVIE/rPPG/SSL/LipSync)",
+      "risk_human": 0.0150
+    }
   },
   "multi_dimensional_evidence": {
     "passive_model_score": {

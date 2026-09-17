@@ -91,10 +91,18 @@ class DiskGuardAgent:
         return purged_bytes, purged_files
 
 
+# Default target shared folder on Google Drive (User shared workspace)
+DEFAULT_TARGET_FOLDER_ID = "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
+
 class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="DeepFake_Pentest_Data"):
         self.base_folder_name = base_folder_name
         self.credentials_json = credentials_json or os.environ.get("GDRIVE_CREDENTIALS_JSON")
+        self.target_folder_id = (
+            os.environ.get("GDRIVE_TARGET_FOLDER_ID") 
+            or os.environ.get("GDRIVE_FOLDER_ID") 
+            or DEFAULT_TARGET_FOLDER_ID
+        )
         self.service = None
         self.use_mock_storage = True
         self.disk_guard = DiskGuardAgent()
@@ -108,14 +116,28 @@ class GDriveSyncAgent:
                 from google.oauth2 import service_account
                 from googleapiclient.discovery import build
 
-                creds_dict = json.loads(self.credentials_json) if isinstance(self.credentials_json, str) and self.credentials_json.startswith("{") else None
+                creds_dict = None
+                # Support both raw JSON string and path to credentials JSON file
+                if os.path.isfile(str(self.credentials_json)):
+                    with open(self.credentials_json, "r", encoding="utf-8") as cf:
+                        creds_dict = json.load(cf)
+                elif isinstance(self.credentials_json, str) and self.credentials_json.strip().startswith("{"):
+                    creds_dict = json.loads(self.credentials_json)
+                elif isinstance(self.credentials_json, dict):
+                    creds_dict = self.credentials_json
+
                 if creds_dict:
                     creds = service_account.Credentials.from_service_account_info(
                         creds_dict, scopes=['https://www.googleapis.com/auth/drive']
                     )
                     self.service = build('drive', 'v3', credentials=creds)
                     self.use_mock_storage = False
-                    print("[GDrive Sync] Connected to Google Drive API via Service Account.")
+                    bot_email = creds_dict.get("client_email", "service_account_bot")
+                    print(f"[GDrive Sync] [AUTH] Connected to Google Drive API via Service Account: {bot_email}")
+                    if self.target_folder_id:
+                        print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
+                    else:
+                        print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
                     return
             except Exception as e:
                 print(f"[GDrive Sync] Warning: Google Drive API init failed ({e}). Falling back to local storage structure.")
@@ -140,8 +162,8 @@ class GDriveSyncAgent:
 
         # Google Drive API Implementation
         try:
-            # Check or create base folder
-            base_id = self._find_or_create_drive_folder(self.base_folder_name, parent_id=None)
+            # Check or create base folder inside target_folder_id if specified
+            base_id = self._find_or_create_drive_folder(self.base_folder_name, parent_id=self.target_folder_id)
             daily_id = self._find_or_create_drive_folder(date_str, parent_id=base_id)
             
             for sub in subfolders:
@@ -250,6 +272,104 @@ class GDriveSyncAgent:
         except Exception as e:
             print(f"[GDrive Sync] Failed registry sync: {e}")
             return None
+
+    def get_or_create_auth_folder(self):
+        """Creates or gets the persistent 'auth/' folder on Google Drive or local storage."""
+        if self.use_mock_storage:
+            auth_dir = os.path.join(DEFAULT_LOCAL_STORAGE, "auth")
+            os.makedirs(auth_dir, exist_ok=True)
+            return auth_dir
+
+        try:
+            base_id = self._find_or_create_drive_folder(self.base_folder_name, parent_id=self.target_folder_id)
+            auth_folder_id = self._find_or_create_drive_folder("auth", parent_id=base_id)
+            return auth_folder_id
+        except Exception as e:
+            print(f"[GDrive Sync] Warning getting auth folder: {e}. Using local storage fallback.")
+            auth_dir = os.path.join(DEFAULT_LOCAL_STORAGE, "auth")
+            os.makedirs(auth_dir, exist_ok=True)
+            return auth_dir
+
+    def save_remote_auth_state(self, auth_data: dict, auth_key="threads_auth"):
+        """Saves or updates rolling authentication session JSON to Google Drive auth/ folder."""
+        auth_folder = self.get_or_create_auth_folder()
+        filename = f"{auth_key}.json"
+
+        if self.use_mock_storage or not self.service:
+            dest_path = os.path.join(auth_folder if isinstance(auth_folder, str) else os.path.join(DEFAULT_LOCAL_STORAGE, "auth"), filename)
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            with open(dest_path, "w", encoding="utf-8") as f:
+                json.dump(auth_data, f, indent=2, ensure_ascii=False)
+            print(f"[GDrive Sync] [ROLLING-AUTH] Saved local auth cache to {dest_path}")
+            return dest_path
+
+        try:
+            import io
+            from googleapiclient.http import MediaIoBaseUpload
+            
+            # Check if file exists in auth folder
+            query = f"name = '{filename}' and '{auth_folder}' in parents and trashed = false"
+            results = self.service.files().list(q=query, fields="files(id, name)").execute()
+            existing_files = results.get('files', [])
+
+            content_bytes = json.dumps(auth_data, indent=2, ensure_ascii=False).encode('utf-8')
+            media = MediaIoBaseUpload(io.BytesIO(content_bytes), mimetype='application/json', resumable=False)
+
+            if existing_files:
+                file_id = existing_files[0]['id']
+                updated = self.service.files().update(fileId=file_id, media_body=media).execute()
+                print(f"[GDrive Sync] [ROLLING-AUTH] Updated existing {filename} in GDrive auth/ (ID: {file_id})")
+                return file_id
+            else:
+                file_metadata = {'name': filename, 'parents': [auth_folder]}
+                created = self.service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                print(f"[GDrive Sync] [ROLLING-AUTH] Created {filename} in GDrive auth/ (ID: {created.get('id')})")
+                return created.get('id')
+        except Exception as e:
+            print(f"[GDrive Sync] [WARNING] Failed to save rolling auth state to GDrive: {e}")
+            return None
+
+    def load_remote_auth_state(self, auth_key="threads_auth"):
+        """Loads persistent authentication session JSON from Google Drive auth/ folder."""
+        filename = f"{auth_key}.json"
+
+        # Check local storage fallback first
+        local_path = os.path.join(DEFAULT_LOCAL_STORAGE, "auth", filename)
+        if os.path.isfile(local_path):
+            try:
+                with open(local_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+
+        if self.use_mock_storage or not self.service:
+            return None
+
+        try:
+            import io
+            from googleapiclient.http import MediaIoBaseDownload
+            
+            auth_folder = self.get_or_create_auth_folder()
+            query = f"name = '{filename}' and '{auth_folder}' in parents and trashed = false"
+            results = self.service.files().list(q=query, fields="files(id, name)").execute()
+            files = results.get('files', [])
+
+            if files:
+                file_id = files[0]['id']
+                request = self.service.files().get_media(fileId=file_id)
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                fh.seek(0)
+                data = json.loads(fh.read().decode('utf-8'))
+                print(f"[GDrive Sync] [ROLLING-AUTH] Successfully loaded {filename} from GDrive auth/ folder.")
+                return data
+        except Exception as e:
+            print(f"[GDrive Sync] [NOTICE] Could not load rolling auth state from GDrive ({e}).")
+
+        return None
 
 if __name__ == "__main__":
     agent = GDriveSyncAgent()

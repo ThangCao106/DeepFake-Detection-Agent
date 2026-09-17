@@ -354,10 +354,14 @@ class AnalysisAgent:
 AUDITABLE DIGITAL FORENSIC DECISION RECORD:
 - Certificate ID: {cert.get('certificate_id', 'N/A')}
 - Timestamp: {cert.get('timestamp', 'N/A')}
+- Analysis Mode: {cert.get('analysis_mode', 'SINGLE_STREAM_GENERAL')}
 - Composite Risk Score: {cert.get('composite_risk_score', 0):.2%}
 - Auditable Verdict: {cert.get('auditable_verdict', 'UNKNOWN')}
 
-MULTI-DIMENSIONAL EVIDENCE BREAKDOWN:
+DUAL-STREAM MULTI-MODAL EVIDENCE BREAKDOWN:
+{json.dumps(cert.get('dual_stream_breakdown', {}), indent=2) if cert.get('dual_stream_breakdown') else "Single stream general vision analysis."}
+
+FOUR FORENSIC EVIDENCE DIMENSIONS:
 1. Passive Neural Classifier:
    - Prediction Label: {detection_result.get('label', 'Unknown')}
    - Model Confidence: {detection_result.get('confidence', 0):.2%}

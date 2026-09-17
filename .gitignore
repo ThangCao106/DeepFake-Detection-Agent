@@ -75,3 +75,6 @@ dataset_pipeline/clean_data/
 colab_datasets/
 benchmark_data/
 report_colab/2026-*/
+report_colab/gdrive_storage/
+report_colab/pentest/
+scratch/

@@ -16,11 +16,13 @@ try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from benchmark.deepfake_memory import save_forensic_certificate
     from benchmark.google_indexing import publish_google_indexing_url
+    from human_multimodal_detector import HumanMultiModalDetector
 except Exception:
     def save_forensic_certificate(cert, db_path=None):
         return cert.get("certificate_id")
     def publish_google_indexing_url(cert_url):
         pass
+    HumanMultiModalDetector = None
 
 # optional face cropping (fast/simple) using face_recognition if available
 try:
@@ -28,6 +30,59 @@ try:
     FACE_REC_AVAILABLE = True
 except Exception:
     FACE_REC_AVAILABLE = False
+
+
+class HumanPresenceDetector:
+    """
+    Scans media to detect presence of human entities:
+      - Primary: Face detection using face_recognition (HOG / CNN).
+      - Secondary: Skin-tone chrominance distribution in YCbCr color space (Cb in [77, 127], Cr in [133, 173]).
+    Returns: {
+        "has_human": bool,
+        "face_count": int,
+        "skin_percentage": float,
+        "presence_evidence": list
+    }
+    """
+    @staticmethod
+    def analyze_human_presence(pil_image):
+        img_np = np.array(pil_image)
+        face_count = 0
+        evidence = []
+        
+        # 1. Face recognition check
+        if FACE_REC_AVAILABLE:
+            try:
+                boxes = face_recognition.face_locations(img_np, model="hog")
+                face_count = len(boxes)
+                if face_count > 0:
+                    evidence.append(f"Detected {face_count} human face(s) via HOG detector")
+            except Exception:
+                pass
+                
+        # 2. Skin chrominance segmentation (YCbCr)
+        skin_pct = 0.0
+        try:
+            # Downsample image for fast skin pixel calculation
+            small_img = pil_image.resize((128, 128)).convert("YCbCr")
+            ycbcr = np.array(small_img)
+            cb = ycbcr[:, :, 1]
+            cr = ycbcr[:, :, 2]
+            # Standard skin chrominance cluster: 77 <= Cb <= 127 and 133 <= Cr <= 173
+            skin_mask = (cb >= 77) & (cb <= 127) & (cr >= 133) & (cr <= 173)
+            skin_pct = round(float(np.mean(skin_mask) * 100), 1)
+            if skin_pct >= 8.0:
+                evidence.append(f"Human skin chrominance detected ({skin_pct}% of frame)")
+        except Exception:
+            pass
+
+        has_human = (face_count > 0) or (skin_pct >= 10.0)
+        return {
+            "has_human": has_human,
+            "face_count": face_count,
+            "skin_percentage": skin_pct,
+            "presence_evidence": evidence if evidence else ["No prominent human biometrics detected (Non-human / object media)"]
+        }
 
 
 class FrequencyDomainAnalyzer:
@@ -164,7 +219,18 @@ class DeepfakeDetector:
         else:
             self.calibration_params = None
 
-        print("[info] Model loaded successfully.")
+        # Initialize Human-Centric Multi-Modal Detector (Model 2) for Dual-Stream Execution
+        if HumanMultiModalDetector is not None:
+            try:
+                self.human_detector = HumanMultiModalDetector()
+                print("[info] Model 2 (HumanMultiModalDetector - WAVIE/SSL/LipSync) loaded for Dual-Stream pipeline.")
+            except Exception as e:
+                print(f"[warning] Could not initialize HumanMultiModalDetector: {e}")
+                self.human_detector = None
+        else:
+            self.human_detector = None
+
+        print("[info] DeepfakeDetector initialized successfully.")
 
 
     def _crop_face_if_possible(self, pil_image):
@@ -196,6 +262,7 @@ class DeepfakeDetector:
     def predict(self, image_path, use_face_crop=True):
         """
         Predict whether an image is Real or Fake and generate an Auditable Forensic Decision Record.
+        Applies Dual-Stream Parallel Analysis if human features (face/skin) are detected.
         Returns dict with label, confidence, all_scores, and forensic_certificate.
         """
         if not os.path.exists(image_path):
@@ -203,11 +270,17 @@ class DeepfakeDetector:
 
         try:
             image = Image.open(image_path).convert("RGB")
-            if use_face_crop:
+
+            # Step 1: Pre-flight Human Presence Gate
+            human_presence = HumanPresenceDetector.analyze_human_presence(image)
+            has_human = human_presence.get("has_human", False)
+
+            if use_face_crop and has_human:
                 cropped = self._crop_face_if_possible(image)
             else:
                 cropped = image
 
+            # Stream 1: General Multi-Modal Vision Stream (Custom ViT)
             inputs = self.processor(images=cropped, return_tensors="pt")
             for k, v in inputs.items():
                 if isinstance(v, torch.Tensor):
@@ -237,6 +310,65 @@ class DeepfakeDetector:
             # 3. Compute Spatial Noise Inconsistency
             spatial_inconsistency = SpatialConsistencyAnalyzer.analyze_spatial_inconsistency(image, cropped)
 
+            # General Stream Risk Calculation (75% passive model, 15% spectral, 10% spatial)
+            is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
+            fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
+            general_risk = round(float(0.75 * fake_prob + 0.15 * spectral_anomaly + 0.10 * spatial_inconsistency), 4)
+
+            # Step 2: Parallel Stream 2 & Cross-Evidence Fusion Engine
+            if has_human and self.human_detector is not None:
+                # Stream 2: Human-Centric Specialist Stream (WAVIE + rPPG + ECE Calibration)
+                human_eval = self.human_detector.predict_media(image_path, modality="image")
+                human_risk = float(human_eval.get("calibrated_probability", fake_prob))
+
+                # Cross-Stream Evidence Fusion: 40% General ViT + 60% Human Biometrics
+                composite_risk = round(float(0.40 * general_risk + 0.60 * human_risk), 4)
+                analysis_mode = "DUAL_STREAM_PARALLEL"
+
+                dual_stream_breakdown = {
+                    "mode": "DUAL_STREAM_PARALLEL",
+                    "human_gate_triggered": True,
+                    "fusion_formula": "Risk_composite = 0.40 * Risk_general + 0.60 * Risk_human",
+                    "stream_1_general_vision": {
+                        "model_name": "General Vision Transformer (4D Multi-Modal)",
+                        "weight": 0.40,
+                        "stream_risk_score": general_risk,
+                        "fake_probability": round(fake_prob, 4),
+                        "spectral_2d_fft": spectral_anomaly,
+                        "spatial_noise_inconsistency": spatial_inconsistency,
+                        "uncertainty_entropy": normalized_entropy
+                    },
+                    "stream_2_human_biometrics": {
+                        "model_name": "Human-Centric Multi-Modal Detector (WAVIE + rPPG + ECE)",
+                        "weight": 0.60,
+                        "stream_risk_score": round(human_risk, 4),
+                        "raw_logit": human_eval.get("raw_logit"),
+                        "platt_temperature_T": human_eval.get("platt_temperature_T"),
+                        "decision_threshold_tau": human_eval.get("decision_threshold_tau"),
+                        "ece_status": human_eval.get("ece_target_status"),
+                        "forensic_indicators": human_eval.get("forensic_indicators", {})
+                    }
+                }
+            else:
+                # Single Stream: Non-Human Media (Nature, Objects, Non-human AI Art)
+                composite_risk = general_risk
+                analysis_mode = "SINGLE_STREAM_GENERAL"
+                dual_stream_breakdown = {
+                    "mode": "SINGLE_STREAM_GENERAL",
+                    "human_gate_triggered": False,
+                    "fusion_formula": "Risk_composite = 1.00 * Risk_general",
+                    "stream_1_general_vision": {
+                        "model_name": "General Vision Transformer (4D Multi-Modal)",
+                        "weight": 1.00,
+                        "stream_risk_score": general_risk,
+                        "fake_probability": round(fake_prob, 4),
+                        "spectral_2d_fft": spectral_anomaly,
+                        "spatial_noise_inconsistency": spatial_inconsistency,
+                        "uncertainty_entropy": normalized_entropy
+                    },
+                    "stream_2_human_biometrics": None
+                }
+
             # 4. Compute SHA-256 binary hash of the input file for immutable integrity
             try:
                 with open(image_path, "rb") as f:
@@ -249,21 +381,18 @@ class DeepfakeDetector:
             cert_id = f"CERT-DF-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
-            is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
-            fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
-
-            # Composite Risk Rating (Primary classifier 75%, spectral 15%, spatial 10%)
-            composite_risk = round(float(0.75 * fake_prob + 0.15 * spectral_anomaly + 0.10 * spatial_inconsistency), 4)
-
             # Canonical Certificate Signature Proof
-            canonical_repr = f"{cert_id}:{timestamp}:{media_sha256}:{composite_risk}"
+            canonical_repr = f"{cert_id}:{timestamp}:{media_sha256}:{composite_risk}:{analysis_mode}"
             sig_hex = hashlib.sha256(canonical_repr.encode("utf-8")).hexdigest()
 
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
-                "forensic_version": "2.0-AUDITABLE",
+                "forensic_version": "2.5-DUAL-STREAM-AUDITABLE",
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
+                "analysis_mode": analysis_mode,
+                "human_presence_evaluation": human_presence,
+                "dual_stream_breakdown": dual_stream_breakdown,
                 "media_integrity": {
                     "sha256": media_sha256,
                     "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
@@ -271,7 +400,7 @@ class DeepfakeDetector:
                 "image_metadata": {
                     "dimensions": f"{image.width}x{image.height}",
                     "format": image.format or "RGB",
-                    "face_cropping_applied": use_face_crop
+                    "face_cropping_applied": use_face_crop and has_human
                 },
                 "multi_dimensional_evidence": {
                     "passive_model_score": {
@@ -314,6 +443,8 @@ class DeepfakeDetector:
                 "label": label,
                 "confidence": score,
                 "all_scores": all_scores,
+                "composite_risk_score": composite_risk,
+                "analysis_mode": analysis_mode,
                 "forensic_certificate": forensic_certificate
             }
         except Exception as e:
@@ -322,7 +453,8 @@ class DeepfakeDetector:
     def predict_video(self, video_path, num_frames=6):
         """
         Extract keyframes from video and perform frame-by-frame deepfake detection.
-        Aggregates predictions into a overall video verdict and forensic audit log.
+        Applies Dual-Stream Parallel Analysis if human presence is detected in frames.
+        Aggregates predictions into an overall video verdict and forensic audit certificate.
         """
         if not os.path.exists(video_path):
             return {"error": "Video file not found"}
@@ -349,6 +481,7 @@ class DeepfakeDetector:
 
             frame_results = []
             fake_probs = []
+            has_human_video = False
 
             for idx, f_idx in enumerate(frame_indices):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, f_idx)
@@ -367,12 +500,16 @@ class DeepfakeDetector:
                         ev = cert.get("multi_dimensional_evidence", {})
                         fake_p = ev.get("passive_model_score", {}).get("fake_probability", 0.5)
 
+                        if cert.get("human_presence_evaluation", {}).get("has_human", False):
+                            has_human_video = True
+
                         frame_results.append({
                             "frame_index": f_idx,
                             "timestamp_sec": timestamp_sec,
                             "label": res["label"],
                             "confidence": res["confidence"],
                             "fake_probability": fake_p,
+                            "analysis_mode": cert.get("analysis_mode", "SINGLE_STREAM_GENERAL"),
                             "spectral_anomaly": ev.get("spectral_frequency_analysis", {}).get("high_frequency_anomaly_score", 0.0),
                             "spatial_inconsistency": ev.get("spatial_inconsistency_analysis", {}).get("spatial_inconsistency_score", 0.0)
                         })
@@ -388,15 +525,53 @@ class DeepfakeDetector:
 
             avg_fake_prob = float(np.mean(fake_probs))
             max_fake_prob = float(np.max(fake_probs))
-            # Video risk is weighted towards the highest anomalous frame
-            overall_fake_score = 0.6 * max_fake_prob + 0.4 * avg_fake_prob
+            general_video_score = 0.6 * max_fake_prob + 0.4 * avg_fake_prob
 
-            verdict_label = "Deepfake" if overall_fake_score > 0.5 else "Realism"
-            confidence = overall_fake_score if verdict_label == "Deepfake" else 1.0 - overall_fake_score
+            # Step 2: Dual-Stream Video Fusion if Human Present
+            if has_human_video and self.human_detector is not None:
+                human_vid_eval = self.human_detector.predict_media(video_path, modality="video")
+                human_vid_risk = float(human_vid_eval.get("calibrated_probability", general_video_score))
+                composite_video_risk = round(0.40 * general_video_score + 0.60 * human_vid_risk, 4)
+                analysis_mode = "DUAL_STREAM_PARALLEL"
+                dual_stream_breakdown = {
+                    "mode": "DUAL_STREAM_PARALLEL",
+                    "human_gate_triggered": True,
+                    "fusion_formula": "Risk_composite = 0.40 * Risk_general + 0.60 * Risk_human_video",
+                    "stream_1_general_video": {
+                        "model_name": "General Vision Transformer Frame Aggregator",
+                        "weight": 0.40,
+                        "stream_risk_score": round(general_video_score, 4),
+                        "peak_fake_probability": round(max_fake_prob, 4),
+                        "aggregate_fake_probability": round(avg_fake_prob, 4)
+                    },
+                    "stream_2_human_biometrics": {
+                        "model_name": "Human Multi-Modal Detector (LipSync + DF26 + ECE)",
+                        "weight": 0.60,
+                        "stream_risk_score": round(human_vid_risk, 4),
+                        "forensic_indicators": human_vid_eval.get("forensic_indicators", {})
+                    }
+                }
+            else:
+                composite_video_risk = round(general_video_score, 4)
+                analysis_mode = "SINGLE_STREAM_GENERAL"
+                dual_stream_breakdown = {
+                    "mode": "SINGLE_STREAM_GENERAL",
+                    "human_gate_triggered": False,
+                    "fusion_formula": "Risk_composite = 1.00 * Risk_general_video",
+                    "stream_1_general_video": {
+                        "model_name": "General Vision Transformer Frame Aggregator",
+                        "weight": 1.00,
+                        "stream_risk_score": round(general_video_score, 4)
+                    },
+                    "stream_2_human_biometrics": None
+                }
+
+            verdict_label = "Deepfake" if composite_video_risk > 0.5 else "Realism"
+            confidence = composite_video_risk if verdict_label == "Deepfake" else 1.0 - composite_video_risk
 
             all_scores = {
-                "Deepfake": round(overall_fake_score, 4),
-                "Realism": round(1.0 - overall_fake_score, 4)
+                "Deepfake": round(composite_video_risk, 4),
+                "Realism": round(1.0 - composite_video_risk, 4)
             }
 
             cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
@@ -405,21 +580,24 @@ class DeepfakeDetector:
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
-                "forensic_version": "2.0-VIDEO-AUDITABLE",
+                "forensic_version": "2.5-VIDEO-DUAL-STREAM-AUDITABLE",
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Video",
+                "analysis_mode": analysis_mode,
+                "dual_stream_breakdown": dual_stream_breakdown,
                 "video_metadata": {
                     "total_frames": total_frames,
                     "fps": round(fps, 2),
                     "duration_seconds": round(duration_sec, 2),
-                    "analyzed_frames_count": len(frame_results)
+                    "analyzed_frames_count": len(frame_results),
+                    "has_human_detected": has_human_video
                 },
                 "multi_dimensional_evidence": {
                     "frame_by_frame_analysis": frame_results,
                     "aggregate_fake_probability": round(avg_fake_prob, 4),
                     "peak_fake_probability": round(max_fake_prob, 4)
                 },
-                "composite_risk_score": round(overall_fake_score, 4),
-                "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if overall_fake_score > 0.5 else "AUTHENTIC_VIDEO_LIKELY",
+                "composite_risk_score": composite_video_risk,
+                "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if composite_video_risk > 0.5 else "AUTHENTIC_VIDEO_LIKELY",
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
                     "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
@@ -436,6 +614,8 @@ class DeepfakeDetector:
                 "label": verdict_label,
                 "confidence": confidence,
                 "all_scores": all_scores,
+                "composite_risk_score": composite_video_risk,
+                "analysis_mode": analysis_mode,
                 "forensic_certificate": forensic_certificate,
                 "frame_results": frame_results
             }

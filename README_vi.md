@@ -16,51 +16,91 @@ Khác với các mô hình phân loại nhị phân thông thường, hệ thố
 
 ---
 
-## 🔬 1. Mô hình Tích hợp Bằng chứng Pháp y Đa chiều 4D (4D Evidence Integration)
+## 🔬 1. Kiến trúc Hai Mô hình & Luồng Phân tích Song song (Dual-Stream Forensic Pipeline)
 
-Để đáp ứng các tiêu chuẩn pháp lý nghiêm ngặt (như quy định **EU AI Act Article 50** và **DSA Auditable Media**), hệ thống tích hợp 4 chỉ số pháp y kỹ thuật số độc lập thành một điểm rủi ro tổng hợp thống nhất.
+Để đáp ứng các tiêu chuẩn pháp lý nghiêm ngặt (như quy định **EU AI Act Article 50** và **DSA Auditable Media**), hệ thống triển khai **2 mô hình học máy độc lập** và tích hợp cơ chế **Cổng định tuyến Sinh trắc học Con người (Human Presence Detection Gate)**:
+
+1. **Mô hình 1 (General Vision & Signal Model)**: Custom Vision Transformer (ViT) kết hợp phân tích Dị thường Tần số 2D-FFT ($Score_{spectral}$), Biến thiên Nhiễu Không gian ($Score_{spatial}$), và Độ bất định Entropy ($H(P)$).
+2. **Mô hình 2 (Human-Centric Biometrics Model)**: Mô hình đa phương thức chuyên sâu về con người (`HumanMultiModalDetector`) gồm phân tích kết cấu da mặt qua biến đổi sóng nhỏ 2D DWT (WAVIE), tính nhất quán nhịp tim vi mạch máu (rPPG), động học âm thanh thanh quản (SSL Audio Feature Extractor), và độ lệch đồng bộ chuyển động môi - khẩu hình (DF26 Audio-Visual Lip-Sync).
 
 ```
                     ┌─────────────────────────────────────────┐
                     │            Tệp Ảnh / Video Đầu vào      │
                     └────────────────────┬────────────────────┘
                                          │
-       ┌───────────────────┬─────────────┴─────┬───────────────────┐
-       ▼                   ▼                   ▼                   ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│ Mô hình Thụ   │   │ Dị thường Tần │   │ Biến thiên    │   │ Độ bất định   │
-│ động ViT/CNN  │   │ số 2D-FFT     │   │ Nhiễu Không   │   │ Entropy H(P)  │
-│  (Trọng số 75%)│  │ (Trọng số 15%)│   │ gian (T.số 10%)│  │ (Uncertainty) │
-└───────┬───────┘   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-        │                   │                   │                   │
-        └───────────────────┼───────────────────┘                   │
-                            ▼                                       ▼
-             ┌─────────────────────────────┐         ┌──────────────────────────────┐
-             │ Tính Điểm Rủi ro Tổng hợp   │         │ Kiểm tra Ranh giới Entropy   │
-             │ Risk = 0.75*P + 0.15*S + 0.10*N      │ H(P) = -sum(P_i * log2(P_i)) │
-             └──────────────┬──────────────┘         └──────────────┬───────────────┘
-                            │                                       │
-                            └───────────────────┬───────────────────┘
-                                                ▼
-                               ┌──────────────────────────────────┐
-                               │  Chứng thư Giám định Kỹ thuật số │
-                               │        CERT-DF-XXXXXXXX          │
-                               └──────────────────────────────────┘
+                                         ▼
+                    ┌─────────────────────────────────────────┐
+                    │      Cổng Phát hiện Con người (Gate)    │
+                    │   (Khuôn mặt / Da YCbCr / Giọng nói)    │
+                    └───────────┬─────────────────┬───────────┘
+                                │                 │
+               [Có Con người]   │                 │   [Không có Con người]
+                                ▼                 ▼
+       ┌─────────────────────────────────┐   ┌─────────────────────────────────┐
+       │   LUỒNG 2: SONG SONG (DUAL)     │   │   LUỒNG 1: ĐƠN LẺ (SINGLE)      │
+       │                                 │   │                                 │
+       │  ┌───────────────────────────┐  │   │  ┌───────────────────────────┐  │
+       │  │ Luồng A: General 4D ViT   │  │   │  │ Mô hình Tổng quát ViT 4D  │  │
+       │  │ - 4D Evidence (ViT, FFT,  │  │   │  │ - 4D Evidence (ViT, FFT,  │  │
+       │  │   Spatial Noise, Entropy) │  │   │  │   Spatial Noise, Entropy) │  │
+       │  │   => Risk_general (40%)   │  │   │  │   => Risk_composite (100%)│  │
+       │  └─────────────┬─────────────┘  │   │  └─────────────┬─────────────┘  │
+       │                │                │   └────────────────┼────────────────┘
+       │  ┌─────────────┴─────────────┐  │                    │
+       │  │ Luồng B: Human Biometrics │  │                    │
+       │  │ - WAVIE 2D DWT Skin       │  │                    │
+       │  │ - rPPG Vascular Pulse     │  │                    │
+       │  │ - SSL Vocal Dynamics      │  │                    │
+       │  │ - DF26 Lip-Sync Synch     │  │                    │
+       │  │   => Risk_human (60%)     │  │                    │
+       │  └─────────────┬─────────────┘  │                    │
+       │                │                │                    │
+       │                ▼                │                    │
+       │  ┌───────────────────────────┐  │                    │
+       │  │ Hợp nhất Bằng chứng Đa    │  │                    │
+       │  │ nguồn (Evidence Fusion):  │  │                    │
+       │  │ Risk = 0.40*Rg + 0.60*Rh  │  │                    │
+       │  └─────────────┬─────────────┘  │                    │
+       └────────────────┼────────────────┘                    │
+                        │                                     │
+                        └───────────────────┬─────────────────┘
+                                            ▼
+                           ┌──────────────────────────────────┐
+                           │  Chứng thư Giám định Kỹ thuật số │
+                           │        CERT-DF-XXXXXXXX          │
+                           └──────────────────────────────────┘
 ```
 
-### Công thức Toán học Điểm Rủi ro Tổng hợp (Composite Risk Score)
+### 1.1. Công thức Hợp nhất Bằng chứng Pháp y (Evidence Fusion Formulations)
 
-Điểm rủi ro tổng hợp ($Risk_{composite} \in [0.0, 1.0]$) được tính theo công thức:
+Hệ thống tự động kích hoạt chế độ phân tích tương ứng theo sự hiện diện của con người:
 
-$$Risk_{composite} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+#### Trường hợp 1: Phương tiện Phi nhân sự (Non-Human / Landscape / Object)
+Khi cổng sinh trắc học không phát hiện khuôn mặt, da mặt hay giọng nói, hệ thống chạy **Luồng Đơn Tổng quát (`SINGLE_STREAM_GENERAL`)**:
+
+$$Risk_{composite} = 1.00 \cdot Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+
+#### Trường hợp 2: Phương tiện Chứa Con người (Human Face / Portrait / Talking Video)
+Khi phát hiện con người, hệ thống phân tách thành **2 Luồng Song song (`DUAL_STREAM_PARALLEL`)** và kết hợp bằng chứng theo tỷ trọng tối ưu:
+
+$$Risk_{composite} = 0.40 \cdot Risk_{general} + 0.60 \cdot Risk_{human}$$
 
 Trong đó:
-1. **Xác suất Mô hình Thụ động ($P_{fake}$)**: Xác suất dự đoán Deepfake từ mạng Vision Transformer / CNN đã được tinh chỉnh ($W_{model} = 0.75$).
-2. **Dị thường Tần số 2D-FFT ($Score_{spectral}$)**: Điểm dải tần số cao Z-score tính từ biến đổi Fast Fourier Transform 2D ($W_{spectral} = 0.15$). Nhận diện nhiễu ma trận đặc trưng của mô hình GAN và Diffusion:
-   $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
-3. **Độ bất tương đồng Nhiễu Không gian ($Score_{spatial}$)**: Chênh lệch phương sai nhiễu giữa vùng khuôn mặt trung tâm và vùng nền ($W_{spatial} = 0.10$).
-4. **Độ bất định Entropy ($H(P)$)**: Chỉ số Entropy chuẩn hóa đo lường độ bất định tại ranh giới dự đoán:
-   $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
+1. **$Risk_{general}$ (Luồng Tổng quát 4D)**:
+   $$Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
+   - **Xác suất Mô hình Thụ động ($P_{fake}$)**: Xác suất dự đoán Deepfake từ mạng Vision Transformer tinh chỉnh ($W_{model} = 0.75$).
+   - **Dị thường Tần số 2D-FFT ($Score_{spectral}$)**: Điểm dải tần số cao Z-score tính từ biến đổi 2D Fast Fourier Transform ($W_{spectral} = 0.15$), phát hiện nhiễu lưới tổng hợp từ GAN và Diffusion:
+     $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
+   - **Độ bất tương đồng Nhiễu Không gian ($Score_{spatial}$)**: Chênh lệch phương sai nhiễu giữa trung tâm và vùng biên ngoại vi ($W_{spatial} = 0.10$).
+   - **Độ bất định Entropy ($H(P)$)**: Chỉ số Entropy chuẩn hóa đo lường độ phân vân tại ranh giới quyết định:
+     $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
+
+2. **$Risk_{human}$ (Luồng Sinh trắc học Con người - Model 2)**:
+   Xác suất rủi ro hiệu chỉnh chuẩn xác (Platt scaling / Temperature ECE calibrated) từ tổ hợp:
+   - Phân tích sóng nhỏ da mặt WAVIE 2D DWT (bất thường cấu trúc lỗ chân lông và biểu bì).
+   - Tín hiệu mạch quang học rPPG (tính tuần hoàn nhịp đập mao mạch máu dưới da).
+   - Động học phổ âm thanh thanh quản SSL (bất thường tổng hợp giọng nói AI).
+   - Tính nhất quán khẩu hình - âm vị môi DF26 (bất thường đồng bộ nhép môi trong video).
 
 ### Tiêu chuẩn Kết luận Giám định
 - $Risk_{composite} \le 0.50 \implies$ **`AUTHENTIC_MEDIA_LIKELY`** (Phương tiện thực / Nguyên bản)
@@ -90,6 +130,7 @@ Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Gi�
 
 ### Đặc tính Chứng thư
 - **Mã Chứng thư Độc bản**: Định dạng UUID chuẩn `CERT-DF-XXXXXXXX` (ví dụ: `CERT-DF-662CBE7B`).
+- **Chế độ Phân tích Giám định**: Ghi nhận minh bạch `SINGLE_STREAM_GENERAL` hoặc `DUAL_STREAM_PARALLEL`.
 - **Mã Hash SHA-256 Phương tiện**: Mã hóa SHA-256 toàn vẹn tệp truyền thông ($H_{media}$).
 - **Chữ ký Mật mã hóa**: Ký số bảo mật Ed25519 ($Sig_{proof}$).
 - **Đường dẫn Tra cứu Trực tuyến**: URL nhúng `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
@@ -98,9 +139,10 @@ Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Gi�
 ```json
 {
   "certificate_id": "CERT-DF-662CBE7B",
-  "timestamp": "2026-09-16 08:23:40 UTC",
+  "timestamp": "2026-09-17 08:23:40 UTC",
   "forensic_version": "2.0-AUDITABLE",
   "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
+  "analysis_mode": "DUAL_STREAM_PARALLEL",
   "media_integrity": {
     "sha256": "662cbe7b89e24a8f902472e389b0129a7c6f0119b48f",
     "verification_url": "https://detection.dtpsoft.vn/api/verify/CERT-DF-662CBE7B"
@@ -109,6 +151,19 @@ Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Gi�
     "dimensions": "1024x1024",
     "format": "JPEG",
     "face_cropping_applied": true
+  },
+  "dual_stream_breakdown": {
+    "mode": "DUAL_STREAM_PARALLEL",
+    "human_gate_triggered": true,
+    "fusion_formula": "0.40 * Risk_general + 0.60 * Risk_human",
+    "stream_1_general_vision": {
+      "model_type": "Custom Fine-Tuned ViT + 2D-FFT + Noise Spectrum",
+      "risk_general": 0.0283
+    },
+    "stream_2_human_biometrics": {
+      "model_type": "HumanMultiModalDetector (WAVIE/rPPG/SSL/LipSync)",
+      "risk_human": 0.0150
+    }
   },
   "multi_dimensional_evidence": {
     "passive_model_score": {
@@ -129,7 +184,7 @@ Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Gi�
       "interpretation": "High prediction certainty"
     }
   },
-  "composite_risk_score": 0.0283,
+  "composite_risk_score": 0.0203,
   "auditable_verdict": "AUTHENTIC_MEDIA_LIKELY",
   "proof": {
     "type": "Ed25519SHA256Signature2026",
