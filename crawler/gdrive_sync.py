@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import time
+import shutil
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
