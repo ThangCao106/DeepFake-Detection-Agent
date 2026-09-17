@@ -12,15 +12,19 @@ import json
 import time
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 # Local storage fallback directory if GDrive credentials are not configured
-DEFAULT_LOCAL_STORAGE = os.path.join("report_colab", "gdrive_storage")
+DEFAULT_LOCAL_STORAGE = str(PROJECT_ROOT / "report_colab" / "gdrive_storage")
+DEFAULT_TEMP_STAGING = str(PROJECT_ROOT / "report_colab" / "temp_media_samples")
 
 class DiskGuardAgent:
     """
     Monitors VPS disk space and manages automatic cleanup of temporary media files.
-    Prevents VPS disk full errors by purging heavy binary media after GDrive sync.
+    Prevents VPS disk full errors by purging temporary scratch files after GDrive sync.
+    Never deletes files from persistent storage.
     """
-    def __init__(self, target_dir=DEFAULT_LOCAL_STORAGE, min_free_gb=5.0, max_cache_gb=3.0):
+    def __init__(self, target_dir=DEFAULT_TEMP_STAGING, min_free_gb=5.0, max_cache_gb=3.0):
         self.target_dir = target_dir
         self.min_free_gb = min_free_gb
         self.max_cache_gb = max_cache_gb
