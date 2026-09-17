@@ -4,121 +4,121 @@
   "accuracy_percent": 50.0,
   "predictions": [
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_1.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_1.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.7909770011901855,
+      "confidence": 0.9015692472457886,
       "all_scores": {
-        "Real": 0.7909770011901855,
-        "Fake": 0.20902298390865326
+        "Real": 0.9015692472457886,
+        "Fake": 0.09843072295188904
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_2.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_2.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.815122663974762,
+      "confidence": 0.9204190373420715,
       "all_scores": {
-        "Real": 0.815122663974762,
-        "Fake": 0.184877410531044
+        "Real": 0.9204190373420715,
+        "Fake": 0.07958093285560608
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_3.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_3.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.8208901882171631,
+      "confidence": 0.9255868196487427,
       "all_scores": {
-        "Real": 0.8208901882171631,
-        "Fake": 0.17910981178283691
+        "Real": 0.9255868196487427,
+        "Fake": 0.07441321015357971
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_4.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_4.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.8217645883560181,
+      "confidence": 0.9263878464698792,
       "all_scores": {
-        "Real": 0.8217645883560181,
-        "Fake": 0.1782354712486267
+        "Real": 0.9263878464698792,
+        "Fake": 0.07361210137605667
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_5.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_5.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.8269369602203369,
+      "confidence": 0.9310986995697021,
       "all_scores": {
-        "Real": 0.8269369602203369,
-        "Fake": 0.17306306958198547
+        "Real": 0.9310986995697021,
+        "Fake": 0.06890129297971725
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_6.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_6.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.8287372589111328,
+      "confidence": 0.9343089461326599,
       "all_scores": {
-        "Real": 0.8287372589111328,
-        "Fake": 0.17126277089118958
+        "Real": 0.9343089461326599,
+        "Fake": 0.0656910315155983
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_7.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_7.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.818814754486084,
+      "confidence": 0.9312397837638855,
       "all_scores": {
-        "Real": 0.818814754486084,
-        "Fake": 0.18118523061275482
+        "Real": 0.9312397837638855,
+        "Fake": 0.06876016408205032
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_8.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_8.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.8103587031364441,
+      "confidence": 0.9300956726074219,
       "all_scores": {
-        "Real": 0.8103587031364441,
-        "Fake": 0.1896413415670395
+        "Real": 0.9300956726074219,
+        "Fake": 0.0699043795466423
       },
       "spectral_anomaly": null,
       "match": true
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_9.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_9.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.8120522499084473,
+      "confidence": 0.9350014925003052,
       "all_scores": {
-        "Real": 0.8120522499084473,
-        "Fake": 0.18794772028923035
+        "Real": 0.9350014925003052,
+        "Fake": 0.06499850004911423
       },
       "spectral_anomaly": null,
       "match": false
     },
     {
-      "path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\synth_eval_samples\\eval_synth_10.jpg",
+      "path": "/tmp/synth_eval_samples/eval_synth_10.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.8105862736701965,
+      "confidence": 0.9368309378623962,
       "all_scores": {
-        "Real": 0.8105862736701965,
-        "Fake": 0.18941369652748108
+        "Real": 0.9368309378623962,
+        "Fake": 0.06316906213760376
       },
       "spectral_anomaly": null,
       "match": true
