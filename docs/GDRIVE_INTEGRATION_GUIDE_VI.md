@@ -1,6 +1,6 @@
-# 📖 Hướng Dẫn Tích Hợp Google Drive Cho Dự Án DeepFake Detection (Option A & Option C)
+# 📖 Hướng Dẫn Tích Hợp Google Drive & GitHub Token Cho Dự Án DeepFake Detection
 
-Tài liệu này hướng dẫn chi tiết từng bước để kết nối dự án **DeepFake Detection Agent** với thư mục / project workspace **Deepfake Detection** trên Google Drive.
+Tài liệu này hướng dẫn chi tiết từng bước để kết nối dự án **DeepFake Detection Agent** với thư mục Google Drive và cấu hình GitHub Token cho Google Colab Pro Scheduled Runner.
 
 ---
 
@@ -82,25 +82,29 @@ Dữ liệu sẽ tự động ghi thẳng vào đường dẫn:
 
 ---
 
-## 🚀 PHẦN 3: Cấu Hình Option C Cho Colab Pro Scheduled Runner (Khắc Phục Lỗi GitHub Private)
-> **Mục đích**: Chạy **Scheduled Run (Headless 4h/lần)** trên Colab Pro mà không bị lỗi xác thực private GitHub (`fatal: could not read Username`).
+## 🚀 PHẦN 3: Cấu Hình Option B2 Cho Colab Pro Scheduled Runner (GitHub Personal Access Token)
+> **Mục đích**: Tự động hóa kéo mã nguồn 100% khi chạy **Scheduled Run (Headless 4h/lần)** trên Colab Pro mà vẫn giữ Private Repository an toàn tuyệt đối, không cần copy file zip thủ công lên Google Drive.
 
-### 📍 Bước 1: Tạo gói zip mã nguồn trên máy cục bộ
-Chạy script đóng gói có sẵn trong thư mục dự án:
-```bash
-python package_for_gdrive.py
-```
-Script sẽ tạo ra file gọn nhẹ `DeepFake-Detection-Agent.zip` (~11 MB, đã tự động loại trừ virtualenv, git cache và checkpoint nặng).
+### 📍 Bước 1: Tạo GitHub Personal Access Token (Mất 30 giây)
+1. Truy cập trực tiếp: [GitHub Token Settings](https://github.com/settings/tokens) (hoặc vào GitHub cá nhân -> **Settings** -> **Developer settings** -> **Personal access tokens** -> **Tokens (classic)**).
+2. Nhấn nút **Generate new token** -> Chọn **Generate new token (classic)**.
+3. Điền các trường:
+   - **Note**: `colab_scheduled_runner`
+   - **Expiration**: Chọn thời hạn (ví dụ `90 days` hoặc `No expiration` nếu dùng lâu dài).
+   - **Select scopes**: Tích chọn duy nhất ô **`repo`** (Full control of private repositories).
+4. Kéo xuống dưới cùng, nhấn nút màu xanh **Generate token**.
+5. Sao chép chuỗi mã token vừa tạo (bắt đầu bằng ký tự `ghp_...`). *(Lưu ý: GitHub chỉ hiển thị token này một lần).*
 
-### 📍 Bước 2: Tải file Zip lên Google Drive
-Tải file `DeepFake-Detection-Agent.zip` vào thư mục Google Drive tại đường dẫn:
-```
-Drive của tôi / Thread_Data / DeepFake-Detection-Agent.zip
-```
-*(Hoặc giải nén trực tiếp thành thư mục `MyDrive/Thread_Data/DeepFake-Detection-Agent/`)*
+### 📍 Bước 2: Lưu Token Vào Colab Secrets (Bảo Mật An Toàn)
+1. Mở file Notebook **`Colab_Pro_Scheduled_Runner.ipynb`** trên Google Colab.
+2. Nhìn vào thanh công cụ màu xám ở lề bên trái màn hình Colab, nhấp vào biểu tượng chiếc chìa khóa **🔑 (Secrets)**.
+3. Nhấn **+ Add new secret**:
+   - **Name**: Nhập chính xác `GH_TOKEN`
+   - **Value**: Dán chuỗi token `ghp_...` vừa sao chép ở Bước 1.
+4. Bật công tắc **Notebook access** (Cho phép sổ tay truy cập) sang màu xanh.
 
-### 📍 Bước 3: Chạy Scheduled Runner trên Colab Pro
-Trong notebook `Colab_Pro_Scheduled_Runner.ipynb`:
-- **Bước 1**: Mount Google Drive (`drive.mount('/content/drive')`).
-- **Bước 2**: Hệ thống sẽ tự động phát hiện `Thread_Data/DeepFake-Detection-Agent.zip` hoặc thư mục đã giải nén trên Drive, copy/extract sang `/content/DeepFake-Detection-Agent` với tốc độ cực nhanh (chưa tới 3 giây).
-- **Bước 3 & 4**: Cài đặt dependencies và thực thi pipeline `colab_sync_to_gdrive.py` hoàn toàn độc lập, 100% không yêu cầu GitHub Token!
+### 📍 Bước 3: Khởi Chạy Scheduled Run
+- Mỗi khi Scheduled Run kích hoạt (mỗi 4 tiếng):
+  - Colab sẽ tự động đọc `GH_TOKEN` từ Secrets.
+  - Tự động kéo commit mới nhất từ nhánh `main` (`git clone` hoặc `git pull`).
+  - Chạy `colab_sync_to_gdrive.py` mượt mà 100%, không bao giờ báo lỗi `fatal: could not read Username`!
