@@ -102,6 +102,18 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
                         shutil.copy2(str(f), str(dest_file))
                         copied_count += 1
                         
+    # Also sync benchmark manifest and summary files to date root
+    extra_sources = [local_daily_dir, Path("report_colab") / "temp_media_samples"]
+    for src_dir in extra_sources:
+        if src_dir.exists():
+            for meta_name in ["dataset_manifest.jsonl", "dataset_summary.md"]:
+                meta_src = src_dir / meta_name
+                if meta_src.exists():
+                    dest_meta = drive_daily_dir / meta_name
+                    shutil.copy2(str(meta_src), str(dest_meta))
+                    copied_count += 1
+                    print(f"  📄 Synced benchmark metadata: {meta_name} -> {drive_daily_dir}")
+
     print(f"[Colab GDrive Sync] Completed! Successfully synced {copied_count} files to Google Drive:")
     print(f"  📂 Destination: {drive_daily_dir}")
     return copied_count
