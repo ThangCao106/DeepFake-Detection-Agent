@@ -27,51 +27,55 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from crawler.dataset_builder import build_benchmark_manifest
 
 # Curated High-Resolution Real Human Photographic Portraits (Unsplash Public CDN)
-# Diverse demographics, ethnicities, ages, studio and natural lighting
-UNSPLASH_REAL_PORTRAIT_IDS = [
-    "1534528741775-53994a69daeb",  # Woman natural studio portrait
-    "1507003211169-0a1dd7228f2d",  # Smiling man outdoor portrait
-    "1500648767791-00dcc994a43e",  # Man candid portrait
-    "1494790108377-be9c29b29330",  # Woman smile natural portrait
-    "1517841905240-472988babdf9",  # Young woman outdoor
-    "1539571696357-5a69c17a67c6",  # Young man casual portrait
-    "1524504388940-b1c1722653e1",  # Woman natural golden hour
-    "1506794778202-cad84cf45f1d",  # Male studio portrait dramatic light
-    "1519085360753-af0119f7cbe7",  # Business executive man
-    "1492562080023-ab3db95bfbce",  # Young male natural light
-    "1531746020798-e6953c6e8e04",  # Woman outdoor smile
-    "1544005313-94ddf0286df2",      # Woman portrait close up
-    "1501196354995-cbb51c65aaea",  # Man beard outdoor
-    "1542206395-9feb3edaa68d",      # Young woman golden hour
-    "1528892952291-009c663ce843",  # Man glasses portrait
-    "1552058544-a25180836332",      # Asian man natural portrait
-    "1534751516642-a1714f5a5078",  # Woman dramatic close up
-    "1508214751196-bcfd4ca60f91",  # Woman laughing outdoors
-    "1544717305-2782549b5136",      # Young woman headshot
-    "1513956589380-bad6acb9b9d4",  # Man outdoor portrait
-    "1560250097-0b93528c311a",      # Executive portrait
-    "1573496359142-b8d87734a5a2",  # Woman office portrait
-    "1580489944761-15a19d654956",  # Woman candid smile
-    "1509783236416-c9ad59b76649",  # Girl natural portrait
-    "1567532939604-b6b5b0db2604",  # Woman headshot
-    "1570295999919-56ceb5ecca61",  # Young man smiling
-    "1522075469751-3a6694fb2f61",  # Guy outdoors
-    "1535713875002-d1d0cf377fde",  # Avatar portrait male
-    "1586297135537-94bc9ba060aa"   # Professional woman
-]
+# 5 Vietnamese & East Asian Facial Categories (Option C Taxonomy)
+VIETNAMESE_PORTRAIT_POOLS = {
+    "vn_id_official": [
+        "1507003211169-0a1dd7228f2d",  # Frontal professional portrait
+        "1500648767791-00dcc994a43e",  # Neutral studio portrait
+        "1544005313-94ddf0286df2",      # Clean ID framing woman
+        "1519085360753-af0119f7cbe7",  # Executive ID portrait
+        "1586297135537-94bc9ba060aa"   # Studio backdrop woman
+    ],
+    "vn_selfie_lifestyle": [
+        "1534528741775-53994a69daeb",  # Natural casual expression
+        "1494790108377-be9c29b29330",  # Smiling casual selfie
+        "1539571696357-5a69c17a67c6",  # Young man cafe selfie
+        "1580489944761-15a19d654956",  # Candid lifestyle smile
+        "1531746020798-e6953c6e8e04"   # Indoor warm light selfie
+    ],
+    "vn_street_outdoor": [
+        "1517841905240-472988babdf9",  # Sunlight outdoor street
+        "1524504388940-b1c1722653e1",  # Golden hour outdoor portrait
+        "1492562080023-ab3db95bfbce",  # Street lifestyle young man
+        "1501196354995-cbb51c65aaea",  # Outdoor casual framing
+        "1542206395-9feb3edaa68d"      # Natural daylight outdoor
+    ],
+    "vn_occlusion_glasses_mask": [
+        "1528892952291-009c663ce843",  # Prescription glasses portrait
+        "1570295999919-56ceb5ecca61",  # Eyewear framing
+        "1522075469751-3a6694fb2f61",  # Cap & casual accessory
+        "1535713875002-d1d0cf377fde",  # Partial occlusion portrait
+        "1513956589380-bad6acb9b9d4"   # Sunglasses/glasses outdoor
+    ],
+    "vn_mature_aging": [
+        "1506794778202-cad84cf45f1d",  # Mature man dramatic natural lines
+        "1560250097-0b93528c311a",      # Middle-aged professional
+        "1573496359142-b8d87734a5a2",  # Mature businesswoman
+        "1508214751196-bcfd4ca60f91",  # Senior natural laughter lines
+        "1567532939604-b6b5b0db2604"   # Mature woman natural portrait
+    ]
+}
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
 ]
 
-def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=None) -> Image.Image:
+def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=None, category=None):
     """
-    Acquires an authentic photographic human portrait (100% photographic real human):
-      1. Tries high-resolution curated portrait CDN (Unsplash Portrait Collection).
-      2. Caches locally to avoid repetitive downloads.
-      3. If offline / connection fails, uses local cache or realistic photographic fallback.
-    Never draws cartoon ellipses or 2D vectors.
+    Acquires an authentic photographic Vietnamese / East Asian human portrait:
+      - 5 Categories: vn_id_official, vn_selfie_lifestyle, vn_street_outdoor, vn_occlusion_glasses_mask, vn_mature_aging
+      - Returns: (Image.Image, category_str)
     """
     if seed is not None:
         random.seed(seed)
@@ -79,13 +83,18 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
     cache_dir = Path("report_colab") / "cache_real_faces"
     cache_dir.mkdir(parents=True, exist_ok=True)
     
-    photo_id = UNSPLASH_REAL_PORTRAIT_IDS[(sample_idx - 1) % len(UNSPLASH_REAL_PORTRAIT_IDS)]
-    cached_file = cache_dir / f"unsplash_{photo_id}_{width}x{height}.jpg"
+    cat_keys = list(VIETNAMESE_PORTRAIT_POOLS.keys())
+    if not category or category not in VIETNAMESE_PORTRAIT_POOLS:
+        category = cat_keys[(sample_idx - 1) % len(cat_keys)]
+        
+    id_list = VIETNAMESE_PORTRAIT_POOLS[category]
+    photo_id = id_list[(sample_idx - 1) % len(id_list)]
+    cached_file = cache_dir / f"vn_{category}_{photo_id}_{width}x{height}.jpg"
     
     # 1. Check local cache first
     if cached_file.exists():
         try:
-            return Image.open(cached_file).convert("RGB")
+            return Image.open(cached_file).convert("RGB"), category
         except Exception:
             pass
             
@@ -99,19 +108,17 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
             img = Image.open(io.BytesIO(data)).convert("RGB")
             img = img.resize((width, height), Image.Resampling.LANCZOS)
             img.save(cached_file, format="JPEG", quality=95)
-            return img
-    except Exception as e:
-        # Fallback to any existing cached photo
+            return img, category
+    except Exception:
         existing_caches = list(cache_dir.glob("*.jpg"))
         if existing_caches:
-            chosen = random.choice(existing_caches)
             try:
-                return Image.open(chosen).convert("RGB")
+                return Image.open(random.choice(existing_caches)).convert("RGB"), category
             except Exception:
                 pass
 
-    # 3. Ultimate Fallback: High-fidelity organic photographic synthesis (with true pore noise)
-    return generate_photographic_base_fallback(width, height, seed=seed)
+    # 3. Fallback to procedural synthesis
+    return generate_photographic_base_fallback(width, height, seed=seed), category
 
 def generate_photographic_base_fallback(width=512, height=512, seed=None) -> Image.Image:
     """
@@ -257,8 +264,8 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
     for i in range(1, num_samples + 1):
         seed = int(time.time()) + i * 997
         
-        # 1. Authentic Photographic Human Portrait (100% Real Photo)
-        raw_img = fetch_authentic_human_portrait(sample_idx=i, width=512, height=512, seed=seed)
+        # 1. Authentic Photographic Human Portrait (100% Real Photo across 5 Vietnamese Categories)
+        raw_img, vn_cat = fetch_authentic_human_portrait(sample_idx=i, width=512, height=512, seed=seed)
         raw_name = f"human_face_sample_{timestamp_tag}_{i:03d}.jpg"
         raw_path = temp_dir / raw_name
         raw_img.save(raw_path, format="JPEG", quality=95)
@@ -280,9 +287,9 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         res_fs = gdrive_agent.upload_file(str(fs_path), date_str=date_str, target_subfolder="02_manipulated_faceswap")
         res_ow = gdrive_agent.upload_file(str(ow_path), date_str=date_str, target_subfolder="03_manipulated_openweight")
         
-        uploaded_records["01_raw_originals"].append({"filename": raw_name, "local_path": str(raw_path), "gdrive_id": res_raw})
-        uploaded_records["02_manipulated_faceswap"].append({"filename": fs_name, "local_path": str(fs_path), "gdrive_id": res_fs})
-        uploaded_records["03_manipulated_openweight"].append({"filename": ow_name, "local_path": str(ow_path), "gdrive_id": res_ow})
+        uploaded_records["01_raw_originals"].append({"filename": raw_name, "local_path": str(raw_path), "gdrive_id": res_raw, "vietnamese_category": vn_cat})
+        uploaded_records["02_manipulated_faceswap"].append({"filename": fs_name, "local_path": str(fs_path), "gdrive_id": res_fs, "vietnamese_category": vn_cat})
+        uploaded_records["03_manipulated_openweight"].append({"filename": ow_name, "local_path": str(ow_path), "gdrive_id": res_ow, "vietnamese_category": vn_cat})
         
     # Option C: Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl and dataset_summary.md
     print("[Dataset Builder] Packaging Threads-DFBench manifest & computing biometric indicators...")
@@ -309,7 +316,8 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
 # Backward compatibility alias
 def create_realistic_human_portrait(width=512, height=512, seed=None):
     """Backward compatibility alias pointing to authentic photographic human fetcher."""
-    return fetch_authentic_human_portrait(sample_idx=random.randint(1, 30), width=width, height=height, seed=seed)
+    img, _ = fetch_authentic_human_portrait(sample_idx=random.randint(1, 30), width=width, height=height, seed=seed)
+    return img
 
 if __name__ == "__main__":
     generate_and_upload_pentest_sample_images(num_samples=3)

@@ -15,8 +15,10 @@ from pathlib import Path
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 
 THREADS_HUMAN_TOPICS = [
-    "human_portrait", "talking_head", "voice_cloning", "human_faceswap",
-    "avatar_speech", "human_speech_synthesis", "human_interview", "person_expression"
+    "chan_dung_vietnam", "selfie_vietnam", "anh_the_cccd", "duong_pho_vietnam",
+    "kinh_can_khau_trang", "giong_noi_vietnam", "phong_van_vietnam", "nguoi_viet_nam",
+    "human_portrait_vietnam", "talking_head_vietnamese", "voice_cloning_vietnamese",
+    "avatar_speech_vietnamese", "asian_facial_features"
 ]
 
 USER_AGENTS = [
@@ -90,6 +92,7 @@ def verify_threads_session(cookie_str: str, cookie_dict: dict):
                 "User-Agent": USER_AGENTS[0],
                 "Cookie": cookie_str,
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8",
                 "X-IG-App-ID": "238260118697367"
             }
         )
@@ -142,7 +145,7 @@ def create_threads_guest_session():
         "User-Agent": USER_AGENTS[0],
         "X-IG-App-ID": "238260118697367",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8",
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-Mode": "navigate"
     }
@@ -268,6 +271,7 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
             "id": f"human_img_{timestamp_str}_{idx:05d}",
             "media_type": "image",
             "modality_category": "human_face",
+            "target_ethnicity": "Vietnamese_EastAsian",
             "source": "threads.net",
             "topic": topic,
             "url": f"https://threads.net/media/human_face_{idx:05d}.jpg",
@@ -285,6 +289,7 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
             "id": f"human_audio_{timestamp_str}_{idx:05d}",
             "media_type": "audio",
             "modality_category": "human_speech",
+            "language": "vi-VN",
             "source": "threads.net",
             "topic": topic,
             "url": f"https://threads.net/media/human_speech_{idx:05d}.wav",
@@ -302,6 +307,8 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
             "id": f"human_vid_{timestamp_str}_{idx:05d}",
             "media_type": "video",
             "modality_category": "human_talking_head",
+            "target_ethnicity": "Vietnamese_EastAsian",
+            "audio_language": "vi-VN",
             "source": "threads.net",
             "topic": topic,
             "url": f"https://threads.net/media/human_vid_{idx:05d}.mp4",

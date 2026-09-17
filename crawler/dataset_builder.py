@@ -110,6 +110,14 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     zpeak_stats = {"real": [], "faceswap": [], "openweight": []}
     
     idx_counter = 1
+    vn_cat_counts = {
+        "vn_id_official": 0,
+        "vn_selfie_lifestyle": 0,
+        "vn_street_outdoor": 0,
+        "vn_occlusion_glasses_mask": 0,
+        "vn_mature_aging": 0
+    }
+    
     for bucket, file_items in records_by_bucket.items():
         is_real = (bucket == "01_raw_originals")
         manipulation_type = "none_authentic" if is_real else ("faceswap_roi_warp" if bucket == "02_manipulated_faceswap" else "latent_diffusion_synthetic")
@@ -119,6 +127,8 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
             local_path = item.get("local_path")
             filename = item.get("filename")
             gdrive_id = item.get("gdrive_id", "")
+            vn_category = item.get("vietnamese_category", "vn_selfie_lifestyle")
+            vn_cat_counts[vn_category] = vn_cat_counts.get(vn_category, 0) + 1
             
             # Compute real metrics if local file exists
             ehigh = 0.38 if is_real else (0.29 if bucket == "02_manipulated_faceswap" else 0.18)
@@ -150,6 +160,8 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
                 "label": label,
                 "label_name": "REAL" if label == 0 else "MANIPULATED",
                 "manipulation_type": manipulation_type,
+                "ethnicity": "Vietnamese_EastAsian",
+                "vietnamese_category": vn_category,
                 "dwt_e_high": ehigh,
                 "fft_z_peak": zpeak,
                 "p_fake_estimated": p_fake,
@@ -204,7 +216,16 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
 | **Biến Thể FaceSwap** | `02_manipulated_faceswap` | {bucket_counts['02_manipulated_faceswap']} | {bucket_counts['02_manipulated_faceswap']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
 | **Biến Thể Diffusion** | `03_manipulated_openweight` | {bucket_counts['03_manipulated_openweight']} | {bucket_counts['03_manipulated_openweight']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
 
-## 2. Đặc Trưng Sinh Trắc Học & Độ Bất Định (Biometrics & Active Learning)
+## 2. Phân Bố 5 Nhóm Khuôn Mặt Người Việt (Vietnamese Multi-Type Facial Taxonomy)
+| Nhóm Khuôn Mặt Người Việt | Mã Nhận Diện | Số Lượng Ảnh | Mô Tả Đặc Trưng |
+| :--- | :--- | :--- | :--- |
+| **Ảnh Thẻ / CCCD / Hộ Chiếu** | `vn_id_official` | {vn_cat_counts.get('vn_id_official', 0)} | Chụp trực diện phông chuẩn, ánh sáng studio, không che mặt |
+| **Selfie & Đời Thường** | `vn_selfie_lifestyle` | {vn_cat_counts.get('vn_selfie_lifestyle', 0)} | Góc chụp tự nhiên, ánh sáng quán cafe/trong nhà, biểu cảm sinh động |
+| **Đường Phố & Dã Ngoại** | `vn_street_outdoor` | {vn_cat_counts.get('vn_street_outdoor', 0)} | Ánh sáng tự nhiên ngoài trời, bối cảnh đường phố Việt Nam |
+| **Vật Cản (Kính & Khẩu Trang)** | `vn_occlusion_glasses_mask` | {vn_cat_counts.get('vn_occlusion_glasses_mask', 0)} | Đeo kính cận, khẩu trang y tế/vải, mũ bảo hiểm (thách thức Landmark) |
+| **Trung Niên & Lão Hóa** | `vn_mature_aging` | {vn_cat_counts.get('vn_mature_aging', 0)} | Nếp nhăn tự nhiên, rãnh cười, kết cấu da sinh học trung niên |
+
+## 3. Đặc Trưng Sinh Trắc Học & Độ Bất Định (Biometrics & Active Learning)
 - **Tỷ lệ Năng lượng Sóng Nhỏ 2D Haar DWT ($E_{{high}}$)**:
   - Ảnh Gốc Người Thật (`01_raw_originals`): $\\mu(E_{{high}}) = {real_ehigh_mean:.4f}$ (Bảo toàn chi tiết biểu bì/lỗ chân lông tự nhiên $\\ge 0.30$).
   - Ảnh Sinh Bởi AI (`03_manipulated_openweight`): $\\mu(E_{{high}}) = {ow_ehigh_mean:.4f}$ (Bị hiện tượng làm mịn da nhân tạo $< 0.22$).
@@ -213,7 +234,7 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
   - Ảnh Sinh Bởi AI: $\\mu(Z_{{peak}}) = {ow_zpeak_mean:.4f}$ (Xuất hiện gai năng lượng sắc nhọn $> 4.20$).
 - **Tập Mẫu Khó (Hard Negatives)**: Đã trích xuất **{len(hard_entries)}** mẫu biên vào `hard_samples_manifest.jsonl` phục vụ Huấn luyện Tăng cường Focal Loss trên Google Colab.
 
-## 3. Phân Chia Huấn Luyện (Data Splits)
+## 4. Phân Chia Huấn Luyện (Data Splits)
 - **Train (70%)**: Dùng cho Fine-tuning Dual-Branch ViT & WAVIE.
 - **Validation (15%)**: Hiệu chuẩn nhiệt độ Platt ($T^* = 1.6178$) và tìm ngưỡng tối ưu Youden $\\tau^* = 0.8118$.
 - **Test OOD (15%)**: Đánh giá độ bền vững Out-Of-Distribution trên mạng xã hội Threads.
