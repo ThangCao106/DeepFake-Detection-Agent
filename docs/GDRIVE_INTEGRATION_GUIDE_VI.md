@@ -79,3 +79,28 @@ Dữ liệu sẽ tự động ghi thẳng vào đường dẫn:
 - `01_raw_originals/`
 - `02_manipulated_faceswap/`
 - `03_manipulated_openweight/`
+
+---
+
+## 🚀 PHẦN 3: Cấu Hình Option C Cho Colab Pro Scheduled Runner (Khắc Phục Lỗi GitHub Private)
+> **Mục đích**: Chạy **Scheduled Run (Headless 4h/lần)** trên Colab Pro mà không bị lỗi xác thực private GitHub (`fatal: could not read Username`).
+
+### 📍 Bước 1: Tạo gói zip mã nguồn trên máy cục bộ
+Chạy script đóng gói có sẵn trong thư mục dự án:
+```bash
+python package_for_gdrive.py
+```
+Script sẽ tạo ra file gọn nhẹ `DeepFake-Detection-Agent.zip` (~11 MB, đã tự động loại trừ virtualenv, git cache và checkpoint nặng).
+
+### 📍 Bước 2: Tải file Zip lên Google Drive
+Tải file `DeepFake-Detection-Agent.zip` vào thư mục Google Drive tại đường dẫn:
+```
+Drive của tôi / Thread_Data / DeepFake-Detection-Agent.zip
+```
+*(Hoặc giải nén trực tiếp thành thư mục `MyDrive/Thread_Data/DeepFake-Detection-Agent/`)*
+
+### 📍 Bước 3: Chạy Scheduled Runner trên Colab Pro
+Trong notebook `Colab_Pro_Scheduled_Runner.ipynb`:
+- **Bước 1**: Mount Google Drive (`drive.mount('/content/drive')`).
+- **Bước 2**: Hệ thống sẽ tự động phát hiện `Thread_Data/DeepFake-Detection-Agent.zip` hoặc thư mục đã giải nén trên Drive, copy/extract sang `/content/DeepFake-Detection-Agent` với tốc độ cực nhanh (chưa tới 3 giây).
+- **Bước 3 & 4**: Cài đặt dependencies và thực thi pipeline `colab_sync_to_gdrive.py` hoàn toàn độc lập, 100% không yêu cầu GitHub Token!
