@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T05:43:48.494000",
+  "timestamp": "2026-09-18T05:44:12.676629",
   "date": "2026-09-18",
   "pass_number": 9,
   "target_stream": "general",
   "modality": "VIDEO",
-  "dataset_key": "wild_deepfake",
-  "dataset_name": "Wild Deepfake",
+  "dataset_key": "deeper_forensics",
+  "dataset_name": "DeeperForensics-1.0",
   "dataset_metadata": {
-    "dataset_key": "wild_deepfake",
-    "dataset_name": "Wild Deepfake",
-    "description": "3,805 real & 3,509 fake videos collected from real-world YouTube internet sources.",
+    "dataset_key": "deeper_forensics",
+    "dataset_name": "DeeperForensics-1.0",
+    "description": "50,000 real videos & 10,000 fake face videos with real-world perturbations.",
     "type": "github",
     "modality": "VIDEO",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_wild_deepfake_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_deeper_forensics_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.942
+      0.9811
     ]
   },
   "metrics": {
-    "accuracy": 0.942,
-    "auc_score": 0.998,
+    "accuracy": 0.9811,
+    "auc_score": 0.9893,
     "eer_score": 0.018,
-    "precision": 0.9533,
-    "recall": 0.9402,
-    "f1_score": 0.9467,
-    "temperature_scaling_T": 1.4739,
-    "optimal_threshold_tau": 0.7682
+    "precision": 0.9911,
+    "recall": 0.9906,
+    "f1_score": 0.9908,
+    "temperature_scaling_T": 1.4523,
+    "optimal_threshold_tau": 0.6113
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
