@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T06:20:18.919387",
+  "timestamp": "2026-09-18T06:20:47.763904",
   "date": "2026-09-18",
   "pass_number": 11,
   "target_stream": "human",
-  "modality": "IMAGE",
-  "dataset_key": "dfbench_lmm",
-  "dataset_name": "DFBench 2025 (Large Multimodal Model Image Benchmark)",
+  "modality": "VIDEO",
+  "dataset_key": "faceforensics_pp",
+  "dataset_name": "FaceForensics++ (FF++)",
   "dataset_metadata": {
-    "dataset_key": "dfbench_lmm",
-    "dataset_name": "DFBench 2025 (Large Multimodal Model Image Benchmark)",
-    "description": "2025 SOTA benchmark evaluating Large Multimodal Models (LMMs) on AI-generated & synthetic images.",
-    "type": "github/hf",
-    "modality": "IMAGE",
+    "dataset_key": "faceforensics_pp",
+    "dataset_name": "FaceForensics++ (FF++)",
+    "description": "1,000 real videos & 5,000 fake videos (Deepfakes, Face2Face, FaceSwap, NeuralTextures).",
+    "type": "external/github",
+    "modality": "VIDEO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/image_dfbench_lmm_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_faceforensics_pp_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9708
+      0.9337
     ]
   },
   "metrics": {
-    "accuracy": 0.9708,
+    "accuracy": 0.9337,
     "auc_score": 0.998,
-    "eer_score": 0.012,
-    "precision": 0.9708,
-    "recall": 0.9624,
-    "f1_score": 0.9666,
-    "temperature_scaling_T": 1.5685,
-    "optimal_threshold_tau": 0.847
+    "eer_score": 0.018,
+    "precision": 0.9301,
+    "recall": 0.9216,
+    "f1_score": 0.9258,
+    "temperature_scaling_T": 1.4652,
+    "optimal_threshold_tau": 0.6215
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
