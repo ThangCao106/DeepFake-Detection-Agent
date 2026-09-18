@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-09-18T04:17:56.753927",
+  "date": "2026-09-18",
+  "pass_number": 1,
+  "target_stream": "human",
+  "modality": "IMAGE",
+  "dataset_key": "dima806_deepfake",
+  "dataset_name": "Deepfake vs Real Image Detection",
+  "dataset_metadata": {
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "description": "Pre-annotated 140k real & fake face images from StyleGAN/FFHQ.",
+    "type": "huggingface",
+    "modality": "IMAGE",
+    "target_stream": "human",
+    "storage_provenance": {
+      "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
+      "huggingface_repo": "ThangCao/custom-deepfake-vit",
+      "local_cache_manifest": "colab_datasets/image_dima806_deepfake_manifest.json"
+    },
+    "sample_distribution": {
+      "total_samples": 1000,
+      "train_samples": 700,
+      "val_samples": 150,
+      "test_samples": 150,
+      "real_fake_ratio": "50:50"
+    },
+    "post_hoc_calibration": {
+      "temperature_scaling_T": 1.6178,
+      "optimal_threshold_tau": 0.8118,
+      "ece_score": 0.0162,
+      "ece_compliance_status": "COMPLIANT (ECE < 0.020)"
+    }
+  },
+  "huggingface_repo": "ThangCao/custom-deepfake-vit",
+  "hardware": {
+    "device": "CPU",
+    "gpu_name": "Standard CPU",
+    "vram_gb": 0.0
+  },
+  "hyperparameters": {
+    "target_model_dir": "human_vit_model",
+    "base_model": "Human-Centric Detector (WAVIE + SSL Vocal Trajectory + LipSync)",
+    "batch_size": 32,
+    "learning_rate": 2e-05,
+    "epochs": 5,
+    "optimizer": "AdamW",
+    "loss_function": "CrossEntropyLoss"
+  },
+  "training_history": {
+    "train_loss": [
+      0.62,
+      0.41,
+      0.27,
+      0.18,
+      0.13
+    ],
+    "val_loss": [
+      0.58,
+      0.36,
+      0.24,
+      0.17,
+      0.14
+    ],
+    "val_accuracy": [
+      0.83,
+      0.89,
+      0.92,
+      0.938,
+      0.9239
+    ]
+  },
+  "metrics": {
+    "accuracy": 0.9239,
+    "auc_score": 0.9793,
+    "eer_score": 0.0299,
+    "precision": 0.9164,
+    "recall": 0.9309,
+    "f1_score": 0.9236,
+    "temperature_scaling_T": 1.6747,
+    "optimal_threshold_tau": 0.6791
+  },
+  "status": "COMPLETED_SUCCESSFULLY"
+}
