@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T06:03:48.178779",
+  "timestamp": "2026-09-18T06:06:13.497917",
   "date": "2026-09-18",
   "pass_number": 10,
   "target_stream": "general",
   "modality": "VIDEO",
-  "dataset_key": "deeper_forensics",
-  "dataset_name": "DeeperForensics-1.0",
+  "dataset_key": "mega_mmdf",
+  "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
   "dataset_metadata": {
-    "dataset_key": "deeper_forensics",
-    "dataset_name": "DeeperForensics-1.0",
-    "description": "50,000 real videos & 10,000 fake face videos with real-world perturbations.",
-    "type": "github",
+    "dataset_key": "mega_mmdf",
+    "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
+    "description": "1.1M multimodal samples across 21 forgery pipelines (Audio, Visual & Lip-Sync).",
+    "type": "github/arxiv",
     "modality": "VIDEO",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_deeper_forensics_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_mega_mmdf_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9466
+      0.9594
     ]
   },
   "metrics": {
-    "accuracy": 0.9466,
+    "accuracy": 0.9594,
     "auc_score": 0.998,
     "eer_score": 0.018,
-    "precision": 0.9437,
-    "recall": 0.9396,
-    "f1_score": 0.9416,
-    "temperature_scaling_T": 1.4443,
-    "optimal_threshold_tau": 0.6303
+    "precision": 0.9714,
+    "recall": 0.951,
+    "f1_score": 0.9611,
+    "temperature_scaling_T": 1.4576,
+    "optimal_threshold_tau": 0.6103
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
