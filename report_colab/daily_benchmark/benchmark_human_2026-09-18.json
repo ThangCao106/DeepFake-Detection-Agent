@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T05:24:08.597997",
+  "timestamp": "2026-09-18T05:24:27.232786",
   "date": "2026-09-18",
   "pass_number": 7,
   "target_stream": "human",
   "modality": "IMAGE",
-  "dataset_key": "ntire_robust_detection",
-  "dataset_name": "NTIRE Robust AI-Generated Detection",
+  "dataset_key": "cifake",
+  "dataset_name": "CIFAKE: Real vs AI-Generated CIFAR-10",
   "dataset_metadata": {
-    "dataset_key": "ntire_robust_detection",
-    "dataset_name": "NTIRE Robust AI-Generated Detection",
-    "description": "MSU NTIRE 2024 benchmark with diverse diffusion & GAN generators.",
-    "type": "huggingface",
+    "dataset_key": "cifake",
+    "dataset_name": "CIFAKE: Real vs AI-Generated CIFAR-10",
+    "description": "60,000 real CIFAR images vs 60,000 Stable Diffusion synthetic images.",
+    "type": "kaggle/hf",
     "modality": "IMAGE",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/image_ntire_robust_detection_manifest.json"
+      "local_cache_manifest": "colab_datasets/image_cifake_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9849
+      0.994
     ]
   },
   "metrics": {
-    "accuracy": 0.9849,
+    "accuracy": 0.994,
     "auc_score": 0.998,
     "eer_score": 0.012,
-    "precision": 0.995,
-    "recall": 0.9751,
-    "f1_score": 0.9849,
-    "temperature_scaling_T": 1.277,
-    "optimal_threshold_tau": 0.7835
+    "precision": 0.9913,
+    "recall": 0.9945,
+    "f1_score": 0.9929,
+    "temperature_scaling_T": 1.5784,
+    "optimal_threshold_tau": 0.7817
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
