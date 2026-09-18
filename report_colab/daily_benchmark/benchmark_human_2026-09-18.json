@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T05:08:44.700306",
+  "timestamp": "2026-09-18T05:11:00.774749",
   "date": "2026-09-18",
   "pass_number": 6,
   "target_stream": "human",
   "modality": "IMAGE",
-  "dataset_key": "dima806_deepfake",
-  "dataset_name": "Deepfake vs Real Image Detection",
+  "dataset_key": "ntire_robust_detection",
+  "dataset_name": "NTIRE Robust AI-Generated Detection",
   "dataset_metadata": {
-    "dataset_key": "dima806_deepfake",
-    "dataset_name": "Deepfake vs Real Image Detection",
-    "description": "Pre-annotated 140k real & fake face images from StyleGAN/FFHQ.",
+    "dataset_key": "ntire_robust_detection",
+    "dataset_name": "NTIRE Robust AI-Generated Detection",
+    "description": "MSU NTIRE 2024 benchmark with diverse diffusion & GAN generators.",
     "type": "huggingface",
     "modality": "IMAGE",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/image_dima806_deepfake_manifest.json"
+      "local_cache_manifest": "colab_datasets/image_ntire_robust_detection_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.994
+      0.9832
     ]
   },
   "metrics": {
-    "accuracy": 0.994,
+    "accuracy": 0.9832,
     "auc_score": 0.998,
     "eer_score": 0.012,
-    "precision": 0.995,
-    "recall": 0.995,
-    "f1_score": 0.995,
-    "temperature_scaling_T": 1.4956,
-    "optimal_threshold_tau": 0.7285
+    "precision": 0.9866,
+    "recall": 0.9908,
+    "f1_score": 0.9887,
+    "temperature_scaling_T": 1.5393,
+    "optimal_threshold_tau": 0.7087
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
