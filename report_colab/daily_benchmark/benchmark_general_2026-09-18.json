@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T06:21:32.313117",
+  "timestamp": "2026-09-18T06:22:01.331904",
   "date": "2026-09-18",
   "pass_number": 11,
   "target_stream": "general",
   "modality": "VIDEO",
-  "dataset_key": "dfdc",
-  "dataset_name": "DeepFake Detection Challenge (DFDC)",
+  "dataset_key": "wild_deepfake",
+  "dataset_name": "Wild Deepfake",
   "dataset_metadata": {
-    "dataset_key": "dfdc",
-    "dataset_name": "DeepFake Detection Challenge (DFDC)",
-    "description": "23,564 real videos & 104,500 fake videos created by Facebook & Partnership on AI.",
-    "type": "kaggle/hf",
+    "dataset_key": "wild_deepfake",
+    "dataset_name": "Wild Deepfake",
+    "description": "3,805 real & 3,509 fake videos collected from real-world YouTube internet sources.",
+    "type": "github",
     "modality": "VIDEO",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_dfdc_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_wild_deepfake_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9672
+      0.9789
     ]
   },
   "metrics": {
-    "accuracy": 0.9672,
-    "auc_score": 0.9949,
+    "accuracy": 0.9789,
+    "auc_score": 0.998,
     "eer_score": 0.018,
-    "precision": 0.9803,
-    "recall": 0.9728,
-    "f1_score": 0.9765,
-    "temperature_scaling_T": 1.6266,
-    "optimal_threshold_tau": 0.621
+    "precision": 0.9727,
+    "recall": 0.9834,
+    "f1_score": 0.978,
+    "temperature_scaling_T": 1.5237,
+    "optimal_threshold_tau": 0.7896
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
