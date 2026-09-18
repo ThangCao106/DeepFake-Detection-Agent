@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T07:23:09.973097",
+  "timestamp": "2026-09-18T07:23:44.540471",
   "date": "2026-09-18",
   "pass_number": 15,
   "target_stream": "human",
   "modality": "AUDIO",
-  "dataset_key": "deepspeak_audio",
-  "dataset_name": "DeepSpeak Voice Deepfakes",
+  "dataset_key": "fakeavceleb_audio",
+  "dataset_name": "FakeAVCeleb (Audio-Visual Deepfakes)",
   "dataset_metadata": {
-    "dataset_key": "deepspeak_audio",
-    "dataset_name": "DeepSpeak Voice Deepfakes",
-    "description": "Voice clone & audio deepfake speech clips.",
-    "type": "huggingface",
+    "dataset_key": "fakeavceleb_audio",
+    "dataset_name": "FakeAVCeleb (Audio-Visual Deepfakes)",
+    "description": "19,500 fake audio-visual video & voice cloned audio files.",
+    "type": "github",
     "modality": "AUDIO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/audio_deepspeak_audio_manifest.json"
+      "local_cache_manifest": "colab_datasets/audio_fakeavceleb_audio_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9472
+      0.9065
     ]
   },
   "metrics": {
-    "accuracy": 0.9472,
-    "auc_score": 0.9889,
+    "accuracy": 0.9065,
+    "auc_score": 0.9883,
     "eer_score": 0.022,
-    "precision": 0.9432,
-    "recall": 0.9329,
-    "f1_score": 0.938,
-    "temperature_scaling_T": 1.7513,
-    "optimal_threshold_tau": 0.7961
+    "precision": 0.9018,
+    "recall": 0.9105,
+    "f1_score": 0.9061,
+    "temperature_scaling_T": 1.4266,
+    "optimal_threshold_tau": 0.7821
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
