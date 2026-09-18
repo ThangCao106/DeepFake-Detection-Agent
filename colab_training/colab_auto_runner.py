@@ -24,7 +24,7 @@ except Exception:
 from colab_dataset_pipeline import ColabMultiModalityDatasetManager, ColabAutoSyncManager
 
 
-def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all"):
+def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all", upload_hf=False):
     sync_manager = ColabAutoSyncManager()
 
     # 1. Step 1: Auto-Pull latest code from GitHub
@@ -38,9 +38,11 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         import colab_dataset_pipeline
         import train_general
         import train_human
+        import upload_model_cloud
         importlib.reload(colab_dataset_pipeline)
         importlib.reload(train_general)
         importlib.reload(train_human)
+        importlib.reload(upload_model_cloud)
 
     # 2. Step 2: Prepare Multi-Modality Dataset
     print("\n==========================================")
@@ -67,9 +69,11 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         except Exception as e:
             print(f"[colab_runner] Note on general model training execution: {e}")
 
-        if hf_token:
+        if hf_token and upload_hf:
             print("[Step 4] Uploading General Model to Hugging Face Hub...")
             sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
+        else:
+            print("[Step 4] Checkpoint saved locally in 'custom_vit_model/' (HF sync deferred to Pass completion).")
 
         sync_manager.generate_and_save_report(
             modality=modality,
@@ -88,9 +92,11 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         except Exception as e:
             print(f"[colab_runner] Note on human model training execution: {e}")
 
-        if hf_token:
+        if hf_token and upload_hf:
             print("[Step 4] Uploading Human Model to Hugging Face Hub...")
             sync_manager.auto_upload_hf(model_dir="human_vit_model", hf_token=hf_token)
+        else:
+            print("[Step 4] Checkpoint saved locally in 'human_vit_model/' (HF sync deferred to Pass completion).")
 
         sync_manager.generate_and_save_report(
             modality=modality,
@@ -198,8 +204,20 @@ def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000,
             github_token=github_token,
             auto_pull=True,
             pass_number=pass_number,
-            target=target
+            target=target,
+            upload_hf=False
         )
+
+    # Synchronize trained model checkpoints to Hugging Face Hub once per full Pass
+    if hf_token:
+        print("\n======================================================================")
+        print(f"📦 [Pass #{pass_number} Complete] Syncing Trained Checkpoints to Hugging Face...")
+        print("======================================================================")
+        sync_manager = ColabAutoSyncManager()
+        if target in ["general", "all"]:
+            sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
+        if target in ["human", "all"]:
+            sync_manager.auto_upload_hf(model_dir="human_vit_model", hf_token=hf_token)
 
 
 def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000, target="all"):
@@ -209,8 +227,8 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000, targ
     2. Before each pass, checks if new code was pushed to GitHub origin/main.
        - If new commit detected: Auto-pulls latest code and reloads modules immediately.
        - If no new commit: Continues next Pass smoothly to progressively optimize weights!
-    3. Uploads trained model weights to Hugging Face Hub after each dataset stage.
-    4. Syncs metrics back to GitHub after each pass.
+    3. Uploads trained model weights to Hugging Face Hub at each pass completion (rate-limit protected).
+    4. Syncs metrics back to GitHub after each dataset stage.
     """
     pass_number = 1
     last_commit_sha = get_commit_sha("HEAD")
@@ -241,9 +259,11 @@ def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000, targ
                 import colab_dataset_pipeline
                 import train_general
                 import train_human
+                import upload_model_cloud
                 importlib.reload(colab_dataset_pipeline)
                 importlib.reload(train_general)
                 importlib.reload(train_human)
+                importlib.reload(upload_model_cloud)
             else:
                 print(f"ℹ️ Code is up-to-date (SHA: {last_commit_sha[:7]}). Proceeding with Pass #{pass_number}...")
 
@@ -299,7 +319,8 @@ def main():
             hf_token=args.hf_token,
             github_token=args.github_token,
             auto_pull=not args.no_pull,
-            target=args.target
+            target=args.target,
+            upload_hf=True
         )
 
 

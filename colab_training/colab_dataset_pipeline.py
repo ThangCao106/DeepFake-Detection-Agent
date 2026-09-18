@@ -124,16 +124,22 @@ class ColabAutoSyncManager:
         print("[auto_sync] 🔄 Pulling latest code from GitHub origin/main...")
         os.system("git fetch origin main && git reset --hard origin/main && git pull origin main")
 
-    def auto_upload_hf(self, model_dir="custom_vit_model", hf_token=None):
+    def auto_upload_hf(self, model_dir="custom_vit_model", hf_token=None, force=False):
         """Upload fine-tuned model weights to Hugging Face Hub."""
         token = hf_token or os.environ.get("HF_TOKEN")
         if not token:
             print("[auto_sync] ⚠️ Warning: HF_TOKEN not provided. Skipping Hugging Face upload.")
             return False
 
-        print(f"[auto_sync] 🚀 Uploading trained model weights to Hugging Face Hub ({self.hf_repo})...")
-        from upload_model_cloud import upload_model_to_hf
-        return upload_model_to_hf(model_dir=model_dir, repo_id=self.hf_repo, hf_token=token)
+        print(f"[auto_sync] 🚀 Checking / Uploading trained model weights to Hugging Face Hub ({self.hf_repo})...")
+        try:
+            import upload_model_cloud
+            importlib.reload(upload_model_cloud)
+            return upload_model_cloud.upload_model_to_hf(model_dir=model_dir, repo_id=self.hf_repo, hf_token=token, force=force)
+        except Exception as e:
+            print(f"[auto_sync] Note on HF upload module: {e}")
+            from upload_model_cloud import upload_model_to_hf
+            return upload_model_to_hf(model_dir=model_dir, repo_id=self.hf_repo, hf_token=token, force=force)
 
     @staticmethod
     def get_hardware_info():
