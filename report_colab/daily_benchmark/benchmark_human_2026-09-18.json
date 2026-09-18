@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T06:33:23.845927",
+  "timestamp": "2026-09-18T06:33:53.561615",
   "date": "2026-09-18",
   "pass_number": 12,
   "target_stream": "human",
   "modality": "VIDEO",
-  "dataset_key": "deepspeak_video",
-  "dataset_name": "DeepSpeak Video (Lip-Sync & Face-Swap)",
+  "dataset_key": "mega_mmdf",
+  "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
   "dataset_metadata": {
-    "dataset_key": "deepspeak_video",
-    "dataset_name": "DeepSpeak Video (Lip-Sync & Face-Swap)",
-    "description": "6,226 real & 6,799 fake videos with lip-sync and face-swap manipulation.",
-    "type": "huggingface",
+    "dataset_key": "mega_mmdf",
+    "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
+    "description": "1.1M multimodal samples across 21 forgery pipelines (Audio, Visual & Lip-Sync).",
+    "type": "github/arxiv",
     "modality": "VIDEO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_deepspeak_video_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_mega_mmdf_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9548
+      0.9426
     ]
   },
   "metrics": {
-    "accuracy": 0.9548,
-    "auc_score": 0.983,
+    "accuracy": 0.9426,
+    "auc_score": 0.988,
     "eer_score": 0.018,
-    "precision": 0.9623,
-    "recall": 0.9645,
-    "f1_score": 0.9634,
-    "temperature_scaling_T": 1.6153,
-    "optimal_threshold_tau": 0.8403
+    "precision": 0.9475,
+    "recall": 0.9324,
+    "f1_score": 0.9399,
+    "temperature_scaling_T": 1.768,
+    "optimal_threshold_tau": 0.8116
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
