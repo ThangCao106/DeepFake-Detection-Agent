@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T04:20:15.701865",
+  "timestamp": "2026-09-18T04:20:23.776506",
   "date": "2026-09-18",
   "pass_number": 1,
   "target_stream": "human",
   "modality": "VIDEO",
-  "dataset_key": "celeb_df_v2",
-  "dataset_name": "Celeb-DF (v2)",
+  "dataset_key": "dfdc",
+  "dataset_name": "DeepFake Detection Challenge (DFDC)",
   "dataset_metadata": {
-    "dataset_key": "celeb_df_v2",
-    "dataset_name": "Celeb-DF (v2)",
-    "description": "590 real celebrity videos & 5,639 high-quality deepfake face-swap videos.",
-    "type": "external/github",
+    "dataset_key": "dfdc",
+    "dataset_name": "DeepFake Detection Challenge (DFDC)",
+    "description": "23,564 real videos & 104,500 fake videos created by Facebook & Partnership on AI.",
+    "type": "kaggle/hf",
     "modality": "VIDEO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_celeb_df_v2_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_dfdc_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.912
+      0.922
     ]
   },
   "metrics": {
-    "accuracy": 0.912,
-    "auc_score": 0.9672,
-    "eer_score": 0.0446,
-    "precision": 0.9202,
-    "recall": 0.9002,
-    "f1_score": 0.9101,
-    "temperature_scaling_T": 1.7363,
-    "optimal_threshold_tau": 0.766
+    "accuracy": 0.922,
+    "auc_score": 0.9409,
+    "eer_score": 0.0352,
+    "precision": 0.9169,
+    "recall": 0.9072,
+    "f1_score": 0.912,
+    "temperature_scaling_T": 1.7218,
+    "optimal_threshold_tau": 0.6263
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
