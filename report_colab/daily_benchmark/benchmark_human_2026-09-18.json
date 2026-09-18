@@ -1,84 +1,57 @@
 {
-  "timestamp": "2026-09-18T07:58:18.955846",
-  "date": "2026-09-18",
-  "pass_number": 18,
-  "target_stream": "human",
-  "modality": "VIDEO",
-  "dataset_key": "celeb_df_v2",
-  "dataset_name": "Celeb-DF (v2)",
-  "dataset_metadata": {
-    "dataset_key": "celeb_df_v2",
-    "dataset_name": "Celeb-DF (v2)",
-    "description": "590 real celebrity videos & 5,639 high-quality deepfake face-swap videos.",
-    "type": "external/github",
-    "modality": "VIDEO",
-    "target_stream": "human",
-    "storage_provenance": {
-      "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
-      "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_celeb_df_v2_manifest.json"
+  "timestamp_utc": "2026-09-18T08:01:20Z",
+  "model_type": "human",
+  "target_model": "Human-Centric Detector (WAVIE + SSL Vocal Trajectory + LipSync)",
+  "human_image_evaluation": {
+    "media_path": "human_face_test.jpg",
+    "modality": "image",
+    "raw_logit": 0.6374,
+    "calibrated_probability": 0.5973,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "wavelet_high_freq_artifacts": true,
+      "skin_rppg_consistency": 0.9241
     },
-    "sample_distribution": {
-      "total_samples": 1000,
-      "train_samples": 700,
-      "val_samples": 150,
-      "test_samples": 150,
-      "real_fake_ratio": "50:50"
+    "inference_latency_ms": 38.75
+  },
+  "human_audio_evaluation": {
+    "media_path": "human_speech_test.wav",
+    "modality": "audio",
+    "raw_logit": 1.7628,
+    "calibrated_probability": 0.7483,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": true,
+    "forensic_decision": "DEEPFAKE_SUSPECT",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "ssl_vocal_trajectory_smoothness": 0.862,
+      "voiced_unvoiced_transition_anomaly": true
     },
-    "post_hoc_calibration": {
-      "temperature_scaling_T": 1.6178,
-      "optimal_threshold_tau": 0.8118,
-      "ece_score": 0.0162,
-      "ece_compliance_status": "COMPLIANT (ECE < 0.020)"
-    }
+    "inference_latency_ms": 17.2
   },
-  "huggingface_repo": "ThangCao/custom-deepfake-vit",
-  "hardware": {
-    "device": "CPU",
-    "gpu_name": "Standard CPU",
-    "vram_gb": 0.0
+  "human_video_evaluation": {
+    "media_path": "human_video_test.mp4",
+    "modality": "video",
+    "raw_logit": -1.2114,
+    "calibrated_probability": 0.3211,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "df26_lipsync_correlation": 0.8967,
+      "microexpression_temporal_jitter": 0.0412
+    },
+    "inference_latency_ms": 20.22
   },
-  "hyperparameters": {
-    "target_model_dir": "human_vit_model",
-    "base_model": "Human-Centric Detector (WAVIE + SSL Vocal Trajectory + LipSync)",
-    "batch_size": 32,
-    "learning_rate": 2e-05,
-    "epochs": 5,
-    "optimizer": "AdamW",
-    "loss_function": "CrossEntropyLoss"
-  },
-  "training_history": {
-    "train_loss": [
-      0.62,
-      0.41,
-      0.27,
-      0.18,
-      0.13
-    ],
-    "val_loss": [
-      0.58,
-      0.36,
-      0.24,
-      0.17,
-      0.14
-    ],
-    "val_accuracy": [
-      0.83,
-      0.89,
-      0.92,
-      0.938,
-      0.942
-    ]
-  },
-  "metrics": {
-    "accuracy": 0.942,
-    "auc_score": 0.9844,
-    "eer_score": 0.018,
-    "precision": 0.95,
-    "recall": 0.9364,
-    "f1_score": 0.9432,
-    "temperature_scaling_T": 1.5386,
-    "optimal_threshold_tau": 0.7925
-  },
-  "status": "COMPLETED_SUCCESSFULLY"
+  "compliance_audit": {
+    "ece_status": "COMPLIANT (ECE < 0.020)",
+    "platt_temperature_T": 1.6178
+  }
 }
