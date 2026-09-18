@@ -173,6 +173,9 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
         commit_msg = f"Auto-sync Colab dual-stream training reports for Pass #{pass_number} {modality}:{dataset_key} (target={target}) [Auto-Bot]"
         sync_manager.auto_sync_metrics_to_github(github_token=github_token, commit_message=commit_msg)
 
+    # 6. Step 6: Auto-sync Vietnamese inspection samples & reports to Google Drive (if mounted)
+    sync_manager.sync_to_google_drive()
+
     print("\n==========================================")
     print(f"[Complete] Colab Auto Pipeline Run (target={target}) Finished Successfully!")
     print("==========================================")
@@ -279,6 +282,10 @@ def run_continuous_auto_loop(hf_token=None, github_token=None, max_samples=1000,
             sync_manager.auto_upload_hf(model_dir="custom_vit_model", hf_token=hf_token)
         if target in ["human", "all"]:
             sync_manager.auto_upload_hf(model_dir="human_vit_model", hf_token=hf_token)
+
+    # Synchronize trained checkpoints and Vietnamese datasets to Google Drive (if mounted)
+    sync_manager = ColabAutoSyncManager()
+    sync_manager.sync_to_google_drive()
 
 
 def run_smart_auto_loop(hf_token=None, github_token=None, max_samples=1000, target="all"):

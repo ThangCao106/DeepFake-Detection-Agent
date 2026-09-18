@@ -149,6 +149,73 @@ class ColabAutoSyncManager:
             return upload_model_to_hf(model_dir=model_dir, repo_id=self.hf_repo, hf_token=token, force=force)
 
     @staticmethod
+    def sync_to_google_drive():
+        """
+        If /content/drive/MyDrive is mounted, synchronize latest Vietnamese inspection samples,
+        dataset manifest, checkpoints, and reports directly into /content/drive/MyDrive/Thread_Data/
+        """
+        import shutil
+        import time
+        from pathlib import Path
+
+        colab_mydrive = Path("/content/drive/MyDrive")
+        if not colab_mydrive.exists():
+            return False
+
+        try:
+            date_str = time.strftime("%Y-%m-%d")
+            dest_root = colab_mydrive / "Thread_Data" / date_str
+            dest_root.mkdir(parents=True, exist_ok=True)
+            copied = 0
+
+            # 1. Sync generated Vietnamese media samples
+            src_samples = Path("report_colab") / "temp_media_samples"
+            if src_samples.exists():
+                for f in src_samples.glob("*.*"):
+                    target_file = dest_root / f.name
+                    if not target_file.exists() or target_file.stat().st_size != f.stat().st_size:
+                        shutil.copy2(str(f), str(target_file))
+                        copied += 1
+
+            # 2. Sync local gdrive storage if present
+            src_gdrive_local = Path("report_colab") / "gdrive_storage" / date_str
+            if src_gdrive_local.exists():
+                for sub in ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]:
+                    sub_dir = src_gdrive_local / sub
+                    if sub_dir.exists():
+                        dest_sub = dest_root / sub
+                        dest_sub.mkdir(parents=True, exist_ok=True)
+                        for f in sub_dir.glob("*.jpg"):
+                            tf = dest_sub / f.name
+                            if not tf.exists() or tf.stat().st_size != f.stat().st_size:
+                                shutil.copy2(str(f), str(tf))
+                                copied += 1
+
+            # 3. Sync daily summary and reports
+            for r_file in ["daily_summary.md", "training_report_dual_stream.md"]:
+                sf = Path("report_colab") / r_file
+                if sf.exists():
+                    shutil.copy2(str(sf), str(dest_root / r_file))
+                    copied += 1
+
+            # 4. Sync trained checkpoints
+            dest_ckpt = colab_mydrive / "Thread_Data" / "checkpoints"
+            dest_ckpt.mkdir(parents=True, exist_ok=True)
+            for model_dir, ckpt_name in [("custom_vit_model", "weights_general.pt"), ("human_vit_model", "weights_human.pt")]:
+                src_ckpt = Path(model_dir) / ckpt_name
+                if src_ckpt.exists():
+                    shutil.copy2(str(src_ckpt), str(dest_ckpt / ckpt_name))
+                    copied += 1
+
+            if copied > 0:
+                print(f"[auto_sync] ✅ Synchronized {copied} Vietnamese samples & reports to Google Drive:")
+                print(f"  📂 Destination: {dest_root}")
+            return True
+        except Exception as e:
+            print(f"[auto_sync] Note syncing to Google Drive: {e}")
+            return False
+
+    @staticmethod
     def get_hardware_info():
         """Retrieve GPU/CPU hardware inventory and VRAM metrics."""
         info = {"device": "CPU", "gpu_name": "Standard CPU", "vram_gb": 0.0}

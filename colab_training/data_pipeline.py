@@ -53,6 +53,11 @@ AWESOME_DEEPFAKES_REGISTRY = {
             "type": "github/hf",
             "repo": "https://github.com/SOTA-Deepfake/DFBench",
             "description": "2025 SOTA benchmark evaluating Large Multimodal Models (LMMs) on AI-generated & synthetic images."
+        },
+        "threads_vietnamese_in_the_wild": {
+            "name": "Threads In-The-Wild Vietnamese Biometric Benchmark",
+            "type": "threads_vietnamese",
+            "description": "5 Vietnamese facial taxonomies (CCCD ID, Lifestyle Selfie, Street Outdoor, Occlusion/Mask, Mature Aging) with paired counterfactuals (FaceSwap & Generative AI)."
         }
     },
     "VIDEO": {
@@ -336,6 +341,27 @@ class DataPipeline:
                 return samples
             except Exception as e:
                 print(f"[colab_dataset] Hugging Face streaming error: {e}")
+                return []
+        elif info.get("type") == "threads_vietnamese":
+            print(f"[colab_dataset] Ingesting authentic photographic Vietnamese portraits across 5 taxonomies...")
+            try:
+                from crawler.media_generator import generate_and_upload_pentest_sample_images
+                uploaded_records = generate_and_upload_pentest_sample_images(num_samples=min(max_samples, 25))
+                samples = []
+                for bucket, items in uploaded_records.items():
+                    lbl = "REAL" if bucket == "01_raw_originals" else "FAKE"
+                    for it in items:
+                        samples.append({
+                            "filepath": it.get("local_path"),
+                            "label": lbl,
+                            "modality": "IMAGE",
+                            "dataset": "threads_vietnamese_in_the_wild",
+                            "vietnamese_category": it.get("vietnamese_category")
+                        })
+                print(f"[colab_dataset] Successfully loaded {len(samples)} Vietnamese biometric image pairs.")
+                return samples
+            except Exception as e:
+                print(f"[colab_dataset] Error preparing Vietnamese dataset: {e}")
                 return []
         else:
             print(f"[colab_dataset] Direct external download required for {info['name']}. Paper/Repo: {info.get('repo') or info.get('paper')}")
