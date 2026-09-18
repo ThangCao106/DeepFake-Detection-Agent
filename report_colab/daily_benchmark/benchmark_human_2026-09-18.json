@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T04:20:56.418169",
+  "timestamp": "2026-09-18T04:21:04.982426",
   "date": "2026-09-18",
   "pass_number": 1,
   "target_stream": "human",
   "modality": "VIDEO",
-  "dataset_key": "mega_mmdf",
-  "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
+  "dataset_key": "df40",
+  "dataset_name": "DF40 Benchmark (2026 SOTA Forgery Suite)",
   "dataset_metadata": {
-    "dataset_key": "mega_mmdf",
-    "dataset_name": "Mega-MMDF & DeepfakeBench-MM (2025/2026)",
-    "description": "1.1M multimodal samples across 21 forgery pipelines (Audio, Visual & Lip-Sync).",
-    "type": "github/arxiv",
+    "dataset_key": "df40",
+    "dataset_name": "DF40 Benchmark (2026 SOTA Forgery Suite)",
+    "description": "40 SOTA forgery algorithms including recent Diffusion, Audio-driven Talking Head & AI Video Generators.",
+    "type": "github",
     "modality": "VIDEO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_mega_mmdf_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_df40_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.8948
+      0.9191
     ]
   },
   "metrics": {
-    "accuracy": 0.8948,
-    "auc_score": 0.9358,
-    "eer_score": 0.0381,
-    "precision": 0.907,
-    "recall": 0.8869,
-    "f1_score": 0.8968,
-    "temperature_scaling_T": 1.6498,
-    "optimal_threshold_tau": 0.8074
+    "accuracy": 0.9191,
+    "auc_score": 0.9416,
+    "eer_score": 0.0442,
+    "precision": 0.9232,
+    "recall": 0.9113,
+    "f1_score": 0.9172,
+    "temperature_scaling_T": 1.481,
+    "optimal_threshold_tau": 0.6009
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
