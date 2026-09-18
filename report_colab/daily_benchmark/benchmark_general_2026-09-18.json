@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T05:36:18.613860",
+  "timestamp": "2026-09-18T05:36:41.615526",
   "date": "2026-09-18",
   "pass_number": 8,
   "target_stream": "general",
-  "modality": "VIDEO",
-  "dataset_key": "df40",
-  "dataset_name": "DF40 Benchmark (2026 SOTA Forgery Suite)",
+  "modality": "AUDIO",
+  "dataset_key": "deepspeak_audio",
+  "dataset_name": "DeepSpeak Voice Deepfakes",
   "dataset_metadata": {
-    "dataset_key": "df40",
-    "dataset_name": "DF40 Benchmark (2026 SOTA Forgery Suite)",
-    "description": "40 SOTA forgery algorithms including recent Diffusion, Audio-driven Talking Head & AI Video Generators.",
-    "type": "github",
-    "modality": "VIDEO",
+    "dataset_key": "deepspeak_audio",
+    "dataset_name": "DeepSpeak Voice Deepfakes",
+    "description": "Voice clone & audio deepfake speech clips.",
+    "type": "huggingface",
+    "modality": "AUDIO",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_df40_manifest.json"
+      "local_cache_manifest": "colab_datasets/audio_deepspeak_audio_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9781
+      0.9119
     ]
   },
   "metrics": {
-    "accuracy": 0.9781,
-    "auc_score": 0.9848,
-    "eer_score": 0.018,
-    "precision": 0.9726,
-    "recall": 0.9815,
-    "f1_score": 0.977,
-    "temperature_scaling_T": 1.4084,
-    "optimal_threshold_tau": 0.7311
+    "accuracy": 0.9119,
+    "auc_score": 0.9808,
+    "eer_score": 0.022,
+    "precision": 0.9253,
+    "recall": 0.9109,
+    "f1_score": 0.918,
+    "temperature_scaling_T": 1.4555,
+    "optimal_threshold_tau": 0.7711
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
