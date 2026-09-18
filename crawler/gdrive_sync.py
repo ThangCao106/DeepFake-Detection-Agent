@@ -165,6 +165,7 @@ class GDriveSyncAgent:
                     print(f"[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via Service Account: {bot_email}")
                     if self.target_folder_id:
                         print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
+                        print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
                     else:
                         print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
                     return
@@ -172,6 +173,8 @@ class GDriveSyncAgent:
                 print(f"[GDrive Sync] [AUTH ERROR] Google Drive API init failed ({e}). Falling back to local storage structure.")
         else:
             print("[GDrive Sync] [NOTICE] No GDRIVE_CREDENTIALS_JSON found. Falling back to local storage structure.")
+            if os.environ.get("GITHUB_ACTIONS") == "true":
+                print("::warning title=Google Drive Sync Notice::GDRIVE_CREDENTIALS_JSON is not configured in GitHub Secrets! Files are saved to the runner's ephemeral storage only and will NOT appear on Google Drive. To upload files to Google Drive, add your Service Account JSON to Repository Secrets > GDRIVE_CREDENTIALS_JSON.")
         
         self.sync_mode = "MOCK_LOCAL_STORAGE"
         print(f"[GDrive Sync] Active Mode: Structured Local Storage at {DEFAULT_LOCAL_STORAGE}")
