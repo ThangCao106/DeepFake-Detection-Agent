@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T04:28:47.040720",
+  "timestamp": "2026-09-18T04:28:58.038584",
   "date": "2026-09-18",
   "pass_number": 3,
   "target_stream": "human",
   "modality": "IMAGE",
-  "dataset_key": "ifakefacedb",
-  "dataset_name": "iFakeFaceDB (StyleGAN GANprintR)",
+  "dataset_key": "dfbench_lmm",
+  "dataset_name": "DFBench 2025 (Large Multimodal Model Image Benchmark)",
   "dataset_metadata": {
-    "dataset_key": "ifakefacedb",
-    "dataset_name": "iFakeFaceDB (StyleGAN GANprintR)",
-    "description": "87,000 StyleGAN images with removed fingerprints.",
-    "type": "github",
+    "dataset_key": "dfbench_lmm",
+    "dataset_name": "DFBench 2025 (Large Multimodal Model Image Benchmark)",
+    "description": "2025 SOTA benchmark evaluating Large Multimodal Models (LMMs) on AI-generated & synthetic images.",
+    "type": "github/hf",
     "modality": "IMAGE",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/image_ifakefacedb_manifest.json"
+      "local_cache_manifest": "colab_datasets/image_dfbench_lmm_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9404
+      0.9462
     ]
   },
   "metrics": {
-    "accuracy": 0.9404,
+    "accuracy": 0.9462,
     "auc_score": 0.998,
     "eer_score": 0.012,
-    "precision": 0.9443,
-    "recall": 0.9445,
-    "f1_score": 0.9444,
-    "temperature_scaling_T": 1.2148,
-    "optimal_threshold_tau": 0.8392
+    "precision": 0.9573,
+    "recall": 0.9317,
+    "f1_score": 0.9443,
+    "temperature_scaling_T": 1.4911,
+    "optimal_threshold_tau": 0.8404
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
