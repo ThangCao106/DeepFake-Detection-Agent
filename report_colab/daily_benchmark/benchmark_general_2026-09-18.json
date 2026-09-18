@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T07:38:03.852873",
+  "timestamp": "2026-09-18T07:38:49.321650",
   "date": "2026-09-18",
-  "pass_number": 16,
+  "pass_number": 17,
   "target_stream": "general",
-  "modality": "AUDIO",
-  "dataset_key": "omni_fake",
-  "dataset_name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
+  "modality": "IMAGE",
+  "dataset_key": "dima806_deepfake",
+  "dataset_name": "Deepfake vs Real Image Detection",
   "dataset_metadata": {
-    "dataset_key": "omni_fake",
-    "dataset_name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
-    "description": "1.2M+ multimodal samples & 200k OOD samples across Image, Audio, Video & Audio-Visual Talking Heads.",
-    "type": "github/alphaxiv",
-    "modality": "AUDIO",
+    "dataset_key": "dima806_deepfake",
+    "dataset_name": "Deepfake vs Real Image Detection",
+    "description": "Pre-annotated 140k real & fake face images from StyleGAN/FFHQ.",
+    "type": "huggingface",
+    "modality": "IMAGE",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/audio_omni_fake_manifest.json"
+      "local_cache_manifest": "colab_datasets/image_dima806_deepfake_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9454
+      0.9678
     ]
   },
   "metrics": {
-    "accuracy": 0.9454,
+    "accuracy": 0.9678,
     "auc_score": 0.998,
-    "eer_score": 0.022,
-    "precision": 0.9582,
-    "recall": 0.9464,
-    "f1_score": 0.9523,
-    "temperature_scaling_T": 1.8153,
-    "optimal_threshold_tau": 0.7185
+    "eer_score": 0.012,
+    "precision": 0.9696,
+    "recall": 0.9613,
+    "f1_score": 0.9654,
+    "temperature_scaling_T": 1.3243,
+    "optimal_threshold_tau": 0.7914
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
