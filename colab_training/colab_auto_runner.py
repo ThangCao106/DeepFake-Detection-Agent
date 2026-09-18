@@ -24,7 +24,68 @@ except Exception:
 from colab_dataset_pipeline import ColabMultiModalityDatasetManager, ColabAutoSyncManager
 
 
+def resolve_credentials(hf_token=None, github_token=None):
+    """
+    Resolve HF_TOKEN and GITHUB_TOKEN using Option D (Smart Fallback):
+    1. CLI Argument / Explicit parameter
+    2. Colab Secrets (google.colab.userdata)
+    3. .env file (checked in workspace, parent directories, and Google Drive)
+    4. Environment variables (os.environ)
+    """
+    resolved_hf = hf_token or os.environ.get("HF_TOKEN")
+    resolved_gh = github_token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+
+    # 1. Try Colab Secrets (🔑)
+    try:
+        from google.colab import userdata
+        if not resolved_hf:
+            resolved_hf = userdata.get("HF_TOKEN")
+        if not resolved_gh:
+            resolved_gh = userdata.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN")
+    except Exception:
+        pass
+
+    # 2. Try .env file
+    if not resolved_hf or not resolved_gh:
+        candidate_env_paths = [
+            ".env",
+            os.path.join(os.path.dirname(__file__), ".env"),
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
+            "/content/DeepFake-Detection-Agent/.env",
+            "/content/drive/MyDrive/.env",
+            "/content/drive/MyDrive/NCS/.env"
+        ]
+        for p in candidate_env_paths:
+            if os.path.isfile(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line or line.startswith("#") or "=" not in line:
+                                continue
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if not resolved_hf and k in ["HF_TOKEN", "HUGGINGFACE_TOKEN"]:
+                                resolved_hf = v
+                            if not resolved_gh and k in ["GITHUB_TOKEN", "GH_TOKEN"]:
+                                resolved_gh = v
+                except Exception:
+                    pass
+            if resolved_hf and resolved_gh:
+                break
+
+    # Propagate to os.environ so all sub-modules (dataset pipeline, git sync) have access
+    if resolved_hf:
+        os.environ["HF_TOKEN"] = resolved_hf
+    if resolved_gh:
+        os.environ["GITHUB_TOKEN"] = resolved_gh
+
+    return resolved_hf, resolved_gh
+
+
 def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all", upload_hf=False):
+    hf_token, github_token = resolve_credentials(hf_token, github_token)
     sync_manager = ColabAutoSyncManager()
 
     # 1. Step 1: Auto-Pull latest code from GitHub
@@ -297,17 +358,19 @@ def main():
     parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds for --listen mode")
     args = parser.parse_args()
 
+    hf_token, github_token = resolve_credentials(args.hf_token, args.github_token)
+
     if args.listen:
         run_auto_listen_daemon(
-            hf_token=args.hf_token,
-            github_token=args.github_token,
+            hf_token=hf_token,
+            github_token=github_token,
             max_samples=args.max_samples,
             poll_interval=args.poll_interval
         )
     elif args.loop:
         run_smart_auto_loop(
-            hf_token=args.hf_token,
-            github_token=args.github_token,
+            hf_token=hf_token,
+            github_token=github_token,
             max_samples=args.max_samples,
             target=args.target
         )
@@ -316,8 +379,8 @@ def main():
             modality=args.modality,
             dataset_key=args.dataset_key,
             max_samples=args.max_samples,
-            hf_token=args.hf_token,
-            github_token=args.github_token,
+            hf_token=hf_token,
+            github_token=github_token,
             auto_pull=not args.no_pull,
             target=args.target,
             upload_hf=True

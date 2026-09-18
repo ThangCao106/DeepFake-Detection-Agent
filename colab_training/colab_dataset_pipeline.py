@@ -128,7 +128,14 @@ class ColabAutoSyncManager:
         """Upload fine-tuned model weights to Hugging Face Hub."""
         token = hf_token or os.environ.get("HF_TOKEN")
         if not token:
-            print("[auto_sync] ⚠️ Warning: HF_TOKEN not provided. Skipping Hugging Face upload.")
+            try:
+                from google.colab import userdata
+                token = userdata.get("HF_TOKEN")
+            except Exception:
+                pass
+
+        if not token:
+            print("[auto_sync] ⚠️ Warning: HF_TOKEN not provided (or not in Colab Secrets/env). Skipping Hugging Face upload.")
             return False
 
         print(f"[auto_sync] 🚀 Checking / Uploading trained model weights to Hugging Face Hub ({self.hf_repo})...")
@@ -436,9 +443,16 @@ class ColabAutoSyncManager:
 
     def auto_sync_metrics_to_github(self, github_token=None, commit_message=None):
         """Push training metrics, benchmark results, and daily report_colab updates back to GitHub."""
-        token = github_token or os.environ.get("GITHUB_TOKEN")
+        token = github_token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
         if not token:
-            print("[auto_sync] ⚠️ Warning: GITHUB_TOKEN not provided. Cannot push metrics to GitHub.")
+            try:
+                from google.colab import userdata
+                token = userdata.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN")
+            except Exception:
+                pass
+
+        if not token:
+            print("[auto_sync] ⚠️ Warning: GITHUB_TOKEN not provided (or not in Colab Secrets/env). Cannot push metrics to GitHub.")
             return False
 
         msg = commit_message or "Auto-sync Colab training report_colab & metrics [Auto-Bot]"
