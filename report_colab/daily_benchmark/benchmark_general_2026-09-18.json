@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T07:24:38.952543",
+  "timestamp": "2026-09-18T07:25:14.403235",
   "date": "2026-09-18",
   "pass_number": 15,
   "target_stream": "general",
   "modality": "AUDIO",
-  "dataset_key": "asvspoof_2021",
-  "dataset_name": "ASVspoof 2021 Benchmark",
+  "dataset_key": "omni_fake",
+  "dataset_name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
   "dataset_metadata": {
-    "dataset_key": "asvspoof_2021",
-    "dataset_name": "ASVspoof 2021 Benchmark",
-    "description": "Logical & Physical access voice spoofing & audio deepfake benchmark.",
-    "type": "external",
+    "dataset_key": "omni_fake",
+    "dataset_name": "Omni-Fake Benchmark (2026 Multimodal & OOD)",
+    "description": "1.2M+ multimodal samples & 200k OOD samples across Image, Audio, Video & Audio-Visual Talking Heads.",
+    "type": "github/alphaxiv",
     "modality": "AUDIO",
     "target_stream": "general",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/audio_asvspoof_2021_manifest.json"
+      "local_cache_manifest": "colab_datasets/audio_omni_fake_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.9165
+      0.9203
     ]
   },
   "metrics": {
-    "accuracy": 0.9165,
-    "auc_score": 0.998,
+    "accuracy": 0.9203,
+    "auc_score": 0.9966,
     "eer_score": 0.022,
-    "precision": 0.9307,
-    "recall": 0.912,
-    "f1_score": 0.9213,
-    "temperature_scaling_T": 1.4004,
-    "optimal_threshold_tau": 0.672
+    "precision": 0.918,
+    "recall": 0.9159,
+    "f1_score": 0.9169,
+    "temperature_scaling_T": 1.7403,
+    "optimal_threshold_tau": 0.8184
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
