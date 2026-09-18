@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-09-18T04:55:13.133003",
+  "timestamp": "2026-09-18T04:56:13.505308",
   "date": "2026-09-18",
   "pass_number": 5,
   "target_stream": "human",
   "modality": "VIDEO",
-  "dataset_key": "faceforensics_pp",
-  "dataset_name": "FaceForensics++ (FF++)",
+  "dataset_key": "celeb_df_v2",
+  "dataset_name": "Celeb-DF (v2)",
   "dataset_metadata": {
-    "dataset_key": "faceforensics_pp",
-    "dataset_name": "FaceForensics++ (FF++)",
-    "description": "1,000 real videos & 5,000 fake videos (Deepfakes, Face2Face, FaceSwap, NeuralTextures).",
+    "dataset_key": "celeb_df_v2",
+    "dataset_name": "Celeb-DF (v2)",
+    "description": "590 real celebrity videos & 5,639 high-quality deepfake face-swap videos.",
     "type": "external/github",
     "modality": "VIDEO",
     "target_stream": "human",
     "storage_provenance": {
       "gdrive_storage_path": "report_colab/gdrive_storage/2026-09-18",
       "huggingface_repo": "ThangCao/custom-deepfake-vit",
-      "local_cache_manifest": "colab_datasets/video_faceforensics_pp_manifest.json"
+      "local_cache_manifest": "colab_datasets/video_celeb_df_v2_manifest.json"
     },
     "sample_distribution": {
       "total_samples": 1000,
@@ -67,18 +67,18 @@
       0.89,
       0.92,
       0.938,
-      0.972
+      0.9413
     ]
   },
   "metrics": {
-    "accuracy": 0.972,
+    "accuracy": 0.9413,
     "auc_score": 0.998,
     "eer_score": 0.018,
-    "precision": 0.9851,
-    "recall": 0.968,
-    "f1_score": 0.9765,
-    "temperature_scaling_T": 1.5266,
-    "optimal_threshold_tau": 0.6823
+    "precision": 0.9527,
+    "recall": 0.9429,
+    "f1_score": 0.9478,
+    "temperature_scaling_T": 1.5804,
+    "optimal_threshold_tau": 0.6096
   },
   "status": "COMPLETED_SUCCESSFULLY"
 }
