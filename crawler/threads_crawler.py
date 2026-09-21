@@ -14,11 +14,17 @@ from pathlib import Path
 
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 
-THREADS_HUMAN_TOPICS = [
+DEFAULT_THREADS_HASHTAGS = [
     "#vietnam", "#hcm", "#cccd", "#thesinhvien", "#selfievietnam",
     "#hanoi", "#saigon", "#duongphovietnam", "#nguoivietnam",
     "#chandungvietnam", "#kinhcan_khautrang", "#giongnoivietnam"
 ]
+
+env_hashtags = os.environ.get("THREADS_HASHTAGS") or os.environ.get("THREADS_TAGS")
+if env_hashtags and env_hashtags.strip():
+    THREADS_HUMAN_TOPICS = [t.strip() for t in env_hashtags.split(",") if t.strip()]
+else:
+    THREADS_HUMAN_TOPICS = DEFAULT_THREADS_HASHTAGS
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
