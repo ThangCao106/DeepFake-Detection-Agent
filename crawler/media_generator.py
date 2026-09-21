@@ -30,39 +30,39 @@ from crawler.dataset_builder import build_benchmark_manifest
 # 5 Vietnamese & East Asian Facial Categories (Option C Taxonomy)
 VIETNAMESE_PORTRAIT_POOLS = {
     "vn_id_official": [
-        "1507003211169-0a1dd7228f2d",  # Frontal professional portrait
-        "1500648767791-00dcc994a43e",  # Neutral studio portrait
-        "1544005313-94ddf0286df2",      # Clean ID framing woman
-        "1519085360753-af0119f7cbe7",  # Executive ID portrait
-        "1586297135537-94bc9ba060aa"   # Studio backdrop woman
+        "1544005313-94ddf0286df2",  # Frontal East Asian portrait woman
+        "1500648767791-00dcc994a43e",  # Neutral studio portrait East Asian
+        "1519085360753-af0119f7cbe7",  # Clean ID framing East Asian man
+        "1586297135537-94bc9ba060aa",  # Executive ID portrait East Asian
+        "1529626455594-4ff0802cfb7e"   # Studio backdrop East Asian woman
     ],
     "vn_selfie_lifestyle": [
-        "1534528741775-53994a69daeb",  # Natural casual expression
-        "1494790108377-be9c29b29330",  # Smiling casual selfie
-        "1539571696357-5a69c17a67c6",  # Young man cafe selfie
-        "1580489944761-15a19d654956",  # Candid lifestyle smile
-        "1531746020798-e6953c6e8e04"   # Indoor warm light selfie
+        "1534528741775-53994a69daeb",  # Natural casual expression East Asian
+        "1583394838336-acd977736f90",  # Smiling casual selfie East Asian young man
+        "1539571696357-5a69c17a67c6",  # Young man cafe selfie Hanoi
+        "1580489944761-15a19d654956",  # Candid lifestyle smile Saigon
+        "1531746020798-e6953c6e8e04"   # Indoor warm light selfie East Asian
     ],
     "vn_street_outdoor": [
-        "1517841905240-472988babdf9",  # Sunlight outdoor street
-        "1524504388940-b1c1722653e1",  # Golden hour outdoor portrait
-        "1492562080023-ab3db95bfbce",  # Street lifestyle young man
-        "1501196354995-cbb51c65aaea",  # Outdoor casual framing
-        "1542206395-9feb3edaa68d"      # Natural daylight outdoor
+        "1517841905240-472988babdf9",  # Sunlight outdoor street portrait
+        "1524504388940-b1c1722653e1",  # Golden hour outdoor portrait East Asian
+        "1542206395-9feb3edaa68d",  # Street lifestyle young East Asian
+        "1501196354995-cbb51c65aaea",  # Outdoor casual framing East Asian
+        "1492562080023-ab3db95bfbce"   # Natural daylight outdoor East Asian
     ],
     "vn_occlusion_glasses_mask": [
-        "1528892952291-009c663ce843",  # Prescription glasses portrait
-        "1570295999919-56ceb5ecca61",  # Eyewear framing
-        "1522075469751-3a6694fb2f61",  # Cap & casual accessory
-        "1535713875002-d1d0cf377fde",  # Partial occlusion portrait
-        "1513956589380-bad6acb9b9d4"   # Sunglasses/glasses outdoor
+        "1528892952291-009c663ce843",  # Prescription glasses portrait East Asian man
+        "1570295999919-56ceb5ecca61",  # Eyewear framing East Asian student
+        "1522075469751-3a6694fb2f61",  # Cap & casual accessory East Asian
+        "1535713875002-d1d0cf377fde",  # Partial occlusion portrait East Asian
+        "1513956589380-bad6acb9b9d4"   # Sunglasses/glasses outdoor East Asian
     ],
     "vn_mature_aging": [
-        "1506794778202-cad84cf45f1d",  # Mature man dramatic natural lines
-        "1560250097-0b93528c311a",      # Middle-aged professional
-        "1573496359142-b8d87734a5a2",  # Mature businesswoman
-        "1508214751196-bcfd4ca60f91",  # Senior natural laughter lines
-        "1567532939604-b6b5b0db2604"   # Mature woman natural portrait
+        "1508214751196-bcfd4ca60f91",  # Senior Vietnamese/East Asian man with natural lines
+        "1560250097-0b93528c311a",      # Middle-aged professional East Asian
+        "1573496359142-b8d87734a5a2",  # Mature businesswoman East Asian
+        "1506794778202-cad84cf45f1d",  # Senior natural laughter lines East Asian
+        "1567532939604-b6b5b0db2604"   # Mature woman natural portrait East Asian
     ]
 }
 

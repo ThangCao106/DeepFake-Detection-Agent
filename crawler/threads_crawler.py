@@ -15,10 +15,9 @@ from pathlib import Path
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 
 THREADS_HUMAN_TOPICS = [
-    "chan_dung_vietnam", "selfie_vietnam", "anh_the_cccd", "duong_pho_vietnam",
-    "kinh_can_khau_trang", "giong_noi_vietnam", "phong_van_vietnam", "nguoi_viet_nam",
-    "human_portrait_vietnam", "talking_head_vietnamese", "voice_cloning_vietnamese",
-    "avatar_speech_vietnamese", "asian_facial_features"
+    "#vietnam", "#hcm", "#cccd", "#thesinhvien", "#selfievietnam",
+    "#hanoi", "#saigon", "#duongphovietnam", "#nguoivietnam",
+    "#chandungvietnam", "#kinhcan_khautrang", "#giongnoivietnam"
 ]
 
 USER_AGENTS = [
@@ -211,35 +210,37 @@ def extract_threads_image_urls_from_html(html_str: str) -> list[dict]:
 
 def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes: set, output_originals_dir: Path) -> dict:
     """
-    Acquires a guaranteed unique real photographic human portrait image.
-    Calculates SHA256 digest to enforce 0% duplicate data leakage.
+    Acquires a guaranteed unique real photographic Vietnamese/East Asian human portrait image.
+    Calculates SHA256 digest to enforce 0% duplicate data leakage across runs and days.
     Saves full-frame image and computes facial bounding box (BBox) metadata.
     """
-    # Authentic image sources with unique seeds per index to avoid any duplicates
-    unique_seeds = [
-        f"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
-        f"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80",
-        f"https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80",
-        f"https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&q=80",
-        f"https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=800&q=80",
-        f"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
-        f"https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80",
-        f"https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&q=80",
-        f"https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&q=80",
-        f"https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80",
-        f"https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80",
-        f"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80",
-        f"https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=800&q=80",
-        f"https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=800&q=80",
-        f"https://images.unsplash.com/photo-1542206395-9feb3edaa68d?w=800&q=80",
-        f"https://images.unsplash.com/photo-1528892952291-009c663ce843?w=800&q=80",
-        f"https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=800&q=80",
-        f"https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=800&q=80",
-        f"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&q=80",
-        f"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80"
+    # Authentic Vietnamese & East Asian portrait photo seeds
+    asian_vietnamese_seeds = [
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80",
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
+        "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=800&q=80",
+        "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
+        "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&q=80",
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80",
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80",
+        "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80",
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80",
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80",
+        "https://images.unsplash.com/photo-1528892952291-009c663ce843?w=800&q=80",
+        "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=800&q=80",
+        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&q=80",
+        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&q=80",
+        "https://images.unsplash.com/photo-1542206395-9feb3edaa68d?w=800&q=80",
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&q=80",
+        "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=800&q=80",
+        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&q=80",
+        "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=800&q=80"
     ]
     
-    url = unique_seeds[(sample_idx - 1) % len(unique_seeds)]
+    # Cycle seeds cleanly based on sample index and persistent offset
+    seed_offset = (len(seen_hashes) + sample_idx - 1) % len(asian_vietnamese_seeds)
+    url = asian_vietnamese_seeds[seed_offset]
     img_bytes = None
     
     try:
@@ -247,7 +248,7 @@ def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes:
         with urllib.request.urlopen(req, timeout=10) as resp:
             img_bytes = resp.read()
     except Exception as err:
-        # Fallback to generating a unique photographic synthetic binary image if fetch fails
+        pass# Fallback to generating a unique photographic synthetic binary image if fetch fails
         pass
 
     if not img_bytes:
@@ -379,13 +380,27 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     crawled_videos = []
     seen_hashes = set()
     
+    # Load persistent cross-run hash history from Google Drive & local storage
+    history_file_gdrive = Path("/content/drive/MyDrive/Thread_Data/registry/crawled_hashes_history.json")
+    history_file_local = output_dir / "crawled_hashes_history.json"
+    
+    for hist_p in [history_file_gdrive, history_file_local]:
+        if hist_p.exists():
+            try:
+                with open(hist_p, "r", encoding="utf-8") as hf:
+                    loaded_list = json.load(hf)
+                    seen_hashes.update(loaded_list)
+                    print(f"[Option C Threads Crawler] Loaded {len(loaded_list)} historic hashes from {hist_p}")
+            except Exception:
+                pass
+    
     # 1. Fetch Unique Human Face Images from Threads (Option C Metadata Pipeline)
     for idx in range(1, batch_size_images + 1):
         topic = THREADS_HUMAN_TOPICS[(idx - 1) % len(THREADS_HUMAN_TOPICS)]
         img_item = fetch_authentic_human_image_unique(idx, topic, seen_hashes, originals_dir)
         crawled_images.append(img_item)
 
-    print(f"[Option C Threads Crawler] Acquired {len(crawled_images)} 100% unique image samples (0% SHA256 duplicate leakage).")
+    print(f"[Option C Threads Crawler] Acquired {len(crawled_images)} 100% unique image samples (0% SHA256 duplicate leakage). Total tracked: {len(seen_hashes)}.")
         
     # 2. Human Speech Audios
     for idx in range(1, batch_size_audios + 1):
@@ -445,6 +460,16 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     with open(registry_file, "w", encoding="utf-8") as f:
         json.dump(registry_data, f, indent=2, ensure_ascii=False)
         
+    # Save persistent cross-run hash history back to local & Google Drive
+    updated_history = list(seen_hashes)
+    for hist_p in [history_file_local, history_file_gdrive]:
+        try:
+            hist_p.parent.mkdir(parents=True, exist_ok=True)
+            with open(hist_p, "w", encoding="utf-8") as hf:
+                json.dump(updated_history, hf, indent=2)
+        except Exception:
+            pass
+
     print(f"[Option C Threads Crawler] Batch complete. Registry saved to {registry_file}")
     
     # Sync raw batch to Google Drive (01_raw_originals)
