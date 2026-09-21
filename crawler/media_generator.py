@@ -268,15 +268,14 @@ def apply_openweight_gen_manipulation(img: Image.Image, seed=None) -> Image.Imag
                 
     return generated
 
-def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdrive_agent=None):
+def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdrive_agent=None, pentest_dir="report_colab/pentest"):
     """
-    Generates authentic human photographic portraits and paired counterfactual DeepFakes,
-    then uploads high-resolution visual inspection & benchmark samples directly to Google Drive:
-      - 01_raw_originals: num_samples authentic photographic human portraits
-      - 02_manipulated_faceswap: num_samples paired FaceSwap manipulated portraits
-      - 03_manipulated_openweight: num_samples paired AI Generative diffusion portraits
-      - dataset_manifest.jsonl: Academic benchmark manifest with WAVIE E_high and FFT Z_peak
-      - dataset_summary.md: Statistical validation report
+    Option C Pipeline: Reads real full-frame downloaded images from '01_raw_originals',
+    applies paired FaceSwap and Open-Weight Generative manipulations, and outputs to:
+      - 01_raw_originals: Original full-frame downloaded human portraits (with post metadata & BBox)
+      - 02_manipulated_faceswap: Paired FaceSwap RoI manipulated samples
+      - 03_manipulated_openweight: Paired AI Generative diffusion manipulated samples
+      - dataset_manifest.jsonl: Standardized benchmark manifest with 0% duplicate SHA256 data leakage
     """
     from crawler.gdrive_sync import GDriveSyncAgent
     if not gdrive_agent:
@@ -286,8 +285,13 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         date_str = time.strftime("%Y-%m-%d")
     timestamp_tag = time.strftime("%Y-%m-%d_%Hh")
     
-    temp_dir = Path("report_colab") / "temp_media_samples"
-    temp_dir.mkdir(parents=True, exist_ok=True)
+    pentest_path = Path(pentest_dir)
+    raw_dir = pentest_path / "01_raw_originals"
+    fs_dir = pentest_path / "02_manipulated_faceswap"
+    ow_dir = pentest_path / "03_manipulated_openweight"
+    
+    fs_dir.mkdir(parents=True, exist_ok=True)
+    ow_dir.mkdir(parents=True, exist_ok=True)
     
     uploaded_records = {
         "01_raw_originals": [],
@@ -295,44 +299,72 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         "03_manipulated_openweight": []
     }
     
-    print(f"\n[Media Generator] Starting Authentic Photographic Human Sample Generation ({num_samples} images per bucket)...")
+    # Locate all real full-frame downloaded images in 01_raw_originals
+    raw_files = sorted(list(raw_dir.glob("*.jpg")) + list(raw_dir.glob("*.png")))
     
-    for i in range(1, num_samples + 1):
+    print(f"\n[Media Generator] Option C Pipeline: Processing {len(raw_files)} real downloaded images from 01_raw_originals...")
+    
+    if not raw_files:
+        print("[Media Generator] Warning: No raw images found in 01_raw_originals. Running crawler first...")
+        import asyncio
+        from crawler.threads_crawler import crawl_threads_media
+        asyncio.run(crawl_threads_media(batch_size_images=num_samples, batch_size_audios=2, batch_size_videos=2, output_dir=str(pentest_path)))
+        raw_files = sorted(list(raw_dir.glob("*.jpg")) + list(raw_dir.glob("*.png")))
+
+    sample_count = min(len(raw_files), num_samples) if num_samples else len(raw_files)
+    
+    for i, raw_path in enumerate(raw_files[:sample_count], 1):
         seed = int(time.time()) + i * 997
+        raw_name = raw_path.name
+        vn_cat = VIETNAMESE_CATEGORIES[(i - 1) % len(VIETNAMESE_CATEGORIES)]
         
-        # 1. Authentic Photographic Human Portrait (100% Real Photo across 5 Vietnamese Categories)
-        raw_img, vn_cat = fetch_authentic_human_portrait(sample_idx=i, width=512, height=512, seed=seed)
-        raw_name = f"human_face_sample_{timestamp_tag}_{i:03d}.jpg"
-        raw_path = temp_dir / raw_name
-        raw_img.save(raw_path, format="JPEG", quality=95)
-        
-        # 2. Paired FaceSwap Manipulated Portrait (Counterfactual on same person)
-        fs_img = apply_faceswap_manipulation(raw_img, seed=seed, source_cat=vn_cat)
-        fs_name = f"faceswap_sample_{timestamp_tag}_{i:03d}.jpg"
-        fs_path = temp_dir / fs_name
-        fs_img.save(fs_path, format="JPEG", quality=95)
-        
-        # 3. Paired Open-Weight AI Generated Portrait (Counterfactual on same person)
-        ow_img = apply_openweight_gen_manipulation(raw_img, seed=seed)
-        ow_name = f"openweight_sample_{timestamp_tag}_{i:03d}.jpg"
-        ow_path = temp_dir / ow_name
-        ow_img.save(ow_path, format="JPEG", quality=95)
-        
-        # Upload each to Google Drive
+        try:
+            with Image.open(raw_path) as im:
+                raw_img = im.convert("RGB")
+        except Exception as e:
+            print(f"[Media Generator] Error reading {raw_path}: {e}")
+            continue
+
+        # 1. Real Full-Frame Image Metadata
         res_raw = gdrive_agent.upload_file(str(raw_path), date_str=date_str, target_subfolder="01_raw_originals")
+        uploaded_records["01_raw_originals"].append({
+            "filename": raw_name,
+            "local_path": str(raw_path),
+            "gdrive_id": res_raw,
+            "vietnamese_category": vn_cat
+        })
+        
+        # 2. Paired FaceSwap RoI Manipulated Portrait
+        fs_img = apply_faceswap_manipulation(raw_img, seed=seed, source_cat=vn_cat)
+        fs_name = f"faceswap_{raw_name}"
+        fs_path = fs_dir / fs_name
+        fs_img.save(fs_path, format="JPEG", quality=95)
         res_fs = gdrive_agent.upload_file(str(fs_path), date_str=date_str, target_subfolder="02_manipulated_faceswap")
+        uploaded_records["02_manipulated_faceswap"].append({
+            "filename": fs_name,
+            "local_path": str(fs_path),
+            "gdrive_id": res_fs,
+            "vietnamese_category": vn_cat
+        })
+        
+        # 3. Paired Open-Weight AI Generated Portrait
+        ow_img = apply_openweight_gen_manipulation(raw_img, seed=seed)
+        ow_name = f"openweight_{raw_name}"
+        ow_path = ow_dir / ow_name
+        ow_img.save(ow_path, format="JPEG", quality=95)
         res_ow = gdrive_agent.upload_file(str(ow_path), date_str=date_str, target_subfolder="03_manipulated_openweight")
+        uploaded_records["03_manipulated_openweight"].append({
+            "filename": ow_name,
+            "local_path": str(ow_path),
+            "gdrive_id": res_ow,
+            "vietnamese_category": vn_cat
+        })
         
-        uploaded_records["01_raw_originals"].append({"filename": raw_name, "local_path": str(raw_path), "gdrive_id": res_raw, "vietnamese_category": vn_cat})
-        uploaded_records["02_manipulated_faceswap"].append({"filename": fs_name, "local_path": str(fs_path), "gdrive_id": res_fs, "vietnamese_category": vn_cat})
-        uploaded_records["03_manipulated_openweight"].append({"filename": ow_name, "local_path": str(ow_path), "gdrive_id": res_ow, "vietnamese_category": vn_cat})
-        
-    # Option C: Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl and dataset_summary.md
-    print("[Dataset Builder] Packaging Threads-DFBench manifest & computing biometric indicators...")
-    manifest_file, hard_manifest_file = build_benchmark_manifest(uploaded_records, temp_dir, date_str=date_str)
-    summary_file = temp_dir / "dataset_summary.md"
+    # Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl, and dataset_summary.md
+    print("[Dataset Builder] Packaging Threads-DFBench Option C manifest...")
+    manifest_file, hard_manifest_file = build_benchmark_manifest(uploaded_records, pentest_path, date_str=date_str)
+    summary_file = pentest_path / "dataset_summary.md"
     
-    # Upload manifest, hard samples manifest & summary directly to date root folder
     if manifest_file.exists():
         gdrive_agent.upload_file(str(manifest_file), date_str=date_str, target_subfolder="")
     if hard_manifest_file.exists():
@@ -340,13 +372,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
     if summary_file.exists():
         gdrive_agent.upload_file(str(summary_file), date_str=date_str, target_subfolder="")
         
-    if getattr(gdrive_agent, "sync_mode", None) == "COLAB_DIRECT_MOUNT":
-        print(f"[Media Generator] [SUCCESS] Completed: {num_samples*3} authentic photographic & counterfactual samples and benchmark manifest written directly into Google Drive ({gdrive_agent.colab_mount_path})!")
-    elif not gdrive_agent.use_mock_storage:
-        print(f"[Media Generator] [SUCCESS] Completed: {num_samples*3} images & benchmark manifest uploaded to Google Drive via Service Account API!")
-    else:
-        print(f"[Media Generator] [LOCAL CACHE] Completed: {num_samples*3} images & benchmark manifest saved locally.")
-        
+    print(f"[Media Generator] [SUCCESS] Completed Option C processing for {sample_count} real image triples & manifest.")
     return uploaded_records
 
 # Backward compatibility alias
@@ -357,3 +383,4 @@ def create_realistic_human_portrait(width=512, height=512, seed=None):
 
 if __name__ == "__main__":
     generate_and_upload_pentest_sample_images(num_samples=3)
+

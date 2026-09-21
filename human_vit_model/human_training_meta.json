@@ -11,8 +11,8 @@
   "auc": 0.9955,
   "eer": 1.19,
   "ece": 0.0181,
-  "temperature_calibrated": 1.6178,
-  "youden_threshold": 0.8118,
+  "temperature_calibrated": 2.0804,
+  "youden_threshold": 0.7229,
   "weights_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\human_vit_model\\weights_human.pt",
   "datasets": {
     "multifakeverse": {
@@ -72,5 +72,12 @@
       "lipsync_acc": 86.3,
       "multimodal_acc": 89.7
     }
-  ]
+  ],
+  "ppo_meta_controller_state": {
+    "updated_utc": "2026-09-21T04:24:57Z",
+    "lambda_bio_optimal": 0.5446,
+    "hard_threshold_eta": 0.7627,
+    "trigger_lora_signal": false,
+    "ppo_reward": 0.9442
+  }
 }

@@ -56,7 +56,8 @@ Existing deepfake detectors predominantly rely on end-to-end Convolutional Neura
 4. **Lack of Explainability and Auditability**: Binary probability outputs $[0, 1]$ act as opaque black boxes. They provide no spatial, frequency, or provenance coordinates, making them inadmissible in courtrooms and non-compliant with EU AI Act audit requirements (*Geng et al., 2026*).
 
 ### 1.3 State-of-the-Art Literature Survey (2025–2026)
-Recent high-impact studies have sought to address these bottlenecks:
+Recent high-impact studies and institutional benchmarks have sought to address these bottlenecks:
+- **DESC SARAAB (Dubai Electronic Security Centre, GISEC Global 2026)**: Open-source government AI model developed by an Emirati team to detect synthetic video layers via whole-video temporal analysis and visual heatmaps (~91% accuracy). Establishes institutional open-source benchmarks alongside the *ISR Auditor Certification Programme* for cyber resilience.
 - **UCF-Net (Zou et al., arXiv:2609.07670)**: Combines CLIP semantic priors and DINOv2 visual structure priors using entropy-derived uncertainty weighting for cross-generator generalization.
 - **E-Branchformer Audio Detector (Dat et al., EMNLP 2026)**: Integrates global self-attention and local convolutions over WavLM SSL speech representations, achieving 0.88% EER on ASVspoof 2021 LA.
 - **Auditable Decision Records (Geng et al., arXiv:2609.08899)**: Replaces scalar scores with a 4-cue decision record (passive score, keyed probe, retrieval support, speaker margin), covering 82.85% of classification errors.

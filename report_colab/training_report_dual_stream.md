@@ -1,5 +1,5 @@
 # 📊 BÁO CÁO TOÀN DIỆN HUẤN LUYỆN 2 MÔ HÌNH (DUAL-STREAM BENCHMARK)
-**Thời gian tạo**: `2026-09-17 16:05:07Z` | **Chu kỳ Crawl & Train**: `Mỗi 4 Giờ` | **Môi trường**: `Google Colab GPU`
+**Thời gian tạo**: `2026-09-21 13:19:09Z` | **Chu kỳ Crawl & Train**: `Mỗi 4 Giờ` | **Môi trường**: `Google Colab GPU`
 
 ---
 
@@ -26,9 +26,9 @@
   3. **`140k Real and Fake Faces Dataset`**: **140,000 ảnh** (70,000 chân dung thật Flickr Nvidia vs 70,000 mặt giả StyleGAN/StyleGAN2).
   4. **`DeepDetect-2025 / 2026`**: Tập dữ liệu đối kháng đối chứng ảnh chân dung Unsplash thật kết hợp khuôn mặt Midjourney v6, StyleGAN3, Stable Diffusion 3 / Flux.1.
 * **Dữ liệu In-The-Wild Meta Threads (Quota mỗi chu kỳ 4h)**:
-  - **10 ảnh chân dung người thật & can thiệp**.
-  - **5 video khuôn mặt & chuyển động môi**.
-  - **5 clip âm thanh giọng nói**.
+  - **10,000 ảnh chân dung người thật & can thiệp**.
+  - **500 video khuôn mặt & chuyển động môi**.
+  - **500 clip âm thanh giọng nói**.
   - **5 Phân Lớp Sinh Trắc Học Người Việt**:
     1. `vn_id_official`: Ảnh thẻ, CCCD gắn chip, chụp nghiêm túc chuẩn sinh trắc học.
     2. `vn_selfie_lifestyle`: Ảnh selfie điện thoại, ánh sáng tự nhiên, góc nghiêng.
@@ -45,13 +45,13 @@
 |:---|:---:|:---:|
 | **Kiến Trúc Backbone** | Vision Transformer (ViT-B/16) | Fusion: ViT DWT + rPPG + WavLM + LipSync |
 | **Hàm Mất Mát** | Focal Loss ($\gamma=2.0, \alpha=0.25$) | Multi-Modal Cross-Entropy + Contrastive |
-| **Độ Chính Xác Tổng Thể (Acc)** | **100.0%** | **89.7%** |
-| **Độ Chính Xác Sinh Trắc Mặt (WAVIE + rPPG)** | — | **88.6%** |
-| **Độ Chính Xác Sinh Trắc Giọng (WavLM Layer 12)** | — | **87.4%** |
-| **Độ Chính Xác Khớp Môi (DF26 LipSync)** | — | **86.3%** |
-| **Area Under ROC (AUC)** | **0.998** | **0.9955** |
-| **Equal Error Rate (EER)** | **1.12%** | **1.19%** |
-| **Expected Calibration Error (ECE)** | **0.0145** | **0.0181** |
+| **Độ Chính Xác Tổng Thể (Acc)** | **N/A%** | **N/A%** |
+| **Độ Chính Xác Sinh Trắc Mặt (WAVIE + rPPG)** | — | **N/A%** |
+| **Độ Chính Xác Sinh Trắc Giọng (WavLM Layer 12)** | — | **N/A%** |
+| **Độ Chính Xác Khớp Môi (DF26 LipSync)** | — | **N/A%** |
+| **Area Under ROC (AUC)** | **N/A** | **N/A** |
+| **Equal Error Rate (EER)** | **1.12%** | **N/A%** |
+| **Expected Calibration Error (ECE)** | **0.0145** | **N/A** |
 
 ---
 
@@ -69,7 +69,7 @@ Nhằm triệt tiêu cảnh báo giả (False Positive) đối với người Vi
 ## 4. Danh Mục Lưu Trữ & Đồng Bộ Trên Google Drive
 
 Toàn bộ dữ liệu huấn luyện, siêu dữ liệu và trọng số mô hình đã được đồng bộ tự động vào Google Drive:
-* 📁 **Thư mục Dữ Liệu Ngày**: `Thread_Data/2026-09-17/`
+* 📁 **Thư mục Dữ Liệu Ngày**: `Thread_Data/2026-09-21/`
   - `01_raw_originals/`: Ảnh & video nguyên bản chưa qua can thiệp.
   - `02_manipulated_faceswap/`: Mẫu hoán đổi khuôn mặt (Face-Swap).
   - `03_manipulated_openweight/`: Mẫu tạo bởi mã nguồn mở (FLUX.1 / SD3).

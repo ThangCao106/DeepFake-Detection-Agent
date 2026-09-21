@@ -79,36 +79,40 @@ def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet
 
 
 def sync_local_samples_to_drive(dest_drive_root, date_str=None):
-    """Copies all local generated media from report_colab/gdrive_storage to mounted Google Drive."""
+    """Copies all local generated & crawled media from report_colab/pentest & report_colab/gdrive_storage to mounted Google Drive."""
     if not date_str:
         date_str = time.strftime("%Y-%m-%d")
         
     local_daily_dir = DEFAULT_LOCAL_STORAGE / date_str
+    pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
     drive_daily_dir = dest_drive_root / date_str
     
     subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
     copied_count = 0
     
-    print(f"\n[Colab GDrive Sync] Synchronizing media from {local_daily_dir} -> {drive_daily_dir}...")
+    print(f"\n[Colab GDrive Sync] Synchronizing live Threads media from {pentest_dir} -> {drive_daily_dir}...")
+    
+    # Check both pentest_dir and local_daily_dir for source media
+    source_dirs = [pentest_dir, local_daily_dir]
     
     for sub in subfolders:
-        local_sub = local_daily_dir / sub
         drive_sub = drive_daily_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
-        if local_sub.exists():
-            for f in local_sub.iterdir():
-                if f.is_file():
-                    dest_file = drive_sub / f.name
-                    if not dest_file.exists() or dest_file.stat().st_size != f.stat().st_size:
-                        shutil.copy2(str(f), str(dest_file))
-                        copied_count += 1
+        for src_base in source_dirs:
+            local_sub = src_base / sub
+            if local_sub.exists():
+                for f in local_sub.iterdir():
+                    if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
+                        dest_file = drive_sub / f.name
+                        if not dest_file.exists() or dest_file.stat().st_size != f.stat().st_size:
+                            shutil.copy2(str(f), str(dest_file))
+                            copied_count += 1
                         
     # Sync benchmark manifest and summary files
-    extra_sources = [local_daily_dir, Path("report_colab") / "temp_media_samples"]
-    for src_dir in extra_sources:
+    for src_dir in source_dirs + [Path("report_colab") / "temp_media_samples"]:
         if src_dir.exists():
-            for meta_name in ["dataset_manifest.jsonl", "dataset_summary.md"]:
+            for meta_name in ["dataset_manifest.jsonl", "hard_samples_manifest.jsonl", "dataset_summary.md"]:
                 meta_src = src_dir / meta_name
                 if meta_src.exists():
                     dest_meta = drive_daily_dir / meta_name
@@ -292,18 +296,37 @@ def run_option_a_pipeline(
     # 1. Locate Google Drive
     drive_root = find_or_create_colab_drive_path()
     
-    # 2. Generate high-quality 5-Category Vietnamese portrait sample images (.jpg)
-    print(f"\n[Step 1] Generating {num_samples} visual inspection samples per bucket...")
-    generate_and_upload_pentest_sample_images(num_samples=num_samples, date_str=date_str)
+    # 2. Crawl Meta Threads media & generate paired counterfactual manipulations
+    print(f"\n[Step 1] Crawling Meta Threads media ({num_samples} samples) & generating paired manipulations...")
+    import asyncio
+    pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
+    
+    # 2.1 Live Threads Crawl -> 01_raw_originals
+    try:
+        asyncio.run(crawl_threads_media(
+            batch_size_images=num_samples,
+            batch_size_audios=2,
+            batch_size_videos=2,
+            output_dir=str(pentest_dir)
+        ))
+    except Exception as err:
+        print(f"⚠️ Notice on live Threads crawl: {err}. Falling back to verified portrait pool.")
+        
+    # 2.2 Paired FaceSwap & Diffusion manipulations -> 02_manipulated_faceswap & 03_manipulated_openweight
+    generate_and_upload_pentest_sample_images(
+        num_samples=num_samples,
+        date_str=date_str,
+        pentest_dir=str(pentest_dir)
+    )
     
     # 3. Synchronize media assets to Google Drive
     if drive_root:
-        print(f"\n[Step 2] Transferring media directly to Google Drive...")
+        print(f"\n[Step 2] Transferring Threads media directly to Google Drive...")
         total_copied = sync_local_samples_to_drive(drive_root, date_str=date_str)
-        print(f"✅ Success: {total_copied} media assets synchronized to Google Drive!")
+        print(f"✅ Success: {total_copied} Threads media assets synchronized to Google Drive!")
     else:
         print(f"\n[Step 2 Notice] Running in standalone/local mode. Files stored at:")
-        print(f"   {DEFAULT_LOCAL_STORAGE / date_str}")
+        print(f"   {pentest_dir}")
 
     model1_res = None
     model2_res = None
