@@ -95,7 +95,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     # 0. Automatically purge legacy Western seed files from Google Drive & local storage before syncing
     try:
         from scripts.purge_legacy_seed_samples import purge_legacy_samples
-        purge_legacy_samples()
+        purge_legacy_samples(extra_paths=[dest_drive_root, drive_daily_dir])
     except Exception as err:
         print(f"[Colab GDrive Sync] Notice on purge: {err}")
 
@@ -106,6 +106,27 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         drive_sub = drive_daily_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
+        # Gather all valid local filenames for this subfolder
+        valid_local_names = set()
+        for src_base in source_dirs:
+            local_sub = src_base / sub
+            if local_sub.exists():
+                for f in local_sub.iterdir():
+                    if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
+                        valid_local_names.add(f.name)
+
+        # Clean out any old/obsolete files in Google Drive folder that are not in valid_local_names
+        if drive_sub.exists():
+            for df in drive_sub.iterdir():
+                if df.is_file() and df.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
+                    if df.name not in valid_local_names:
+                        try:
+                            df.unlink()
+                            print(f"  [Purged GDrive Old File] Removed legacy file from Drive: {df.name}")
+                        except Exception as e:
+                            print(f"  [Warning] Could not remove old GDrive file {df.name}: {e}")
+
+        # Copy new authentic Vietnamese media files to Drive
         for src_base in source_dirs:
             local_sub = src_base / sub
             if local_sub.exists():
