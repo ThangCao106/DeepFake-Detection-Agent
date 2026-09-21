@@ -24,10 +24,16 @@ SEARCH_PATHS = [
     Path("/content/drive/MyDrive/DeepFake_Pentest_Data")
 ]
 
+WESTERN_LEGACY_HASHES = [
+    "20d877b2e7", "2909e941a1", "667369889f", "829019d377", "a04755ea1e",
+    "cf", "d7", "d3", "e3", "ea", "63", "10", "12", "45", "51"
+]
+
 LEGACY_PATTERNS = [
     re.compile(r"^human_face_sample_.*"),
     re.compile(r"^faceswap_sample_.*"),
-    re.compile(r"^openweight_sample_.*")
+    re.compile(r"^openweight_sample_.*"),
+    re.compile(r".*(" + "|".join(WESTERN_LEGACY_HASHES) + r").*")
 ]
 
 def purge_legacy_samples():
