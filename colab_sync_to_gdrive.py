@@ -37,7 +37,7 @@ from crawler.threads_crawler import crawl_threads_media
 
 DEFAULT_LOCAL_STORAGE = PROJECT_ROOT / "report_colab" / "gdrive_storage"
 
-def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet", base_folder_name="Thread_Data"):
+def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr", base_folder_name="Thread_Data"):
     """
     Locates mounted Google Drive path on Colab.
     Checks for user's exact shared folder shortcut Thread_Data or default MyDrive directory.
@@ -59,6 +59,8 @@ def find_or_create_colab_drive_path(folder_id="1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet
         "Deepfake Detection",
         "DeepFake_Pentest_Data",
         "Deepfake_Pentest_Data",
+        "1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr",
+        "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet",
         folder_id
     ]
 
