@@ -1,5 +1,5 @@
 # 📊 BÁO CÁO TOÀN DIỆN HUẤN LUYỆN 2 MÔ HÌNH (DUAL-STREAM BENCHMARK)
-**Thời gian tạo**: `2026-09-21 15:45:51Z` | **Chu kỳ Crawl & Train**: `Mỗi 4 Giờ` | **Môi trường**: `Google Colab GPU`
+**Thời gian tạo**: `2026-09-21 16:46:38Z` | **Chu kỳ Crawl & Train**: `Mỗi 4 Giờ` | **Môi trường**: `Google Colab GPU`
 
 ---
 

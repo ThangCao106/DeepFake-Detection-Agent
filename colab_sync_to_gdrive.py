@@ -92,8 +92,13 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
     copied_count = 0
     
-    print(f"\n[Colab GDrive Sync] Synchronizing live Threads media from {pentest_dir} -> {drive_daily_dir}...")
-    
+    # 0. Automatically purge legacy Western seed files from Google Drive & local storage before syncing
+    try:
+        from scripts.purge_legacy_seed_samples import purge_legacy_samples
+        purge_legacy_samples()
+    except Exception as err:
+        print(f"[Colab GDrive Sync] Notice on purge: {err}")
+
     # Check both pentest_dir and local_daily_dir for source media
     source_dirs = [pentest_dir, local_daily_dir]
     
