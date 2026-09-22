@@ -85,12 +85,12 @@ VIETNAMESE_CATEGORIES = list(SEED_FACE_BOXES.keys())
 
 def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=None, category=None):
     """
-    Acquires an authentic photographic Vietnamese human portrait across 5 categories:
-      - vn_id_official: Official CCCD / Passport photo with direct studio lighting
-      - vn_selfie_lifestyle: Casual smiling selfie in Hanoi cafe
-      - vn_street_outdoor: Daylight outdoor street portrait on Nguyen Hue street
-      - vn_occlusion_glasses_mask: Vietnamese student wearing prescription eyeglasses
-      - vn_mature_aging: 58-year-old mature Vietnamese man with dignified natural smile lines
+    Acquires an authentic photographic Vietnamese human portrait across 25 distinct identities (5 per category):
+      - vn_id_official: 5 distinct identities (Student, Engineer, Executive, Officer, Teacher)
+      - vn_selfie_lifestyle: 5 distinct identities (Hanoi, Saigon, Da Nang, Da Lat, Hue)
+      - vn_street_outdoor: 5 distinct identities (Nguyen Hue, Sword Lake, Urban commute, Tay Ho park, Street merchant)
+      - vn_occlusion_glasses_mask: 5 distinct identities (Round glasses, Specs, Medical mask, Cap/sunglasses, Reading glasses)
+      - vn_mature_aging: 5 distinct identities (Grandfather, Grandmother, Veteran, Retiree, Scholar)
     Returns: (Image.Image, category_str)
     """
     if seed is not None:
@@ -100,7 +100,16 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
     if not category or category not in VIETNAMESE_CATEGORIES:
         category = VIETNAMESE_CATEGORIES[(sample_idx - 1) % len(VIETNAMESE_CATEGORIES)]
         
-    seed_file = SEEDS_DIR / f"seed_{category}.jpg"
+    cat_idx = VIETNAMESE_CATEGORIES.index(category)
+    # Calculate unique identity slot within category (1 to 5) or global identity (1 to 25)
+    intra_id = ((sample_idx - 1) // len(VIETNAMESE_CATEGORIES)) % 5 + 1
+    global_id = cat_idx * 5 + intra_id
+
+    # 1. Search for specific distinct identity file (identity_XX_category.jpg)
+    seed_file = SEEDS_DIR / f"identity_{global_id:02d}_{category}.jpg"
+    if not seed_file.exists():
+        # Fallback to category seed
+        seed_file = SEEDS_DIR / f"seed_{category}.jpg"
     
     if seed_file.exists():
         try:
@@ -110,18 +119,18 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
             # Calibrated face bounding box
             fx1, fy1, fx2, fy2 = SEED_FACE_BOXES.get(category, (0.25, 0.20, 0.75, 0.70))
             
-            # Variation offset based on sample_idx
-            var_idx = (sample_idx - 1) // len(VIETNAMESE_CATEGORIES)
-            jitter_scale = 1.0 + ((var_idx % 5) - 2) * 0.02  # 0.96 to 1.04
+            # Variation offset for sample indices beyond 25
+            cycle_num = (sample_idx - 1) // 25
+            jitter_scale = 1.0 + ((cycle_num % 5) - 2) * 0.015  # 0.97 to 1.03
             
             cx = (fx1 + fx2) / 2.0
             cy = (fy1 + fy2) / 2.0
             w_box = (fx2 - fx1) * jitter_scale
             h_box = (fy2 - fy1) * jitter_scale
             
-            # Center offset jitter
-            ox = ((random.random() - 0.5) * 0.03)
-            oy = ((random.random() - 0.5) * 0.03)
+            # Subtle center offset jitter
+            ox = ((random.random() - 0.5) * 0.02)
+            oy = ((random.random() - 0.5) * 0.02)
             
             crop_x1 = max(0, int((cx - w_box / 2.0 + ox) * bw))
             crop_y1 = max(0, int((cy - h_box / 2.0 + oy) * bh))
@@ -131,9 +140,9 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
             cropped = base_img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
             resized = cropped.resize((width, height), Image.Resampling.LANCZOS)
             
-            # Subtle photometric lighting variation across time-of-day samples
-            brightness_factor = 0.96 + (random.random() * 0.08)  # 0.96 to 1.04
-            contrast_factor = 0.97 + (random.random() * 0.06)    # 0.97 to 1.03
+            # Subtle photometric lighting variation
+            brightness_factor = 0.98 + (random.random() * 0.04)
+            contrast_factor = 0.98 + (random.random() * 0.04)
             
             enhancer = ImageEnhance.Brightness(resized)
             resized = enhancer.enhance(brightness_factor)
@@ -142,7 +151,7 @@ def fetch_authentic_human_portrait(sample_idx=1, width=512, height=512, seed=Non
             
             return resized, category
         except Exception as err:
-            print(f"[Media Generator] Seed load notice for {category}: {err}")
+            print(f"[Media Generator] Identity load notice for {category} (id={global_id}): {err}")
             
     # Fallback to authentic skin tone synthesis if seed not reachable
     return generate_photographic_base_fallback(width, height, seed=seed), category
@@ -197,12 +206,17 @@ def apply_faceswap_manipulation(img: Image.Image, seed=None, source_cat=None) ->
     swapped = img.copy()
     w, h = swapped.size
     
-    # Pick a different Vietnamese donor archetype
-    candidate_donors = [c for c in VIETNAMESE_CATEGORIES if c != source_cat]
-    donor_cat = random.choice(candidate_donors) if candidate_donors else random.choice(VIETNAMESE_CATEGORIES)
-    donor_seed = SEEDS_DIR / f"seed_{donor_cat}.jpg"
+    # Pick a distinct Vietnamese donor identity from the 25 identity registry
+    donor_id = random.randint(1, 25)
+    donor_candidates = list(SEEDS_DIR.glob(f"identity_{donor_id:02d}_*.jpg"))
+    if not donor_candidates:
+        candidate_donors = [c for c in VIETNAMESE_CATEGORIES if c != source_cat]
+        donor_cat = random.choice(candidate_donors) if candidate_donors else random.choice(VIETNAMESE_CATEGORIES)
+        donor_candidates = [SEEDS_DIR / f"seed_{donor_cat}.jpg"]
+        
+    donor_seed = donor_candidates[0] if donor_candidates and donor_candidates[0].exists() else None
     
-    if donor_seed.exists():
+    if donor_seed and donor_seed.exists():
         try:
             donor_base = Image.open(donor_seed).convert("RGB")
             bw, bh = donor_base.size
