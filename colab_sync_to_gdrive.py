@@ -60,6 +60,7 @@ def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr
         "DeepFake_Pentest_Data",
         "Deepfake_Pentest_Data",
         "1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr",
+        "1dv91sElMrK3BI8130uwZD0HzQfIoNZpO",
         "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet",
         folder_id
     ]
@@ -106,36 +107,29 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         drive_sub = drive_daily_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
-        # Gather all valid local filenames for this subfolder
-        valid_local_names = set()
-        for src_base in source_dirs:
-            local_sub = src_base / sub
-            if local_sub.exists():
-                for f in local_sub.iterdir():
-                    if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
-                        valid_local_names.add(f.name)
-
-        # Clean out any old/obsolete files in Google Drive folder that are not in valid_local_names
+        # Only clean out explicit legacy 2026-09-21 Western files if present
         if drive_sub.exists():
             for df in drive_sub.iterdir():
                 if df.is_file() and df.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
-                    if df.name not in valid_local_names:
+                    if df.name.startswith("threads_20260921_") or df.name.startswith("human_face_sample_"):
                         try:
                             df.unlink()
-                            print(f"  [Purged GDrive Old File] Removed legacy file from Drive: {df.name}")
+                            print(f"  [Purged Legacy File] Removed 2026-09-21 Western file: {df.name}")
                         except Exception as e:
-                            print(f"  [Warning] Could not remove old GDrive file {df.name}: {e}")
+                            pass
 
-        # Copy new authentic Vietnamese media files to Drive
+        # Copy all authentic Vietnamese media files directly to Google Drive
+        sub_copied = 0
         for src_base in source_dirs:
             local_sub = src_base / sub
             if local_sub.exists():
-                for f in local_sub.iterdir():
+                for f in sorted(list(local_sub.iterdir())):
                     if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
                         dest_file = drive_sub / f.name
-                        if not dest_file.exists() or dest_file.stat().st_size != f.stat().st_size:
-                            shutil.copy2(str(f), str(dest_file))
-                            copied_count += 1
+                        shutil.copy2(str(f), str(dest_file))
+                        copied_count += 1
+                        sub_copied += 1
+        print(f"  [Colab GDrive Sync] Successfully synchronized {sub_copied} media assets to {drive_sub}")
                         
     # Sync benchmark manifest and summary files
     for src_dir in source_dirs + [Path("report_colab") / "temp_media_samples"]:

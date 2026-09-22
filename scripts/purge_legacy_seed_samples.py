@@ -27,21 +27,13 @@ SEARCH_PATHS = [
     Path("/content/drive/Shareddrives/Thread_Data")
 ]
 
-# Exact hash prefixes of Western legacy Unsplash photos
-WESTERN_LEGACY_HASHES = [
-    "20d877b2e7", "2909e941a1", "667369889f", "829019d377", "a04755ea1e",
-    "06fb119d68", "0e749dbc33", "13d819bf50", "d3", "e31", "e38", "ea",
-    "fa0", "fb", "fc8", "cf", "d7", "63", "10", "12", "45", "51",
-    "0c", "0d", "0e", "2a2", "2c7", "2c", "3a", "4b", "4f6", "5d", "6f5",
-    "7d1", "7e4", "8df", "17b", "18a", "19a", "43"
-]
-
+# Legacy patterns: ONLY purge legacy sample formats and files from 2026-09-21
+# Protects all 2026-09-22+ active Vietnamese media files
 LEGACY_PATTERNS = [
     re.compile(r"^human_face_sample_.*"),
     re.compile(r"^faceswap_sample_.*"),
     re.compile(r"^openweight_sample_.*"),
-    # Match threads_YYYYMMDD_<legacy_hash>...
-    re.compile(r"^threads_\d{8}_(" + "|".join(WESTERN_LEGACY_HASHES) + r").*")
+    re.compile(r"^threads_20260921_.*")  # ONLY purge 2026-09-21 Western legacy files
 ]
 
 def purge_legacy_samples(extra_paths=None):
