@@ -8,6 +8,7 @@ import json
 import random
 import asyncio
 import time
+import hashlib
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -413,19 +414,14 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     crawled_videos = []
     seen_hashes = set()
     
-    # Load persistent cross-run hash history from Google Drive & local storage
-    history_file_gdrive = Path("/content/drive/MyDrive/Thread_Data/registry/crawled_hashes_history.json")
-    history_file_local = output_dir / "crawled_hashes_history.json"
-    
-    for hist_p in [history_file_gdrive, history_file_local]:
-        if hist_p.exists():
-            try:
-                with open(hist_p, "r", encoding="utf-8") as hf:
-                    loaded_list = json.load(hf)
-                    seen_hashes.update(loaded_list)
-                    print(f"[Option C Threads Crawler] Loaded {len(loaded_list)} historic hashes from {hist_p}")
-            except Exception:
-                pass
+    # Deduplicate only against files already present in today's local originals directory
+    for existing_f in originals_dir.glob("*.jpg"):
+        try:
+            with open(existing_f, "rb") as ef:
+                seen_hashes.add(hashlib.sha256(ef.read()).hexdigest())
+        except Exception:
+            pass
+    print(f"[Option C Threads Crawler] Preserving {len(seen_hashes)} existing unique media in 01_raw_originals.")
     
     # 1. Fetch 100% Real Human Face Images from Meta Threads (Option A Default + Option B Advanced)
     from crawler.threads_browser_scraper import ThreadsBrowserScraper
@@ -533,6 +529,8 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
         json.dump(registry_data, f, indent=2, ensure_ascii=False)
         
     # Save persistent cross-run hash history back to local & Google Drive
+    history_file_gdrive = Path("/content/drive/MyDrive/Thread_Data/registry/crawled_hashes_history.json")
+    history_file_local = output_dir / "crawled_hashes_history.json"
     updated_history = list(seen_hashes)
     for hist_p in [history_file_local, history_file_gdrive]:
         try:

@@ -266,15 +266,23 @@ class ThreadsBrowserScraper:
         print(f"[Threads Real Harvester] Total candidate images to verify: {len(all_candidates)}")
         
         # 2. Download & Verify Faces via OpenCV
-        for cand in all_candidates:
+        req_headers = {
+            "User-Agent": self.user_agent,
+            "Referer": "https://www.threads.net/",
+            "Origin": "https://www.threads.net",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        }
+        batch_seen_hashes = set(seen_hashes) if seen_hashes is not None else set()
+
+        for idx_cand, cand in enumerate(all_candidates, 1):
             img_url = cand["image_url"]
             try:
-                req = urllib.request.Request(img_url, headers={"User-Agent": self.user_agent})
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                req = urllib.request.Request(img_url, headers=req_headers)
+                with urllib.request.urlopen(req, timeout=12) as resp:
                     raw_bytes = resp.read()
                     
                 sha = compute_sha256(raw_bytes)
-                if sha in seen_hashes:
+                if sha in batch_seen_hashes:
                     continue
                     
                 # OpenCV Haar Face Gate
@@ -283,7 +291,9 @@ class ThreadsBrowserScraper:
                     # Discard landscape, food, text, clothing without face
                     continue
                     
-                seen_hashes.add(sha)
+                batch_seen_hashes.add(sha)
+                if seen_hashes is not None:
+                    seen_hashes.add(sha)
                 
                 with Image.open(io.BytesIO(raw_bytes)) as pil_img:
                     w, h = pil_img.size
@@ -306,7 +316,8 @@ class ThreadsBrowserScraper:
                 if len(verified_results) >= min_images:
                     break
             except Exception as e:
-                pass
+                if idx_cand <= 5 or idx_cand % 50 == 0:
+                    print(f"  [Candidate #{idx_cand} Notice] @{cand.get('author')}: {e}")
                 
         # 3. Offline Verified Seed Files (Pre-crawled and approved authentic Vietnamese Threads photos)
         seed_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
@@ -318,10 +329,12 @@ class ThreadsBrowserScraper:
                     with open(s_img, "rb") as sf:
                         raw_bytes = sf.read()
                     sha = compute_sha256(raw_bytes)
-                    if sha not in seen_hashes:
+                    if sha not in batch_seen_hashes:
                         face_count, primary_bbox, _ = detect_human_faces_opencv(raw_bytes)
                         if face_count >= 1:
-                            seen_hashes.add(sha)
+                            batch_seen_hashes.add(sha)
+                            if seen_hashes is not None:
+                                seen_hashes.add(sha)
                             with Image.open(io.BytesIO(raw_bytes)) as pil_img:
                                 w, h = pil_img.size
                             verified_results.append({
