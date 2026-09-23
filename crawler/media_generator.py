@@ -322,8 +322,22 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         print("[Media Generator] Warning: No raw images found in 01_raw_originals. Running crawler first...")
         import asyncio
         from crawler.threads_crawler import crawl_threads_media
-        asyncio.run(crawl_threads_media(batch_size_images=num_samples, batch_size_audios=2, batch_size_videos=2, output_dir=str(pentest_path)))
+        try:
+            asyncio.run(crawl_threads_media(batch_size_images=num_samples, batch_size_audios=2, batch_size_videos=2, output_dir=str(pentest_path)))
+        except Exception as e:
+            print(f"[Media Generator] Crawler notice: {e}")
         raw_files = sorted(list(raw_dir.glob("*.jpg")) + list(raw_dir.glob("*.png")))
+
+    # Fail-safe: If 01_raw_originals is still empty, populate immediately from verified_threads_seeds
+    if not raw_files:
+        import shutil
+        seed_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
+        if seed_dir.exists():
+            for sf in sorted(seed_dir.glob("*.jpg")):
+                dest = raw_dir / sf.name
+                shutil.copy2(str(sf), str(dest))
+            raw_files = sorted(list(raw_dir.glob("*.jpg")) + list(raw_dir.glob("*.png")))
+            print(f"[Media Generator] Fail-safe injected {len(raw_files)} verified authentic Vietnamese photos into 01_raw_originals")
 
     sample_count = min(len(raw_files), num_samples) if num_samples else len(raw_files)
     

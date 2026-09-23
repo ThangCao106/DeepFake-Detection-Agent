@@ -226,15 +226,20 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     real_zpeak_mean = float(np.mean(zpeak_stats["real"])) if zpeak_stats["real"] else 2.75
     ow_zpeak_mean = float(np.mean(zpeak_stats["openweight"])) if zpeak_stats["openweight"] else 4.65
     
+    total_all = len(all_entries) if len(all_entries) > 0 else 1
+    pct_raw = (bucket_counts['01_raw_originals'] / total_all * 100) if len(all_entries) > 0 else 0.0
+    pct_fs = (bucket_counts['02_manipulated_faceswap'] / total_all * 100) if len(all_entries) > 0 else 0.0
+    pct_ow = (bucket_counts['03_manipulated_openweight'] / total_all * 100) if len(all_entries) > 0 else 0.0
+
     summary_md = f"""# Threads-DFBench: In-The-Wild Human Facial DeepFake Benchmark
-**Date**: {date_str} | **Total Samples**: {len(all_entries)} | **Hard Samples (H(P) >= 0.70)**: {len(hard_entries)} ({len(hard_entries)/len(all_entries)*100 if all_entries else 0:.1f}%)
+**Date**: {date_str} | **Total Samples**: {len(all_entries)} | **Hard Samples (H(P) >= 0.70)**: {len(hard_entries)} ({len(hard_entries)/total_all*100 if all_entries else 0:.1f}%)
 
 ## 1. Phân Bố Tập Dữ Liệu
 | Nhóm Dữ Liệu | Thư Mục GDrive | Số Lượng Mẫu | Tỷ Lệ | Nhãn Huấn Luyện |
 | :--- | :--- | :--- | :--- | :--- |
-| **Ảnh Gốc Người Thật** | `01_raw_originals` | {bucket_counts['01_raw_originals']} | {bucket_counts['01_raw_originals']/len(all_entries)*100:.1f}% | `0 (REAL)` |
-| **Biến Thể FaceSwap** | `02_manipulated_faceswap` | {bucket_counts['02_manipulated_faceswap']} | {bucket_counts['02_manipulated_faceswap']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
-| **Biến Thể Diffusion** | `03_manipulated_openweight` | {bucket_counts['03_manipulated_openweight']} | {bucket_counts['03_manipulated_openweight']/len(all_entries)*100:.1f}% | `1 (MANIPULATED)` |
+| **Ảnh Gốc Người Thật** | `01_raw_originals` | {bucket_counts['01_raw_originals']} | {pct_raw:.1f}% | `0 (REAL)` |
+| **Biến Thể FaceSwap** | `02_manipulated_faceswap` | {bucket_counts['02_manipulated_faceswap']} | {pct_fs:.1f}% | `1 (MANIPULATED)` |
+| **Biến Thể Diffusion** | `03_manipulated_openweight` | {bucket_counts['03_manipulated_openweight']} | {pct_ow:.1f}% | `1 (MANIPULATED)` |
 
 ## 2. Phân Bố 5 Nhóm Khuôn Mặt Người Việt (Vietnamese Multi-Type Facial Taxonomy)
 | Nhóm Khuôn Mặt Người Việt | Mã Nhận Diện | Số Lượng Ảnh | Mô Tả Đặc Trưng |

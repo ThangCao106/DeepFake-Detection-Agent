@@ -344,6 +344,13 @@ def run_option_a_pipeline(
     ensure_browser_environment()
     import asyncio
     pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
+    raw_orig_dir = pentest_dir / "01_raw_originals"
+    raw_orig_dir.mkdir(parents=True, exist_ok=True)
+    seed_pool_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
+    if seed_pool_dir.exists() and not list(raw_orig_dir.glob("*.jpg")):
+        for s_file in seed_pool_dir.glob("*.jpg"):
+            shutil.copy2(str(s_file), str(raw_orig_dir / s_file.name))
+        print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.jpg')))} pre-verified authentic Vietnamese photos into 01_raw_originals.")
     
     # 2.1 Live Threads Crawl -> 01_raw_originals
     try:
