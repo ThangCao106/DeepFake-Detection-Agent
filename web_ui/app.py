@@ -18,6 +18,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import sys
 from pathlib import Path
 web_ui_dir = str(Path(__file__).resolve().parent)
