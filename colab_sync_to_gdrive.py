@@ -285,6 +285,18 @@ Toàn bộ dữ liệu huấn luyện, siêu dữ liệu và trọng số mô h�
     return local_report_path
 
 
+def ensure_browser_environment():
+    """Ensures Playwright, OpenCV, and Chromium browser are ready for Option A Threads harvesting."""
+    try:
+        import playwright
+        import cv2
+    except ImportError:
+        print("[Browser Env] Auto-installing playwright & opencv-python-headless for Option A...")
+        import subprocess
+        subprocess.run([sys.executable, "-m", "pip", "install", "playwright", "opencv-python-headless", "-q"], check=False)
+        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"], check=False)
+
+
 def run_option_a_pipeline(
     num_images=10000, 
     num_videos=500, 
@@ -320,6 +332,7 @@ def run_option_a_pipeline(
     
     # 2. Crawl Meta Threads media & generate paired counterfactual manipulations
     print(f"\n[Step 1] Crawling Meta Threads media ({num_samples} samples) & generating paired manipulations...")
+    ensure_browser_environment()
     import asyncio
     pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
     

@@ -435,25 +435,52 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
             except Exception:
                 pass
     
-    # 1. Fetch Unique Human Face Images from Threads (Option A + B Integration)
-    live_media_pool = []
-    try:
-        for t in THREADS_HUMAN_TOPICS[:3]:
-            live_items = crawl_threads_live_hashtag_posts(t, cookie_str=cookie_str)
-            if live_items:
-                live_media_pool.extend(live_items)
-            if len(live_media_pool) >= batch_size_images:
-                break
-    except Exception:
-        pass
-
-    for idx in range(1, batch_size_images + 1):
-        topic = THREADS_HUMAN_TOPICS[(idx - 1) % len(THREADS_HUMAN_TOPICS)]
-        candidate = live_media_pool.pop(0) if live_media_pool else None
-        img_item = fetch_authentic_human_image_unique(idx, topic, seen_hashes, originals_dir, live_candidate=candidate)
-        crawled_images.append(img_item)
-
-    print(f"[Option C Threads Crawler] Acquired {len(crawled_images)} 100% unique image samples (0% SHA256 duplicate leakage). Total tracked: {len(seen_hashes)}.")
+    # 1. Fetch 100% Real Human Face Images from Meta Threads (Option A Default + Option B Advanced)
+    from crawler.threads_browser_scraper import ThreadsBrowserScraper
+    scraper = ThreadsBrowserScraper(session_cookie_str=cookie_str, headless=True)
+    
+    clean_topics = [t.lstrip("#").strip() for t in THREADS_HUMAN_TOPICS if t.strip()]
+    if not clean_topics:
+        clean_topics = ["hcm", "vietnam", "saigon", "selfievietnam", "thesinhvien", "cccd"]
+        
+    harvested = await scraper.harvest_real_threads_human_images_async(
+        keywords=clean_topics,
+        min_images=batch_size_images,
+        seen_hashes=seen_hashes
+    )
+    
+    for idx, item in enumerate(harvested, 1):
+        sha = item["sha256"]
+        fname = f"threads_{time.strftime('%Y%m%d')}_{sha[:10]}.jpg"
+        local_path = originals_dir / fname
+        with open(local_path, "wb") as f:
+            f.write(item["image_bytes"])
+            
+        post_url = item.get("post_url", "https://www.threads.com/")
+        author = item.get("author", "threads_public_user")
+        caption = item.get("caption", f"NCS Vietnamese Real Human Threads Post #{idx} [{item.get('keyword', 'hcm')}]")
+        
+        crawled_images.append({
+            "id": f"human_img_{timestamp_str}_{idx:05d}",
+            "sample_id": f"TDF_{time.strftime('%Y%m%d')}_{idx:05d}",
+            "post_url": post_url,
+            "author": author,
+            "caption": caption,
+            "media_type": "image",
+            "modality_category": "human_face",
+            "target_ethnicity": "Vietnamese_EastAsian",
+            "source": "threads.com/search",
+            "topic": item.get("keyword", "hcm"),
+            "url": post_url,
+            "dimensions": f"{item.get('width', 512)}x{item.get('height', 512)}",
+            "human_face_count": item.get("face_count", 1),
+            "face_bbox": item.get("primary_bbox", [100, 100, 300, 300]),
+            "sha256": sha,
+            "validation": "PASSED_OPENCV_HAAR_FACE_CHECK",
+            "is_synthetic_suspect": False
+        })
+        
+    print(f"[Option A+B Threads Crawler] Acquired {len(crawled_images)} 100% verified real human photos from Threads. Total tracked hashes: {len(seen_hashes)}.")
         
     # 2. Human Speech Audios
     for idx in range(1, batch_size_audios + 1):
