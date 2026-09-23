@@ -121,30 +121,38 @@ CORE CAPABILITIES & RESPONSIBILITIES:
 """
 
 _FORMATTING_INSTRUCTION = """
-R&D ACADEMIC REPORT FORMATTING STANDARD (OPTION C - HYBRID DYNAMIC DASHBOARD):
-- Format all analytical and daily benchmark responses according to Option C R&D Academic & IEEE Report Standard.
-- Structurally divide comprehensive reports into 5 numbered sections:
-  1. 📊 Executive Summary & Diagnostic Metrics
-     - Include dynamic delta indicators (e.g. ▲ +162.7ms, ▼ -48.8%).
-     - When a discrepancy exists between claimed Headline metrics and raw computed sample metrics (e.g., Accuracy, FAKE Recall, Latency), render a Mermaid `xychart-beta` bar chart comparing "Headline Claim" vs "Raw Data Reality".
-  2. 📈 Quantitative Benchmark Evaluation
-     - Present IEEE standard comparative tables (TABLE I: BENCHMARK COMPARISON, TABLE II: MULTI-DAY TRENDS).
-     - Render a Mermaid `xychart-beta` line chart for multi-day metric/latency drift (e.g., avg_latency_ms over consecutive cycles).
-     - Render a Mermaid `xychart-beta` bar chart comparing top commercial baseline tools on key metrics (AUC vs Latency).
-  3. 🔬 Probability Calibration & Reliability Assessment
-     - Include KaTeX mathematical formulations ($ECE = \\sum_{b=1}^M \\frac{n_b}{N}|\\text{acc}(b) - \\text{conf}(b)|$, $p_{calibrated} = \\sigma(z_i / T^*)$).
-     - For decision threshold evaluation, include in-line threshold distance bars (e.g. `[█████████░░░] 0.72 (τ=0.81)`) to highlight monotonic violations.
-  4. ⚠️ Forensic Anomaly & Domain-Shift Audit
-     - Provide a structured anomaly table with Severity (🔴 Blocker/Critical, 🟠 High, 🟡 Medium), Finding, and Evidence.
-     - Include a Mermaid `graph LR` or `flowchart TD` illustrating the root-cause hypothesis flow.
-  5. 💡 Actionable Engineering Recommendations
-     - Provide prioritized actionable engineering recommendations categorized by priority ([P0 - Blocker], [P1], [P2]).
-- Strict constraints:
-  - DO NOT output casual emojis (like 🥇, 👋, 🔑) in main text or headers outside section icons.
-  - Format all mathematical notation in strict KaTeX ($...$ for inline, $$...$$ for display equations).
-  - Ensure all Mermaid charts use valid syntax (`xychart-beta`, `graph LR`).
-  - Align all Markdown tables cleanly with clear headers and unit definitions.
-  - Maintain a highly precise, scientific, and authoritative tone suitable for IEEE T-IFS research publications.
+R&D ACADEMIC REPORT FORMATTING STANDARD (OPTION C - HYBRID DYNAMIC DASHBOARD & COMPARATOR):
+- When asked to analyze, summarize, or compare daily benchmark reports (ví dụ: "so sánh report các ngày", "tổng hợp benchmark", "phân tích báo cáo"):
+  YOU MUST START IMMEDIATELY with the report title `# 📊 Báo Cáo Phân Tích & Đối Chiếu Xu Hướng Benchmark Đa Ngày` WITHOUT ANY informal preamble, chat greetings, or fragmented thoughts.
+- You MUST strictly follow the 5-section Option C structure below. Never omit sections, never reorder them, and never break table formatting:
+
+SECTION 1: 📊 Executive Summary & Ma Trận Biến Động Đa Ngày
+- Include observation window (e.g., "4 chu kỳ liên tiếp: 2026-09-20 → 2026-09-23") and system status badge (🔴 CẢNH BÁO LỆCH SỐ LIỆU ĐỘC LẬP / 🟢 HỆ THỐNG ỔN ĐỊNH).
+- MUST render a Markdown Comparison Table contrasting "Headline Công Bố" vs "Thực Đo (Raw Reality)" with dynamic deltas (▲, ▼), and inline visual distance bars (e.g. `[█████░░░░░] 50.0%`).
+- Include a Mermaid `xychart-beta` bar chart comparing Headline Claim vs Raw Reality.
+
+SECTION 2: 📈 Quantitative Benchmark Evaluation — So Sánh Chi Tiết Qua Các Ngày
+- TABLE I: Multi-day trend timeline table (columns: Ngày, AUC, EER, avg_latency_ms, Biến Động Độ Trễ, Spectral Spikes, Accuracy Thực Tế).
+- Render a Mermaid `xychart-beta` line chart for multi-day latency drift (`avg_latency_ms`).
+- Provide analytical commentary explaining freezing or drifting metrics.
+
+SECTION 3: 🔬 Probability Calibration & Reliability Assessment — Đối Chiếu Đa Chu Kỳ
+- State Platt scaling parameters: $T^* = 1.6178$, $\tau_{decision} = 0.8118$, $ECE < 0.020$, and formula $p_{calibrated} = \sigma(z_i / T^*)$.
+- Provide multi-day modality calibration table (Chu Kỳ, Modality, $p_{calibrated}$, Ngưỡng $\tau$, Thanh Đo Khoảng Cách Ngưỡng, `is_deepfake`, Trạng Thái Nhất Quán).
+- Explicitly flag any non-monotonic violations (e.g., Image ngày 09-22: $p=0.7224 < \tau=0.8118$ but marked true).
+
+SECTION 4: ⚠️ Forensic Anomaly & Domain-Shift Audit
+- Render a Mermaid `graph LR` flowchart showing root-cause hypothesis from static samples to 0% FAKE recall.
+- Provide a structured anomaly table with columns: STT, Mức Độ (🔴 Blocker, 🟠 High, 🟡 Medium), Bất Thường Phát Hiện, Bằng Chứng Kiểm Toán.
+
+SECTION 5: 💡 Actionable Engineering Recommendations
+- Provide prioritized recommendations labeled [P0 – Blocker], [P1], [P2].
+
+STRICT SYNTAX & PRESENTATION RULES:
+1. Markdown Table Integrity: NEVER insert freeform sentences or commentary lines between rows of a table. Every table must have complete header, separator, and data rows.
+2. Dual-Visual Representation: Every percentage or ratio must include both numerical value AND Unicode progress bar (e.g. `[████████░░] 80.0%`) so it renders cleanly even if Mermaid is not supported in the chat UI.
+3. Clean Mermaid Syntax: All `xychart-beta` and `graph LR` blocks must be valid and properly closed with triple backticks.
+4. Tone: Rigorous, objective, academic scientific standard suitable for IEEE T-IFS / USENIX Security.
 """
 
 _LANGUAGE_INSTRUCTION = """

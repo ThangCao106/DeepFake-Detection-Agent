@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from app.agent import UserContent, drop_client, get_client, rekey_client, stream_turn
 from app import antigravity
-from app.config import API_KEY, CHAT_SYSTEM_PROMPT
+from app.config import API_KEY, CHAT_SYSTEM_PROMPT, _FORMATTING_INSTRUCTION
 
 router = APIRouter()
 
@@ -103,7 +103,9 @@ def _transcript(messages: list[ChatMessage]) -> str:
 
 def _extract_system_prompt(messages: list[ChatMessage]) -> str:
     system_parts = [_content_to_text(m.content) for m in messages if m.role == "system"]
-    return "\n".join(system_parts) if system_parts else CHAT_SYSTEM_PROMPT
+    if system_parts:
+        return "\n".join(system_parts) + "\n\n" + _FORMATTING_INSTRUCTION
+    return CHAT_SYSTEM_PROMPT
 
 
 @router.get("/v1/models", dependencies=[Depends(check_bearer)])
