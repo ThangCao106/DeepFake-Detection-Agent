@@ -432,7 +432,17 @@ def run_option_a_pipeline(
         lr=lr,
         drive_root=drive_root
     )
-    print(f"🎉 All pipeline steps finished successfully! Master report: {report_file}")
+    print(f"🎉 Master report saved: {report_file}")
+
+    # 7. Stream Threads-DFBench Dataset to Hugging Face (Option A Hub + Option C Cloud-to-Cloud)
+    if os.environ.get("HF_TOKEN"):
+        print("\n[Step 6] Streaming Threads-DFBench Dataset directly to Hugging Face...")
+        try:
+            from crawler.hf_dataset_sync import sync_threads_dataset_to_hf
+            drive_daily_dir = Path(drive_root) / date_str if drive_root else None
+            sync_threads_dataset_to_hf(date_str=date_str, source_dir=drive_daily_dir)
+        except Exception as err:
+            print(f"⚠️ [HF Dataset Sync] Notice: {err}")
 
 
 def parse_duration_seconds(dur_str: str) -> float:
