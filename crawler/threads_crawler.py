@@ -13,18 +13,10 @@ import urllib.error
 from pathlib import Path
 
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
+from crawler.crawler_config import get_crawler_config
 
-DEFAULT_THREADS_HASHTAGS = [
-    "#hcm", "#saigon", "#vietnam", "#thesinhvien", "#selfievietnam",
-    "#hanoi", "#duongphovietnam", "#nguoivietnam",
-    "#chandungvietnam", "#kinhcan_khautrang", "#giongnoivietnam"
-]
-
-env_hashtags = os.environ.get("THREADS_HASHTAGS") or os.environ.get("THREADS_TAGS")
-if env_hashtags and env_hashtags.strip():
-    THREADS_HUMAN_TOPICS = [t.strip() for t in env_hashtags.split(",") if t.strip()]
-else:
-    THREADS_HUMAN_TOPICS = DEFAULT_THREADS_HASHTAGS
+_cfg = get_crawler_config()
+THREADS_HUMAN_TOPICS = [f"#{k}" for k in _cfg["keywords"]]
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -439,9 +431,9 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     from crawler.threads_browser_scraper import ThreadsBrowserScraper
     scraper = ThreadsBrowserScraper(session_cookie_str=cookie_str, headless=True)
     
-    clean_topics = [t.lstrip("#").strip() for t in THREADS_HUMAN_TOPICS if t.strip()]
-    if not clean_topics:
-        clean_topics = ["hcm", "vietnam", "saigon", "selfievietnam", "thesinhvien", "cccd"]
+    cfg = get_crawler_config()
+    clean_topics = cfg["keywords"]
+    print(f"[Option A+C Crawler] Active keywords ({len(clean_topics)}): {', '.join(clean_topics[:8])}...")
         
     harvested = await scraper.harvest_real_threads_human_images_async(
         keywords=clean_topics,

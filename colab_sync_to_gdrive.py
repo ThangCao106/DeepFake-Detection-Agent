@@ -513,20 +513,31 @@ if __name__ == "__main__":
     parser.add_argument("--loop", type=str, default=None, help="Run recurring loop interval (e.g. 4h, 1h, 30m)")
     parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
-    args = parser.parse_args()
+    from crawler.crawler_config import get_crawler_config
+    env_cfg = get_crawler_config()
     
+    # Priority: CLI argument (if non-default) > .env / CRAWL_PROFILE > Default Fallback
+    effective_images = args.images if args.images != 10000 else env_cfg["num_images"]
+    effective_videos = args.videos if args.videos != 500 else env_cfg["num_videos"]
+    effective_audios = args.audios if args.audios != 500 else env_cfg["num_audios"]
+    effective_samples = args.samples if args.samples != 25 else env_cfg["num_samples"]
+
     # Determine training flags
     do_m1 = args.train_both_models or args.train_model1 or args.train
     do_m2 = args.train_both_models or args.train_model2 or args.train
     
     if args.loop:
+        args.images = effective_images
+        args.videos = effective_videos
+        args.audios = effective_audios
+        args.samples = effective_samples
         run_continuous_loop(args)
     else:
         run_option_a_pipeline(
-            num_images=args.images,
-            num_videos=args.videos,
-            num_audios=args.audios,
-            num_samples=args.samples,
+            num_images=effective_images,
+            num_videos=effective_videos,
+            num_audios=effective_audios,
+            num_samples=effective_samples,
             do_train_model1=do_m1,
             do_train_model2=do_m2,
             epochs=args.epochs,
