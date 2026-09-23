@@ -107,11 +107,11 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         drive_sub = drive_daily_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
-        # Only clean out explicit legacy 2026-09-21 Western files if present
+        # Only clean out explicit legacy AI seed files if present
         if drive_sub.exists():
             for df in drive_sub.iterdir():
                 if df.is_file() and df.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
-                    if any(df.name.startswith(p) for p in ["threads_20260921_", "human_face_sample_", "faceswap_sample_", "openweight_sample_"]):
+                    if any(df.name.startswith(p) for p in ["threads_20260921_", "threads_20260922_", "human_face_sample_", "faceswap_sample_", "openweight_sample_"]):
                         try:
                             df.unlink()
                             print(f"  [Purged Legacy File] Removed legacy AI seed sample: {df.name}")
