@@ -111,10 +111,10 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         if drive_sub.exists():
             for df in drive_sub.iterdir():
                 if df.is_file() and df.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
-                    if df.name.startswith("threads_20260921_") or df.name.startswith("human_face_sample_"):
+                    if any(df.name.startswith(p) for p in ["threads_20260921_", "human_face_sample_", "faceswap_sample_", "openweight_sample_"]):
                         try:
                             df.unlink()
-                            print(f"  [Purged Legacy File] Removed 2026-09-21 Western file: {df.name}")
+                            print(f"  [Purged Legacy File] Removed legacy AI seed sample: {df.name}")
                         except Exception as e:
                             pass
 
@@ -287,13 +287,22 @@ Toàn bộ dữ liệu huấn luyện, siêu dữ liệu và trọng số mô h�
 
 def ensure_browser_environment():
     """Ensures Playwright, OpenCV, and Chromium browser are ready for Option A Threads harvesting."""
+    import subprocess
     try:
-        import playwright
         import cv2
     except ImportError:
-        print("[Browser Env] Auto-installing playwright & opencv-python-headless for Option A...")
-        import subprocess
-        subprocess.run([sys.executable, "-m", "pip", "install", "playwright", "opencv-python-headless", "-q"], check=False)
+        print("[Browser Env] Auto-installing opencv-python-headless for Option A...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless", "-q"], check=False)
+        
+    try:
+        import playwright
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            b = p.chromium.launch(headless=True)
+            b.close()
+    except Exception as e:
+        print(f"[Browser Env] Auto-installing Playwright & Chromium browser ({e})...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "playwright", "-q"], check=False)
         subprocess.run([sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"], check=False)
 
 
