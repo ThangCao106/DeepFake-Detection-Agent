@@ -355,9 +355,9 @@ def run_option_a_pipeline(
     # 2.1 Live Threads Crawl -> 01_raw_originals
     try:
         asyncio.run(crawl_threads_media(
-            batch_size_images=num_samples,
-            batch_size_audios=2,
-            batch_size_videos=2,
+            batch_size_images=num_images,
+            batch_size_audios=num_audios,
+            batch_size_videos=num_videos,
             output_dir=str(pentest_dir)
         ))
     except Exception as err:

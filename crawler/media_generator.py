@@ -19,6 +19,7 @@ import urllib.error
 import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+import cv2
 
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -282,6 +283,45 @@ def apply_openweight_gen_manipulation(img: Image.Image, seed=None) -> Image.Imag
                 
     return generated
 
+
+def create_manipulated_video(input_video_path: Path, output_video_path: Path, mode="faceswap", vn_cat="vn_id_official") -> bool:
+    """
+    Applies frame-by-frame FaceSwap or OpenWeight generative manipulation on a video clip.
+    """
+    try:
+        cap = cv2.VideoCapture(str(input_video_path))
+        if not cap.isOpened():
+            return False
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 512
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 512
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        output_video_path.parent.mkdir(parents=True, exist_ok=True)
+        writer = cv2.VideoWriter(str(output_video_path), fourcc, float(fps), (w, h))
+        
+        frame_idx = 0
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_frame = Image.fromarray(frame_rgb)
+            if mode == "faceswap":
+                manip_pil = apply_faceswap_manipulation(pil_frame, seed=1000 + frame_idx, source_cat=vn_cat)
+            else:
+                manip_pil = apply_openweight_gen_manipulation(pil_frame, seed=2000 + frame_idx)
+            out_frame = cv2.cvtColor(np.array(manip_pil), cv2.COLOR_RGB2BGR)
+            writer.write(out_frame)
+            frame_idx += 1
+            
+        cap.release()
+        writer.release()
+        return True
+    except Exception as e:
+        print(f"[Video Manipulation] Error processing {output_video_path.name}: {e}")
+        return False
+
+
 def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdrive_agent=None, pentest_dir="report_colab/pentest"):
     """
     Option C Pipeline: Reads real full-frame downloaded images from '01_raw_originals',
@@ -387,6 +427,49 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
             "gdrive_id": res_ow,
             "vietnamese_category": vn_cat
         })
+
+    # Process and upload paired video manipulations if .mp4 files exist in 01_raw_originals
+    raw_videos = sorted(list(raw_dir.glob("*.mp4")))
+    if raw_videos:
+        print(f"[Media Generator] Processing {len(raw_videos)} authentic videos for paired FaceSwap & OpenWeight manipulations...")
+        for v_idx, raw_vid in enumerate(raw_videos, 1):
+            vn_cat = VIETNAMESE_CATEGORIES[(v_idx - 1) % len(VIETNAMESE_CATEGORIES)]
+            # 1. Original video
+            res_raw_v = gdrive_agent.upload_file(str(raw_vid), date_str=date_str, target_subfolder="01_raw_originals")
+            uploaded_records["01_raw_originals"].append({
+                "filename": raw_vid.name,
+                "local_path": str(raw_vid),
+                "media_type": "video",
+                "gdrive_id": res_raw_v,
+                "vietnamese_category": vn_cat
+            })
+            
+            # 2. Paired FaceSwap video
+            fs_vname = f"faceswap_{raw_vid.name}"
+            fs_vpath = fs_dir / fs_vname
+            create_manipulated_video(raw_vid, fs_vpath, mode="faceswap", vn_cat=vn_cat)
+            res_fs_v = gdrive_agent.upload_file(str(fs_vpath), date_str=date_str, target_subfolder="02_manipulated_faceswap")
+            uploaded_records["02_manipulated_faceswap"].append({
+                "filename": fs_vname,
+                "local_path": str(fs_vpath),
+                "media_type": "video",
+                "gdrive_id": res_fs_v,
+                "vietnamese_category": vn_cat
+            })
+            
+            # 3. Paired OpenWeight video
+            ow_vname = f"openweight_{raw_vid.name}"
+            ow_vpath = ow_dir / ow_vname
+            create_manipulated_video(raw_vid, ow_vpath, mode="openweight", vn_cat=vn_cat)
+            res_ow_v = gdrive_agent.upload_file(str(ow_vpath), date_str=date_str, target_subfolder="03_manipulated_openweight")
+            uploaded_records["03_manipulated_openweight"].append({
+                "filename": ow_vname,
+                "local_path": str(ow_vpath),
+                "media_type": "video",
+                "gdrive_id": res_ow_v,
+                "vietnamese_category": vn_cat
+            })
+            print(f"  [Video Triplet] Synced video #{v_idx}: {raw_vid.name} -> FaceSwap & OpenWeight pairs.")
         
     # Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl, and dataset_summary.md
     print("[Dataset Builder] Packaging Threads-DFBench Option C manifest...")

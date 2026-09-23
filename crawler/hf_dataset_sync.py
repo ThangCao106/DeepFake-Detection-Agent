@@ -248,12 +248,10 @@ def sync_threads_dataset_to_hf(
         dest_sub = daily_staging / sub
         dest_sub.mkdir(parents=True, exist_ok=True)
         if src_sub.exists():
-            for img_f in src_sub.glob("*.jpg"):
-                shutil.copy2(str(img_f), str(dest_sub / img_f.name))
-                copied_media += 1
-            for png_f in src_sub.glob("*.png"):
-                shutil.copy2(str(png_f), str(dest_sub / png_f.name))
-                copied_media += 1
+            for f in src_sub.iterdir():
+                if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav", ".webm"]:
+                    shutil.copy2(str(f), str(dest_sub / f.name))
+                    copied_media += 1
 
     print(f"📦 [Staging Package] Staged {copied_media} images across 3 counterfactual categories.")
 
