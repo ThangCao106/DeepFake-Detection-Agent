@@ -513,6 +513,8 @@ if __name__ == "__main__":
     parser.add_argument("--loop", type=str, default=None, help="Run recurring loop interval (e.g. 4h, 1h, 30m)")
     parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
+    args = parser.parse_args()
+
     from crawler.crawler_config import get_crawler_config
     env_cfg = get_crawler_config()
     
