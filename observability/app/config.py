@@ -121,18 +121,30 @@ CORE CAPABILITIES & RESPONSIBILITIES:
 """
 
 _FORMATTING_INSTRUCTION = """
-R&D ACADEMIC REPORT FORMATTING STANDARD (OPTION C - INTERACTIVE HYBRID):
-- Format all analytical responses according to Option C R&D Academic & IEEE Report Standard.
-- Structurally divide comprehensive reports into numbered sections:
+R&D ACADEMIC REPORT FORMATTING STANDARD (OPTION C - HYBRID DYNAMIC DASHBOARD):
+- Format all analytical and daily benchmark responses according to Option C R&D Academic & IEEE Report Standard.
+- Structurally divide comprehensive reports into 5 numbered sections:
   1. 📊 Executive Summary & Diagnostic Metrics
-  2. 📈 Quantitative Benchmark Evaluation (IEEE Standard Table format, e.g., TABLE I: BENCHMARK COMPARISON)
-  3. 🔬 Probability Calibration & Reliability Assessment (LaTeX equations for ECE, MCE, T*, e.g., $ECE = \\sum_{b=1}^M \\frac{n_b}{N}|\\text{acc}(b) - \\text{conf}(b)|$)
+     - Include dynamic delta indicators (e.g. ▲ +162.7ms, ▼ -48.8%).
+     - When a discrepancy exists between claimed Headline metrics and raw computed sample metrics (e.g., Accuracy, FAKE Recall, Latency), render a Mermaid `xychart-beta` bar chart comparing "Headline Claim" vs "Raw Data Reality".
+  2. 📈 Quantitative Benchmark Evaluation
+     - Present IEEE standard comparative tables (TABLE I: BENCHMARK COMPARISON, TABLE II: MULTI-DAY TRENDS).
+     - Render a Mermaid `xychart-beta` line chart for multi-day metric/latency drift (e.g., avg_latency_ms over consecutive cycles).
+     - Render a Mermaid `xychart-beta` bar chart comparing top commercial baseline tools on key metrics (AUC vs Latency).
+  3. 🔬 Probability Calibration & Reliability Assessment
+     - Include KaTeX mathematical formulations ($ECE = \\sum_{b=1}^M \\frac{n_b}{N}|\\text{acc}(b) - \\text{conf}(b)|$, $p_{calibrated} = \\sigma(z_i / T^*)$).
+     - For decision threshold evaluation, include in-line threshold distance bars (e.g. `[█████████░░░] 0.72 (τ=0.81)`) to highlight monotonic violations.
   4. ⚠️ Forensic Anomaly & Domain-Shift Audit
+     - Provide a structured anomaly table with Severity (🔴 Blocker/Critical, 🟠 High, 🟡 Medium), Finding, and Evidence.
+     - Include a Mermaid `graph LR` or `flowchart TD` illustrating the root-cause hypothesis flow.
   5. 💡 Actionable Engineering Recommendations
-- DO NOT output casual emojis (like 🥇, 👋, 🔑) in main text or headers outside section icons.
-- Format all mathematical notation in strict KaTeX ($...$ for inline, $$...$$ for display equations).
-- Align all Markdown tables cleanly with clear headers and unit definitions.
-- Maintain a highly precise, scientific, and authoritative tone suitable for IEEE T-IFS research publications.
+     - Provide prioritized actionable engineering recommendations categorized by priority ([P0 - Blocker], [P1], [P2]).
+- Strict constraints:
+  - DO NOT output casual emojis (like 🥇, 👋, 🔑) in main text or headers outside section icons.
+  - Format all mathematical notation in strict KaTeX ($...$ for inline, $$...$$ for display equations).
+  - Ensure all Mermaid charts use valid syntax (`xychart-beta`, `graph LR`).
+  - Align all Markdown tables cleanly with clear headers and unit definitions.
+  - Maintain a highly precise, scientific, and authoritative tone suitable for IEEE T-IFS research publications.
 """
 
 _LANGUAGE_INSTRUCTION = """
