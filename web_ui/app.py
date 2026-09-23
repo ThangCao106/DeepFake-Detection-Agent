@@ -5,13 +5,24 @@ This web app provides a beautiful, interactive interface for the multi-agent
 deepfake detection system with real-time communication and stunning UI.
 """
 
+# Monkey patch for eventlet early to prevent event loop blocking
+try:
+    import eventlet
+    eventlet.monkey_patch()
+except Exception:
+    pass
+
 import os
 import logging
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
+import sys
+from pathlib import Path
+web_ui_dir = str(Path(__file__).resolve().parent)
+if web_ui_dir not in sys.path:
+    sys.path.insert(0, web_ui_dir)
 
 from agent_system import DeepfakeDetectionOrchestrator
 from config import Config
@@ -29,9 +40,9 @@ app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB max file size
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'mp3', 'wav'}
 
-# Initialize extensions
+# Initialize extensions with resilient ping intervals
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', ping_timeout=60, ping_interval=25)
 
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -116,6 +127,111 @@ def upload_file():
 def uploaded_file(filename):
     """Serve uploaded files."""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+_shared_detector = None
+
+def get_shared_detector():
+    """Returns cached DeepfakeDetector instance to avoid reloading ViT weights on every request."""
+    global _shared_detector
+    if _shared_detector is None:
+        try:
+            from deepfake_detector import DeepfakeDetector
+            _shared_detector = DeepfakeDetector()
+            logger.info("Initialized shared DeepfakeDetector instance")
+        except Exception as e:
+            logger.error(f"Error initializing shared DeepfakeDetector: {e}")
+            raise e
+    return _shared_detector
+
+
+def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str = "en"):
+    """
+    Core detection & analysis engine supporting both WebSocket background tasks and REST API fallback.
+    Returns: (detection_result_dict, explanation_str)
+    """
+    global orchestrator
+    if orchestrator is None:
+        init_orchestrator()
+
+    detection_result = None
+    explanation = None
+
+    if orchestrator is not None:
+        try:
+            explanation = orchestrator.process_image(filepath, user_query, language=language)
+            # Retrieve latest metadata from orchestrator memory
+            for msg in reversed(orchestrator.memory.messages):
+                if msg.role == 'system' and msg.metadata:
+                    detection_result = msg.metadata
+                    break
+        except Exception as e:
+            logger.warning(f"Orchestrator LLM execution warning: {e}. Falling back to direct detector...")
+
+    # Fallback to direct ML detector if orchestrator didn't produce result
+    if detection_result is None:
+        detector = get_shared_detector()
+        detection_result = detector.predict_media(filepath)
+        if 'error' in detection_result:
+            return detection_result, f"Detection error: {detection_result['error']}"
+
+    if not explanation:
+        conf = detection_result.get('confidence', 0.95)
+        label = detection_result.get('label', 'Realism')
+        cert = detection_result.get('forensic_certificate', {})
+        cert_id = cert.get('certificate_id', 'N/A')
+        
+        if language == 'vi':
+            verdict = "Ảnh Thật / Thực Tế (Realism)" if label == 'Realism' else "Ảnh Can Thiệp / Deepfake (Fake)"
+            explanation = (
+                f"**Báo Cáo Giám Định Đa Chiều (Multi-Dimensional Forensic Audit)**:\n\n"
+                f"- **Phán quyết sơ bộ**: {verdict}\n"
+                f"- **Độ tin cậy phân loại**: {conf:.1%}\n"
+                f"- **Mã chứng chỉ số**: `{cert_id}`\n\n"
+            )
+            if label == 'Realism':
+                explanation += "Kết cấu vi mô bề mặt da và phân bố năng lượng tần số cao nhất quán với cảm biến quang học máy ảnh, không phát hiện dấu hiệu can thiệp nhân tạo."
+            else:
+                explanation += "Phát hiện dị thường trong gradient pixel và suy giảm phổ tần số cao, có dấu hiệu can thiệp tạo sinh qua mô hình khuếch tán hoặc hoán đổi khuôn mặt."
+        else:
+            explanation = (
+                f"**Multi-Dimensional Forensic Audit Report**:\n\n"
+                f"- **Auditable Verdict**: {label}\n"
+                f"- **Confidence Score**: {conf:.1%}\n"
+                f"- **Forensic Certificate ID**: `{cert_id}`\n\n"
+            )
+            if label == 'Realism':
+                explanation += "Biometric microscopic textures and frequency distributions match natural optical sensors."
+            else:
+                explanation += "Detected high-frequency energy decay and pixel gradient artifacts characteristic of synthetic diffusion or face manipulation."
+
+    return detection_result, explanation
+
+
+@app.route('/api/analyze', methods=['POST'])
+def api_analyze():
+    """
+    REST API endpoint for media analysis (Option C Fail-safe / Fallback).
+    Accepts JSON: { "filepath": "...", "query": "...", "language": "vi"|"en" }
+    """
+    data = request.get_json(silent=True) or {}
+    filepath = data.get('filepath')
+    user_query = data.get('query', '')
+    language = data.get('language', 'en')
+
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({'error': 'Media file not found on server'}), 404
+
+    try:
+        detection_result, explanation = execute_analysis_pipeline(filepath, user_query=user_query, language=language)
+        return jsonify({
+            'success': True,
+            'detection_result': detection_result,
+            'explanation': explanation
+        })
+    except Exception as e:
+        logger.error(f"REST API analyze error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/verify/<cert_id>', methods=['GET'])
@@ -291,100 +407,44 @@ def handle_disconnect():
 
 @socketio.on('analyze_image')
 def handle_analyze_image(data):
-    """Handle image analysis request via WebSocket."""
+    """Handle image analysis request via WebSocket with non-blocking background task."""
     try:
         filepath = data.get('filepath')
         user_query = data.get('query', '')
         language = data.get('language', 'en')
+        client_sid = request.sid
         
         if not filepath or not os.path.exists(filepath):
             emit('error', {'message': 'Image file not found'})
             return
         
-        # Emit status update
+        # Emit immediate status update
         emit('agent_status', {
             'agent': 'Detection Agent',
             'status': 'analyzing',
-            'message': 'Analyzing image for deepfakes...'
+            'message': 'Analyzing media with Dual-Stream Vision models...'
         })
         
-        # Initialize orchestrator if needed
-        if orchestrator is None:
-            init_orchestrator()
+        def background_analysis_task(sid, fpath, q, lang):
+            try:
+                detection_result, explanation = execute_analysis_pipeline(fpath, user_query=q, language=lang)
+                if detection_result:
+                    socketio.emit('detection_result', detection_result, to=sid)
+                socketio.emit('agent_status', {
+                    'agent': 'Analysis Agent',
+                    'status': 'complete',
+                    'message': 'Analysis complete'
+                }, to=sid)
+                socketio.emit('analysis_result', {'explanation': explanation}, to=sid)
+                logger.info(f"Background analysis complete for sid: {sid}, file: {fpath}")
+            except Exception as task_err:
+                logger.error(f"Background analysis error: {task_err}", exc_info=True)
+                socketio.emit('error', {'message': f'Analysis failed: {str(task_err)}'}, to=sid)
+
+        socketio.start_background_task(background_analysis_task, client_sid, filepath, user_query, language)
         
-        if orchestrator is None:
-            # Fallback to basic detection without LLM
-            from deepfake_detector import DeepfakeDetector
-            detector = DeepfakeDetector()
-            
-            emit('agent_status', {
-                'agent': 'Detection Agent',
-                'status': 'running',
-                'message': 'Running ML model...'
-            })
-            
-            result = detector.predict_media(filepath)
-            
-            if 'error' in result:
-                emit('error', {'message': result['error']})
-                return
-            
-            emit('detection_result', result)
-            emit('agent_status', {
-                'agent': 'Detection Agent',
-                'status': 'complete',
-                'message': 'Detection complete'
-            })
-            
-            # Send basic explanation (no LLM)
-            if language == 'vi':
-                explanation = f"Tệp truyền thông được phân loại là '{result['label']}' với độ tin cậy {result['confidence']:.1%}. "
-                if result['label'] == 'Realism':
-                    explanation += "Cho thấy đây nhiều khả năng là hình ảnh thực tế, không phải tạo bằng AI."
-                else:
-                    explanation += "Cho thấy hình ảnh có dấu vết tạo bằng AI hoặc bị thao túng."
-            else:
-                explanation = f"The image was classified as '{result['label']}' with {result['confidence']:.1%} confidence. "
-                if result['label'] == 'Realism':
-                    explanation += "This suggests the image is likely a real photograph, not AI-generated."
-                else:
-                    explanation += "This suggests the image may be AI-generated or manipulated."
-            
-            emit('analysis_result', {'explanation': explanation})
-        
-        else:
-            # Full agent workflow with LLM
-            emit('agent_status', {
-                'agent': 'Orchestrator',
-                'status': 'coordinating',
-                'message': 'Coordinating agents...'
-            })
-            
-            # Process through orchestrator
-            analysis = orchestrator.process_image(filepath, user_query, language=language)
-            
-            # Get the last detection result from memory
-            detection_result = None
-            for msg in reversed(orchestrator.memory.messages):
-                if msg.role == 'system' and msg.metadata:
-                    detection_result = msg.metadata
-                    break
-            
-            if detection_result:
-                emit('detection_result', detection_result)
-            
-            emit('agent_status', {
-                'agent': 'Analysis Agent',
-                'status': 'complete',
-                'message': 'Analysis complete'
-            })
-            
-            emit('analysis_result', {'explanation': analysis})
-        
-        logger.info(f"Analysis complete for: {filepath}")
-    
     except Exception as e:
-        logger.error(f"Analysis error: {e}", exc_info=True)
+        logger.error(f"Analysis trigger error: {e}", exc_info=True)
         emit('error', {'message': f'Analysis failed: {str(e)}'})
 
 

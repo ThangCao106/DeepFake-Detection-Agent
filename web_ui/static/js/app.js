@@ -138,13 +138,18 @@ const agentStatusText = document.getElementById('agentStatusText');
 let uploadedFile = null;
 let uploadedFilePath = null;
 let analysisComplete = false;
+let hasShownInitialConnect = false;
+let analysisTimeoutTimer = null;
 
 // ===== WebSocket Events =====
 socket.on('connect', () => {
     console.log('Connected to server');
     statusDot.classList.add('connected');
     statusText.textContent = TRANSLATIONS[currentLang].status_connected;
-    addSystemMessage(TRANSLATIONS[currentLang].system_connected);
+    if (!hasShownInitialConnect) {
+        addSystemMessage(TRANSLATIONS[currentLang].system_connected);
+        hasShownInitialConnect = true;
+    }
 });
 
 socket.on('disconnect', () => {
@@ -164,11 +169,19 @@ socket.on('agent_status', (data) => {
 
 socket.on('detection_result', (data) => {
     console.log('Detection result:', data);
+    if (analysisTimeoutTimer) {
+        clearTimeout(analysisTimeoutTimer);
+        analysisTimeoutTimer = null;
+    }
     displayResults(data);
 });
 
 socket.on('analysis_result', (data) => {
     console.log('Analysis result:', data);
+    if (analysisTimeoutTimer) {
+        clearTimeout(analysisTimeoutTimer);
+        analysisTimeoutTimer = null;
+    }
     displayExplanation(data.explanation);
     hideAgentStatus();
     analysisComplete = true;
@@ -184,8 +197,14 @@ socket.on('question_answer', (data) => {
 
 socket.on('error', (data) => {
     console.error('Error:', data);
+    if (analysisTimeoutTimer) {
+        clearTimeout(analysisTimeoutTimer);
+        analysisTimeoutTimer = null;
+    }
     addSystemMessage(`Error: ${data.message}`, 'error');
     hideAgentStatus();
+    analyzeBtn.disabled = false;
+    analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
 });
 
 socket.on('session_saved', (data) => {
@@ -345,6 +364,43 @@ analyzeBtn.addEventListener('click', async () => {
                 query: '',
                 language: currentLang
             });
+
+            // Option C: Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
+            if (analysisTimeoutTimer) clearTimeout(analysisTimeoutTimer);
+            analysisTimeoutTimer = setTimeout(async () => {
+                if (!analysisComplete && uploadedFilePath) {
+                    console.warn('[Resilience Guard] WebSocket took longer than 12s. Initiating secure REST fallback...');
+                    showAgentStatus(currentLang === 'vi' ? 'Đang đồng bộ kết quả qua kênh REST dự phòng...' : 'Syncing results via Secure REST Channel...');
+                    try {
+                        const res = await fetch('/api/analyze', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                filepath: uploadedFilePath,
+                                query: '',
+                                language: currentLang
+                            })
+                        });
+                        const resData = await res.json();
+                        if (resData.success) {
+                            if (resData.detection_result) displayResults(resData.detection_result);
+                            if (resData.explanation) displayExplanation(resData.explanation);
+                            hideAgentStatus();
+                            analysisComplete = true;
+                            chatInput.disabled = false;
+                            sendBtn.disabled = false;
+                        } else {
+                            throw new Error(resData.error || 'REST analysis failed');
+                        }
+                    } catch (fallbackErr) {
+                        console.error('[Resilience Guard Error]:', fallbackErr);
+                        addSystemMessage(`Analysis notice: ${fallbackErr.message}`, 'error');
+                        hideAgentStatus();
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
+                    }
+                }
+            }, 12000);
         } else {
             throw new Error(data.error || `Upload failed with status ${response.status}`);
         }

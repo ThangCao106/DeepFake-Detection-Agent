@@ -16,7 +16,16 @@ Key Concepts Implemented (Kaggle Requirements):
 """
 
 import os
+import sys
 import json
+
+# Safe encoding for Windows console (avoid charmap crash on emojis)
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -243,7 +252,7 @@ class AnalysisAgent:
     def __init__(self, api_key: str):
         self.api_key = api_key
         genai.configure(api_key=api_key)
-        self.model_candidates = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-3.6-flash"]
+        self.model_candidates = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash"]
         self.active_model_name = self._sanitize_model_name(Config.GEMINI_MODEL_NAME)
         self.model = genai.GenerativeModel(self.active_model_name)
         self.obs_memory = ObservabilityMemoryStore.get_instance()
@@ -394,6 +403,18 @@ Explain key forensic findings (whether passive neural model, FFT 2D spectral ano
 
 
 
+def safe_print(msg: str):
+    """Prints message safely even on legacy Windows code pages without crashing."""
+    try:
+        print(msg)
+    except Exception:
+        try:
+            clean = msg.encode('ascii', errors='replace').decode('ascii')
+            print(clean)
+        except Exception:
+            pass
+
+
 class DeepfakeDetectionOrchestrator:
     """
     Orchestrator agent that coordinates the multi-agent workflow.
@@ -407,8 +428,8 @@ class DeepfakeDetectionOrchestrator:
         self.memory = ConversationMemory()
         
         logger.info("Initialized DeepfakeDetectionOrchestrator")
-        print(f"{Fore.GREEN}🤖 Deepfake Detection Agent System Initialized{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}Session ID: {self.memory.session_id}{Style.RESET_ALL}\n")
+        safe_print(f"{Fore.GREEN}Deepfake Detection Agent System Initialized{Style.RESET_ALL}")
+        safe_print(f"{Fore.CYAN}Session ID: {self.memory.session_id}{Style.RESET_ALL}\n")
     
     def process_image(self, image_path: str, user_query: str = None, language: str = 'en') -> str:
         """
@@ -438,7 +459,7 @@ class DeepfakeDetectionOrchestrator:
         self.memory.add_message("user", user_msg)
         
         # Step 1: Detection Agent - Run ML model
-        print(f"{Fore.YELLOW}🔍 Detection Agent: Analyzing image...{Style.RESET_ALL}")
+        safe_print(f"{Fore.YELLOW}Detection Agent: Analyzing image...{Style.RESET_ALL}")
         detection_result = self.detection_tool.detect(image_path)
         
         if "error" in detection_result:
@@ -453,11 +474,11 @@ class DeepfakeDetectionOrchestrator:
             metadata=detection_result
         )
         
-        print(f"{Fore.CYAN}📊 Result: {detection_result['label']} "
-              f"(Confidence: {detection_result['confidence']:.2%}){Style.RESET_ALL}")
+        safe_print(f"{Fore.CYAN}Result: {detection_result['label']} "
+                   f"(Confidence: {detection_result['confidence']:.2%}){Style.RESET_ALL}")
         
         # Step 2: Analysis Agent - LLM explains results
-        print(f"{Fore.YELLOW}🧠 Analysis Agent: Generating explanation...{Style.RESET_ALL}")
+        safe_print(f"{Fore.YELLOW}Analysis Agent: Generating explanation...{Style.RESET_ALL}")
         
         conversation_context = self.memory.get_context()
         analysis = self.analysis_agent.analyze(

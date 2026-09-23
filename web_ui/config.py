@@ -19,7 +19,7 @@ class Config:
     
     # Model Settings
     DEEPFAKE_MODEL_NAME = "prithivMLmods/Deep-Fake-Detector-v2-Model"
-    GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+    GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash")
     CLAUDE_MODEL_NAME = os.getenv("CLAUDE_MODEL_NAME", "claude-3-5-sonnet-20241022")
     
     # Logging

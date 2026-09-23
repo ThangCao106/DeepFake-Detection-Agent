@@ -28,6 +28,7 @@ wheels/
 .venv
 venv/
 venv 
+dataset_pipeline/observability_memory.json
 
 # IDE
 .vscode/
