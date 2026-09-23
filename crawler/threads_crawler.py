@@ -15,8 +15,8 @@ from pathlib import Path
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 
 DEFAULT_THREADS_HASHTAGS = [
-    "#vietnam", "#hcm", "#cccd", "#thesinhvien", "#selfievietnam",
-    "#hanoi", "#saigon", "#duongphovietnam", "#nguoivietnam",
+    "#hcm", "#saigon", "#vietnam", "#thesinhvien", "#selfievietnam",
+    "#hanoi", "#duongphovietnam", "#nguoivietnam",
     "#chandungvietnam", "#kinhcan_khautrang", "#giongnoivietnam"
 ]
 

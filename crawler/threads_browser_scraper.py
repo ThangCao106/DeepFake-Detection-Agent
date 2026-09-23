@@ -241,7 +241,7 @@ class ThreadsBrowserScraper:
         5. Returns verified authentic human image objects.
         """
         if keywords is None:
-            keywords = ["hcm", "vietnam", "saigon", "selfievietnam", "thesinhvien", "cccd"]
+            keywords = ["hcm", "saigon", "vietnam", "thesinhvien", "selfievietnam", "nguoivietnam"]
         if seen_hashes is None:
             seen_hashes = set()
             

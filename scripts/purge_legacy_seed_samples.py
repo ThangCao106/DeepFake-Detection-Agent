@@ -33,7 +33,8 @@ LEGACY_PATTERNS = [
     re.compile(r"^human_face_sample_.*"),
     re.compile(r"^faceswap_sample_.*"),
     re.compile(r"^openweight_sample_.*"),
-    re.compile(r"^threads_20260921_.*")  # ONLY purge 2026-09-21 Western legacy files
+    re.compile(r"^threads_20260921_.*"),  # Purge 2026-09-21 legacy files
+    re.compile(r"^threads_20260922_.*"),  # Purge 2026-09-22 AI seed files
 ]
 
 def purge_legacy_samples(extra_paths=None):
