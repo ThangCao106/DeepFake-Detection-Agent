@@ -16,6 +16,14 @@ import json
 import shutil
 from pathlib import Path
 
+# Safe encoding for Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Ensure .env is loaded
@@ -25,8 +33,8 @@ try:
 except ImportError:
     pass
 
-DEFAULT_HF_DATASET_REPO = "ThangCao106/Threads-DFBench-Vietnamese"
-DEFAULT_BASELINES_REPO = "ThangCao106/DualStream-Foundational-Manifests"
+DEFAULT_HF_DATASET_REPO = "ThangCao/Threads-DFBench-Vietnamese"
+DEFAULT_BASELINES_REPO = "ThangCao/DualStream-Foundational-Manifests"
 
 DATASET_CARD_TEMPLATE = """---
 language:
@@ -200,6 +208,18 @@ def sync_threads_dataset_to_hf(
 
     api = HfApi(token=token)
 
+    # Option C: Smart Username Auto-Resolution
+    try:
+        who = api.whoami()
+        authed_user = who.get("name") or who.get("username")
+        if authed_user and "/" in repo_id:
+            curr_namespace, repo_name = repo_id.split("/", 1)
+            if curr_namespace.lower() != authed_user.lower():
+                print(f"🔄 [Option C: Smart Namespace Resolution] Remapping '{curr_namespace}' -> '{authed_user}'")
+                repo_id = f"{authed_user}/{repo_name}"
+    except Exception as e:
+        print(f"⚠️ [Option C: Auth Check Notice] {e}")
+
     # 1. Ensure Dataset Repository exists
     try:
         create_repo(repo_id=repo_id, repo_type="dataset", token=token, private=private, exist_ok=True)
@@ -273,6 +293,85 @@ def sync_threads_dataset_to_hf(
         return False
     finally:
         # Clean up temporary staging
+        shutil.rmtree(str(staging_dir), ignore_errors=True)
+
+
+def sync_baselines_manifest_to_hf(
+    repo_id: str = None,
+    hf_token: str = None,
+    private: bool = False
+) -> bool:
+    """
+    Synchronizes the Foundational Baseline Connectors & Manifests Hub to Hugging Face:
+    Links 8 standardized baseline datasets (Model 1 General & Model 2 Biometrics).
+    """
+    if not repo_id:
+        repo_id = os.environ.get("HF_BASELINES_REPO", DEFAULT_BASELINES_REPO)
+
+    token = hf_token or os.environ.get("HF_TOKEN")
+    if not token:
+        print("[HF Baselines Sync] Warning: HF_TOKEN not found.")
+        return False
+
+    try:
+        from huggingface_hub import HfApi, create_repo
+    except ImportError:
+        import subprocess
+        subprocess.run([sys.executable, "-m", "pip", "install", "huggingface_hub", "-q"], check=False)
+        from huggingface_hub import HfApi, create_repo
+
+    api = HfApi(token=token)
+
+    # Option C: Smart Username Auto-Resolution
+    try:
+        who = api.whoami()
+        authed_user = who.get("name") or who.get("username")
+        if authed_user and "/" in repo_id:
+            curr_namespace, repo_name = repo_id.split("/", 1)
+            if curr_namespace.lower() != authed_user.lower():
+                repo_id = f"{authed_user}/{repo_name}"
+    except Exception as e:
+        print(f"⚠️ [Option C: Auth Check Notice] {e}")
+
+    try:
+        create_repo(repo_id=repo_id, repo_type="dataset", token=token, private=private, exist_ok=True)
+        print(f"✅ [HF Baselines Repo Verified] Target hub: https://huggingface.co/datasets/{repo_id}")
+    except Exception as e:
+        print(f"⚠️ [HF Baselines Repo Warning] {e}")
+
+    staging_dir = PROJECT_ROOT / "report_colab" / "hf_baselines_staging"
+    if staging_dir.exists():
+        shutil.rmtree(str(staging_dir), ignore_errors=True)
+    staging_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write Dataset Card
+    readme_path = staging_dir / "README.md"
+    with open(readme_path, "w", encoding="utf-8") as f:
+        f.write(FOUNDATIONAL_BASELINES_CARD)
+
+    # Write Connectors metadata JSON
+    try:
+        from colab_training.data_pipeline import AWESOME_DEEPFAKES_REGISTRY
+        connectors_path = staging_dir / "dataset_connectors.json"
+        with open(connectors_path, "w", encoding="utf-8") as f:
+            json.dump(AWESOME_DEEPFAKES_REGISTRY, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"⚠️ Could not export registry: {e}")
+
+    try:
+        api.upload_folder(
+            folder_path=str(staging_dir),
+            repo_id=repo_id,
+            repo_type="dataset",
+            commit_message="Update Dual-Stream Foundational Baseline Connectors & Documentation",
+            token=token
+        )
+        print(f"🎉 [SUCCESS] Baselines Hub synchronized: https://huggingface.co/datasets/{repo_id}")
+        return True
+    except Exception as err:
+        print(f"❌ [Baselines Upload Error] {err}")
+        return False
+    finally:
         shutil.rmtree(str(staging_dir), ignore_errors=True)
 
 
