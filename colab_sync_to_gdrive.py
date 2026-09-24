@@ -351,6 +351,12 @@ def run_option_a_pipeline(
         for s_file in seed_pool_dir.glob("*.jpg"):
             shutil.copy2(str(s_file), str(raw_orig_dir / s_file.name))
         print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.jpg')))} pre-verified authentic Vietnamese photos into 01_raw_originals.")
+
+    seed_vid_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
+    if seed_vid_dir.exists() and not list(raw_orig_dir.glob("*.mp4")):
+        for v_file in seed_vid_dir.glob("*.mp4"):
+            shutil.copy2(str(v_file), str(raw_orig_dir / v_file.name))
+        print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.mp4')))} pre-verified authentic Vietnamese videos into 01_raw_originals.")
     
     # 2.1 Live Threads Crawl -> 01_raw_originals
     try:

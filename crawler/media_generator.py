@@ -299,7 +299,7 @@ def create_manipulated_video(input_video_path: Path, output_video_path: Path, mo
         output_video_path.parent.mkdir(parents=True, exist_ok=True)
         writer = cv2.VideoWriter(str(output_video_path), fourcc, float(fps), (w, h))
         
-        frame_idx = 0
+        video_seed = 1000 + (abs(hash(input_video_path.name)) % 100000)
         while True:
             ret, frame = cap.read()
             if not ret:
@@ -307,9 +307,9 @@ def create_manipulated_video(input_video_path: Path, output_video_path: Path, mo
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_frame = Image.fromarray(frame_rgb)
             if mode == "faceswap":
-                manip_pil = apply_faceswap_manipulation(pil_frame, seed=1000 + frame_idx, source_cat=vn_cat)
+                manip_pil = apply_faceswap_manipulation(pil_frame, seed=video_seed, source_cat=vn_cat)
             else:
-                manip_pil = apply_openweight_gen_manipulation(pil_frame, seed=2000 + frame_idx)
+                manip_pil = apply_openweight_gen_manipulation(pil_frame, seed=video_seed + 100)
             out_frame = cv2.cvtColor(np.array(manip_pil), cv2.COLOR_RGB2BGR)
             writer.write(out_frame)
             frame_idx += 1
