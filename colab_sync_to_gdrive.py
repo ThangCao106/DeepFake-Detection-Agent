@@ -55,6 +55,7 @@ def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr
             return None
 
     candidate_names = [
+        "1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0",
         "Thread_Data",
         "Deepfake Detection",
         "DeepFake_Pentest_Data",
@@ -103,6 +104,12 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     # Check both pentest_dir and local_daily_dir for source media
     source_dirs = [pentest_dir, local_daily_dir]
     
+    # Initialize Option C Perceptual Deduplication Registry from Google Drive
+    from crawler.dedup_engine import PerceptualDeduplicationRegistry, compute_dhash, is_visual_duplicate
+    dedup_registry = PerceptualDeduplicationRegistry()
+    dedup_registry.sync_with_gdrive(dest_drive_root)
+    gdrive_known_dhashes = dedup_registry.get_known_dhashes()
+
     for sub in subfolders:
         drive_sub = drive_daily_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
@@ -118,7 +125,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
                         except Exception as e:
                             pass
 
-        # Copy all authentic Vietnamese media files directly to Google Drive
+        # Copy authentic Vietnamese media files directly to Google Drive (with visual deduplication)
         sub_copied = 0
         for src_base in source_dirs:
             local_sub = src_base / sub
@@ -126,10 +133,30 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
                 for f in sorted(list(local_sub.iterdir())):
                     if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
                         dest_file = drive_sub / f.name
+                        
+                        # Enforce visual deduplication on images syncing to GDrive
+                        if f.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+                            try:
+                                with Image.open(f) as im:
+                                    is_dup, match_h, dist = is_visual_duplicate(im, gdrive_known_dhashes, threshold=6)
+                                    # Allow if it's the exact same file being updated, but block if it's a clone of another file
+                                    if is_dup and dest_file.name not in [v.get("filename") for v in dedup_registry.hashes.values()]:
+                                        if not dest_file.exists():
+                                            print(f"  [GDrive Dedup Block] Suppressed upload of visual duplicate: {f.name} (dist={dist} <= 6)")
+                                            continue
+                                    cur_dh = compute_dhash(im)
+                                    gdrive_known_dhashes.add(cur_dh)
+                                    dedup_registry.check_and_register(im, filename=f.name, source="gdrive_sync")
+                            except Exception:
+                                pass
+
                         shutil.copy2(str(f), str(dest_file))
                         copied_count += 1
                         sub_copied += 1
         print(f"  [Colab GDrive Sync] Successfully synchronized {sub_copied} media assets to {drive_sub}")
+
+    # Persist updated Option C registry to Google Drive
+    dedup_registry.save(dest_drive_root / "registry" / "perceptual_dhash_registry.json")
                         
     # Sync benchmark manifest and summary files
     for src_dir in source_dirs + [Path("report_colab") / "temp_media_samples"]:
@@ -343,14 +370,30 @@ def run_option_a_pipeline(
     print(f"\n[Step 1] Crawling Meta Threads media ({num_samples} samples) & generating paired manipulations...")
     ensure_browser_environment()
     import asyncio
+    from crawler.dedup_engine import PerceptualDeduplicationRegistry, is_visual_duplicate
+    
     pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
     raw_orig_dir = pentest_dir / "01_raw_originals"
     raw_orig_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize Option C Dedup Registry & sync with mounted GDrive
+    dedup_registry = PerceptualDeduplicationRegistry(pentest_dir / "perceptual_dhash_registry.json")
+    if drive_root:
+        dedup_registry.sync_with_gdrive(drive_root)
+        
     seed_pool_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
     if seed_pool_dir.exists() and not list(raw_orig_dir.glob("*.jpg")):
+        ingested = 0
         for s_file in seed_pool_dir.glob("*.jpg"):
-            shutil.copy2(str(s_file), str(raw_orig_dir / s_file.name))
-        print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.jpg')))} pre-verified authentic Vietnamese photos into 01_raw_originals.")
+            is_dup, _, _ = is_visual_duplicate(s_file, dedup_registry.get_known_dhashes(), threshold=6)
+            if not is_dup:
+                shutil.copy2(str(s_file), str(raw_orig_dir / s_file.name))
+                dedup_registry.check_and_register(s_file, filename=s_file.name, source="verified_threads_seeds")
+                ingested += 1
+        if ingested > 0:
+            print(f"[Colab Pipeline] Ingested {ingested} fresh pre-verified authentic Vietnamese photos into 01_raw_originals.")
+        else:
+            print(f"[Colab Pipeline] Pre-verified seeds already registered on GDrive. Crawling fresh unique portraits.")
 
     seed_vid_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
     if seed_vid_dir.exists() and not list(raw_orig_dir.glob("*.mp4")):
@@ -358,7 +401,7 @@ def run_option_a_pipeline(
             shutil.copy2(str(v_file), str(raw_orig_dir / v_file.name))
         print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.mp4')))} pre-verified authentic Vietnamese videos into 01_raw_originals.")
     
-    # 2.1 Live Threads Crawl -> 01_raw_originals
+    # 2.1 Live Threads & Open-Web Diverse Crawl -> 01_raw_originals
     try:
         asyncio.run(crawl_threads_media(
             batch_size_images=num_images,

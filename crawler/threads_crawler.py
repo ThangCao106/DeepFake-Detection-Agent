@@ -11,10 +11,17 @@ import time
 import hashlib
 import urllib.request
 import urllib.error
+from typing import Optional, List, Dict, Set
 from pathlib import Path
 
 from crawler.gdrive_sync import GDriveSyncAgent, DiskGuardAgent
 from crawler.crawler_config import get_crawler_config
+from crawler.dedup_engine import (
+    compute_dhash,
+    hamming_distance,
+    is_visual_duplicate,
+    PerceptualDeduplicationRegistry
+)
 
 _cfg = get_crawler_config()
 THREADS_HUMAN_TOPICS = [f"#{k}" for k in _cfg["keywords"]]
@@ -420,16 +427,27 @@ def crawl_threads_live_hashtag_posts(topic: str, cookie_str: str = "") -> list:
         pass
     return []
 
-def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes: set, output_originals_dir: Path, live_candidate: dict = None) -> dict:
+def fetch_authentic_human_image_unique(
+    sample_idx: int,
+    topic: str,
+    seen_hashes: set,
+    output_originals_dir: Path,
+    live_candidate: dict = None,
+    dedup_registry: Optional[PerceptualDeduplicationRegistry] = None
+) -> dict:
     """
-    Option A + Option B Integration:
+    Option A + Option B + Option C Integration:
     Acquires a guaranteed unique real photographic Vietnamese/East Asian human portrait image.
     1. If live_candidate (Option B) provided, attempts to download and validate face.
-    2. Otherwise, samples from the 25 distinct Vietnamese identities (Option A) across 5 categories.
-    Enforces real visual deduplication (retry with distinct seed/crop transforms if SHA256 matches).
+    2. Otherwise, samples distinct Vietnamese identities or synthesizes high-entropy facial morphology.
+    Enforces Option C 64-bit dHash perceptual deduplication (Hamming distance > 6).
     Saves full-frame image and computes facial bounding box (BBox) metadata.
     """
     from crawler.media_generator import fetch_authentic_human_portrait, VIETNAMESE_CATEGORIES
+    
+    if dedup_registry is None:
+        dedup_registry = PerceptualDeduplicationRegistry()
+    known_dhashes = dedup_registry.get_known_dhashes()
     
     cat = VIETNAMESE_CATEGORIES[(sample_idx - 1) % len(VIETNAMESE_CATEGORIES)]
     img_bytes = None
@@ -444,18 +462,22 @@ def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes:
                 candidate_bytes = resp.read()
                 chash = compute_sha256(candidate_bytes)
                 if chash not in seen_hashes:
-                    # Validate image decodability
-                    with Image.open(io.BytesIO(candidate_bytes)) as test_im:
-                        test_im.verify()
-                    img_bytes = candidate_bytes
-                    sha256_hash = chash
-                    seen_hashes.add(sha256_hash)
-                    is_live_crawled = True
-                    print(f"[Option B Live] Successfully ingested real Threads sample #{sample_idx} ({sha256_hash[:10]})")
+                    is_dup, _, dist = is_visual_duplicate(candidate_bytes, known_dhashes, threshold=6)
+                    if not is_dup:
+                        with Image.open(io.BytesIO(candidate_bytes)) as test_im:
+                            test_im.verify()
+                        img_bytes = candidate_bytes
+                        sha256_hash = chash
+                        item_dhash = compute_dhash(candidate_bytes)
+                        known_dhashes.add(item_dhash)
+                        seen_hashes.add(sha256_hash)
+                        dedup_registry.check_and_register(candidate_bytes, filename=f"threads_{chash[:10]}.jpg", source="threads_live", sha256=chash)
+                        is_live_crawled = True
+                        print(f"[Option B Live] Successfully ingested real Threads sample #{sample_idx} ({sha256_hash[:10]})")
         except Exception:
             pass
 
-    # 2. Option A Fallback: Sample from 25 distinct Vietnamese identities
+    # 2. Option A Fallback: Sample distinct Vietnamese identities with dHash gate
     if not img_bytes:
         seed_base = int(time.time()) + sample_idx * 1337
         attempt = 0
@@ -464,9 +486,16 @@ def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes:
             pil_img, category_str = fetch_authentic_human_portrait(
                 sample_idx=sample_idx + attempt * 100, 
                 seed=seed, 
-                category=cat
+                category=cat,
+                dedup_registry=dedup_registry
             )
             
+            # Check visual deduplication before encoding
+            is_dup, _, dist = is_visual_duplicate(pil_img, known_dhashes, threshold=6)
+            if is_dup:
+                attempt += 1
+                continue
+                
             buf = io.BytesIO()
             pil_img.save(buf, format="JPEG", quality=95)
             raw = buf.getvalue()
@@ -475,19 +504,25 @@ def fetch_authentic_human_image_unique(sample_idx: int, topic: str, seen_hashes:
             if h not in seen_hashes:
                 sha256_hash = h
                 img_bytes = raw
+                item_dhash = compute_dhash(raw)
+                known_dhashes.add(item_dhash)
                 seen_hashes.add(h)
+                dedup_registry.check_and_register(raw, filename=f"portrait_{h[:10]}.jpg", source="portrait_generator", sha256=h)
                 break
             attempt += 1
 
     if not img_bytes or not sha256_hash:
         # Fallback safeguard: generate with unique timestamp seed
         seed = int(time.time() * 1000) + sample_idx
-        pil_img, _ = fetch_authentic_human_portrait(sample_idx=sample_idx, seed=seed, category=cat)
+        pil_img, _ = fetch_authentic_human_portrait(sample_idx=sample_idx, seed=seed, category=cat, dedup_registry=dedup_registry)
         buf = io.BytesIO()
         pil_img.save(buf, format="JPEG", quality=95)
         img_bytes = buf.getvalue()
         sha256_hash = compute_sha256(img_bytes)
+        item_dhash = compute_dhash(img_bytes)
+        known_dhashes.add(item_dhash)
         seen_hashes.add(sha256_hash)
+        dedup_registry.check_and_register(img_bytes, filename=f"portrait_{sha256_hash[:10]}.jpg", source="portrait_safeguard", sha256=sha256_hash)
 
     filename = f"threads_{time.strftime('%Y%m%d')}_{sha256_hash[:10]}.jpg"
     local_path = output_originals_dir / filename
@@ -596,14 +631,30 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     crawled_videos = []
     seen_hashes = set()
     
-    # Deduplicate only against files already present in today's local originals directory
+    # Initialize Option C Perceptual Deduplication Registry
+    dedup_registry = PerceptualDeduplicationRegistry(output_dir / "perceptual_dhash_registry.json")
+    
+    # Sync with Google Drive if mounted
+    colab_gdrive_candidates = [
+        Path("/content/drive/MyDrive/Thread_Data"),
+        Path("/content/drive/MyDrive/1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0"),
+        Path("/content/drive/Shareddrives/Thread_Data")
+    ]
+    for dr in colab_gdrive_candidates:
+        if dr.exists():
+            dedup_registry.sync_with_gdrive(dr)
+            break
+    
+    # Deduplicate against files already present in today's local originals directory
     for existing_f in originals_dir.glob("*.jpg"):
         try:
             with open(existing_f, "rb") as ef:
-                seen_hashes.add(hashlib.sha256(ef.read()).hexdigest())
+                b = ef.read()
+                seen_hashes.add(hashlib.sha256(b).hexdigest())
+                dedup_registry.check_and_register(b, filename=existing_f.name, source="local_originals")
         except Exception:
             pass
-    print(f"[Option C Threads Crawler] Preserving {len(seen_hashes)} existing unique media in 01_raw_originals.")
+    print(f"[Option C Threads Crawler] Preserving {len(seen_hashes)} existing media in 01_raw_originals ({len(dedup_registry.get_known_dhashes())} unique dHashes).")
     
     # 1. Fetch 100% Real Human Face Images from Meta Threads (Option A Default + Option B Advanced)
     from crawler.threads_browser_scraper import ThreadsBrowserScraper
@@ -616,7 +667,8 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     harvested = await scraper.harvest_real_threads_human_images_async(
         keywords=clean_topics,
         min_images=batch_size_images,
-        seen_hashes=seen_hashes
+        seen_hashes=seen_hashes,
+        dedup_registry=dedup_registry
     )
     
     for idx, item in enumerate(harvested, 1):
@@ -780,7 +832,13 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     with open(registry_file, "w", encoding="utf-8") as f:
         json.dump(registry_data, f, indent=2, ensure_ascii=False)
         
-    # Save persistent cross-run hash history back to local & Google Drive
+    # Save persistent cross-run hash history and Option C Perceptual Registry back to local & Google Drive
+    dedup_registry.save(output_dir / "perceptual_dhash_registry.json")
+    for dr in colab_gdrive_candidates:
+        if dr.exists():
+            dedup_registry.sync_with_gdrive(dr)
+            break
+
     history_file_gdrive = Path("/content/drive/MyDrive/Thread_Data/registry/crawled_hashes_history.json")
     history_file_local = output_dir / "crawled_hashes_history.json"
     updated_history = list(seen_hashes)
@@ -792,7 +850,7 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
         except Exception:
             pass
 
-    print(f"[Option C Threads Crawler] Batch complete. Registry saved to {registry_file}")
+    print(f"[Option C Threads Crawler] Batch complete. Registry saved to {registry_file} (Total dHashes: {len(dedup_registry.get_known_dhashes())})")
     
     # Sync raw batch to Google Drive (01_raw_originals)
     try:
