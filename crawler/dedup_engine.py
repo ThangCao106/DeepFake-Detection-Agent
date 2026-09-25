@@ -95,7 +95,8 @@ def hamming_distance(hash1: str, hash2: str) -> int:
     try:
         val1 = int(hash1, 16)
         val2 = int(hash2, 16)
-        return bin(val1 ^ val2).count("1")
+        diff = val1 ^ val2
+        return diff.bit_count() if hasattr(diff, "bit_count") else bin(diff).count("1")
     except Exception:
         return 64
 

@@ -5,6 +5,7 @@ and human videos (talking-head / facial expressions) for OOD model evaluation.
 """
 import os
 import json
+import shutil
 import random
 import asyncio
 import time

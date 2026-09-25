@@ -27,7 +27,8 @@ from crawler.dedup_engine import (
     compute_dhash,
     hamming_distance,
     is_visual_duplicate,
-    PerceptualDeduplicationRegistry
+    PerceptualDeduplicationRegistry,
+    DEFAULT_HAMMING_THRESHOLD
 )
 
 def compute_sha256(data_bytes: bytes) -> str:
@@ -676,8 +677,10 @@ class ThreadsBrowserScraper:
         if len(verified_results) < min_images:
             from crawler.media_generator import fetch_authentic_human_portrait, VIETNAMESE_CATEGORIES
             deficit = min_images - len(verified_results)
-            print(f"[Threads Real Harvester] Replenishing {deficit} unique portraits via dynamic synthesis...")
-            for synth_i in range(deficit):
+            # Cap replenishment at 100 max per crawl iteration to prevent blocking Colab execution
+            replenish_target = min(deficit, 100) if min_images > 100 else deficit
+            print(f"[Threads Real Harvester] Replenishing {replenish_target} unique portraits via dynamic synthesis (total deficit: {deficit})...")
+            for synth_i in range(replenish_target):
                 cat = VIETNAMESE_CATEGORIES[synth_i % len(VIETNAMESE_CATEGORIES)]
                 synth_seed = int(time.time() * 1000) + synth_i * 9973
                 pil_im, _ = fetch_authentic_human_portrait(
@@ -711,6 +714,8 @@ class ThreadsBrowserScraper:
                     "keyword": cat,
                     "source": "threads.com/synthesizer"
                 })
+                if (synth_i + 1) % 10 == 0 or synth_i == replenish_target - 1:
+                    print(f"  [Synthesis Progress] Ingested {synth_i + 1}/{replenish_target} dynamic portraits...")
 
         dedup_registry.save()
         print(f"[Threads Real Harvester] Verification complete: {len(verified_results)}/{min_images} unique real human photos accepted (0 duplicates).")
