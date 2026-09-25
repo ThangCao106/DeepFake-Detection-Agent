@@ -236,12 +236,13 @@ def generate_photographic_base_fallback(
         # Shading: Key lighting gradient (top-left or top-right)
         light_angle = random.choice([-1.0, 1.0])
         lighting = 1.0 + 0.12 * light_angle * ((bg_x - cx) / width) - 0.10 * ((bg_y - cy) / height)
-        lighting = np.clip(lighting, 0.85, 1.15)
-        canvas = canvas * (lighting * face_mask[:, :, np.newaxis] + (1.0 - face_mask[:, :, np.newaxis]))
+        lighting = np.clip(lighting, 0.85, 1.15)[:, :, np.newaxis]
+        face_mask_3d = face_mask[:, :, np.newaxis]
+        canvas = canvas * (lighting * face_mask_3d + (1.0 - face_mask_3d))
 
         # High-frequency organic skin pore noise
         pore_noise = np.random.normal(0, 4.5, (height, width, 3)).astype(np.float32)
-        canvas = np.clip(canvas + pore_noise * face_mask[:, :, np.newaxis], 0, 255).astype(np.uint8)
+        canvas = np.clip(canvas + pore_noise * face_mask_3d, 0, 255).astype(np.uint8)
 
         img = Image.fromarray(canvas, "RGB")
         draw = ImageDraw.Draw(img)

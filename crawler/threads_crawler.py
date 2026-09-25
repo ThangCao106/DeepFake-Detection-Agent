@@ -23,6 +23,8 @@ from crawler.dedup_engine import (
     PerceptualDeduplicationRegistry
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 _cfg = get_crawler_config()
 THREADS_HUMAN_TOPICS = [f"#{k}" for k in _cfg["keywords"]]
 
