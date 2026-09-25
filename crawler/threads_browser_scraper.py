@@ -715,7 +715,7 @@ class ThreadsBrowserScraper:
                     "source": "threads.com/synthesizer"
                 })
                 if (synth_i + 1) % 10 == 0 or synth_i == replenish_target - 1:
-                    print(f"  [Synthesis Progress] Ingested {synth_i + 1}/{replenish_target} dynamic portraits...")
+                    print(f"  [Synthesis Progress] Ingested {synth_i + 1}/{replenish_target} dynamic portraits...", flush=True)
 
         dedup_registry.save()
         print(f"[Threads Real Harvester] Verification complete: {len(verified_results)}/{min_images} unique real human photos accepted (0 duplicates).")

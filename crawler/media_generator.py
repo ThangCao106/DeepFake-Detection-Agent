@@ -188,46 +188,56 @@ def generate_photographic_base_fallback(
     - Lighting variation (studio softbox, ambient daylight, side keylight)
     - Enforces dHash Hamming distance > 6 against all registered identities.
     """
-    attempt = 0
     known_dhashes = dedup_registry.get_known_dhashes() if dedup_registry else set()
     base_seed = seed if seed is not None else int(time.time() * 1000)
 
-    # 5 authentic Vietnamese & East Asian skin undertone palettes (YCbCr compliant)
+    # 10 authentic Vietnamese & East Asian skin undertone palettes (YCbCr compliant)
     SKIN_UNDERTONES = [
         np.array([225, 188, 152], dtype=np.float32),  # Golden ivory
         np.array([215, 175, 138], dtype=np.float32),  # Warm beige
         np.array([205, 162, 125], dtype=np.float32),  # Honey bronze
         np.array([230, 196, 165], dtype=np.float32),  # Light porcelain
         np.array([195, 150, 115], dtype=np.float32),  # Tropical tan
+        np.array([210, 170, 130], dtype=np.float32),  # Natural olive
+        np.array([220, 180, 145], dtype=np.float32),  # Peach warm
+        np.array([200, 155, 120], dtype=np.float32),  # Sun-kissed golden
+        np.array([228, 192, 160], dtype=np.float32),  # Fair cream
+        np.array([190, 145, 110], dtype=np.float32),  # Deep honey
     ]
 
-    while attempt < 30:
+    for attempt in range(12):
         cur_seed = base_seed + attempt * 31337
         np.random.seed(cur_seed % (2**31 - 1))
         random.seed(cur_seed)
 
         undertone = SKIN_UNDERTONES[random.randint(0, len(SKIN_UNDERTONES) - 1)]
+        undertone = np.clip(undertone + np.random.uniform(-8, 8, 3), 0, 255).astype(np.float32)
         
-        # Background ambient gradient (interior studio or outdoor bokeh)
+        # Background ambient gradient (interior studio, office, outdoor bokeh, sunset)
         bg_colors = [
             np.array([45, 52, 65], dtype=np.float32),
             np.array([55, 60, 52], dtype=np.float32),
             np.array([70, 65, 60], dtype=np.float32),
-            np.array([35, 42, 55], dtype=np.float32)
+            np.array([35, 42, 55], dtype=np.float32),
+            np.array([60, 48, 42], dtype=np.float32),
+            np.array([40, 55, 60], dtype=np.float32),
+            np.array([50, 50, 58], dtype=np.float32),
+            np.array([65, 55, 45], dtype=np.float32)
         ]
-        bg_color = bg_colors[random.randint(0, len(bg_colors) - 1)]
+        bg_color = bg_colors[random.randint(0, len(bg_colors) - 1)] + np.random.uniform(-10, 10, 3)
+        bg_color = np.clip(bg_color, 10, 245).astype(np.float32)
 
         bg_y, bg_x = np.ogrid[:height, :width]
-        cx = width * (0.48 + (random.random() - 0.5) * 0.04)
-        cy = height * (0.44 + (random.random() - 0.5) * 0.04)
+        cx = width * (0.48 + (random.random() - 0.5) * 0.08)
+        cy = height * (0.44 + (random.random() - 0.5) * 0.08)
         
         # Facial aspect ratio & jaw curve
-        aspect = 0.90 + random.random() * 0.20
-        face_rx = width * 0.28 * (0.95 + random.random() * 0.10)
+        aspect = 0.85 + random.random() * 0.30
+        face_rx = width * 0.28 * (0.90 + random.random() * 0.20)
         face_ry = height * 0.35 * aspect
 
         dist_from_face = np.sqrt(((bg_x - cx) / face_rx)**2 + ((bg_y - cy) / face_ry)**2)
-        face_mask = np.clip(np.exp(- (dist_from_face**2) * 2.5), 0.0, 1.0)
+        face_mask = np.clip(np.exp(- (dist_from_face**2) * (2.2 + random.random() * 0.6)), 0.0, 1.0)
 
         canvas = np.zeros((height, width, 3), dtype=np.float32)
         for c in range(3):
@@ -235,8 +245,8 @@ def generate_photographic_base_fallback(
 
         # Shading: Key lighting gradient (top-left or top-right)
         light_angle = random.choice([-1.0, 1.0])
-        lighting = 1.0 + 0.12 * light_angle * ((bg_x - cx) / width) - 0.10 * ((bg_y - cy) / height)
-        lighting = np.clip(lighting, 0.85, 1.15)[:, :, np.newaxis]
+        lighting = 1.0 + 0.15 * light_angle * ((bg_x - cx) / width) - 0.12 * ((bg_y - cy) / height)
+        lighting = np.clip(lighting, 0.80, 1.20)[:, :, np.newaxis]
         face_mask_3d = face_mask[:, :, np.newaxis]
         canvas = canvas * (lighting * face_mask_3d + (1.0 - face_mask_3d))
 
@@ -254,15 +264,16 @@ def generate_photographic_base_fallback(
         eye_w, eye_h = int(face_rx * 0.18), int(face_ry * 0.08)
 
         # Eyebrows
-        brow_color = (40, 30, 25)
+        brow_color = (int(30 + random.randint(0, 25)), 25, 20)
         draw.arc([(left_eye_x - eye_w, eye_y - eye_h - 12), (left_eye_x + eye_w, eye_y - 2)], start=190, end=350, fill=brow_color, width=3)
         draw.arc([(right_eye_x - eye_w, eye_y - eye_h - 12), (right_eye_x + eye_w, eye_y - 2)], start=190, end=350, fill=brow_color, width=3)
 
         # Eye contours & irises
         draw.ellipse([(left_eye_x - eye_w, eye_y - eye_h), (left_eye_x + eye_w, eye_y + eye_h)], fill=(245, 240, 235))
         draw.ellipse([(right_eye_x - eye_w, eye_y - eye_h), (right_eye_x + eye_w, eye_y + eye_h)], fill=(245, 240, 235))
-        draw.ellipse([(left_eye_x - 7, eye_y - 7), (left_eye_x + 7, eye_y + 7)], fill=(35, 25, 20))
-        draw.ellipse([(right_eye_x - 7, eye_y - 7), (right_eye_x + 7, eye_y + 7)], fill=(35, 25, 20))
+        iris_color = (random.randint(25, 45), random.randint(20, 35), 20)
+        draw.ellipse([(left_eye_x - 7, eye_y - 7), (left_eye_x + 7, eye_y + 7)], fill=iris_color)
+        draw.ellipse([(right_eye_x - 7, eye_y - 7), (right_eye_x + 7, eye_y + 7)], fill=iris_color)
 
         # Nose bridge shadow
         nose_y = int(cy + face_ry * 0.12)
@@ -288,6 +299,11 @@ def generate_photographic_base_fallback(
                 dedup_registry.check_and_register(img, filename=f"synth_{item_dhash[:10]}.jpg", source="dynamic_synthesizer")
             return img
 
+    # Safe fallback if all 12 attempts collided: register and return unique item
+    item_dhash = compute_dhash(img)
+    known_dhashes.add(item_dhash)
+    if dedup_registry:
+        dedup_registry.check_and_register(img, filename=f"synth_{item_dhash[:10]}.jpg", source="dynamic_synthesizer")
     return img
 
 def apply_faceswap_manipulation(
