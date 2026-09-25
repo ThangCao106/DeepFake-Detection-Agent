@@ -48,6 +48,10 @@ session_*.json
 .cache/
 models/
 
+# Benchmark temporary images
+benchmark/judge_samples/
+benchmark/eval_demo_fake_*.jpg
+
 # OS
 .DS_Store
 Thumbs.db

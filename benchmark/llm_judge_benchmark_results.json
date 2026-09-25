@@ -1,0 +1,39 @@
+{
+  "benchmark_timestamp": "2026-09-25 10:25:54 UTC",
+  "judge_model": "gemini-flash-latest",
+  "sample_count": 2,
+  "metrics": {
+    "verdict_accuracy": 1.0,
+    "fake_detection_recall": 1.0,
+    "real_detection_recall": 1.0,
+    "false_accusation_rate_on_real": 0.0,
+    "mean_forensic_cot_score": 3.0,
+    "avg_latency_s": 7.383
+  },
+  "detailed_samples": [
+    {
+      "image_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\benchmark\\judge_samples\\real_sample_0.jpg",
+      "ground_truth": "REAL",
+      "pred_verdict": "REAL",
+      "is_correct": true,
+      "confidence": 0.72,
+      "manipulation_type": "None (Authentic)",
+      "artifact_location": "N/A",
+      "forensic_cot_score": 3,
+      "forensic_rationale": "Consistent high-frequency skin texture, realistic corneal highlights, and natural hair strands align cleanly with the optical background blur. Lighting angles and reflections on the spectacles fully match the overcast street environment.",
+      "latency_s": 7.965
+    },
+    {
+      "image_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\benchmark\\judge_samples\\fake_faceswap_sample_0.jpg",
+      "ground_truth": "FAKE",
+      "pred_verdict": "FAKE",
+      "is_correct": true,
+      "confidence": 0.78,
+      "manipulation_type": "Blending Seam",
+      "artifact_location": "Facial boundary and chin contour",
+      "forensic_cot_score": 3,
+      "forensic_rationale": "A prominent circular boundary seam and feathering artifact isolate the inner facial region from the surrounding hair and background. Discontinuous edge blending and lighting misalignment confirm a manual compositing splice.",
+      "latency_s": 6.802
+    }
+  ]
+}
