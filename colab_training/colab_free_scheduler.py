@@ -12,7 +12,17 @@ import os
 import sys
 import time
 import subprocess
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
+
+# Auto-resolve repository root and guarantee execution in root directory
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+try:
+    os.chdir(str(PROJECT_ROOT))
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+except Exception:
+    pass
 
 # Ensure UTF-8 output on Windows console
 if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
@@ -71,7 +81,7 @@ def run_training_pipeline(args_list: list):
     # 2. Execute colab_sync_to_gdrive.py
     cmd = [
         sys.executable,
-        "colab_sync_to_gdrive.py"
+        str(PROJECT_ROOT / "colab_sync_to_gdrive.py")
     ] + args_list
 
     print(f"\n🧠 [Bước 2/3] Thực thi tiến trình huấn luyện Dual-Stream & Sync GDrive/HuggingFace:")
