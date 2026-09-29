@@ -21,6 +21,7 @@ import time
 import json
 import argparse
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
 # Ensure UTF-8 output on Windows console
 if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
@@ -82,22 +83,63 @@ def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr
     return target_path
 
 
-def sync_local_samples_to_drive(dest_drive_root, date_str=None):
-    """Copies all local generated & crawled media from report_colab/pentest & report_colab/gdrive_storage to mounted Google Drive."""
+def resolve_job_batch_tag(job_batch: str = "auto"):
+    """
+    Computes standard 4h batch subfolder name under the daily date directory (Option C).
+    - If job_batch is 'none', 'false', 'disable', returns None (saves directly in YYYY-MM-DD/).
+    - If job_batch is 'auto':
+        Maps current UTC time to 6 scheduled 4h windows (UTC: 0, 4, 8, 12, 16, 20).
+        Calculates Vietnam Time (UTC+7) for human-readable audit:
+          - 00:00 - 04:00 UTC (07:00 - 11:00 VN) -> batch_01_HHhMM
+          - 04:00 - 08:00 UTC (11:00 - 15:00 VN) -> batch_02_HHhMM
+          - 08:00 - 12:00 UTC (15:00 - 19:00 VN) -> batch_03_HHhMM
+          - 12:00 - 16:00 UTC (19:00 - 23:00 VN) -> batch_04_HHhMM
+          - 16:00 - 20:00 UTC (23:00 - 03:00 VN) -> batch_05_HHhMM
+          - 20:00 - 24:00 UTC (03:00 - 07:00 VN) -> batch_06_HHhMM
+    - If job_batch is a custom string, formats as batch_<custom>.
+    """
+    if not job_batch or str(job_batch).strip().lower() in ["none", "false", "off", "disable", "no"]:
+        return None
+        
+    job_str = str(job_batch).strip()
+    if job_str.lower() != "auto":
+        return job_str if job_str.startswith("batch_") else f"batch_{job_str}"
+        
+    now_utc = datetime.now(timezone.utc)
+    vn_tz = timezone(timedelta(hours=7))
+    now_vn = datetime.now(vn_tz)
+    
+    batch_idx = (now_utc.hour // 4) + 1
+    time_str = now_vn.strftime("%Hh%M")
+    return f"batch_{batch_idx:02d}_{time_str}"
+
+
+def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"):
+    """
+    Copies all local generated & crawled media from report_colab/pentest & report_colab/gdrive_storage
+    to mounted Google Drive.
+    Supports Option C 4-hour batch subfolders: Thread_Data/YYYY-MM-DD/batch_0X_HHhMM/
+    Maintains daily master manifest and sessions summary at the root date folder.
+    """
     if not date_str:
         date_str = time.strftime("%Y-%m-%d")
         
+    job_batch_tag = resolve_job_batch_tag(job_batch)
+    drive_daily_root = dest_drive_root / date_str
+    drive_target_dir = (drive_daily_root / job_batch_tag) if job_batch_tag else drive_daily_root
+    drive_target_dir.mkdir(parents=True, exist_ok=True)
+    
     local_daily_dir = DEFAULT_LOCAL_STORAGE / date_str
     pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
-    drive_daily_dir = dest_drive_root / date_str
     
     subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
     copied_count = 0
+    sub_counts = {}
     
     # 0. Automatically purge legacy Western seed files from Google Drive & local storage before syncing
     try:
         from scripts.purge_legacy_seed_samples import purge_legacy_samples
-        purge_legacy_samples(extra_paths=[dest_drive_root, drive_daily_dir])
+        purge_legacy_samples(extra_paths=[dest_drive_root, drive_daily_root, drive_target_dir])
     except Exception as err:
         print(f"[Colab GDrive Sync] Notice on purge: {err}")
 
@@ -110,8 +152,12 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
     dedup_registry.sync_with_gdrive(dest_drive_root)
     gdrive_known_dhashes = dedup_registry.get_known_dhashes()
 
+    print(f"\n📂 [Colab GDrive Sync] Target Directory: {drive_target_dir}")
+    if job_batch_tag:
+        print(f"   ⏱️ Session 4h Batch Tag: {job_batch_tag}")
+
     for sub in subfolders:
-        drive_sub = drive_daily_dir / sub
+        drive_sub = drive_target_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
         # Only clean out explicit legacy AI seed files if present
@@ -153,21 +199,92 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
                         shutil.copy2(str(f), str(dest_file))
                         copied_count += 1
                         sub_copied += 1
+        sub_counts[sub] = sub_copied
         print(f"  [Colab GDrive Sync] Successfully synchronized {sub_copied} media assets to {drive_sub}")
 
     # Persist updated Option C registry to Google Drive
     dedup_registry.save(dest_drive_root / "registry" / "perceptual_dhash_registry.json")
                         
-    # Sync benchmark manifest and summary files
+    # Sync benchmark manifest and summary files to target batch directory
+    batch_manifest_files = []
     for src_dir in source_dirs + [Path("report_colab") / "temp_media_samples"]:
         if src_dir.exists():
             for meta_name in ["dataset_manifest.jsonl", "hard_samples_manifest.jsonl", "dataset_summary.md"]:
                 meta_src = src_dir / meta_name
                 if meta_src.exists():
-                    dest_meta = drive_daily_dir / meta_name
+                    dest_meta = drive_target_dir / meta_name
                     shutil.copy2(str(meta_src), str(dest_meta))
                     copied_count += 1
-                    print(f"  📄 Synced benchmark metadata: {meta_name} -> {drive_daily_dir}")
+                    if meta_name == "dataset_manifest.jsonl":
+                        batch_manifest_files.append(dest_meta)
+                    print(f"  📄 Synced benchmark metadata: {meta_name} -> {drive_target_dir}")
+
+    # Option C: Maintain daily master manifest & sessions summary table
+    if job_batch_tag:
+        try:
+            daily_master_manifest = drive_daily_root / f"master_manifest_{date_str}.jsonl"
+            daily_dataset_manifest = drive_daily_root / "dataset_manifest.jsonl"
+            
+            existing_lines = []
+            seen_ids = set()
+            for mf_path in [daily_master_manifest, daily_dataset_manifest]:
+                if mf_path.exists():
+                    with open(mf_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            l_strip = line.strip()
+                            if l_strip:
+                                try:
+                                    rec = json.loads(l_strip)
+                                    sid = rec.get("sample_id") or rec.get("filename")
+                                    if sid and sid not in seen_ids:
+                                        seen_ids.add(sid)
+                                        existing_lines.append(l_strip)
+                                except Exception:
+                                    pass
+
+            for b_mf in batch_manifest_files:
+                if b_mf.exists():
+                    with open(b_mf, "r", encoding="utf-8") as bf:
+                        for line in bf:
+                            l_strip = line.strip()
+                            if l_strip:
+                                try:
+                                    rec = json.loads(l_strip)
+                                    sid = rec.get("sample_id") or rec.get("filename")
+                                    if sid and sid not in seen_ids:
+                                        seen_ids.add(sid)
+                                        existing_lines.append(l_strip)
+                                except Exception:
+                                    pass
+
+            if existing_lines:
+                with open(daily_master_manifest, "w", encoding="utf-8") as f:
+                    f.write("\n".join(existing_lines) + "\n")
+                with open(daily_dataset_manifest, "w", encoding="utf-8") as f:
+                    f.write("\n".join(existing_lines) + "\n")
+                print(f"  📑 [Daily Master Manifest] Updated {len(existing_lines)} unified records in {daily_master_manifest.name}")
+
+            # Update daily sessions summary markdown table
+            sessions_summary_file = drive_daily_root / "daily_sessions_summary.md"
+            vn_time_str = datetime.now(timezone(timedelta(hours=7))).strftime("%H:%M:%S")
+            row_entry = f"| `{job_batch_tag}` | `{vn_time_str}` | {sub_counts.get('01_raw_originals', 0)} | {sub_counts.get('02_manipulated_faceswap', 0)} | {sub_counts.get('03_manipulated_openweight', 0)} | **{copied_count}** | ✅ Synced |\n"
+            
+            if not sessions_summary_file.exists():
+                header = (
+                    f"# 📊 Tiến Độ Các Ca Chạy 4h (Scheduled Batches) - Ngày {date_str}\n\n"
+                    f"- **Thư mục ngày**: `{drive_daily_root}`\n"
+                    f"- **Cơ chế**: Option C Dual-Stream Synchronizer (Chu kỳ 4h / 6 ca mỗi ngày)\n\n"
+                    f"| Ca Chạy (Batch ID) | Giờ Chạy (VN) | 01_raw_originals | 02_faceswap | 03_openweight | Tổng Tệp | Trạng Thái |\n"
+                    f"| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+                )
+                with open(sessions_summary_file, "w", encoding="utf-8") as sf:
+                    sf.write(header + row_entry)
+            else:
+                with open(sessions_summary_file, "a", encoding="utf-8") as sf:
+                    sf.write(row_entry)
+            print(f"  📋 [Sessions Summary] Appended entry for {job_batch_tag} to {sessions_summary_file.name}")
+        except Exception as agg_err:
+            print(f"  ⚠️ [Daily Aggregation Notice] {agg_err}")
 
     # 4. Option C: Force Linux kernel & Google Drive FUSE writeback buffer flush
     try:
@@ -181,7 +298,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
 
     gdrive_web_url = f"https://drive.google.com/drive/u/0/search?q={date_str}"
     print(f"\n[Colab GDrive Sync] Completed! Synced {copied_count} files to Google Drive:")
-    print(f"  📂 Destination: {drive_daily_dir}")
+    print(f"  📂 Destination: {drive_target_dir}")
     print(f"  🔗 Direct Web Link: {gdrive_web_url}")
     print(f"  💡 Mẹo: Nếu giao diện Web Drive chưa hiện folder do cache trình duyệt,")
     print(f"     hãy nhấn Ctrl + F5 hoặc mở trực tiếp link: {gdrive_web_url}")
@@ -191,7 +308,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         display(HTML(f'''
         <div style="background-color: #0f172a; padding: 14px 18px; border-radius: 8px; border-left: 5px solid #22c55e; margin: 12px 0; font-family: sans-serif;">
             <p style="color: #22c55e; margin: 0 0 6px 0; font-weight: 700; font-size: 15px;">✅ Google Drive Sync Completed ({copied_count} files)</p>
-            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 13px;">Folder: <code style="background: #1e293b; padding: 2px 6px; border-radius: 4px;">{drive_daily_dir}</code></p>
+            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 13px;">Thư mục: <code style="background: #1e293b; padding: 2px 6px; border-radius: 4px;">{drive_target_dir}</code></p>
             <a href="{gdrive_web_url}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px;">
                 🔗 Mở thư mục {date_str} trên Google Drive Web (Click Here)
             </a>
@@ -201,6 +318,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
         pass
 
     return copied_count
+
 
 
 def generate_dual_stream_training_report(
@@ -371,12 +489,13 @@ def run_option_a_pipeline(
     do_train_model2=True,
     epochs=3,
     batch_size=32,
-    lr=1e-4
+    lr=1e-4,
+    job_batch="auto"
 ):
     """
     Executes end-to-end Option A scheduled pipeline:
       1. Generates 5-category Vietnamese inspection samples & crawls Meta Threads media
-      2. Direct-syncs to mounted Google Drive
+      2. Direct-syncs to mounted Google Drive (supports Option C 4h batch subfolders)
       3. Trains Model 1 (ViT General Vision Continual with Focal Loss)
       4. Trains Model 2 (Human Biometric Multi-Modal with 4 Human Datasets + Threads Media)
       5. Generates and synchronizes master training report (training_report_dual_stream.md)
@@ -387,6 +506,7 @@ def run_option_a_pipeline(
     print("=" * 75)
     print(f"🚀 Option A: Google Colab Dual-Stream Training & GDrive Direct Sync ({timestamp_tag})")
     print(f"⚙️ Quota: Images={num_images:,}, Videos={num_videos:,}, Audios={num_audios:,} | Visual Samples={num_samples}")
+    print(f"⏱️ 4h Job Batch: {job_batch}")
     print(f"🧠 Model 1 (General Vision): {'ENABLED' if do_train_model1 else 'DISABLED'}")
     print(f"🧬 Model 2 (Human Biometric): {'ENABLED' if do_train_model2 else 'DISABLED'}")
     print(f"🏋️ Hyperparameters: Epochs={epochs}, BatchSize={batch_size}, LR={lr}")
@@ -451,8 +571,9 @@ def run_option_a_pipeline(
     # 3. Synchronize media assets to Google Drive
     if drive_root:
         print(f"\n[Step 2] Transferring Threads media directly to Google Drive...")
-        total_copied = sync_local_samples_to_drive(drive_root, date_str=date_str)
+        total_copied = sync_local_samples_to_drive(drive_root, date_str=date_str, job_batch=job_batch)
         print(f"✅ Success: {total_copied} Threads media assets synchronized to Google Drive!")
+
     else:
         print(f"\n[Step 2 Notice] Running in standalone/local mode. Files stored at:")
         print(f"   {pentest_dir}")
@@ -572,7 +693,8 @@ def run_continuous_loop(args):
             do_train_model2=do_m2,
             epochs=args.epochs,
             batch_size=args.batch_size,
-            lr=args.lr
+            lr=args.lr,
+            job_batch=args.job_batch
         )
         
         if args.max_loops and loop_idx >= args.max_loops:
@@ -607,6 +729,7 @@ if __name__ == "__main__":
     parser.add_argument("--loop", type=str, default=None, help="Run recurring loop interval (e.g. 4h, 1h, 30m)")
     parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
+    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h job batch subfolder name (default: 'auto', or 'none' to disable)")
     args = parser.parse_args()
 
     from crawler.crawler_config import get_crawler_config
@@ -638,5 +761,7 @@ if __name__ == "__main__":
             do_train_model2=do_m2,
             epochs=args.epochs,
             batch_size=args.batch_size,
-            lr=args.lr
+            lr=args.lr,
+            job_batch=args.job_batch
         )
+

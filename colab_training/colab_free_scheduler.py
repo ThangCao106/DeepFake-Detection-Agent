@@ -158,6 +158,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.0001, help="Tốc độ học")
     parser.add_argument("--train-both-models", action="store_true", default=True, help="Huấn luyện cả Model 1 và Model 2")
 
+    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h batch subfolder (default: 'auto')")
+
     args = parser.parse_args()
 
     training_flags = [
@@ -168,6 +170,7 @@ if __name__ == "__main__":
         "--epochs", str(args.epochs),
         "--batch_size", str(args.batch_size),
         "--lr", str(args.lr),
+        "--job-batch", str(args.job_batch)
     ]
     if args.train_both_models:
         training_flags.append("--train-both-models")
