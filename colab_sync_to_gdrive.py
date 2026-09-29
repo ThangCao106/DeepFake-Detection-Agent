@@ -169,8 +169,37 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None):
                     copied_count += 1
                     print(f"  📄 Synced benchmark metadata: {meta_name} -> {drive_daily_dir}")
 
-    print(f"[Colab GDrive Sync] Completed! Synced {copied_count} files to Google Drive:")
+    # 4. Option C: Force Linux kernel & Google Drive FUSE writeback buffer flush
+    try:
+        if hasattr(os, "sync"):
+            print("  ⏳ [FUSE Flush] Flushing Linux I/O buffer to Google Drive FUSE driver...")
+            os.sync()
+            time.sleep(3)
+            os.sync()
+    except Exception:
+        pass
+
+    gdrive_web_url = f"https://drive.google.com/drive/u/0/search?q={date_str}"
+    print(f"\n[Colab GDrive Sync] Completed! Synced {copied_count} files to Google Drive:")
     print(f"  📂 Destination: {drive_daily_dir}")
+    print(f"  🔗 Direct Web Link: {gdrive_web_url}")
+    print(f"  💡 Mẹo: Nếu giao diện Web Drive chưa hiện folder do cache trình duyệt,")
+    print(f"     hãy nhấn Ctrl + F5 hoặc mở trực tiếp link: {gdrive_web_url}")
+
+    try:
+        from IPython.display import display, HTML
+        display(HTML(f'''
+        <div style="background-color: #0f172a; padding: 14px 18px; border-radius: 8px; border-left: 5px solid #22c55e; margin: 12px 0; font-family: sans-serif;">
+            <p style="color: #22c55e; margin: 0 0 6px 0; font-weight: 700; font-size: 15px;">✅ Google Drive Sync Completed ({copied_count} files)</p>
+            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 13px;">Folder: <code style="background: #1e293b; padding: 2px 6px; border-radius: 4px;">{drive_daily_dir}</code></p>
+            <a href="{gdrive_web_url}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                🔗 Mở thư mục {date_str} trên Google Drive Web (Click Here)
+            </a>
+        </div>
+        '''))
+    except Exception:
+        pass
+
     return copied_count
 
 
@@ -483,15 +512,21 @@ def run_option_a_pipeline(
     )
     print(f"🎉 Master report saved: {report_file}")
 
-    # 7. Stream Threads-DFBench Dataset to Hugging Face (Option A Hub + Option C Cloud-to-Cloud)
-    if os.environ.get("HF_TOKEN"):
-        print("\n[Step 6] Streaming Threads-DFBench Dataset directly to Hugging Face...")
-        try:
-            from crawler.hf_dataset_sync import sync_threads_dataset_to_hf
-            drive_daily_dir = Path(drive_root) / date_str if drive_root else None
-            sync_threads_dataset_to_hf(date_str=date_str, source_dir=drive_daily_dir)
-        except Exception as err:
-            print(f"⚠️ [HF Dataset Sync] Notice: {err}")
+    # 7. Final FUSE Flush & Safety Release Gate
+    try:
+        if hasattr(os, "sync"):
+            print("\n[FUSE Final Flush] Committing all checkpoints, reports & manifests to Google Drive Cloud...")
+            os.sync()
+            time.sleep(2)
+            os.sync()
+    except Exception:
+        pass
+
+    print("\n" + "=" * 75)
+    print(f"🏁 [Dual-Stream Completed] All tasks finished successfully for {date_str}!")
+    print(f"📂 Google Drive Data Path: {drive_root / date_str if drive_root else 'Local Storage'}")
+    print(f"🔗 Google Drive Web Link: https://drive.google.com/drive/u/0/search?q={date_str}")
+    print("=" * 75 + "\n")
 
 
 def parse_duration_seconds(dur_str: str) -> float:
