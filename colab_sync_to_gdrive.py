@@ -530,25 +530,8 @@ def run_option_a_pipeline(
     if drive_root:
         dedup_registry.sync_with_gdrive(drive_root)
         
-    seed_pool_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
-    if seed_pool_dir.exists() and not list(raw_orig_dir.glob("*.jpg")):
-        ingested = 0
-        for s_file in seed_pool_dir.glob("*.jpg"):
-            is_dup, _, _ = is_visual_duplicate(s_file, dedup_registry.get_known_dhashes(), threshold=6)
-            if not is_dup:
-                shutil.copy2(str(s_file), str(raw_orig_dir / s_file.name))
-                dedup_registry.check_and_register(s_file, filename=s_file.name, source="verified_threads_seeds")
-                ingested += 1
-        if ingested > 0:
-            print(f"[Colab Pipeline] Ingested {ingested} fresh pre-verified authentic Vietnamese photos into 01_raw_originals.")
-        else:
-            print(f"[Colab Pipeline] Pre-verified seeds already registered on GDrive. Crawling fresh unique portraits.")
-
-    seed_vid_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
-    if seed_vid_dir.exists() and not list(raw_orig_dir.glob("*.mp4")):
-        for v_file in seed_vid_dir.glob("*.mp4"):
-            shutil.copy2(str(v_file), str(raw_orig_dir / v_file.name))
-        print(f"[Colab Pipeline] Ingested {len(list(raw_orig_dir.glob('*.mp4')))} pre-verified authentic Vietnamese videos into 01_raw_originals.")
+    # Option B: Strictly enforce genuine live crawling from Threads & Wikimedia Commons.
+    # Completely eliminated seed preloading to prevent recycling old AI faces.
     
     # 2.1 Live Threads & Open-Web Diverse Crawl -> 01_raw_originals
     try:

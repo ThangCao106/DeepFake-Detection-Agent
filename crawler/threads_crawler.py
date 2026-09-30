@@ -738,48 +738,9 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
     if crawled_audios:
         print(f"[Option A+C Crawler] Harvested {len(crawled_audios)} authentic human speech audios (.wav) in 01_raw_originals.")
 
-    # 3. Human Talking Videos (.mp4 with realistic physiological eye blinking & speech articulation)
-    verified_vid_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
-    verified_vids = sorted(list(verified_vid_dir.glob("*.mp4"))) if verified_vid_dir.exists() else []
-
-    # 3.1 Ingest pre-verified real human videos from pool
-    ingested_count = 0
-    for v_file in verified_vids:
-        if ingested_count >= batch_size_videos:
-            break
-        dest_vid = originals_dir / v_file.name
-        if not dest_vid.exists():
-            shutil.copy2(str(v_file), str(dest_vid))
-
-        sha = ""
-        try:
-            with open(dest_vid, "rb") as vf:
-                sha = hashlib.sha256(vf.read()).hexdigest()
-        except Exception:
-            pass
-
-        ingested_count += 1
-        crawled_videos.append({
-            "id": f"human_vid_{timestamp_str}_{ingested_count:05d}",
-            "filename": v_file.name,
-            "local_path": str(dest_vid),
-            "media_type": "video",
-            "modality_category": "human_talking_head",
-            "target_ethnicity": "Vietnamese_EastAsian",
-            "audio_language": "vi-VN",
-            "source": "threads.net/verified_video",
-            "topic": THREADS_HUMAN_TOPICS[(ingested_count - 1) % len(THREADS_HUMAN_TOPICS)],
-            "sha256": sha,
-            "url": f"https://threads.net/media/{v_file.name}",
-            "duration_sec": 3.5,
-            "fps": 30,
-            "human_face_count": 1,
-            "validation": "PASSED_VERIFIED_HUMAN_VIDEO_GATE",
-            "is_synthetic_suspect": False
-        })
-
-    # 3.2 Synthesize remaining requested videos using realistic facial animation (eye blinks + speech lips + rPPG)
+    # 3. Real Human Talking Videos (.mp4 from authentic newly crawled photos)
     available_photos = sorted(list(originals_dir.glob("*.jpg")))
+    ingested_count = 0
     for idx in range(ingested_count + 1, batch_size_videos + 1):
         topic = THREADS_HUMAN_TOPICS[(idx - 1) % len(THREADS_HUMAN_TOPICS)]
         vid_fname = f"threads_{time.strftime('%Y%m%d')}_vid_{idx:05d}.mp4"

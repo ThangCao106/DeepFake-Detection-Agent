@@ -136,10 +136,15 @@ def harvest_wikimedia_vietnamese_portraits(
     """
     categories = [
         "Category:People_of_Vietnam",
-        "Category:Vietnamese_women",
+        "Category:Vietnamese_people",
         "Category:People_of_Hanoi",
         "Category:People_of_Ho_Chi_Minh_City",
-        "Category:Women_of_Vietnam"
+        "Category:Women_of_Vietnam",
+        "Category:Vietnamese_women",
+        "Category:Men_of_Vietnam",
+        "Category:Vietnamese_men",
+        "Category:People_of_Da_Nang",
+        "Category:People_of_Hue"
     ]
     
     harvested = []
@@ -147,13 +152,13 @@ def harvest_wikimedia_vietnamese_portraits(
     
     start_time = time.time()
     for cat in categories:
-        # Generous 90s budget for authentic Wikimedia downloads
-        if len(harvested) >= min_images or (time.time() - start_time) > 90.0:
+        # Generous 120s budget for authentic Wikimedia downloads
+        if len(harvested) >= min_images or (time.time() - start_time) > 120.0:
             break
         try:
             api_url = (
                 f"https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers"
-                f"&gcmtitle={urllib.request.quote(cat)}&gcmlimit=30&gcmtype=file"
+                f"&gcmtitle={urllib.request.quote(cat)}&gcmlimit=50&gcmtype=file"
                 f"&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=800&format=json"
             )
             req = urllib.request.Request(api_url, headers={"User-Agent": user_agent})
@@ -630,172 +635,27 @@ class ThreadsBrowserScraper:
                 except Exception:
                     pass
 
-        # 5. Offline Verified Seed Files (Pre-crawled Vietnamese Threads photos - dedup protected)
-        seed_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
-        if len(verified_results) < min_images and seed_dir.exists():
-            for s_img in sorted(seed_dir.glob("*.jpg")):
-                if len(verified_results) >= min_images:
-                    break
-                try:
-                    with open(s_img, "rb") as sf:
-                        raw_bytes = sf.read()
-                    sha = compute_sha256(raw_bytes)
-                    if sha in batch_seen_hashes:
-                        continue
-                        
-                    is_dup, _, _ = is_visual_duplicate(raw_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                    if is_dup:
-                        continue
-                        
-                    face_count, primary_bbox, _ = detect_human_faces_opencv(raw_bytes)
-                    if face_count >= 1:
-                        item_dhash = compute_dhash(raw_bytes)
-                        known_dhashes.add(item_dhash)
-                        batch_seen_hashes.add(sha)
-                        if seen_hashes is not None:
-                            seen_hashes.add(sha)
-                        dedup_registry.check_and_register(raw_bytes, filename=s_img.name, source="verified_threads_seeds", sha256=sha)
-                        
-                        with Image.open(io.BytesIO(raw_bytes)) as pil_img:
-                            w, h = pil_img.size
-                        verified_results.append({
-                            "image_bytes": raw_bytes,
-                            "sha256": sha,
-                            "dhash": item_dhash,
-                            "face_count": face_count,
-                            "primary_bbox": primary_bbox,
-                            "width": w,
-                            "height": h,
-                            "post_url": "https://www.threads.com/",
-                            "author": "threads_vietnam_user",
-                            "caption": f"Pre-verified authentic Vietnamese Threads portrait ({s_img.name})",
-                            "keyword": "vietnam",
-                            "source": "crawler/verified_threads_seeds"
-                        })
-                        print(f"  [Verified Seed Face] Ingested real Threads seed #{len(verified_results)}: {s_img.name} ({w}x{h})")
-                except Exception:
-                    pass
-
-        # 6. Vietnamese Curated Identities Pool (seeds_vietnamese 25 identities)
-        vn_seeds_dir = PROJECT_ROOT / "crawler" / "seeds_vietnamese"
-        if len(verified_results) < min_images and vn_seeds_dir.exists():
-            for v_img in sorted(vn_seeds_dir.glob("*.jpg")):
-                if len(verified_results) >= min_images:
-                    break
-                try:
-                    with open(v_img, "rb") as vf:
-                        raw_bytes = vf.read()
-                    sha = compute_sha256(raw_bytes)
-                    if sha in batch_seen_hashes:
-                        continue
-                    is_dup, _, _ = is_visual_duplicate(raw_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                    if is_dup:
-                        continue
-                    face_count, primary_bbox, _ = detect_human_faces_opencv(raw_bytes)
-                    if face_count >= 1:
-                        item_dhash = compute_dhash(raw_bytes)
-                        known_dhashes.add(item_dhash)
-                        batch_seen_hashes.add(sha)
-                        if seen_hashes is not None:
-                            seen_hashes.add(sha)
-                        dedup_registry.check_and_register(raw_bytes, filename=v_img.name, source="seeds_vietnamese", sha256=sha)
-                        with Image.open(io.BytesIO(raw_bytes)) as pil_img:
-                            w, h = pil_img.size
-                        verified_results.append({
-                            "image_bytes": raw_bytes,
-                            "sha256": sha,
-                            "dhash": item_dhash,
-                            "face_count": face_count,
-                            "primary_bbox": primary_bbox,
-                            "width": w,
-                            "height": h,
-                            "post_url": "https://www.threads.com/",
-                            "author": "threads_vietnamese_identity",
-                            "caption": f"Authentic Vietnamese taxonomy portrait ({v_img.name})",
-                            "keyword": "vietnam",
-                            "source": "crawler/seeds_vietnamese"
-                        })
-                        print(f"  [Identity Pool Ingested] Added identity #{len(verified_results)}: {v_img.name} ({w}x{h})")
-                except Exception:
-                    pass
-
-        # 7. Photographic Pool Replenishment (Guarantees 100% quota delivery with real photos)
+        # Option B: If still needing images, do an extended pass on Wikimedia Commons Photography
+        # Strictly eliminated all local AI seed pools and artificial augmentation.
         if len(verified_results) < min_images:
-            from crawler.media_generator import VIETNAMESE_CATEGORIES
             deficit = min_images - len(verified_results)
-            replenish_target = min(deficit, 100) if min_images > 100 else deficit
-            print(f"[Threads Real Harvester] Replenishing {replenish_target} portraits via authentic photographic variations (deficit: {deficit})...")
-            
-            all_real_sources = []
-            if vn_seeds_dir.exists():
-                all_real_sources.extend(sorted(list(vn_seeds_dir.glob("*.jpg"))))
-            if seed_dir.exists():
-                all_real_sources.extend(sorted(list(seed_dir.glob("*.jpg"))))
-                
-            for synth_i in range(replenish_target):
-                if not all_real_sources:
+            print(f"[Threads Real Harvester] Option B: Need {deficit} more real portraits. Fetching authentic camera photography from Wikimedia...")
+            wiki_photos = harvest_wikimedia_vietnamese_portraits(min_images=deficit, dedup_registry=dedup_registry)
+            for wp in wiki_photos:
+                if len(verified_results) >= min_images:
                     break
-                src_path = all_real_sources[synth_i % len(all_real_sources)]
-                try:
-                    with Image.open(src_path) as im_raw:
-                        base_im = im_raw.convert("RGB")
-                    bw, bh = base_im.size
-                    
-                    # Authentic camera sensor jitter: subtle scale (90-97%) & crop shift
-                    scale = 0.90 + (synth_i % 8) * 0.01
-                    cw, ch = max(160, int(bw * scale)), max(160, int(bh * scale))
-                    offset_x = int((bw - cw) * ((synth_i * 37) % 100) / 100.0)
-                    offset_y = int((bh - ch) * ((synth_i * 53) % 100) / 100.0)
-                    cropped = base_im.crop((offset_x, offset_y, offset_x + cw, offset_y + ch)).resize((512, 512), Image.Resampling.LANCZOS)
-                    
-                    # Subtle brightness & contrast adjustment (+/- 3%)
-                    b_factor = 0.97 + ((synth_i * 13) % 7) * 0.01
-                    enhancer = ImageEnhance.Brightness(cropped)
-                    cropped = enhancer.enhance(b_factor)
-                    
-                    buf = io.BytesIO()
-                    cropped.save(buf, format="JPEG", quality=95)
-                    raw_bytes = buf.getvalue()
-                    
-                    # Strict Photographic Quality Gate validation
-                    is_photo, reason, photo_stats = is_photographic_human_portrait(raw_bytes)
-                    if not is_photo:
-                        continue
-                        
-                    sha = compute_sha256(raw_bytes)
-                    item_dhash = compute_dhash(raw_bytes)
-                    if sha in batch_seen_hashes or item_dhash in known_dhashes:
-                        continue
-                        
-                    known_dhashes.add(item_dhash)
+                sha = wp["sha256"]
+                if sha not in batch_seen_hashes:
                     batch_seen_hashes.add(sha)
                     if seen_hashes is not None:
                         seen_hashes.add(sha)
-                    dedup_registry.check_and_register(raw_bytes, filename=f"photo_{item_dhash[:10]}.jpg", source="photographic_seed_pool", sha256=sha)
-                    
-                    cat = VIETNAMESE_CATEGORIES[synth_i % len(VIETNAMESE_CATEGORIES)]
-                    verified_results.append({
-                        "image_bytes": raw_bytes,
-                        "sha256": sha,
-                        "dhash": item_dhash,
-                        "face_count": photo_stats.get("face_count", 1),
-                        "primary_bbox": photo_stats.get("primary_bbox", [100, 100, 400, 400]),
-                        "width": 512,
-                        "height": 512,
-                        "post_url": "https://www.threads.com/",
-                        "author": "threads_verified_identity",
-                        "caption": f"Authentic human Vietnamese photographic portrait [{cat}]",
-                        "keyword": cat,
-                        "source": "threads.com/photographic_seed"
-                    })
-                    if (synth_i + 1) % 10 == 0 or synth_i == replenish_target - 1:
-                        print(f"  [Replenishment Progress] Ingested {synth_i + 1}/{replenish_target} photographic portraits...", flush=True)
-                except Exception as ex:
-                    pass
+                    verified_results.append(wp)
+            print(f"[Threads Real Harvester] Option B Harvest total: {len(verified_results)}/{min_images} real human photos.")
 
         dedup_registry.save()
         print(f"[Threads Real Harvester] Verification complete: {len(verified_results)}/{min_images} unique real human photos accepted (0 duplicates).")
         return verified_results
+
 
     def harvest_real_threads_human_images(
         self,

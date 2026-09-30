@@ -518,22 +518,23 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
                         valid_raw_files.append(rf)
             except Exception:
                 pass
-
-    # If still needing samples, generate high-entropy synthetic portrait bases
-    while len(valid_raw_files) < num_samples:
-        idx = len(valid_raw_files) + 1
-        cat = VIETNAMESE_CATEGORIES[(idx - 1) % len(VIETNAMESE_CATEGORIES)]
-        new_im, _ = fetch_authentic_human_portrait(
-            sample_idx=idx + 100,
-            seed=int(time.time() * 1000) + idx * 7919,
-            category=cat,
-            dedup_registry=dedup_registry
-        )
-        new_dhash = compute_dhash(new_im)
-        new_path = raw_dir / f"threads_{time.strftime('%Y%m%d')}_{new_dhash[:10]}.jpg"
-        new_im.save(new_path, format="JPEG", quality=95)
-        valid_raw_files.append(new_path)
-        local_batch_dhashes.add(new_dhash)
+    # Option B: If still needing samples, harvest 100% authentic real photographs from Wikimedia Commons
+    if len(valid_raw_files) < num_samples:
+        deficit = num_samples - len(valid_raw_files)
+        print(f"[Media Generator] Option B: Need {deficit} more real portraits. Harvesting from Wikimedia Commons photography...")
+        from crawler.threads_browser_scraper import harvest_wikimedia_vietnamese_portraits
+        wiki_harvested = harvest_wikimedia_vietnamese_portraits(min_images=deficit, dedup_registry=dedup_registry)
+        for wp in wiki_harvested:
+            if len(valid_raw_files) >= num_samples:
+                break
+            sha = wp["sha256"]
+            new_path = raw_dir / f"threads_{time.strftime('%Y%m%d')}_{sha[:10]}.jpg"
+            if not new_path.exists():
+                with open(new_path, "wb") as wf:
+                    wf.write(wp["image_bytes"])
+            valid_raw_files.append(new_path)
+            local_batch_dhashes.add(wp["dhash"])
+            print(f"  [Option B Wikimedia Ingested] Added real human portrait: {new_path.name}")
 
     sample_count = min(len(valid_raw_files), num_samples) if num_samples else len(valid_raw_files)
     
