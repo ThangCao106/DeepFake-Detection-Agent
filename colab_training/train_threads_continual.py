@@ -65,6 +65,15 @@ class ThreadsDriveDataset(Dataset):
         self.entries = manifest_entries
         self.processor = processor
         self.base_search_dirs = [Path(d) for d in base_search_dirs or [] if Path(d).exists()]
+        # Fast path indexing to avoid recursive FUSE globs on each sample during training
+        self.file_map = {}
+        for bdir in self.base_search_dirs:
+            try:
+                for p in bdir.glob("**/*.*"):
+                    if p.is_file() and p.name not in self.file_map:
+                        self.file_map[p.name] = str(p)
+            except Exception:
+                pass
 
     def _resolve_file_path(self, entry):
         # 1. Check direct local_path
@@ -77,17 +86,17 @@ class ThreadsDriveDataset(Dataset):
         if gid and os.path.exists(gid):
             return gid
             
-        # 3. Search across candidate directories
-        subfolder = entry.get("subfolder", "")
+        # 3. Fast lookup from pre-indexed map
         fname = entry.get("filename", "")
+        if fname and fname in self.file_map:
+            return self.file_map[fname]
+
+        # 4. Search candidate directories
+        subfolder = entry.get("subfolder", "")
         for bdir in self.base_search_dirs:
             p1 = bdir / subfolder / fname
             if p1.exists():
                 return str(p1)
-            # Search recursive
-            candidates = list(bdir.glob(f"**/{fname}"))
-            if candidates:
-                return str(candidates[0])
         return None
 
     def __len__(self):
@@ -397,8 +406,16 @@ def run_threads_continual_training(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Threads-DFBench Continual Trainer")
     parser.add_argument("--epochs", type=int, default=2, help="Number of continual training epochs")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--batch_size", "--batch-size", type=int, default=8, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate")
+    parser.add_argument("--drive_root", "--drive-root", type=str, default=None, help="Path to Google Drive root containing Thread_Data")
+    parser.add_argument("--output_checkpoint_dir", "--output-checkpoint-dir", type=str, default=None, help="Custom output directory for checkpoints")
     args = parser.parse_args()
     
-    run_threads_continual_training(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
+    run_threads_continual_training(
+        drive_root=args.drive_root,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        output_checkpoint_dir=args.output_checkpoint_dir
+    )

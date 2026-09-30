@@ -247,9 +247,16 @@ def train_human_model(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Model 2: Human Biometric Deepfake Trainer")
     parser.add_argument("--epochs", type=int, default=3, help="Training epochs")
-    parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
+    parser.add_argument("--batch-size", "--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument("--output-dir", type=str, default="human_vit_model", help="Output directory")
+    parser.add_argument("--drive-root", "--drive_root", type=str, default=None, help="Google Drive root directory")
+    parser.add_argument("--output-dir", "--output_dir", type=str, default="human_vit_model", help="Output directory")
     args = parser.parse_args()
     
-    train_human_model(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, output_dir=args.output_dir)
+    train_human_model(
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        drive_root=args.drive_root,
+        output_dir=args.output_dir
+    )
