@@ -76,4 +76,9 @@ def package_codebase(output_zip_path=None):
     return output_zip_path
 
 if __name__ == "__main__":
-    package_codebase()
+    import argparse
+    parser = argparse.ArgumentParser(description="Package codebase for Google Drive")
+    parser.add_argument("--output", "-o", type=str, default=None, help="Target output zip file path")
+    args = parser.parse_args()
+    
+    package_codebase(output_zip_path=args.output)
