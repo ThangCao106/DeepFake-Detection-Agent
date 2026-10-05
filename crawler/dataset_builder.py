@@ -219,6 +219,21 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     with open(hard_manifest_path, "w", encoding="utf-8") as f:
         for entry in hard_entries:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    # Option C: Export compact Parquet biometric cache table
+    try:
+        from colab_training.feature_cache_pipeline import build_or_append_parquet_cache
+        parquet_manifest = output_dir / "dataset_manifest.parquet"
+        build_or_append_parquet_cache(all_entries, parquet_manifest)
+        
+        # Also maintain a consolidated feature reservoir under features/
+        features_dir = output_dir.parent / "features"
+        if not features_dir.exists():
+            features_dir = Path("/content/drive/MyDrive/Thread_Data/features")
+        features_dir.mkdir(parents=True, exist_ok=True)
+        build_or_append_parquet_cache(all_entries, features_dir / "biometric_features_M2.parquet")
+    except Exception as e:
+        print(f"[DatasetBuilder Option C Notice] Parquet export: {e}")
             
     # Write dataset_summary.md
     real_ehigh_mean = float(np.mean(ehigh_stats["real"])) if ehigh_stats["real"] else 0.38

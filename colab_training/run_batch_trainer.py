@@ -85,6 +85,11 @@ def stage_drive_data_to_local(
             target_p = drive_root / d_str
             if target_p.exists() and target_p.is_dir():
                 subdirs_to_copy.append(target_p)
+                
+    # Always include Option C compact biometric features cache if present
+    features_p = drive_root / "features"
+    if features_p.exists() and features_p.is_dir() and features_p not in subdirs_to_copy:
+        subdirs_to_copy.append(features_p)
 
     if not subdirs_to_copy:
         print("⚠️ No matching date directories found on Google Drive. Training will search Drive directly.")
