@@ -616,6 +616,15 @@ def run_option_a_pipeline(
     )
     print(f"🎉 Master report saved: {report_file}")
 
+    # 6.1 Auto-trigger Option A + C Daily & Weekly Synthesis Digests
+    try:
+        from scripts.generate_training_digest import generate_daily_report, generate_weekly_report
+        print("\n📊 [Training Digest] Generating rolling Daily & Weekly Synthesis reports...")
+        generate_daily_report(date_str, drive_root=drive_root)
+        generate_weekly_report(date_str, drive_root=drive_root)
+    except Exception as e_digest:
+        print(f"⚠️ [Training Digest Notice] {e_digest}")
+
     # 7. Final FUSE Flush & Safety Release Gate
     try:
         if hasattr(os, "sync"):

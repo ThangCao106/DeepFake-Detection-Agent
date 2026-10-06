@@ -1,0 +1,86 @@
+name: Scheduled Training Digest Generator (Daily & Weekly)
+
+on:
+  schedule:
+    # 1. Daily digest at 23:45 UTC (06:45 AM VN time next day)
+    - cron: '45 23 * * *'
+    # 2. Weekly synthesis every Sunday at 23:55 UTC
+    - cron: '55 23 * * 0'
+  workflow_dispatch:
+    inputs:
+      report_mode:
+        description: 'Report mode to generate'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - daily
+          - weekly
+      target_date:
+        description: 'Target Date (YYYY-MM-DD, leave empty for today)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  generate-training-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Digest Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas pyarrow || true
+
+      - name: Run Training Digest Script
+        run: |
+          CMD_ARGS="--all"
+          if [ "${{ github.event.inputs.report_mode }}" = "daily" ]; then
+            CMD_ARGS="--daily"
+          elif [ "${{ github.event.inputs.report_mode }}" = "weekly" ]; then
+            CMD_ARGS="--weekly"
+          fi
+          
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            CMD_ARGS="$CMD_ARGS --date ${{ github.event.inputs.target_date }}"
+          fi
+          
+          echo "Executing: python scripts/generate_training_digest.py $CMD_ARGS"
+          python scripts/generate_training_digest.py $CMD_ARGS
+
+      - name: Commit and Push New Digest Reports
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f report_colab/reports/
+          if git diff --staged --quiet; then
+            echo "No new training digest reports to commit."
+          else
+            git commit -m "Auto-generated training digest report (Daily/Weekly) [skip ci]"
+            for i in 1 2 3 4 5; do
+              echo "Push attempt $i/5..."
+              git fetch origin main
+              if git rebase -X theirs origin/main; then
+                if git push origin main; then
+                  echo "Successfully pushed training digest reports."
+                  break
+                fi
+              fi
+              sleep 2
+            done
+          fi
