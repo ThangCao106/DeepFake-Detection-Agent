@@ -6,6 +6,8 @@ on:
     - cron: '45 23 * * *'
     # 2. Weekly synthesis every Sunday at 23:55 UTC
     - cron: '55 23 * * 0'
+    # 3. Monthly milestone on the 1st of every month at 00:00 UTC
+    - cron: '0 0 1 * *'
   workflow_dispatch:
     inputs:
       report_mode:
@@ -17,6 +19,7 @@ on:
           - all
           - daily
           - weekly
+          - monthly
       target_date:
         description: 'Target Date (YYYY-MM-DD, leave empty for today)'
         required: false
@@ -54,6 +57,8 @@ jobs:
             CMD_ARGS="--daily"
           elif [ "${{ github.event.inputs.report_mode }}" = "weekly" ]; then
             CMD_ARGS="--weekly"
+          elif [ "${{ github.event.inputs.report_mode }}" = "monthly" ]; then
+            CMD_ARGS="--monthly"
           fi
           
           if [ -n "${{ github.event.inputs.target_date }}" ]; then
