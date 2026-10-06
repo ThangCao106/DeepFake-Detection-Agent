@@ -20,7 +20,13 @@ import numpy as np
 from typing import Optional, Tuple, Dict, List, Set
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
-import cv2
+try:
+    import cv2
+except ImportError:
+    import subprocess
+    print("⚡ [Auto-Env] opencv-python not found. Auto-installing opencv-python-headless...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless", "-q"], check=False)
+    import cv2
 
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

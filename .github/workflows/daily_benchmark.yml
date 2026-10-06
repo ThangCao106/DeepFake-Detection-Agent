@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
-          pip install torch torchvision numpy Pillow huggingface_hub || true
+          pip install torch torchvision numpy Pillow huggingface_hub opencv-python-headless pyarrow pandas || true
 
       - name: Run Daily Benchmark Pipeline
         run: |

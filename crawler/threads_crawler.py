@@ -36,7 +36,14 @@ USER_AGENTS = [
 ]
 
 import wave
-import cv2
+try:
+    import cv2
+except ImportError:
+    import subprocess
+    print("⚡ [Auto-Env] opencv-python not found. Auto-installing opencv-python-headless...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless", "-q"], check=False)
+    import cv2
+
 import numpy as np
 
 def generate_talking_head_video_from_portrait(

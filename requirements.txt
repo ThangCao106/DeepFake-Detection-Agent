@@ -17,11 +17,19 @@ flask-cors
 python-socketio
 eventlet
 
-# Utilities
-colorama
+# Computer Vision & Data Dependencies
+opencv-python-headless
+numpy
+pandas
+pyarrow
+pillow
 
 # Google Drive & Cloud Storage Dependencies
 google-api-python-client
 google-auth
 google-auth-httplib2
 google-auth-oauthlib
+
+# Network & Web Scraping Dependencies
+playwright
+httpx
