@@ -9,6 +9,7 @@ scikit-learn
 # Agent Framework Dependencies
 google-generativeai
 python-dotenv
+colorama
 
 # Web Framework Dependencies
 flask

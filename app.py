@@ -1,5 +1,10 @@
 import os
 import sys
+import warnings
+
+# Suppress deprecated engine notices in console output
+warnings.filterwarnings("ignore", message=".*Eventlet.*")
+warnings.filterwarnings("ignore", message=".*google\\.generativeai.*")
 
 # Add web_ui directory to Python import path
 web_ui_dir = os.path.join(os.path.dirname(__file__), "web_ui")

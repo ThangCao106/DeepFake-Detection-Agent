@@ -6,6 +6,8 @@ deepfake detection system with real-time communication and stunning UI.
 """
 
 # Monkey patch for eventlet early to prevent event loop blocking
+import warnings
+warnings.filterwarnings("ignore", message=".*Eventlet.*")
 try:
     import eventlet
     eventlet.monkey_patch()

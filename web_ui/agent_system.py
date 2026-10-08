@@ -31,14 +31,25 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 import google.generativeai as genai
-from colorama import Fore, Style, init
+
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+except ImportError:
+    class _ColorDummy:
+        def __getattr__(self, name):
+            return ""
+    Fore = _ColorDummy()
+    Style = _ColorDummy()
+    def init(*args, **kwargs):
+        pass
 
 from deepfake_detector import DeepfakeDetector
 from config import Config
-
-# Initialize colorama for colored console output
-init(autoreset=True)
 
 # Configure logging for observability
 logging.basicConfig(
