@@ -7,10 +7,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_1.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.9015693664550781,
+      "confidence": 0.9015692472457886,
       "all_scores": {
-        "Real": 0.9015693664550781,
-        "Fake": 0.0984305888414383
+        "Real": 0.9015692472457886,
+        "Fake": 0.09843072295188904
       },
       "spectral_anomaly": null,
       "match": false
@@ -31,10 +31,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_3.jpg",
       "ground_truth": "FAKE",
       "predicted": "Real",
-      "confidence": 0.9255867004394531,
+      "confidence": 0.9255868196487427,
       "all_scores": {
-        "Real": 0.9255867004394531,
-        "Fake": 0.07441327720880508
+        "Real": 0.9255868196487427,
+        "Fake": 0.07441321015357971
       },
       "spectral_anomaly": null,
       "match": false
@@ -43,10 +43,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_4.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.9263879656791687,
+      "confidence": 0.9263878464698792,
       "all_scores": {
-        "Real": 0.9263879656791687,
-        "Fake": 0.07361200451850891
+        "Real": 0.9263878464698792,
+        "Fake": 0.07361210137605667
       },
       "spectral_anomaly": null,
       "match": true
@@ -67,10 +67,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_6.jpg",
       "ground_truth": "REAL",
       "predicted": "Real",
-      "confidence": 0.9343090653419495,
+      "confidence": 0.9343089461326599,
       "all_scores": {
-        "Real": 0.9343090653419495,
-        "Fake": 0.06569094955921173
+        "Real": 0.9343089461326599,
+        "Fake": 0.0656910315155983
       },
       "spectral_anomaly": null,
       "match": true
@@ -106,7 +106,7 @@
       "confidence": 0.9350014925003052,
       "all_scores": {
         "Real": 0.9350014925003052,
-        "Fake": 0.06499852985143661
+        "Fake": 0.06499850004911423
       },
       "spectral_anomaly": null,
       "match": false
