@@ -20,12 +20,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first for layer caching
-COPY requirements.txt .
+COPY requirements-docker.txt ./requirements.txt
 
-# Install CPU-optimized PyTorch and dependencies to minimize image size (~1.5GB vs 5GB+ CUDA)
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+# Install CPU-optimized PyTorch and web dependencies in a single pass to eliminate redundant downloads
+RUN pip install --no-cache-dir --root-user-action=ignore --upgrade pip && \
+    pip install --no-cache-dir --root-user-action=ignore \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        -r requirements.txt
 
 # Copy application source code
 COPY . /app

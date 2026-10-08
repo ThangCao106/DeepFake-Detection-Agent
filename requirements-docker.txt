@@ -1,0 +1,24 @@
+# Deepfake Detection Web UI - Lightweight Docker Container Dependencies
+# ML & Deep Learning Inference (CPU-optimized)
+torch
+torchvision
+transformers
+pillow
+scikit-learn
+numpy
+opencv-python-headless
+
+# Agent & LLM Framework
+google-generativeai
+python-dotenv
+colorama
+
+# Web Framework & Real-time Sockets
+flask
+flask-socketio
+flask-cors
+python-socketio
+eventlet
+
+# Lightweight Networking
+httpx

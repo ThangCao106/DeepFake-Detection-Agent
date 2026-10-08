@@ -1,17 +1,53 @@
+# Git & Version Control
 .git
 .gitignore
+.github
+
+# Agents & Ide config
+.agents
+.vscode
+.idea
+
+# Virtual Environment & Python cache
 .venv
 venv
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+*.pytest_cache
+
+# Large Model Checkpoints & Local Training Weights (>1.3GB)
+# (Downloaded from HF Hub or mounted as Docker volume)
+custom_vit_model
+human_vit_model
+colab_datasets
+models
+
+# Reports, SQLite DBs & Artifacts (>700MB)
+report_colab
+scratch
+benchmark_data
+benchmark_results*.json
+session_*.json
 *.log
 agent_system.log
-benchmark_data
-benchmark_results.json
-session_*.json
+
+# Large Archives, Datasets & Documents (>100MB)
+*.zip
+*.tar.gz
+*.pdf
+*.docx
+*.pptx
+
+# Crawled Media & Uploads
+crawler/downloads
+crawler/data
+uploads/*
+!uploads/.gitkeep
+
+# Environment files
 .env.example
-.pytest_cache
-.vscode
-.idea
+
+# Observability sub-project (has its own Dockerfile)
+observability
