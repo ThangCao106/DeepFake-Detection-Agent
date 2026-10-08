@@ -1,4 +1,6 @@
-# Use official lightweight Python image
+# ========================================================
+# 🌐 Public Forensic Web UI Dockerfile (Port 5000 Only)
+# ========================================================
 FROM python:3.11-slim
 
 # Set environment variables
@@ -34,12 +36,12 @@ COPY . /app
 # Create directory for uploads, cache and benchmark runs
 RUN mkdir -p /app/uploads /root/.cache/huggingface /app/runs/benchmarks
 
-# Expose Web Application Ports (5000: Forensic App, 5010: Benchmark Hub)
-EXPOSE 5000 5010
+# Expose Web UI Port ONLY (5000)
+EXPOSE 5000
 
-# Healthcheck to verify Flask Web Service status (dynamic PORT support)
+# Healthcheck to verify Flask Web Service status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/api/status || exit 1
+    CMD curl -f http://localhost:5000/api/status || exit 1
 
 # Start Flask web server with SocketIO eventlet
 CMD ["python", "app.py"]

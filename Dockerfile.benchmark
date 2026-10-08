@@ -1,0 +1,38 @@
+# ========================================================
+# Dedicated Benchmark Hub Subsystem Dockerfile (Port 5010 Only)
+# ========================================================
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=5010 \
+    HF_HUB_ENABLE_HF_TRANSFER=0
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-docker.txt ./requirements.txt
+
+RUN pip install --no-cache-dir --root-user-action=ignore --upgrade pip && \
+    pip install --no-cache-dir --root-user-action=ignore \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        -r requirements.txt
+
+COPY . /app
+
+RUN mkdir -p /app/uploads /root/.cache/huggingface /app/runs/benchmarks
+
+# Expose Benchmark Hub Port ONLY
+EXPOSE 5010
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:5010/api/status || exit 1
+
+CMD ["python", "app.py"]
