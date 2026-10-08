@@ -48,7 +48,7 @@ def package_codebase(output_zip_path=None):
             rel_root = Path(root).relative_to(PROJECT_ROOT)
             
             for f in files:
-                if f in EXCLUDE_FILES or Path(f).suffix in EXCLUDE_EXTENSIONS:
+                if f in EXCLUDE_FILES or Path(f).suffix in EXCLUDE_EXTENSIONS or f.startswith("~$") or f.startswith(".~"):
                     continue
                 file_path = Path(root) / f
                 arcname = (rel_root / f).as_posix()

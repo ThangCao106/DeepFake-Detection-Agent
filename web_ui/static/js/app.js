@@ -38,7 +38,18 @@ const TRANSLATIONS = {
         badge_fake: "🚨 FAKE / DEEPFAKE",
         conf_score_label: "Confidence Score",
         system_connected: "Connected to Deepfake Detection Agent System",
-        upload_analyzing_media: "Analyzing media content: "
+        upload_analyzing_media: "Analyzing media content: ",
+        bench_nav_btn: "Benchmark Hub",
+        bench_title: "Automated Benchmark & Live Forensic Telemetry",
+        btn_start_bench: "Start Benchmark",
+        btn_stop_bench: "Stop",
+        btn_view_report: "View Latest Report",
+        btn_clear_logs: "Clear",
+        bench_progress_lbl: "Progress",
+        bench_acc_lbl: "Running Accuracy",
+        bench_latency_lbl: "Avg Inference Latency",
+        bench_calib_lbl: "Calibration Target",
+        autoscroll_lbl: "Auto-scroll"
     },
     vi: {
         status_connecting: "Đang kết nối...",
@@ -75,7 +86,18 @@ const TRANSLATIONS = {
         badge_fake: "🚨 GIẢ MẠO / DEEPFAKE",
         conf_score_label: "Độ tin cậy",
         system_connected: "Đã kết nối với Hệ thống Agent Phát hiện Deepfake",
-        upload_analyzing_media: "Đang phân tích nội dung: "
+        upload_analyzing_media: "Đang phân tích nội dung: ",
+        bench_nav_btn: "Trung tâm Benchmark",
+        bench_title: "Benchmark Tự Động & Nhật Ký Giám Định Trực Tiếp",
+        btn_start_bench: "Chạy Benchmark",
+        btn_stop_bench: "Dừng",
+        btn_view_report: "Xem Báo Cáo Mới Nhất",
+        btn_clear_logs: "Xóa Log",
+        bench_progress_lbl: "Tiến Độ",
+        bench_acc_lbl: "Độ Chính Xác Thực Nghiệm",
+        bench_latency_lbl: "Độ Trễ Trung Bình",
+        bench_calib_lbl: "Hiệu Chuẩn Ngưỡng",
+        autoscroll_lbl: "Tự cuộn"
     }
 };
 
@@ -649,8 +671,190 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    switchLanguage(currentLang);
+// =========================================================================
+// ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER (OPTION A + B)
+// =========================================================================
+
+let benchmarkIsRunning = false;
+
+function toggleBenchmarkCard() {
+    const card = document.getElementById('benchmarkCard');
+    if (!card) return;
+    const isHidden = (card.style.display === 'none' || card.style.display === '');
+    card.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        fetchBenchmarkStatus();
+    }
+}
+
+function fetchBenchmarkStatus() {
+    fetch('/api/benchmark/status')
+        .then(res => res.json())
+        .then(data => updateBenchmarkStatusUI(data))
+        .catch(err => console.error('Failed to fetch benchmark status:', err));
+}
+
+function updateBenchmarkStatusUI(statusData) {
+    const badge = document.getElementById('benchmarkStatusBadge');
+    const startBtn = document.getElementById('startBenchBtn');
+    const stopBtn = document.getElementById('stopBenchBtn');
+    
+    if (statusData.is_running) {
+        benchmarkIsRunning = true;
+        if (badge) {
+            badge.className = 'benchmark-badge running';
+            badge.textContent = '🟢 RUNNING';
+        }
+        if (startBtn) startBtn.disabled = true;
+        if (stopBtn) stopBtn.disabled = false;
+    } else {
+        benchmarkIsRunning = false;
+        if (badge) {
+            badge.className = 'benchmark-badge idle';
+            badge.textContent = statusData.status === 'COMPLETED' ? '✅ COMPLETED' : '⚪ IDLE';
+        }
+        if (startBtn) startBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = true;
+    }
+
+    if (statusData.latest_summary) {
+        const sum = statusData.latest_summary;
+        const accEl = document.getElementById('benchAccVal');
+        const latEl = document.getElementById('benchLatencyVal');
+        if (accEl) accEl.textContent = `${sum.accuracy_pct}%`;
+        if (latEl) latEl.textContent = `${sum.avg_latency_ms} ms`;
+    }
+}
+
+function startBenchmark() {
+    const modeSelect = document.getElementById('benchmarkModeSelect');
+    const datasetSelect = document.getElementById('benchmarkDatasetSelect');
+    const mode = modeSelect ? modeSelect.value : 'quick';
+    const dataset = datasetSelect ? datasetSelect.value : 'Synthetic & Curated';
+
+    appendTerminalLogLine('INFO', `Requesting benchmark execution [mode=${mode}, dataset='${dataset}']...`);
+    
+    const startBtn = document.getElementById('startBenchBtn');
+    const stopBtn = document.getElementById('stopBenchBtn');
+    if (startBtn) startBtn.disabled = true;
+    if (stopBtn) stopBtn.disabled = false;
+
+    socket.emit('benchmark_start', { mode: mode, dataset: dataset });
+}
+
+function stopBenchmark() {
+    appendTerminalLogLine('WARN', 'Sending stop/cancel request to runner...');
+    const stopBtn = document.getElementById('stopBenchBtn');
+    if (stopBtn) stopBtn.disabled = true;
+    socket.emit('benchmark_stop', {});
+}
+
+function clearTerminalLogs() {
+    const termBody = document.getElementById('terminalLogBody');
+    if (termBody) {
+        termBody.innerHTML = '<div class="terminal-line comment"># Terminal cleared. Waiting for events...</div>';
+    }
+}
+
+function appendTerminalLogLine(level, message, timestamp) {
+    const termBody = document.getElementById('terminalLogBody');
+    if (!termBody) return;
+
+    const ts = timestamp || (new Date()).toISOString().substring(11, 23);
+    const line = document.createElement('div');
+    line.className = 'terminal-line';
+
+    let lvlClass = 'lvl-info';
+    if (level === 'RUNNING') lvlClass = 'lvl-running';
+    else if (level === 'METRIC') lvlClass = 'lvl-metric';
+    else if (level === 'WARN') lvlClass = 'lvl-warn';
+    else if (level === 'ERROR') lvlClass = 'lvl-error';
+
+    let styledMsg = escapeHtml(message);
+    styledMsg = styledMsg.replace(/\[MATCH\]/g, '<span class="tag-match">[MATCH]</span>');
+    styledMsg = styledMsg.replace(/\[MISMATCH\]/g, '<span class="tag-mismatch">[MISMATCH]</span>');
+
+    line.innerHTML = `<span class="timestamp">[${ts}]</span> <span class="${lvlClass}">[${level}]</span> ${styledMsg}`;
+    termBody.appendChild(line);
+
+    const autoScroll = document.getElementById('autoscrollCheck');
+    if (autoScroll && autoScroll.checked) {
+        termBody.scrollTop = termBody.scrollHeight;
+    }
+}
+
+function openReportModal() {
+    const backdrop = document.getElementById('reportModalBackdrop');
+    const body = document.getElementById('reportModalBody');
+    if (!backdrop || !body) return;
+
+    backdrop.style.display = 'flex';
+    body.innerHTML = '<div style="text-align: center; padding: 25px; color: #64748b;">Loading report data...</div>';
+
+    fetch('/api/benchmark/latest_report')
+        .then(res => {
+            if (!res.ok) throw new Error('No report generated yet');
+            return res.json();
+        })
+        .then(data => {
+            if (data.found && data.content) {
+                body.innerHTML = renderMarkdown(data.content);
+            } else {
+                body.innerHTML = `<div style="text-align: center; padding: 25px; color: #f59e0b;">${data.message || 'No report found.'}</div>`;
+            }
+        })
+        .catch(err => {
+            body.innerHTML = `<div style="text-align: center; padding: 25px; color: #ef4444;">${err.message}. Please run a benchmark first!</div>`;
+        });
+}
+
+function closeReportModal(event) {
+    const backdrop = document.getElementById('reportModalBackdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}
+
+// Socket.IO Listeners for Live Benchmark Stream
+socket.on('benchmark_log', (data) => {
+    appendTerminalLogLine(data.level, data.message, data.timestamp);
 });
 
-console.log('Deepfake Detection Web App initialized with multi-language i18n support');
+socket.on('benchmark_progress', (data) => {
+    const progVal = document.getElementById('benchProgressVal');
+    const progFill = document.getElementById('benchProgressFill');
+    const accVal = document.getElementById('benchAccVal');
+    const latVal = document.getElementById('benchLatencyVal');
+
+    if (progVal) progVal.textContent = `${data.step} / ${data.total} (${data.progress_pct}%)`;
+    if (progFill) progFill.style.width = `${data.progress_pct}%`;
+    if (accVal) accVal.textContent = `${data.running_acc}%`;
+    if (latVal) latVal.textContent = `${data.running_latency_ms} ms`;
+});
+
+socket.on('benchmark_started', (data) => {
+    updateBenchmarkStatusUI({ is_running: true });
+    appendTerminalLogLine('INFO', `Benchmark worker active [Job ID: ${data.job_id}]`);
+});
+
+socket.on('benchmark_stopped', (data) => {
+    appendTerminalLogLine('WARN', 'Benchmark worker stopped.');
+    fetchBenchmarkStatus();
+});
+
+socket.on('benchmark_completed', (data) => {
+    const summary = data.summary;
+    appendTerminalLogLine('INFO', `🎉 Benchmark finished! Accuracy: ${summary.accuracy_pct}% | Recall(FAKE): ${summary.fake_recall_pct}% | Latency: ${summary.avg_latency_ms}ms`);
+    updateBenchmarkStatusUI({ is_running: false, status: 'COMPLETED', latest_summary: summary });
+});
+
+socket.on('benchmark_error', (data) => {
+    appendTerminalLogLine('ERROR', data.message || 'Unknown benchmark error');
+    fetchBenchmarkStatus();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    switchLanguage(currentLang);
+    fetchBenchmarkStatus();
+});
+
+console.log('Deepfake Detection Web App initialized with multi-language i18n & Live Benchmark Hub');

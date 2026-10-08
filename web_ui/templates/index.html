@@ -23,6 +23,10 @@
             </div>
             
             <div class="nav-links">
+                <button type="button" class="btn-benchmark-nav" id="benchmarkNavBtn" onclick="toggleBenchmarkCard()">
+                    ⚡ <span data-i18n="bench_nav_btn">Benchmark Hub</span>
+                </button>
+
                 <div class="lang-switcher">
                     <button type="button" class="lang-btn active" id="langBtnEn" onclick="switchLanguage('en')">🌐 EN</button>
                     <button type="button" class="lang-btn" id="langBtnVi" onclick="switchLanguage('vi')">🇻🇳 VI</button>
@@ -49,6 +53,84 @@
                 <div class="feature-pills-centered">
                     <div class="feature-pill">
                         <p data-i18n="hero_feature">Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
+                    </div>
+                </div>
+            <!-- ========================================================= -->
+            <!-- ⚡ BENCHMARK HUB & LIVE RUNNING LOG TERMINAL (OPTION A + B) -->
+            <!-- ========================================================= -->
+            <section class="card benchmark-card" id="benchmarkCard" style="display: none; margin-bottom: 25px;">
+                <div class="benchmark-header">
+                    <div class="benchmark-title-group">
+                        <h3 class="card-title" style="margin: 0;">
+                            <span class="icon">⚡</span>
+                            <span data-i18n="bench_title">Automated Benchmark & Live Forensic Telemetry</span>
+                        </h3>
+                        <span class="benchmark-badge idle" id="benchmarkStatusBadge">⚪ IDLE</span>
+                    </div>
+
+                    <div class="benchmark-actions">
+                        <select id="benchmarkModeSelect" class="benchmark-select">
+                            <option value="quick">⚡ Quick Smoke Test (10 Samples)</option>
+                            <option value="standard">📊 Standard Suite (50 Samples)</option>
+                        </select>
+                        <select id="benchmarkDatasetSelect" class="benchmark-select">
+                            <option value="Synthetic & Curated">Synthetic & Curated</option>
+                            <option value="Vietnamese Biometric">Vietnamese Biometric (5 Classes)</option>
+                            <option value="14 Benchmark Suite">14 International Benchmarks</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-start-bench" id="startBenchBtn" onclick="startBenchmark()">
+                            <span>▶</span> <span data-i18n="btn_start_bench">Start Benchmark</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-stop-bench" id="stopBenchBtn" onclick="stopBenchmark()" disabled>
+                            <span>⏹</span> <span data-i18n="btn_stop_bench">Stop</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-view-report" id="viewReportBtn" onclick="openReportModal()">
+                            <span>📄</span> <span data-i18n="btn_view_report">View Latest Report</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-clear-logs" id="clearLogsBtn" onclick="clearTerminalLogs()">
+                            <span>🗑</span> <span data-i18n="btn_clear_logs">Clear</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Running Metrics Row -->
+                <div class="benchmark-metrics-grid">
+                    <div class="bench-metric-card">
+                        <span class="bench-metric-label" data-i18n="bench_progress_lbl">Progress</span>
+                        <span class="bench-metric-val" id="benchProgressVal">0 / 0 (0.0%)</span>
+                        <div class="bench-progress-bar"><div class="bench-progress-fill" id="benchProgressFill" style="width: 0%"></div></div>
+                    </div>
+                    <div class="bench-metric-card">
+                        <span class="bench-metric-label" data-i18n="bench_acc_lbl">Running Accuracy</span>
+                        <span class="bench-metric-val highlight" id="benchAccVal">- %</span>
+                    </div>
+                    <div class="bench-metric-card">
+                        <span class="bench-metric-label" data-i18n="bench_latency_lbl">Avg Inference Latency</span>
+                        <span class="bench-metric-val" id="benchLatencyVal">- ms</span>
+                    </div>
+                    <div class="bench-metric-card">
+                        <span class="bench-metric-label" data-i18n="bench_calib_lbl">Calibration Target</span>
+                        <span class="bench-metric-val mono" id="benchCalibVal">τ* = 0.8118 | T* = 1.6178</span>
+                    </div>
+                </div>
+
+                <!-- Live Terminal Log Streamer -->
+                <div class="live-terminal-container">
+                    <div class="terminal-bar">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">live_running.log • realtime dual stream</span>
+                        <div class="terminal-options">
+                            <label class="terminal-autoscroll-label">
+                                <input type="checkbox" id="autoscrollCheck" checked> <span data-i18n="autoscroll_lbl">Auto-scroll</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="terminal-body" id="terminalLogBody">
+                        <div class="terminal-line comment"># Dual-stream engine ready. Click 'Start Benchmark' to launch background runner...</div>
                     </div>
                 </div>
             </section>
@@ -226,6 +308,22 @@
 
 
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.0"></script>
+    <!-- Benchmark Report Modal -->
+    <div class="modal-backdrop" id="reportModalBackdrop" style="display: none;" onclick="closeReportModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 Benchmark Report & Forensic Audit</h3>
+                <button type="button" class="btn-close-modal" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body markdown-body" id="reportModalBody">
+                <div style="text-align: center; padding: 25px; color: #64748b;">Loading report data...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.1"></script>
 </body>
 </html>

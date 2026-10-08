@@ -47,6 +47,16 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', ping_timeout=60, ping_interval=25)
 
+# Initialize Benchmark Job Runner & attach socketio
+try:
+    from benchmark.logger import BenchmarkJobRunner
+    benchmark_runner = BenchmarkJobRunner.get_instance()
+    benchmark_runner.attach_socketio(socketio)
+    logger.info("BenchmarkJobRunner initialized and attached to socketio.")
+except Exception as e:
+    logger.warning(f"Could not initialize BenchmarkJobRunner: {e}")
+    benchmark_runner = None
+
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -554,6 +564,109 @@ def handle_save_session():
     except Exception as e:
         logger.error(f"Save session error: {e}")
         emit('error', {'message': f'Failed to save session: {str(e)}'})
+
+
+# =========================================================================
+# 🚀 LIVE BENCHMARK & OBSERVE TELEMETRY API & SOCKET HANDLERS
+# =========================================================================
+
+@app.route('/api/benchmark/status', methods=['GET'])
+def get_benchmark_status():
+    """Return status of current or last benchmark job."""
+    if not benchmark_runner:
+        return jsonify({"status": "disabled", "message": "Benchmark runner not loaded"}), 200
+    return jsonify(benchmark_runner.get_status()), 200
+
+
+@app.route('/api/benchmark/logs', methods=['GET'])
+def get_benchmark_logs():
+    """Return recent execution logs."""
+    limit = request.args.get('limit', 200, type=int)
+    if not benchmark_runner:
+        return jsonify({"logs": []}), 200
+    return jsonify({"logs": benchmark_runner.get_recent_logs(limit=limit)}), 200
+
+
+@app.route('/api/benchmark/start', methods=['POST'])
+def start_benchmark_api():
+    """Trigger a new benchmark run."""
+    if not benchmark_runner:
+        return jsonify({"status": "error", "message": "Benchmark runner not loaded"}), 500
+    data = request.get_json(silent=True) or {}
+    mode = data.get("mode", "quick")
+    dataset = data.get("dataset", "Synthetic & Curated")
+    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset)
+    return jsonify(res), 200
+
+
+@app.route('/api/benchmark/stop', methods=['POST'])
+def stop_benchmark_api():
+    """Gracefully cancel current running benchmark job."""
+    if not benchmark_runner:
+        return jsonify({"status": "error", "message": "Benchmark runner not loaded"}), 500
+    res = benchmark_runner.stop_job()
+    return jsonify(res), 200
+
+
+@app.route('/api/benchmark/latest_report', methods=['GET'])
+def get_latest_benchmark_report():
+    """Fetch content of the latest generated benchmark markdown report."""
+    try:
+        from pathlib import Path
+        runs_dir = Path(__file__).resolve().parent.parent / "runs" / "benchmarks"
+        reports = sorted(runs_dir.glob("*/summary.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not reports:
+            # Fallback to report_colab/daily_benchmark
+            colab_reports = sorted(
+                (Path(__file__).resolve().parent.parent / "report_colab" / "daily_benchmark").glob("*.md"),
+                key=lambda p: p.stat().st_mtime, reverse=True
+            )
+            if colab_reports:
+                reports = colab_reports
+
+        if reports:
+            latest_md = reports[0]
+            content = latest_md.read_text(encoding="utf-8", errors="ignore")
+            return jsonify({
+                "found": True,
+                "path": str(latest_md),
+                "modified": datetime.fromtimestamp(latest_md.stat().st_mtime).isoformat(),
+                "content": content
+            }), 200
+        return jsonify({"found": False, "message": "No benchmark report found yet"}), 404
+    except Exception as e:
+        logger.error(f"Failed to fetch latest report: {e}")
+        return jsonify({"found": False, "error": str(e)}), 500
+
+
+@socketio.on('benchmark_start')
+def handle_socket_benchmark_start(data):
+    """Start benchmark via WebSocket."""
+    if not benchmark_runner:
+        emit('benchmark_error', {'message': 'Benchmark runner is not available'})
+        return
+    mode = (data or {}).get("mode", "quick")
+    dataset = (data or {}).get("dataset", "Synthetic & Curated")
+    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset)
+    emit('benchmark_started', res)
+
+
+@socketio.on('benchmark_stop')
+def handle_socket_benchmark_stop():
+    """Stop benchmark via WebSocket."""
+    if not benchmark_runner:
+        emit('benchmark_error', {'message': 'Benchmark runner is not available'})
+        return
+    res = benchmark_runner.stop_job()
+    emit('benchmark_stopped', res)
+
+
+@socketio.on('benchmark_request_status')
+def handle_socket_benchmark_request_status():
+    """Push current status to client."""
+    if benchmark_runner:
+        emit('benchmark_status', benchmark_runner.get_status())
+
 
 
 if __name__ == '__main__':

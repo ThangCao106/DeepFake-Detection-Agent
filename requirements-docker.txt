@@ -20,5 +20,6 @@ flask-cors
 python-socketio
 eventlet
 
-# Lightweight Networking
+# Lightweight Networking & Presentation Export
 httpx
+python-pptx

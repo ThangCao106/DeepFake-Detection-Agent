@@ -88,3 +88,8 @@ report_colab/temp_media_samples/
 scratch/
 .last_hf_upload.json
 colab_training/.last_hf_upload.json
+
+# Benchmark runtime runs and cache
+runs/
+~$*
+.~*
