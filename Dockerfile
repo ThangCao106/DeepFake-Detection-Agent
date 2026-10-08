@@ -37,9 +37,9 @@ RUN mkdir -p /app/uploads /root/.cache/huggingface /app/runs/benchmarks
 # Expose Web Application Ports (5000: Forensic App, 5010: Benchmark Hub)
 EXPOSE 5000 5010
 
-# Healthcheck to verify Flask Web Service status
+# Healthcheck to verify Flask Web Service status (dynamic PORT support)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:5000/api/status || exit 1
+    CMD curl -f http://localhost:${PORT}/api/status || exit 1
 
 # Start Flask web server with SocketIO eventlet
 CMD ["python", "app.py"]

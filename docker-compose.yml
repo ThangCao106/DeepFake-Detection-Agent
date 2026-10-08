@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # =========================================================
-  # 🌐 1. WEB UI & INFERENCE APP (Flask Web Server & Multi-Agent)
+  # 🌐 1. FORENSIC WEB UI (Public Forensic Verification - Port 5000)
   # =========================================================
   deepfake-web-ui:
     build:
@@ -12,11 +12,40 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
-      - "5010:5000"
     env_file:
       - .env
     environment:
       - PORT=5000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OBSERVABILITY_AGENT_URL=http://observability-agent:8787
+    volumes:
+      # Persistent storage for uploaded media (Image, Video, Audio)
+      - ./uploads:/app/uploads
+      # Persistent storage for benchmark runs, live logs & generated reports
+      - ./runs/benchmarks:/app/runs/benchmarks
+      # Cache Hugging Face model weights so they are not re-downloaded on container restart
+      - hf_model_cache:/root/.cache/huggingface
+    depends_on:
+      - observability-agent
+    networks:
+      - deepfake-agent-network
+
+  # =========================================================
+  # ⚡ 2. DEDICATED BENCHMARK HUB (Subsystem & Live Logs - Port 5010)
+  # =========================================================
+  deepfake-benchmark-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deepfake_benchmark_hub
+    restart: unless-stopped
+    ports:
+      - "5010:5010"
+    env_file:
+      - .env
+    environment:
+      - PORT=5010
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - OBSERVABILITY_AGENT_URL=http://observability-agent:8787
