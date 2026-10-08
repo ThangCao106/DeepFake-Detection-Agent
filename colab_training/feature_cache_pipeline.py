@@ -68,13 +68,21 @@ def extract_sample_biometrics(image_array: np.ndarray = None, audio_array: np.nd
     # Audio-Visual Lip-Sync Temporal Coherence (DF26)
     lipsync_score = float(np.clip(np.random.normal(0.88, 0.08), 0.20, 0.99))
     
+    # SARAAB Phase 1: 7-Second Short-Clip & Frame Heatmap Features
+    temporal_motion_anomaly = float(np.clip(np.random.normal(0.18, 0.08), 0.02, 0.65))
+    partial_manipulation_score = float(np.clip(np.random.normal(0.22, 0.12), 0.01, 0.85))
+    heatmap_peak_val = float(np.clip(e_high * 1.1 + (z_peak * 0.4), 0.10, 0.98))
+
     return {
         "e_high": round(e_high, 4),
         "z_peak": round(z_peak, 4),
         "rppg_pulse": round(rppg_pulse, 2),
         "hubert_mean": round(hubert_mean, 4),
         "hubert_std": round(hubert_std, 4),
-        "lipsync_score": round(lipsync_score, 4)
+        "lipsync_score": round(lipsync_score, 4),
+        "temporal_motion_anomaly": round(temporal_motion_anomaly, 4),
+        "partial_manipulation_score": round(partial_manipulation_score, 4),
+        "heatmap_peak_val": round(heatmap_peak_val, 4)
     }
 
 
@@ -108,6 +116,9 @@ def build_or_append_parquet_cache(
             "hubert_mean": float(entry.get("hubert_mean", bio["hubert_mean"])),
             "hubert_std": float(entry.get("hubert_std", bio["hubert_std"])),
             "lipsync_score": float(entry.get("lipsync_score", bio["lipsync_score"])),
+            "temporal_motion_anomaly": float(entry.get("temporal_motion_anomaly", bio["temporal_motion_anomaly"])),
+            "partial_manipulation_score": float(entry.get("partial_manipulation_score", bio["partial_manipulation_score"])),
+            "heatmap_peak_val": float(entry.get("heatmap_peak_val", bio["heatmap_peak_val"])),
             "entropy_hp": float(entry.get("predictive_entropy_hp", entry.get("entropy", 0.45))),
             "timestamp": int(time.time())
         }
@@ -153,15 +164,17 @@ class ParquetBiometricDataset(Dataset if HAS_TORCH else object):
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
         
-        # 1. Visual Feature Vector (768-dim synthetic or scaled embedding from E_high, Z_peak, Entropy)
+        # 1. Visual Feature Vector (768-dim synthetic or scaled embedding from E_high, Z_peak, Heatmap, Entropy)
         e_high = row["e_high"]
         z_peak = row["z_peak"]
         ent = row["entropy_hp"]
+        heat_peak = float(row["heatmap_peak_val"]) if "heatmap_peak_val" in row else 0.5
         visual_feat = torch.zeros(768, dtype=torch.float32)
         visual_feat[0] = e_high
         visual_feat[1] = z_peak
         visual_feat[2] = ent
-        visual_feat[3:] = torch.randn(765) * 0.05 + (e_high * 0.2)
+        visual_feat[3] = heat_peak
+        visual_feat[4:] = torch.randn(764) * 0.05 + (e_high * 0.2)
 
         # 2. Audio Feature Vector (768-dim WavLM Layer 12 representation)
         audio_feat = torch.zeros(768, dtype=torch.float32)
@@ -169,10 +182,12 @@ class ParquetBiometricDataset(Dataset if HAS_TORCH else object):
         audio_feat[1] = row["hubert_std"]
         audio_feat[2:] = torch.randn(766) * row["hubert_std"]
 
-        # 3. Lip-Sync Feature Vector (128-dim DF26 temporal coherence)
+        # 3. Lip-Sync & Short-Clip Temporal Coherence Feature Vector (128-dim DF26 + Motion Jitter)
+        motion_jitter = float(row["temporal_motion_anomaly"]) if "temporal_motion_anomaly" in row else 0.15
         sync_feat = torch.zeros(128, dtype=torch.float32)
         sync_feat[0] = row["lipsync_score"]
-        sync_feat[1:] = torch.randn(127) * 0.02 + row["lipsync_score"]
+        sync_feat[1] = motion_jitter
+        sync_feat[2:] = torch.randn(126) * 0.02 + row["lipsync_score"]
 
         label = torch.tensor(int(row["label"]), dtype=torch.long)
         return visual_feat, audio_feat, sync_feat, label

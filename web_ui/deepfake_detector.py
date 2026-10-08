@@ -166,6 +166,74 @@ class SpatialConsistencyAnalyzer:
             return 0.0
 
 
+class SpatialHeatmapGenerator:
+    """
+    SARAAB-Inspired Frame-by-Frame Heatmap & Manipulation Hotspot Analyzer.
+    Divides the face/frame into an 8x8 Patch Grid (matching ViT patch spatial layout)
+    and computes localized high-frequency gradient variances and pixel blending differentials.
+    Highlights specific facial regions exhibiting blending boundary anomalies or synthetic artifacts.
+    """
+    @staticmethod
+    def generate_patch_heatmap(pil_image, grid_size=8):
+        """
+        Generate localized patch anomaly heatmap normalized between [0.0, 1.0].
+        Returns:
+            - heatmap_grid: List of lists containing normalized patch anomaly scores.
+            - peak_hotspot: Dict with coordinates (row, col) and anatomical region name.
+            - spatial_dispersion: Variance of heatmap (high dispersion indicates localized tampering).
+        """
+        try:
+            gray = pil_image.convert("L").resize((256, 256))
+            arr = np.array(gray, dtype=np.float32)
+            h, w = arr.shape
+            step_h = h // grid_size
+            step_w = w // grid_size
+            
+            grid_scores = []
+            for r in range(grid_size):
+                row_scores = []
+                for c in range(grid_size):
+                    patch = arr[r*step_h:(r+1)*step_h, c*step_w:(c+1)*step_w]
+                    # High-frequency residual energy via gradient variance
+                    var_val = float(np.var(patch))
+                    diff_val = float(np.mean(np.abs(np.diff(patch, axis=0)))) + float(np.mean(np.abs(np.diff(patch, axis=1))))
+                    score = (var_val / 2200.0) * 0.4 + (diff_val / 42.0) * 0.6
+                    row_scores.append(float(np.clip(score, 0.0, 1.0)))
+                grid_scores.append(row_scores)
+            
+            grid_np = np.array(grid_scores)
+            max_idx = np.unravel_index(np.argmax(grid_np), grid_np.shape)
+            peak_val = float(grid_np[max_idx])
+            
+            # Map grid position to estimated facial anatomical zone
+            r_ratio = max_idx[0] / grid_size
+            c_ratio = max_idx[1] / grid_size
+            if 0.2 <= r_ratio <= 0.5 and 0.2 <= c_ratio <= 0.8:
+                region_name = "Periorbital / Upper Facial Zone (Eyes/Forehead)"
+            elif 0.5 < r_ratio <= 0.8 and 0.25 <= c_ratio <= 0.75:
+                region_name = "Perioral / Mandibular Zone (Mouth/Jaw Blending Boundary)"
+            else:
+                region_name = "Peripheral Silhouette / Hairline Boundary"
+
+            return {
+                "grid_size": f"{grid_size}x{grid_size}",
+                "heatmap_grid": [[round(v, 3) for v in row] for row in grid_scores],
+                "peak_hotspot": {
+                    "grid_coord": [int(max_idx[0]), int(max_idx[1])],
+                    "peak_anomaly_score": round(peak_val, 4),
+                    "anatomical_region": region_name
+                },
+                "spatial_dispersion": round(float(np.var(grid_np)), 4)
+            }
+        except Exception:
+            return {
+                "grid_size": f"{grid_size}x{grid_size}",
+                "heatmap_grid": [],
+                "peak_hotspot": {"grid_coord": [0, 0], "peak_anomaly_score": 0.0, "anatomical_region": "Unknown"},
+                "spatial_dispersion": 0.0
+            }
+
+
 class DeepfakeDetector:
     def __init__(self, model_name="dima806/deepfake_vs_real_image_detection"):
         """
@@ -310,10 +378,14 @@ class DeepfakeDetector:
             # 3. Compute Spatial Noise Inconsistency
             spatial_inconsistency = SpatialConsistencyAnalyzer.analyze_spatial_inconsistency(image, cropped)
 
-            # General Stream Risk Calculation (75% passive model, 15% spectral, 10% spatial)
+            # 4. Compute SARAAB-Inspired Patch Anomaly Heatmap (8x8 ViT Grid)
+            spatial_patch_heatmap = SpatialHeatmapGenerator.generate_patch_heatmap(cropped)
+            heatmap_peak_val = spatial_patch_heatmap.get("peak_hotspot", {}).get("peak_anomaly_score", 0.0)
+
+            # General Stream Risk Calculation (70% passive model, 15% spectral, 10% spatial, 5% patch heatmap peak)
             is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
             fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
-            general_risk = round(float(0.75 * fake_prob + 0.15 * spectral_anomaly + 0.10 * spatial_inconsistency), 4)
+            general_risk = round(float(0.70 * fake_prob + 0.15 * spectral_anomaly + 0.10 * spatial_inconsistency + 0.05 * heatmap_peak_val), 4)
 
             # Step 2: Parallel Stream 2 & Cross-Evidence Fusion Engine
             if has_human and self.human_detector is not None:
@@ -420,7 +492,8 @@ class DeepfakeDetector:
                     "model_uncertainty_entropy": {
                         "entropy": normalized_entropy,
                         "interpretation": "High prediction certainty" if normalized_entropy < 0.35 else "Uncertain classification boundary"
-                    }
+                    },
+                    "saraab_patch_heatmap": spatial_patch_heatmap
                 },
                 "composite_risk_score": composite_risk,
                 "auditable_verdict": "SYNTHETIC_MEDIA_SUSPECTED" if composite_risk > 0.5 else "AUTHENTIC_MEDIA_LIKELY",
@@ -450,11 +523,14 @@ class DeepfakeDetector:
         except Exception as e:
             return {"error": str(e)}
 
-    def predict_video(self, video_path, num_frames=6):
+    def predict_video(self, video_path, window_duration_sec=7.0, max_frames=12):
         """
-        Extract keyframes from video and perform frame-by-frame deepfake detection.
-        Applies Dual-Stream Parallel Analysis if human presence is detected in frames.
-        Aggregates predictions into an overall video verdict and forensic audit certificate.
+        SARAAB-Inspired Short-Clip Temporal Window Video Deepfake Detector.
+        1. Evaluates footage using 7-second Micro-Windows (matching Dubai DESC SARAAB standard).
+        2. Computes Frame-to-Frame Temporal Motion Jitter to catch temporal instability.
+        3. Tracks Partial Manipulation (localized segment tampering within longer footage).
+        4. Injects Patch Anomaly Heatmaps per frame.
+        5. Applies Dual-Stream Parallel Biometrics if human face/skin is detected.
         """
         if not os.path.exists(video_path):
             return {"error": "Video file not found"}
@@ -473,8 +549,29 @@ class DeepfakeDetector:
                 cap.release()
                 return {"error": "Video contains no readable frames"}
 
-            step = max(1, total_frames // num_frames)
-            frame_indices = [min(i * step, total_frames - 1) for i in range(num_frames)]
+            # Build 7-second Temporal Sliding Windows
+            window_size_frames = int(window_duration_sec * fps)
+            step_frames = max(1, window_size_frames // 2) if duration_sec > window_duration_sec else window_size_frames
+            
+            temporal_windows = []
+            cur_start = 0
+            while cur_start < total_frames:
+                cur_end = min(cur_start + window_size_frames, total_frames)
+                temporal_windows.append((cur_start, cur_end))
+                if cur_end >= total_frames:
+                    break
+                cur_start += step_frames
+
+            # Determine keyframe indices across windows (capped at max_frames)
+            frames_per_window = max(2, max_frames // len(temporal_windows))
+            frame_indices_set = set()
+            for w_start, w_end in temporal_windows:
+                w_step = max(1, (w_end - w_start) // frames_per_window)
+                for i in range(frames_per_window):
+                    f = min(w_start + i * w_step, w_end - 1)
+                    frame_indices_set.add(f)
+            
+            frame_indices = sorted(list(frame_indices_set))[:max_frames]
 
             base_dir = os.path.dirname(video_path)
             base_name = os.path.basename(video_path).rsplit('.', 1)[0]
@@ -511,7 +608,8 @@ class DeepfakeDetector:
                             "fake_probability": fake_p,
                             "analysis_mode": cert.get("analysis_mode", "SINGLE_STREAM_GENERAL"),
                             "spectral_anomaly": ev.get("spectral_frequency_analysis", {}).get("high_frequency_anomaly_score", 0.0),
-                            "spatial_inconsistency": ev.get("spatial_inconsistency_analysis", {}).get("spatial_inconsistency_score", 0.0)
+                            "spatial_inconsistency": ev.get("spatial_inconsistency_analysis", {}).get("spatial_inconsistency_score", 0.0),
+                            "patch_heatmap_hotspot": ev.get("saraab_patch_heatmap", {}).get("peak_hotspot", {})
                         })
                         fake_probs.append(fake_p)
                 finally:
@@ -523,9 +621,41 @@ class DeepfakeDetector:
             if not fake_probs:
                 return {"error": "Failed to analyze any video frames"}
 
+            # SARAAB Metric 1: Frame-to-Frame Temporal Motion Jitter
+            if len(fake_probs) > 1:
+                motion_jitter = float(np.mean(np.abs(np.diff(fake_probs))))
+            else:
+                motion_jitter = 0.0
+
+            # SARAAB Metric 2: Partial Manipulation Tracking by Window
+            window_evaluations = []
+            flagged_partial_segments = []
+            for w_idx, (w_start, w_end) in enumerate(temporal_windows):
+                w_start_sec = round(w_start / fps, 2)
+                w_end_sec = round(w_end / fps, 2)
+                w_probs = [f["fake_probability"] for f in frame_results if w_start <= f["frame_index"] <= w_end]
+                w_risk = float(np.mean(w_probs)) if w_probs else 0.5
+                is_flagged = bool(w_risk >= 0.60)
+                if is_flagged:
+                    flagged_partial_segments.append({
+                        "window_index": w_idx,
+                        "time_span": f"{w_start_sec}s - {w_end_sec}s",
+                        "segment_fake_risk": round(w_risk, 4)
+                    })
+                window_evaluations.append({
+                    "window_index": w_idx,
+                    "start_sec": w_start_sec,
+                    "end_sec": w_end_sec,
+                    "sample_count": len(w_probs),
+                    "mean_fake_risk": round(w_risk, 4),
+                    "is_flagged_deepfake": is_flagged
+                })
+
             avg_fake_prob = float(np.mean(fake_probs))
             max_fake_prob = float(np.max(fake_probs))
-            general_video_score = 0.6 * max_fake_prob + 0.4 * avg_fake_prob
+            
+            # SARAAB Weighted General Risk: 50% Peak Window, 35% Average, 15% Motion Jitter
+            general_video_score = round(0.50 * max_fake_prob + 0.35 * avg_fake_prob + 0.15 * min(1.0, motion_jitter * 2.0), 4)
 
             # Step 2: Dual-Stream Video Fusion if Human Present
             if has_human_video and self.human_detector is not None:
@@ -538,11 +668,13 @@ class DeepfakeDetector:
                     "human_gate_triggered": True,
                     "fusion_formula": "Risk_composite = 0.40 * Risk_general + 0.60 * Risk_human_video",
                     "stream_1_general_video": {
-                        "model_name": "General Vision Transformer Frame Aggregator",
+                        "model_name": "General Vision Transformer Frame Aggregator (SARAAB 7s Windowing)",
                         "weight": 0.40,
                         "stream_risk_score": round(general_video_score, 4),
                         "peak_fake_probability": round(max_fake_prob, 4),
-                        "aggregate_fake_probability": round(avg_fake_prob, 4)
+                        "aggregate_fake_probability": round(avg_fake_prob, 4),
+                        "temporal_motion_jitter": round(motion_jitter, 4),
+                        "partial_manipulation_detected": len(flagged_partial_segments) > 0
                     },
                     "stream_2_human_biometrics": {
                         "model_name": "Human Multi-Modal Detector (LipSync + DF26 + ECE)",
@@ -559,9 +691,11 @@ class DeepfakeDetector:
                     "human_gate_triggered": False,
                     "fusion_formula": "Risk_composite = 1.00 * Risk_general_video",
                     "stream_1_general_video": {
-                        "model_name": "General Vision Transformer Frame Aggregator",
+                        "model_name": "General Vision Transformer Frame Aggregator (SARAAB 7s Windowing)",
                         "weight": 1.00,
-                        "stream_risk_score": round(general_video_score, 4)
+                        "stream_risk_score": round(general_video_score, 4),
+                        "temporal_motion_jitter": round(motion_jitter, 4),
+                        "partial_manipulation_detected": len(flagged_partial_segments) > 0
                     },
                     "stream_2_human_biometrics": None
                 }
@@ -594,7 +728,15 @@ class DeepfakeDetector:
                 "multi_dimensional_evidence": {
                     "frame_by_frame_analysis": frame_results,
                     "aggregate_fake_probability": round(avg_fake_prob, 4),
-                    "peak_fake_probability": round(max_fake_prob, 4)
+                    "peak_fake_probability": round(max_fake_prob, 4),
+                    "saraab_phase1_video_audit": {
+                        "standard": "SARAAB 7-Second Micro-Window Benchmark",
+                        "short_clip_window_size_sec": 7.0,
+                        "temporal_motion_jitter": round(motion_jitter, 4),
+                        "partial_manipulation_detected": len(flagged_partial_segments) > 0,
+                        "flagged_segments": flagged_partial_segments,
+                        "window_evaluations": window_evaluations
+                    }
                 },
                 "composite_risk_score": composite_video_risk,
                 "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if composite_video_risk > 0.5 else "AUTHENTIC_VIDEO_LIKELY",
