@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        window.IS_BENCHMARK_PORT = {{ 'true' if is_benchmark_mode else 'false' }};
+    </script>
 </head>
 <body>
     <!-- Background Light Soft Gradient -->
@@ -24,9 +27,11 @@
             </div>
             
             <div class="nav-links">
+                {% if is_benchmark_mode %}
                 <button type="button" class="btn-benchmark-nav" id="benchmarkNavBtn" onclick="toggleBenchmarkCard()">
                     ⚡ <span data-i18n="bench_nav_btn">Benchmark Hub</span>
                 </button>
+                {% endif %}
 
                 <div class="lang-switcher">
                     <button type="button" class="lang-btn active" id="langBtnEn" onclick="switchLanguage('en')">🌐 EN</button>
@@ -56,8 +61,9 @@
                         <p data-i18n="hero_feature">Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
                     </div>
                 </div>
+            {% if is_benchmark_mode %}
             <!-- ========================================================= -->
-            <!-- ⚡ BENCHMARK HUB & LIVE RUNNING LOG TERMINAL (OPTION A + B) -->
+            <!-- ⚡ BENCHMARK HUB & LIVE RUNNING LOG TERMINAL (PORT 5010) -->
             <!-- ========================================================= -->
             <section class="card benchmark-card" id="benchmarkCard" style="display: none; margin-bottom: 25px;">
                 <div class="benchmark-header">
@@ -139,6 +145,7 @@
                     </div>
                 </div>
             </section>
+            {% endif %}
 
             <!-- Main Side-by-Side Grid Layout (Left: Upload Media | Right: Chat with Agent) -->
             <div class="content-grid">
@@ -327,6 +334,7 @@
                 <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
             </div>
         </div>
+    {% if is_benchmark_mode %}
     <!-- ========================================================= -->
     <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (PIXEL-PERFECT FROM OBSAGENT) -->
     <!-- ========================================================= -->
@@ -365,7 +373,8 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.3"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.4"></script>
 </body>
 </html>

@@ -680,23 +680,34 @@ function isBenchmarkGateAuthenticated() {
     return !!user;
 }
 
+function isBenchmarkModeActive() {
+    return (window.IS_BENCHMARK_PORT === true || window.location.port === "5010");
+}
+
 function checkSubsystemGateOnLoad() {
-    const isPort5010 = (window.location.port === "5010");
+    const isBenchmark = isBenchmarkModeActive();
+    const navBtn = document.getElementById('benchmarkNavBtn');
+    const card = document.getElementById('benchmarkCard');
     const user = sessionStorage.getItem("benchmark_gate_user");
 
     if (user) {
         updateGateUserBadge(user);
     }
 
-    if (isPort5010) {
-        // If accessed directly via port 5010, open Benchmark Hub card automatically
-        const card = document.getElementById('benchmarkCard');
-        if (card) card.style.display = 'block';
+    if (!isBenchmark) {
+        // Cổng 5000 (Forensic Web UI công khai): Ẩn hoàn toàn Benchmark Hub
+        if (navBtn) navBtn.style.display = 'none';
+        if (card) card.style.display = 'none';
+        hideBenchmarkGateOverlay();
+        return;
+    }
 
-        if (!user) {
-            // Must authenticate on port 5010
-            showBenchmarkGateOverlay();
-        }
+    // Cổng 5010 (Dedicated Benchmark Hub): Hiển thị và yêu cầu Gate authentication
+    if (navBtn) navBtn.style.display = 'inline-flex';
+    if (card) card.style.display = 'block';
+
+    if (!user) {
+        showBenchmarkGateOverlay();
     }
 }
 
@@ -1003,8 +1014,10 @@ socket.on('benchmark_error', (data) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     switchLanguage(currentLang);
-    fetchBenchmarkStatus();
     checkSubsystemGateOnLoad();
+    if (isBenchmarkModeActive()) {
+        fetchBenchmarkStatus();
+    }
 });
 
 console.log('Deepfake Detection Web App initialized with multi-language i18n & Live Benchmark Hub');

@@ -86,8 +86,10 @@ def init_orchestrator():
 # Routes
 @app.route('/')
 def index():
-    """Serve the main web interface."""
-    return render_template('index.html')
+    """Serve the web interface with environment-aware port separation."""
+    current_port = os.environ.get("PORT", "5000")
+    is_benchmark_mode = (str(current_port) == "5010")
+    return render_template('index.html', is_benchmark_mode=is_benchmark_mode, current_port=current_port)
 
 
 @app.route('/api/status')
