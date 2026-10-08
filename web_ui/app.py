@@ -567,6 +567,46 @@ def handle_save_session():
 
 
 # =========================================================================
+# 🔒 SUBSYSTEM ACCESS GATE LOGIN AUTHENTICATION (PORT 5010 / BENCHMARK HUB)
+# =========================================================================
+
+GATE_ADMIN_USER = os.environ.get("BENCHMARK_GATE_USER", "thang.cd")
+GATE_ADMIN_PASS = os.environ.get("BENCHMARK_GATE_PASS", "Thang@123")
+
+@app.route('/api/auth/gate-login', methods=['POST'])
+def gate_login():
+    """Authenticate user for Subsystem Benchmark & Telemetry access."""
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+    
+    if username == GATE_ADMIN_USER and password == GATE_ADMIN_PASS:
+        logger.info(f"[gate_auth] Successful login for user '{username}'")
+        return jsonify({
+            "status": "success",
+            "authenticated": True,
+            "username": username,
+            "message": "Subsystem Gate authentication successful."
+        }), 200
+    else:
+        logger.warning(f"[gate_auth] Failed login attempt for user '{username}'")
+        return jsonify({
+            "status": "error",
+            "authenticated": False,
+            "detail": "Sai tên đăng nhập hoặc mật khẩu quản trị Subsystem."
+        }), 401
+
+
+@app.route('/api/auth/gate-status', methods=['GET'])
+def gate_status():
+    """Return default gate user info for display."""
+    return jsonify({
+        "auth_required": True,
+        "default_user": GATE_ADMIN_USER
+    }), 200
+
+
+# =========================================================================
 # 🚀 LIVE BENCHMARK & OBSERVE TELEMETRY API & SOCKET HANDLERS
 # =========================================================================
 

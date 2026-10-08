@@ -672,6 +672,123 @@ function escapeHtml(text) {
 }
 
 // =========================================================================
+// 🔒 SUBSYSTEM ACCESS GATE AUTHENTICATION (PORT 5010 / BENCHMARK HUB)
+// =========================================================================
+
+function isBenchmarkGateAuthenticated() {
+    const user = sessionStorage.getItem("benchmark_gate_user");
+    return !!user;
+}
+
+function checkSubsystemGateOnLoad() {
+    const isPort5010 = (window.location.port === "5010");
+    const user = sessionStorage.getItem("benchmark_gate_user");
+
+    if (user) {
+        updateGateUserBadge(user);
+    }
+
+    if (isPort5010) {
+        // If accessed directly via port 5010, open Benchmark Hub card automatically
+        const card = document.getElementById('benchmarkCard');
+        if (card) card.style.display = 'block';
+
+        if (!user) {
+            // Must authenticate on port 5010
+            showBenchmarkGateOverlay();
+        }
+    }
+}
+
+function showBenchmarkGateOverlay() {
+    const overlay = document.getElementById('gateOverlay');
+    const err = document.getElementById('gateError');
+    if (err) err.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function hideBenchmarkGateOverlay() {
+    const overlay = document.getElementById('gateOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function updateGateUserBadge(user) {
+    const badge = document.getElementById('gateUserBadge');
+    const userEl = document.getElementById('loggedGateUser');
+    if (badge && userEl) {
+        userEl.textContent = user;
+        badge.style.display = 'inline-flex';
+    }
+}
+
+async function handleBenchmarkGateLogin(event) {
+    event.preventDefault();
+    const user = document.getElementById('gateUser').value.trim();
+    const pass = document.getElementById('gatePass').value.trim();
+    const gateError = document.getElementById('gateError');
+
+    try {
+        const res = await fetch('/api/auth/gate-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.authenticated) {
+            sessionStorage.setItem("benchmark_gate_user", user);
+            hideBenchmarkGateOverlay();
+            updateGateUserBadge(user);
+            const card = document.getElementById('benchmarkCard');
+            if (card) {
+                card.style.display = 'block';
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            appendTerminalLogLine('INFO', `Subsystem Gate Login verified for user '${user}'. Welcome!`);
+            fetchBenchmarkStatus();
+        } else {
+            if (gateError) {
+                gateError.textContent = `❌ ${data.detail || 'Sai tên đăng nhập hoặc mật khẩu!'}`;
+                gateError.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        // Fallback local verification
+        if (user === "thang.cd" && pass === "Thang@123") {
+            sessionStorage.setItem("benchmark_gate_user", user);
+            hideBenchmarkGateOverlay();
+            updateGateUserBadge(user);
+            const card = document.getElementById('benchmarkCard');
+            if (card) card.style.display = 'block';
+            appendTerminalLogLine('INFO', `Subsystem Gate Login verified for '${user}'.`);
+            fetchBenchmarkStatus();
+        } else {
+            if (gateError) {
+                gateError.textContent = "❌ Sai tên đăng nhập hoặc mật khẩu!";
+                gateError.style.display = 'block';
+            }
+        }
+    }
+}
+
+function cancelGateLogin() {
+    hideBenchmarkGateOverlay();
+    if (window.location.port === "5010") {
+        window.location.href = "http://localhost:5000";
+    }
+}
+
+function logoutBenchmarkGate() {
+    sessionStorage.removeItem("benchmark_gate_user");
+    const badge = document.getElementById('gateUserBadge');
+    if (badge) badge.style.display = 'none';
+    appendTerminalLogLine('WARN', 'Subsystem user logged out.');
+    if (window.location.port === "5010") {
+        showBenchmarkGateOverlay();
+    }
+}
+
+// =========================================================================
 // ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER (OPTION A + B)
 // =========================================================================
 
@@ -681,6 +798,13 @@ function toggleBenchmarkCard() {
     const card = document.getElementById('benchmarkCard');
     if (!card) return;
     const isHidden = (card.style.display === 'none' || card.style.display === '');
+    
+    // Require gate login if opening Benchmark Hub and not yet authenticated
+    if (isHidden && !isBenchmarkGateAuthenticated()) {
+        showBenchmarkGateOverlay();
+        return;
+    }
+
     card.style.display = isHidden ? 'block' : 'none';
     if (isHidden) {
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -728,6 +852,11 @@ function updateBenchmarkStatusUI(statusData) {
 }
 
 function startBenchmark() {
+    if (!isBenchmarkGateAuthenticated()) {
+        showBenchmarkGateOverlay();
+        return;
+    }
+
     const modeSelect = document.getElementById('benchmarkModeSelect');
     const datasetSelect = document.getElementById('benchmarkDatasetSelect');
     const mode = modeSelect ? modeSelect.value : 'quick';
@@ -855,6 +984,7 @@ socket.on('benchmark_error', (data) => {
 document.addEventListener('DOMContentLoaded', () => {
     switchLanguage(currentLang);
     fetchBenchmarkStatus();
+    checkSubsystemGateOnLoad();
 });
 
 console.log('Deepfake Detection Web App initialized with multi-language i18n & Live Benchmark Hub');

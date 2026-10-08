@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=5010 \
+    PORT=5000 \
     HF_HUB_ENABLE_HF_TRANSFER=0
 
 # Set working directory
@@ -34,12 +34,12 @@ COPY . /app
 # Create directory for uploads, cache and benchmark runs
 RUN mkdir -p /app/uploads /root/.cache/huggingface /app/runs/benchmarks
 
-# Expose Web Application Port
-EXPOSE 5010
+# Expose Web Application Ports (5000: Forensic App, 5010: Benchmark Hub)
+EXPOSE 5000 5010
 
 # Healthcheck to verify Flask Web Service status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:5010/api/status || exit 1
+    CMD curl -f http://localhost:5000/api/status || exit 1
 
 # Start Flask web server with SocketIO eventlet
 CMD ["python", "app.py"]

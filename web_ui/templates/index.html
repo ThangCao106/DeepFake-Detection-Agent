@@ -66,6 +66,10 @@
                             <span data-i18n="bench_title">Automated Benchmark & Live Forensic Telemetry</span>
                         </h3>
                         <span class="benchmark-badge idle" id="benchmarkStatusBadge">⚪ IDLE</span>
+                        <div id="gateUserBadge" style="display: none; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; color: #4338ca; background: #ede9fe; padding: 4px 10px; border-radius: 12px;">
+                            <span>👤 <strong id="loggedGateUser">thang.cd</strong></span>
+                            <button type="button" onclick="logoutBenchmarkGate()" style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:0.75rem; text-decoration:underline;">[Đăng xuất]</button>
+                        </div>
                     </div>
 
                     <div class="benchmark-actions">
@@ -322,8 +326,45 @@
                 <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
             </div>
         </div>
+    <!-- ========================================================= -->
+    <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (BENCHMARK HUB / PORT 5010) -->
+    <!-- ========================================================= -->
+    <div class="modal-backdrop" id="gateOverlay" style="display: none; z-index: 10000; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
+        <div class="modal-dialog" style="max-width: 440px; padding: 2.2rem; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.4); text-align: center; border: 1px solid #e0e7ff;">
+            <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">🔒</div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: #1e1b4b; margin-bottom: 0.3rem;">AI Forensic & Benchmark Subsystem</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.5;">
+                Vui lòng đăng nhập tài khoản hệ thống để truy cập Benchmark Hub, Telemetry Real-time & MLOps Engine (Port 5010).
+            </p>
+
+            <form id="benchmarkGateForm" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;" onsubmit="handleBenchmarkGateLogin(event)">
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 0.35rem;">Tên đăng nhập (Username):</label>
+                    <input type="text" id="gateUser" value="thang.cd" required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; outline: none; font-weight: 600;" />
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 0.35rem;">Mật khẩu (Password):</label>
+                    <input type="password" id="gatePass" placeholder="Nhập mật khẩu..." required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; outline: none;" />
+                </div>
+
+                <div id="gateError" style="display: none; color: #ef4444; font-size: 0.82rem; font-weight: 600; text-align: center; padding: 6px; background: #fef2f2; border-radius: 8px;">
+                    ❌ Sai tên đăng nhập hoặc mật khẩu! Vui lòng thử lại.
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>⚡ Xác Thực & Đăng Nhập</span>
+                </button>
+
+                <div style="text-align: center; margin-top: 0.2rem;">
+                    <button type="button" onclick="cancelGateLogin()" style="background: none; border: none; font-size: 0.8rem; color: #6366f1; text-decoration: underline; cursor: pointer; font-weight: 600;">
+                        ← Quay lại Giao Diện Giám Định Công Khai (Port 5000)
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.1"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.2"></script>
 </body>
 </html>
