@@ -38,7 +38,14 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'deepfake-detection-secret-key-2024'
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024  # 64MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024  # 250MB max file size
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({
+        'success': False,
+        'error': 'Dung lượng file vượt quá giới hạn cho phép (tối đa 250MB). Vui lòng chọn file nhỏ hơn.'
+    }), 413
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'mp3', 'wav'}

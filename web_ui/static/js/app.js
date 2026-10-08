@@ -347,16 +347,91 @@ function clearUpload() {
     sendBtn.disabled = true;
 }
 
+// Helper: Tối ưu hóa kích thước ảnh phía client (Client-side Image Optimization)
+// Giúp ảnh dung lượng lớn từ điện thoại (3MB - 15MB) tự động nén về < 1MB,
+// vượt qua giới hạn mặc định của Nginx mà không làm giảm độ chính xác nhận diện.
+async function optimizeImageIfNeeded(file) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    if (file.size <= 1.2 * 1024 * 1024) return file; // Dưới 1.2MB giữ nguyên bản gốc
+
+    return new Promise((resolve) => {
+        try {
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 1920; // Chuẩn Full HD / 2K cho Vision Transformers
+
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) {
+                                height = Math.round((height * maxDim) / width);
+                                width = maxDim;
+                            } else {
+                                width = Math.round((width * maxDim) / height);
+                                height = maxDim;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const optimizedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                console.log(`[Optimizer] Đã tối ưu ${file.name}: ${(file.size/1024/1024).toFixed(2)}MB -> ${(optimizedFile.size/1024/1024).toFixed(2)}MB`);
+                                resolve(optimizedFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', 0.88);
+                    } catch (canvasErr) {
+                        console.warn('[Optimizer Error]', canvasErr);
+                        resolve(file);
+                    }
+                };
+                img.onerror = () => resolve(file);
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(file);
+            reader.readAsDataURL(file);
+        } catch (err) {
+            resolve(file);
+        }
+    });
+}
+
 // ===== Analyze Media =====
 analyzeBtn.addEventListener('click', async () => {
     if (!uploadedFile && (!urlInput || !urlInput.value.trim())) return;
 
+    if (analysisTimeoutTimer) {
+        clearTimeout(analysisTimeoutTimer);
+        analysisTimeoutTimer = null;
+    }
+
     analyzeBtn.disabled = true;
     analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span> Uploading...';
 
+    // Tự động tối ưu ảnh dung lượng lớn phía client nếu cần
+    let fileToSend = uploadedFile;
+    if (fileToSend && fileToSend.type && fileToSend.type.startsWith('image/') && fileToSend.size > 1.2 * 1024 * 1024) {
+        showAgentStatus(currentLang === 'vi' ? 'Đang tối ưu dung lượng ảnh...' : 'Optimizing image payload...');
+        fileToSend = await optimizeImageIfNeeded(fileToSend);
+        hideAgentStatus();
+    }
+
     const formData = new FormData();
-    if (uploadedFile) {
-        formData.append('file', uploadedFile);
+    if (fileToSend) {
+        formData.append('file', fileToSend);
     }
 
     try {
@@ -365,12 +440,17 @@ analyzeBtn.addEventListener('click', async () => {
             body: formData
         });
 
-        let data;
+        let data = null;
         const responseText = await response.text();
         try {
             data = JSON.parse(responseText);
         } catch (jsonErr) {
-            throw new Error(`Server error (${response.status}): ${responseText.substring(0, 120)}...`);
+            if (response.status === 413) {
+                throw new Error(currentLang === 'vi' 
+                    ? 'Dung lượng file quá lớn (413 Request Entity Too Large). Vui lòng thêm "client_max_body_size 200M;" vào Nginx hoặc chọn file nhỏ hơn.' 
+                    : 'File payload too large (413 Request Entity Too Large). Please configure "client_max_body_size 200M;" on Nginx or use a smaller file.');
+            }
+            throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100)}...`);
         }
 
         if (response.ok && data.success) {
@@ -388,7 +468,6 @@ analyzeBtn.addEventListener('click', async () => {
             });
 
             // Option C: Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
-            if (analysisTimeoutTimer) clearTimeout(analysisTimeoutTimer);
             analysisTimeoutTimer = setTimeout(async () => {
                 if (!analysisComplete && uploadedFilePath) {
                     console.warn('[Resilience Guard] WebSocket took longer than 12s. Initiating secure REST fallback...');
@@ -403,8 +482,18 @@ analyzeBtn.addEventListener('click', async () => {
                                 language: currentLang
                             })
                         });
-                        const resData = await res.json();
-                        if (resData.success) {
+                        
+                        const resText = await res.text();
+                        let resData = null;
+                        try {
+                            resData = JSON.parse(resText);
+                        } catch (parseErr) {
+                            throw new Error(res.status === 413 
+                                ? 'Dung lượng yêu cầu quá lớn (413)' 
+                                : `Phản hồi máy chủ (${res.status}) không hợp lệ`);
+                        }
+
+                        if (resData && resData.success) {
                             if (resData.detection_result) displayResults(resData.detection_result);
                             if (resData.explanation) displayExplanation(resData.explanation);
                             hideAgentStatus();
@@ -412,7 +501,7 @@ analyzeBtn.addEventListener('click', async () => {
                             chatInput.disabled = false;
                             sendBtn.disabled = false;
                         } else {
-                            throw new Error(resData.error || 'REST analysis failed');
+                            throw new Error((resData && resData.error) || 'REST analysis failed');
                         }
                     } catch (fallbackErr) {
                         console.error('[Resilience Guard Error]:', fallbackErr);
@@ -424,13 +513,18 @@ analyzeBtn.addEventListener('click', async () => {
                 }
             }, 12000);
         } else {
-            throw new Error(data.error || `Upload failed with status ${response.status}`);
+            const errMsg = (data && data.error) || (response.status === 413 ? 'Dung lượng file vượt quá giới hạn (413)' : `Upload failed with status ${response.status}`);
+            throw new Error(errMsg);
         }
     } catch (error) {
         console.error('Upload error:', error);
         addSystemMessage(`Upload failed: ${error.message}`, 'error');
         analyzeBtn.disabled = false;
         analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
+        if (analysisTimeoutTimer) {
+            clearTimeout(analysisTimeoutTimer);
+            analysisTimeoutTimer = null;
+        }
     }
 });
 
