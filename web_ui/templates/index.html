@@ -50,6 +50,7 @@
     <main class="main-content">
         <div class="container">
             
+            {% if not is_benchmark_mode %}
             <!-- Hero Top Header Section (Centered Description at Top) -->
             <section class="hero-header">
                 <h2 class="hero-title" data-i18n="hero_title">Detect AI-Generated Images with Intelligence</h2>
@@ -61,11 +62,14 @@
                         <p data-i18n="hero_feature">Upload images, video or audio to detect AI-generated or deepfake content using best-in-class models.</p>
                     </div>
                 </div>
+            </section>
+            {% endif %}
+
             {% if is_benchmark_mode %}
             <!-- ========================================================= -->
             <!-- ⚡ BENCHMARK HUB & LIVE RUNNING LOG TERMINAL (PORT 5010) -->
             <!-- ========================================================= -->
-            <section class="card benchmark-card" id="benchmarkCard" style="display: none; margin-bottom: 25px;">
+            <section class="card benchmark-card" id="benchmarkCard" style="display: block; margin-bottom: 25px;">
                 <div class="benchmark-header">
                     <div class="benchmark-title-group">
                         <h3 class="card-title" style="margin: 0;">
@@ -147,6 +151,7 @@
             </section>
             {% endif %}
 
+            {% if not is_benchmark_mode %}
             <!-- Main Side-by-Side Grid Layout (Left: Upload Media | Right: Chat with Agent) -->
             <div class="content-grid">
                 
@@ -315,6 +320,7 @@
                     <span id="agentStatusText">Processing...</span>
                 </div>
             </section>
+            {% endif %}
         </div>
     </main>
 
@@ -375,6 +381,6 @@
     </div>
     {% endif %}
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.4"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.5"></script>
 </body>
 </html>
