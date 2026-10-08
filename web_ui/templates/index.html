@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -327,44 +328,44 @@
             </div>
         </div>
     <!-- ========================================================= -->
-    <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (BENCHMARK HUB / PORT 5010) -->
+    <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (PIXEL-PERFECT FROM OBSAGENT) -->
     <!-- ========================================================= -->
-    <div class="modal-backdrop" id="gateOverlay" style="display: none; z-index: 10000; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
-        <div class="modal-dialog" style="max-width: 440px; padding: 2.2rem; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.4); text-align: center; border: 1px solid #e0e7ff;">
-            <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">🔒</div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: #1e1b4b; margin-bottom: 0.3rem;">AI Forensic & Benchmark Subsystem</h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.5;">
-                Vui lòng đăng nhập tài khoản hệ thống để truy cập Benchmark Hub, Telemetry Real-time & MLOps Engine (Port 5010).
+    <div class="modal-overlay" id="gateOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); justify-content: center; align-items: center; font-family: 'Outfit', sans-serif;">
+        <div class="modal" style="width: 90%; max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center; border-radius: 12px; background: #ffffff; box-sizing: border-box; font-family: 'Outfit', sans-serif;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; line-height: 1;">🔐</div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">AI Deepfake Subsystem</h2>
+            <p style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem; line-height: 1.4; font-family: 'Outfit', sans-serif;">
+                Vui lòng đăng nhập tài khoản hệ thống để truy cập Deepfake Detection Agent & Claude Subsystem.
             </p>
 
             <form id="benchmarkGateForm" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;" onsubmit="handleBenchmarkGateLogin(event)">
                 <div>
-                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 0.35rem;">Tên đăng nhập (Username):</label>
-                    <input type="text" id="gateUser" value="thang.cd" required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; outline: none; font-weight: 600;" />
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Tên đăng nhập (Username):</label>
+                    <input type="text" id="gateUser" value="thang.cd" required style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
                 </div>
 
                 <div>
-                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 0.35rem;">Mật khẩu (Password):</label>
-                    <input type="password" id="gatePass" placeholder="Nhập mật khẩu..." required style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; outline: none;" />
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Mật khẩu (Password):</label>
+                    <input type="password" id="gatePass" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
                 </div>
 
-                <div id="gateError" style="display: none; color: #ef4444; font-size: 0.82rem; font-weight: 600; text-align: center; padding: 6px; background: #fef2f2; border-radius: 8px;">
-                    ❌ Sai tên đăng nhập hoặc mật khẩu! Vui lòng thử lại.
+                <div id="gateError" style="display: none; font-size: 0.85rem; color: #ff1744; font-weight: 600; text-align: center; font-family: 'Outfit', sans-serif;">
+                    ❌ Tên đăng nhập hoặc mật khẩu không chính xác!
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span>⚡ Xác Thực & Đăng Nhập</span>
+                <button type="submit" id="gateSubmitBtn" style="margin-top: 0.5rem; background: #7c4dff; color: #fff; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Outfit', sans-serif;" onmouseover="this.style.background='#651fff'" onmouseout="this.style.background='#7c4dff'">
+                    🔑 Đăng nhập Subsystem
                 </button>
 
-                <div style="text-align: center; margin-top: 0.2rem;">
-                    <button type="button" onclick="cancelGateLogin()" style="background: none; border: none; font-size: 0.8rem; color: #6366f1; text-decoration: underline; cursor: pointer; font-weight: 600;">
-                        ← Quay lại Giao Diện Giám Định Công Khai (Port 5000)
+                <div id="gateCancelBox" style="text-align: center; margin-top: 0.25rem;">
+                    <button type="button" onclick="cancelGateLogin()" style="background: none; border: none; font-size: 0.8rem; color: #7c4dff; text-decoration: underline; cursor: pointer; font-weight: 500; font-family: 'Outfit', sans-serif;">
+                        ← Quay lại Giao Diện Giám Định (Port 5000)
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.2"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=2.3"></script>
 </body>
 </html>

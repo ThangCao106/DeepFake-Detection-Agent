@@ -705,6 +705,15 @@ function showBenchmarkGateOverlay() {
     const err = document.getElementById('gateError');
     if (err) err.style.display = 'none';
     if (overlay) overlay.style.display = 'flex';
+    const cancelBox = document.getElementById('gateCancelBox');
+    if (cancelBox) {
+        cancelBox.style.display = (window.location.port === "5010") ? "none" : "block";
+    }
+    const passInput = document.getElementById('gatePass');
+    if (passInput) {
+        passInput.value = '';
+        setTimeout(() => passInput.focus(), 100);
+    }
 }
 
 function hideBenchmarkGateOverlay() {
@@ -726,6 +735,12 @@ async function handleBenchmarkGateLogin(event) {
     const user = document.getElementById('gateUser').value.trim();
     const pass = document.getElementById('gatePass').value.trim();
     const gateError = document.getElementById('gateError');
+    const submitBtn = document.getElementById('gateSubmitBtn');
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Đang xác thực...';
+    }
 
     try {
         const res = await fetch('/api/auth/gate-login', {
@@ -748,7 +763,7 @@ async function handleBenchmarkGateLogin(event) {
             fetchBenchmarkStatus();
         } else {
             if (gateError) {
-                gateError.textContent = `❌ ${data.detail || 'Sai tên đăng nhập hoặc mật khẩu!'}`;
+                gateError.textContent = `❌ ${data.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác!'}`;
                 gateError.style.display = 'block';
             }
         }
@@ -764,9 +779,14 @@ async function handleBenchmarkGateLogin(event) {
             fetchBenchmarkStatus();
         } else {
             if (gateError) {
-                gateError.textContent = "❌ Sai tên đăng nhập hoặc mật khẩu!";
+                gateError.textContent = "❌ Tên đăng nhập hoặc mật khẩu không chính xác!";
                 gateError.style.display = 'block';
             }
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '🔑 Đăng nhập Subsystem';
         }
     }
 }
