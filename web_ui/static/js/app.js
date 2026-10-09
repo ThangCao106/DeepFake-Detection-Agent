@@ -945,9 +945,14 @@ function fetchBenchmarkStatus() {
 }
 
 function updateBenchmarkStatusUI(statusData) {
+    if (!statusData) return;
     const badge = document.getElementById('benchmarkStatusBadge');
     const startBtn = document.getElementById('startBenchBtn');
     const stopBtn = document.getElementById('stopBenchBtn');
+    const progVal = document.getElementById('benchProgressVal');
+    const progFill = document.getElementById('benchProgressFill');
+    const accEl = document.getElementById('benchAccVal');
+    const latEl = document.getElementById('benchLatencyVal');
     
     if (statusData.is_running) {
         benchmarkIsRunning = true;
@@ -967,17 +972,26 @@ function updateBenchmarkStatusUI(statusData) {
         if (stopBtn) stopBtn.disabled = true;
     }
 
-    if (statusData.latest_summary) {
+    // Cập nhật live metrics từ worker progress
+    if (statusData.progress) {
+        const p = statusData.progress;
+        if (progVal) progVal.textContent = `${p.step} / ${p.total} (${p.progress_pct}%)`;
+        if (progFill) progFill.style.width = `${p.progress_pct}%`;
+        if (accEl && p.running_acc !== undefined) accEl.textContent = `${p.running_acc}%`;
+        if (latEl && p.running_latency_ms !== undefined) latEl.textContent = `${p.running_latency_ms} ms`;
+    } else if (statusData.latest_summary) {
         const sum = statusData.latest_summary;
-        const accEl = document.getElementById('benchAccVal');
-        const latEl = document.getElementById('benchLatencyVal');
+        if (progVal) progVal.textContent = `${sum.total_samples} / ${sum.total_samples} (100%)`;
+        if (progFill) progFill.style.width = `100%`;
         if (accEl) accEl.textContent = `${sum.accuracy_pct}%`;
         if (latEl) latEl.textContent = `${sum.avg_latency_ms} ms`;
     }
 }
 
 let benchmarkPollingTimer = null;
-let lastKnownLogIndex = 0;
+let seenLogKeys = new Set();
+let pollConsecutiveIdleCount = 0;
+let pollStartTime = 0;
 
 function startBenchmark() {
     // Tự động gán quyền nếu đang mở trực tiếp trên Benchmark Hub Subsystem
@@ -998,6 +1012,9 @@ function startBenchmark() {
     if (startBtn) startBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = false;
     updateBenchmarkStatusUI({ is_running: true });
+
+    // Kích hoạt ngay polling fallback chạy song song để không bao giờ bỏ lỡ log đầu tiên
+    startBenchmarkPollingFallback();
 
     // Kênh 1: Gửi qua WebSocket Socket.IO
     try {
@@ -1021,12 +1038,10 @@ function startBenchmark() {
         } else if (data.status === 'error') {
             appendTerminalLogLine('WARN', `Thông báo máy chủ: ${data.message || 'Tiến trình đang hoạt động'}`);
         }
-        startBenchmarkPollingFallback();
     })
     .catch(err => {
         console.error('REST benchmark start error:', err);
         appendTerminalLogLine('WARN', `Đang kết nối worker qua kênh dự phòng... (${err.message})`);
-        startBenchmarkPollingFallback();
     });
 }
 
@@ -1053,34 +1068,46 @@ function stopBenchmark() {
 
 function startBenchmarkPollingFallback() {
     if (benchmarkPollingTimer) clearInterval(benchmarkPollingTimer);
-    lastKnownLogIndex = 0;
+    pollConsecutiveIdleCount = 0;
+    pollStartTime = Date.now();
 
-    benchmarkPollingTimer = setInterval(() => {
+    const pollCycle = () => {
         // 1. Poll trạng thái và chỉ số (Accuracy, Latency, Progress)
         fetch('/api/benchmark/status')
             .then(res => res.json())
             .then(statusData => {
                 updateBenchmarkStatusUI(statusData);
-                if (!statusData.is_running && benchmarkIsRunning) {
-                    stopBenchmarkPollingFallback();
+                if (!statusData.is_running) {
+                    pollConsecutiveIdleCount++;
+                    // Chỉ dừng polling nếu đã qua ít nhất 8 giây và 4 lần liên tiếp máy chủ báo IDLE
+                    if (pollConsecutiveIdleCount >= 4 && (Date.now() - pollStartTime > 8000)) {
+                        stopBenchmarkPollingFallback();
+                    }
+                } else {
+                    pollConsecutiveIdleCount = 0;
                 }
             })
             .catch(err => console.debug('Status poll error:', err));
 
         // 2. Poll logs thực thi gần nhất để đẩy vào Terminal
-        fetch('/api/benchmark/logs?limit=50')
+        fetch('/api/benchmark/logs?limit=100')
             .then(res => res.json())
             .then(logData => {
                 if (logData.logs && logData.logs.length > 0) {
-                    const newLogs = logData.logs.slice(lastKnownLogIndex);
-                    newLogs.forEach(entry => {
-                        appendTerminalLogLine(entry.level, entry.message, entry.timestamp);
+                    logData.logs.forEach(entry => {
+                        const key = `${entry.timestamp}_${entry.message}`;
+                        if (!seenLogKeys.has(key)) {
+                            seenLogKeys.add(key);
+                            appendTerminalLogLine(entry.level, entry.message, entry.timestamp);
+                        }
                     });
-                    lastKnownLogIndex = logData.logs.length;
                 }
             })
             .catch(err => console.debug('Log poll error:', err));
-    }, 1200);
+    };
+
+    pollCycle();
+    benchmarkPollingTimer = setInterval(pollCycle, 1000);
 }
 
 function stopBenchmarkPollingFallback() {
@@ -1091,6 +1118,7 @@ function stopBenchmarkPollingFallback() {
 }
 
 function clearTerminalLogs() {
+    seenLogKeys.clear();
     const termBody = document.getElementById('terminalLogBody');
     if (termBody) {
         termBody.innerHTML = '<div class="terminal-line comment"># Terminal cleared. Waiting for events...</div>';

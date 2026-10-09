@@ -20,9 +20,11 @@ DEFAULT_SITEMAP_URL = "https://detection.dtpsoft.vn/sitemap.xml"
 
 def ping_google_sitemap(sitemap_url: str = DEFAULT_SITEMAP_URL) -> dict:
     """
-    Send automated Ping notification to Google Search Console to crawl updated sitemap.xml.
-    Returns status dict.
+    Google deprecated sitemap pings in late 2023. Skip blocking HTTP call unless explicitly enabled.
     """
+    if os.environ.get("ENABLE_SITEMAP_PING", "0") != "1":
+        return {"status": "SKIPPED", "message": "Google sitemap ping is deprecated"}
+
     encoded_url = urllib.parse.quote(sitemap_url, safe="")
     ping_endpoint = f"https://www.google.com/ping?sitemap={encoded_url}"
 

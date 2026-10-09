@@ -24,8 +24,11 @@ from werkzeug.utils import secure_filename
 import sys
 from pathlib import Path
 web_ui_dir = str(Path(__file__).resolve().parent)
+project_root = str(Path(__file__).resolve().parent.parent)
 if web_ui_dir not in sys.path:
     sys.path.insert(0, web_ui_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from agent_system import DeepfakeDetectionOrchestrator
 from config import Config
