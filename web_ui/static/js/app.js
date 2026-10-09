@@ -914,10 +914,10 @@ function logoutBenchmarkGate() {
 }
 
 // =========================================================================
-// ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER (OPTION A + B)
+// ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER (OPTION A)
 // =========================================================================
 
-let benchmarkIsRunning = false;
+window.benchmarkIsRunning = false;
 
 function toggleBenchmarkCard() {
     const card = document.getElementById('benchmarkCard');
@@ -959,7 +959,7 @@ function updateBenchmarkStatusUI(statusData) {
     const latEl = document.getElementById('benchLatencyVal');
     
     if (statusData.is_running) {
-        benchmarkIsRunning = true;
+        window.benchmarkIsRunning = true;
         if (badge) {
             badge.className = 'benchmark-badge running';
             badge.textContent = '🟢 RUNNING';
@@ -967,7 +967,7 @@ function updateBenchmarkStatusUI(statusData) {
         if (startBtn) startBtn.disabled = true;
         if (stopBtn) stopBtn.disabled = false;
     } else {
-        benchmarkIsRunning = false;
+        window.benchmarkIsRunning = false;
         if (badge) {
             badge.className = 'benchmark-badge idle';
             badge.textContent = statusData.status === 'COMPLETED' ? '✅ COMPLETED' : '⚪ IDLE';
@@ -992,10 +992,10 @@ function updateBenchmarkStatusUI(statusData) {
     }
 }
 
-let benchmarkPollingTimer = null;
-let seenLogKeys = new Set();
-let pollConsecutiveIdleCount = 0;
-let pollStartTime = 0;
+var benchmarkPollingTimer = null;
+var seenLogKeys = new Set();
+var pollConsecutiveIdleCount = 0;
+var pollStartTime = 0;
 
 function startBenchmark() {
     try {
