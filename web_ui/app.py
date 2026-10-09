@@ -95,10 +95,12 @@ def init_orchestrator():
 
 # Routes
 @app.route('/')
+@app.route('/benchmark')
+@app.route('/benchmark/')
 def index():
     """Serve the web interface with environment-aware port separation."""
     current_port = os.environ.get("PORT", "5000")
-    is_benchmark_mode = (str(current_port) == "5010")
+    is_benchmark_mode = (str(current_port) == "5010") or request.path.startswith("/benchmark")
     return render_template('index.html', is_benchmark_mode=is_benchmark_mode, current_port=current_port)
 
 
@@ -623,6 +625,7 @@ def gate_status():
 # =========================================================================
 
 @app.route('/api/benchmark/status', methods=['GET'])
+@app.route('/benchmark/api/benchmark/status', methods=['GET'])
 def get_benchmark_status():
     """Return status of current or last benchmark job."""
     if not benchmark_runner:
@@ -631,6 +634,7 @@ def get_benchmark_status():
 
 
 @app.route('/api/benchmark/logs', methods=['GET'])
+@app.route('/benchmark/api/benchmark/logs', methods=['GET'])
 def get_benchmark_logs():
     """Return recent execution logs."""
     limit = request.args.get('limit', 200, type=int)
@@ -640,6 +644,7 @@ def get_benchmark_logs():
 
 
 @app.route('/api/benchmark/start', methods=['POST'])
+@app.route('/benchmark/api/benchmark/start', methods=['POST'])
 def start_benchmark_api():
     """Trigger a new benchmark run."""
     if not benchmark_runner:
@@ -652,6 +657,7 @@ def start_benchmark_api():
 
 
 @app.route('/api/benchmark/stop', methods=['POST'])
+@app.route('/benchmark/api/benchmark/stop', methods=['POST'])
 def stop_benchmark_api():
     """Gracefully cancel current running benchmark job."""
     if not benchmark_runner:
@@ -661,6 +667,7 @@ def stop_benchmark_api():
 
 
 @app.route('/api/benchmark/latest_report', methods=['GET'])
+@app.route('/benchmark/api/benchmark/latest_report', methods=['GET'])
 def get_latest_benchmark_report():
     """Fetch content of the latest generated benchmark markdown report."""
     try:

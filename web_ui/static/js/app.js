@@ -937,8 +937,12 @@ function toggleBenchmarkCard() {
     }
 }
 
+function getBenchmarkApiBase() {
+    return window.location.pathname.startsWith('/benchmark') ? '/benchmark' : '';
+}
+
 function fetchBenchmarkStatus() {
-    fetch('/api/benchmark/status')
+    fetch(`${getBenchmarkApiBase()}/api/benchmark/status`)
         .then(res => res.json())
         .then(data => updateBenchmarkStatusUI(data))
         .catch(err => console.error('Failed to fetch benchmark status:', err));
@@ -1025,8 +1029,8 @@ function startBenchmark() {
         console.warn('Socket emit exception:', err);
     }
 
-    // Kênh 2: Gửi qua REST API HTTP POST (Đảm bảo 100% hoạt động qua mọi reverse proxy / Docker mapping)
-    fetch('/api/benchmark/start', {
+    // Kênh 2: Gửi qua REST API HTTP POST (Đảm bảo 100% hoạt động qua mọi reverse proxy / Docker mapping / subpath)
+    fetch(`${getBenchmarkApiBase()}/api/benchmark/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: mode, dataset: dataset })
@@ -1056,7 +1060,7 @@ function stopBenchmark() {
         }
     } catch (e) {}
 
-    fetch('/api/benchmark/stop', { method: 'POST' })
+    fetch(`${getBenchmarkApiBase()}/api/benchmark/stop`, { method: 'POST' })
         .then(res => res.json())
         .then(data => {
             appendTerminalLogLine('WARN', `Phản hồi dừng: ${data.message}`);
@@ -1073,7 +1077,7 @@ function startBenchmarkPollingFallback() {
 
     const pollCycle = () => {
         // 1. Poll trạng thái và chỉ số (Accuracy, Latency, Progress)
-        fetch('/api/benchmark/status')
+        fetch(`${getBenchmarkApiBase()}/api/benchmark/status`)
             .then(res => res.json())
             .then(statusData => {
                 updateBenchmarkStatusUI(statusData);
@@ -1090,7 +1094,7 @@ function startBenchmarkPollingFallback() {
             .catch(err => console.debug('Status poll error:', err));
 
         // 2. Poll logs thực thi gần nhất để đẩy vào Terminal
-        fetch('/api/benchmark/logs?limit=100')
+        fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=100`)
             .then(res => res.json())
             .then(logData => {
                 if (logData.logs && logData.logs.length > 0) {
@@ -1160,7 +1164,7 @@ function openReportModal() {
     backdrop.style.display = 'flex';
     body.innerHTML = '<div style="text-align: center; padding: 25px; color: #64748b;">Loading report data...</div>';
 
-    fetch('/api/benchmark/latest_report')
+    fetch(`${getBenchmarkApiBase()}/api/benchmark/latest_report`)
         .then(res => {
             if (!res.ok) throw new Error('No report generated yet');
             return res.json();
