@@ -416,21 +416,16 @@ class BenchmarkJobRunner:
             # Ghi log mở đầu ngay lập tức để frontend polling luôn đọc được log đầu tiên
             self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận yêu cầu Benchmark Job [{job_id}] | Mode: {mode.upper()} | Dataset: '{dataset_name}'")
 
-            # Launch background worker
+            # Launch background worker directly via daemon Thread
             try:
-                if self.socketio_instance and hasattr(self.socketio_instance, "start_background_task"):
-                    self.worker_thread = self.socketio_instance.start_background_task(
-                        self._run_benchmark_worker, mode, dataset_name
-                    )
-                else:
-                    self.worker_thread = threading.Thread(
-                        target=self._run_benchmark_worker,
-                        args=(mode, dataset_name),
-                        daemon=True,
-                        name=f"Worker-{job_id}"
-                    )
-                    self.worker_thread.start()
-                logger.info(f"✅ [RUNNER-DEBUG] Background worker đã được kích hoạt thành công cho Job {job_id}")
+                self.worker_thread = threading.Thread(
+                    target=self._run_benchmark_worker,
+                    args=(mode, dataset_name),
+                    daemon=True,
+                    name=f"Worker-{job_id}"
+                )
+                self.worker_thread.start()
+                logger.info(f"✅ [RUNNER-DEBUG] Background worker đã được kích hoạt thành công (Thread: {self.worker_thread.name}) cho Job {job_id}")
             except Exception as e:
                 logger.error(f"❌ [RUNNER-DEBUG] Không thể kích hoạt worker: {e}", exc_info=True)
                 self.is_running = False
