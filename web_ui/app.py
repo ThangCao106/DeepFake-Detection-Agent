@@ -677,10 +677,11 @@ def start_benchmark_api():
         logger.error("❌ [BENCHMARK-START-DEBUG] benchmark_runner is None!")
         return jsonify({"status": "error", "message": "Benchmark runner not loaded"}), 500
     data = request.get_json(silent=True) or {}
-    mode = data.get("mode", "quick")
+    mode = data.get("mode", "50")
     dataset = data.get("dataset", "Synthetic & Curated")
-    logger.info(f"⚙️ [BENCHMARK-START-DEBUG] Invoking start_job: mode='{mode}', dataset='{dataset}'")
-    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset)
+    sample_count = data.get("sample_count", None)
+    logger.info(f"⚙️ [BENCHMARK-START-DEBUG] Invoking start_job: mode='{mode}', count='{sample_count}', dataset='{dataset}'")
+    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset, sample_count=sample_count)
     logger.info(f"✅ [BENCHMARK-START-DEBUG] start_job returned: {res}")
     return jsonify(res), 200
 
@@ -747,9 +748,10 @@ def handle_socket_benchmark_start(data):
     if not benchmark_runner:
         emit('benchmark_error', {'message': 'Benchmark runner is not available'})
         return
-    mode = (data or {}).get("mode", "quick")
+    mode = (data or {}).get("mode", "50")
     dataset = (data or {}).get("dataset", "Synthetic & Curated")
-    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset)
+    sample_count = (data or {}).get("sample_count", None)
+    res = benchmark_runner.start_job(mode=mode, dataset_name=dataset, sample_count=sample_count)
     emit('benchmark_started', res)
 
 

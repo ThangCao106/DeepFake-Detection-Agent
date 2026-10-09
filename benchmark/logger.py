@@ -639,9 +639,14 @@ class BenchmarkJobRunner:
             except Exception as e:
                 logger.debug(f"Socket emit failed: {e}")
 
-    def start_job(self, mode: str = "quick", dataset_name: str = "Synthetic & Curated") -> Dict[str, Any]:
-        """Start benchmark run in background thread."""
-        logger.info(f"⚡ [RUNNER-DEBUG] start_job requested: mode='{mode}', dataset='{dataset_name}'")
+    def start_job(
+        self,
+        mode: str = "50",
+        dataset_name: str = "Synthetic & Curated",
+        sample_count: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """Start benchmark run in background thread with flexible sample count."""
+        logger.info(f"⚡ [RUNNER-DEBUG] start_job requested: mode='{mode}', count='{sample_count}', dataset='{dataset_name}'")
         with self._lock:
             # Check zombie task state: if marked is_running but worker thread/greenthread is dead
             if self.is_running:
@@ -666,21 +671,48 @@ class BenchmarkJobRunner:
             self.cancel_requested = False
             self.is_running = True
             
-            job_id = f"bench_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{mode}"
+            # Determine clean tag for job_id and job_name
+            is_all = (str(sample_count).lower() == "all" or str(mode).lower() == "all")
+            if is_all:
+                tag = "all"
+                job_name_label = "ALL SAMPLES"
+            elif sample_count is not None and str(sample_count).isdigit():
+                count_val = max(1, int(sample_count))
+                tag = f"{count_val}"
+                job_name_label = f"{count_val} SAMPLES"
+            elif str(mode).startswith("custom_") and str(mode)[7:].isdigit():
+                count_val = max(1, int(str(mode)[7:]))
+                tag = f"{count_val}"
+                job_name_label = f"{count_val} SAMPLES"
+            elif str(mode).isdigit():
+                count_val = max(1, int(mode))
+                tag = f"{count_val}"
+                job_name_label = f"{count_val} SAMPLES"
+            elif str(mode).lower() == "quick":
+                tag = "10"
+                job_name_label = "10 SAMPLES"
+            elif str(mode).lower() == "standard":
+                tag = "50"
+                job_name_label = "50 SAMPLES"
+            else:
+                tag = str(mode)
+                job_name_label = f"{mode.upper()}"
+
+            job_id = f"bench_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{tag}"
             self.current_logger = BenchmarkLogger(
                 job_id=job_id,
-                job_name=f"Benchmark ({mode.upper()}) - {dataset_name}",
+                job_name=f"Benchmark ({job_name_label}) - {dataset_name}",
                 emit_callback=self.emit_event
             )
             
             # Ghi log mở đầu ngay lập tức để frontend polling luôn đọc được log đầu tiên
-            self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận yêu cầu Benchmark Job [{job_id}] | Mode: {mode.upper()} | Dataset: '{dataset_name}'")
+            self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận Benchmark Job [{job_id}] | Quy mô: {job_name_label} | Dataset: '{dataset_name}'")
 
             # Launch background worker directly via daemon Thread
             try:
                 self.worker_thread = threading.Thread(
                     target=self._run_benchmark_worker,
-                    args=(mode, dataset_name),
+                    args=(mode, dataset_name, sample_count),
                     daemon=True,
                     name=f"Worker-{job_id}"
                 )
@@ -695,6 +727,7 @@ class BenchmarkJobRunner:
                 "status": "started",
                 "job_id": job_id,
                 "mode": mode,
+                "sample_count": sample_count,
                 "dataset": dataset_name,
                 "message": f"Benchmark job [{job_id}] started successfully."
             }
@@ -740,7 +773,12 @@ class BenchmarkJobRunner:
                 return self.current_logger.recent_logs[-limit:]
             return []
 
-    def _run_benchmark_worker(self, mode: str, dataset_name: str):
+    def _run_benchmark_worker(
+        self,
+        mode: str,
+        dataset_name: str,
+        sample_count: Optional[Any] = None
+    ):
         """Internal worker executing inference over samples with safety wrapper."""
         b_logger = self.current_logger
         if not b_logger:
@@ -768,11 +806,11 @@ class BenchmarkJobRunner:
             else:
                 b_logger.log("INFO", "⚡ Sử dụng mô hình Detector đã nạp sẵn trong bộ nhớ đệm (Warm-cached).")
 
-            # Prepare test samples according to mode
-            b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử cho mode '{mode.upper()}'...")
-            samples = self._load_samples_for_mode(mode, b_logger)
+            # Prepare test samples according to mode and sample_count
+            b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử (Quy mô yêu cầu: mode='{mode}', count='{sample_count}')...")
+            samples = self._load_samples_for_mode(mode, b_logger, sample_count=sample_count)
             total_samples = len(samples)
-            b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu. Bắt đầu quá trình suy luận phân loại...")
+            b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu thực nghiệm. Bắt đầu quá trình suy luận phân loại...")
 
             step = 0
             for item in samples:
@@ -853,9 +891,31 @@ class BenchmarkJobRunner:
             self.is_running = False
             logger.info("🏁 [RUNNER-DEBUG] Worker hoàn tất. Đã giải phóng cờ is_running = False.")
 
-    def _load_samples_for_mode(self, mode: str, b_logger: BenchmarkLogger) -> List[Dict[str, Any]]:
-        """Collect test media items based on selected mode."""
+    def _load_samples_for_mode(
+        self,
+        mode: str,
+        b_logger: BenchmarkLogger,
+        sample_count: Optional[Any] = None
+    ) -> List[Dict[str, Any]]:
+        """Collect test media items based on selected mode and sample count."""
         samples: List[Dict[str, Any]] = []
+
+        # Determine target sample count
+        is_all = (str(sample_count).lower() == "all" or str(mode).lower() == "all")
+        target_count: Optional[int] = None
+        if not is_all:
+            if sample_count is not None and str(sample_count).isdigit():
+                target_count = max(1, int(sample_count))
+            elif str(mode).startswith("custom_") and str(mode)[7:].isdigit():
+                target_count = max(1, int(str(mode)[7:]))
+            elif str(mode).isdigit():
+                target_count = max(1, int(mode))
+            elif str(mode).lower() == "quick":
+                target_count = 10
+            elif str(mode).lower() == "standard":
+                target_count = 50
+            else:
+                target_count = 50
 
         # 1. Look for existing test manifest
         test_manifest_path = PROJECT_ROOT / "dataset_pipeline" / "source_split" / "test_manifest.json"
@@ -872,31 +932,32 @@ class BenchmarkJobRunner:
                 b_logger.log("WARN", f"Error reading test_manifest: {e}")
 
         # 2. Look in static or uploads folder for existing images
-        if len(samples) < 10:
+        min_required = target_count if target_count is not None else 20
+        if len(samples) < min_required:
             for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
                 for p in glob.glob(str(PROJECT_ROOT / "web_ui" / "uploads" / ext)):
                     samples.append({"filepath": p, "label": "REAL", "dataset": "WebUI_Uploads"})
                 for p in glob.glob(str(PROJECT_ROOT / "web_ui" / "static" / "images" / ext)):
                     samples.append({"filepath": p, "label": "REAL", "dataset": "Static_Assets"})
 
-        # 3. If still empty, generate synthetic benchmark evaluation images
-        target_count = 10 if mode == "quick" else (50 if mode == "standard" else 20)
-        if len(samples) < target_count:
+        # 3. If still less than needed, generate synthetic benchmark evaluation images
+        needed_count = target_count if target_count is not None else max(len(samples), 20)
+        if len(samples) < needed_count:
             from PIL import Image
             synth_dir = PROJECT_ROOT / "runs" / "benchmarks" / "synth_cache"
             synth_dir.mkdir(parents=True, exist_ok=True)
             
-            for i in range(1, target_count + 1):
-                img_path = synth_dir / f"synth_sample_{i:03d}.jpg"
+            for i in range(1, needed_count + 1):
+                img_path = synth_dir / f"synth_sample_{i:04d}.jpg"
                 is_fake = (i % 2 == 1)
                 label = "FAKE" if is_fake else "REAL"
                 
                 if not img_path.exists():
                     try:
                         # Vary color and patterns to simulate realistic test textures
-                        r = (50 + i * 15) % 255
-                        g = (100 + i * 25) % 255
-                        b = (180 + i * 10) % 255
+                        r = (50 + i * 13) % 255
+                        g = (100 + i * 23) % 255
+                        b = (180 + i * 17) % 255
                         img = Image.new("RGB", (256, 256), color=(r, g, b))
                         img.save(str(img_path))
                     except Exception as e:
@@ -909,9 +970,10 @@ class BenchmarkJobRunner:
                         "dataset": "Mega-MMDF-Synthetic" if is_fake else "Vietnamese-ID-BioReal"
                     })
 
-        # Slice according to mode
-        if mode == "quick":
-            return samples[:10]
-        elif mode == "standard":
-            return samples[:50]
+        # Return all or sliced
+        if is_all:
+            return samples
+        elif target_count is not None:
+            return samples[:target_count]
         return samples
+

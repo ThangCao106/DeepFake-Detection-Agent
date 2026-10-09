@@ -84,10 +84,19 @@
                     </div>
 
                     <div class="benchmark-actions">
-                        <select id="benchmarkModeSelect" class="benchmark-select">
-                            <option value="quick">⚡ Quick Smoke Test (10 Samples)</option>
-                            <option value="standard">📊 Standard Suite (50 Samples)</option>
+                        <select id="benchmarkModeSelect" class="benchmark-select" onchange="handleBenchmarkModeChange()">
+                            <option value="10">⚡ 10 Samples (Quick Test)</option>
+                            <option value="50" selected>📊 50 Samples (Standard)</option>
+                            <option value="100">🔬 100 Samples (Extended)</option>
+                            <option value="200">📈 200 Samples (Deep Suite)</option>
+                            <option value="500">🏆 500 Samples (Heavy Benchmark)</option>
+                            <option value="all">🌐 All Samples (Toàn bộ Dataset)</option>
+                            <option value="custom">✏️ Custom... (Tùy chọn số lượng)</option>
                         </select>
+                        <div id="customCountWrapper" style="display: none; align-items: center; gap: 4px;">
+                            <input type="number" id="customSampleCountInput" min="1" max="5000" value="75" placeholder="Số mẫu" title="Nhập số lượng mẫu kiểm thử" style="width: 75px; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-weight: 600; text-align: center; color: #1e293b; background: #ffffff;">
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">mẫu</span>
+                        </div>
                         <select id="benchmarkDatasetSelect" class="benchmark-select">
                             <option value="Synthetic & Curated">Synthetic & Curated</option>
                             <option value="Vietnamese Biometric">Vietnamese Biometric (5 Classes)</option>
@@ -381,6 +390,6 @@
     </div>
     {% endif %}
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=4.2.0&t=20261009_1445"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=4.3.0&t=20261009_1545"></script>
 </body>
 </html>

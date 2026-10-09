@@ -997,6 +997,19 @@ var seenLogKeys = new Set();
 var pollConsecutiveIdleCount = 0;
 var pollStartTime = 0;
 
+function handleBenchmarkModeChange() {
+    const modeSelect = document.getElementById('benchmarkModeSelect');
+    const customWrap = document.getElementById('customCountWrapper');
+    if (!modeSelect || !customWrap) return;
+    if (modeSelect.value === 'custom') {
+        customWrap.style.display = 'inline-flex';
+        const input = document.getElementById('customSampleCountInput');
+        if (input) input.focus();
+    } else {
+        customWrap.style.display = 'none';
+    }
+}
+
 function startBenchmark() {
     try {
         // Tự động gán quyền nếu đang mở trực tiếp trên Benchmark Hub Subsystem
@@ -1007,11 +1020,34 @@ function startBenchmark() {
 
         const modeSelect = document.getElementById('benchmarkModeSelect');
         const datasetSelect = document.getElementById('benchmarkDatasetSelect');
-        const mode = modeSelect ? modeSelect.value : 'quick';
+        const modeVal = modeSelect ? modeSelect.value : '50';
         const dataset = datasetSelect ? datasetSelect.value : 'Synthetic & Curated';
         const apiBase = getBenchmarkApiBase();
 
-        appendTerminalLogLine('INFO', `🚀 Khởi chạy Benchmark Suite [Chế độ: ${mode.toUpperCase()} | Dataset: '${dataset}']...`);
+        let sampleCount = 50;
+        let displayMode = modeVal;
+
+        if (modeVal === 'custom') {
+            const customInput = document.getElementById('customSampleCountInput');
+            sampleCount = parseInt(customInput?.value, 10) || 50;
+            if (sampleCount < 1) sampleCount = 10;
+            displayMode = `custom_${sampleCount}`;
+        } else if (modeVal === 'all') {
+            sampleCount = 'all';
+            displayMode = 'all';
+        } else if (modeVal === 'quick') {
+            sampleCount = 10;
+            displayMode = '10';
+        } else if (modeVal === 'standard') {
+            sampleCount = 50;
+            displayMode = '50';
+        } else {
+            sampleCount = parseInt(modeVal, 10) || 50;
+            displayMode = `${sampleCount}`;
+        }
+
+        const countDesc = (sampleCount === 'all') ? 'Toàn bộ Dataset' : `${sampleCount} mẫu`;
+        appendTerminalLogLine('INFO', `🚀 Khởi chạy Benchmark Suite [Quy mô: ${countDesc} | Dataset: '${dataset}']...`);
         appendTerminalLogLine('DEBUG', `[Routing] Origin: ${window.location.origin} | API Base: "${apiBase || '(root)'}"`);
 
         const startBtn = document.getElementById('startBenchBtn');
@@ -1029,7 +1065,7 @@ function startBenchmark() {
         fetch(startEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: mode, dataset: dataset })
+            body: JSON.stringify({ mode: displayMode, sample_count: sampleCount, dataset: dataset })
         })
         .then(async res => {
             appendTerminalLogLine('DEBUG', `[REST Phản Hồi] HTTP Status: ${res.status} (${res.statusText})`);
