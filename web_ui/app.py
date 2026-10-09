@@ -716,6 +716,19 @@ def get_latest_benchmark_report():
         if reports:
             latest_md = reports[0]
             content = latest_md.read_text(encoding="utf-8", errors="ignore")
+            if "Sample-by-Sample Forensic Audit" not in content:
+                results_json_path = latest_md.parent / "results.json"
+                if results_json_path.exists():
+                    try:
+                        import json
+                        from benchmark.logger import format_benchmark_markdown_report
+                        with open(results_json_path, "r", encoding="utf-8") as f:
+                            res_data = json.load(f)
+                        new_content = format_benchmark_markdown_report(res_data.get("summary", {}), res_data.get("samples", []))
+                        latest_md.write_text(new_content, encoding="utf-8")
+                        content = new_content
+                    except Exception as rex:
+                        logger.warning(f"Could not upgrade older report: {rex}")
             return jsonify({
                 "found": True,
                 "path": str(latest_md),
