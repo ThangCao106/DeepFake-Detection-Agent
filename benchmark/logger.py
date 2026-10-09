@@ -381,13 +381,27 @@ class BenchmarkJobRunner:
 
     def start_job(self, mode: str = "quick", dataset_name: str = "Synthetic & Curated") -> Dict[str, Any]:
         """Start benchmark run in background thread."""
+        logger.info(f"⚡ [RUNNER-DEBUG] start_job requested: mode='{mode}', dataset='{dataset_name}'")
         with self._lock:
+            # Check zombie task state: if marked is_running but worker thread/greenthread is dead
             if self.is_running:
-                return {
-                    "status": "error",
-                    "message": "A benchmark job is already running.",
-                    "job_id": self.current_logger.job_id if self.current_logger else "unknown",
-                }
+                is_alive = False
+                if self.worker_thread is not None:
+                    if hasattr(self.worker_thread, "is_alive"):
+                        is_alive = self.worker_thread.is_alive()
+                    elif hasattr(self.worker_thread, "dead"):
+                        is_alive = not self.worker_thread.dead
+                
+                if not is_alive:
+                    logger.warning("[RUNNER-DEBUG] Phát hiện tiến trình trước đã kết thúc nhưng chưa nhả cờ is_running. Tự động phục hồi trạng thái...")
+                    self.is_running = False
+                else:
+                    logger.warning("[RUNNER-DEBUG] Tiến trình benchmark đang chạy, từ chối lệnh khởi tạo mới.")
+                    return {
+                        "status": "error",
+                        "message": "A benchmark job is already running.",
+                        "job_id": self.current_logger.job_id if self.current_logger else "unknown",
+                    }
 
             self.cancel_requested = False
             self.is_running = True
@@ -398,20 +412,29 @@ class BenchmarkJobRunner:
                 job_name=f"Benchmark ({mode.upper()}) - {dataset_name}",
                 emit_callback=self.emit_event
             )
+            
+            # Ghi log mở đầu ngay lập tức để frontend polling luôn đọc được log đầu tiên
+            self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận yêu cầu Benchmark Job [{job_id}] | Mode: {mode.upper()} | Dataset: '{dataset_name}'")
 
-            # In Eventlet environments, socketio.start_background_task is preferred for non-blocking sockets
-            if self.socketio_instance and hasattr(self.socketio_instance, "start_background_task"):
-                self.worker_thread = self.socketio_instance.start_background_task(
-                    self._run_benchmark_worker, mode, dataset_name
-                )
-            else:
-                self.worker_thread = threading.Thread(
-                    target=self._run_benchmark_worker,
-                    args=(mode, dataset_name),
-                    daemon=True,
-                    name=f"Worker-{job_id}"
-                )
-                self.worker_thread.start()
+            # Launch background worker
+            try:
+                if self.socketio_instance and hasattr(self.socketio_instance, "start_background_task"):
+                    self.worker_thread = self.socketio_instance.start_background_task(
+                        self._run_benchmark_worker, mode, dataset_name
+                    )
+                else:
+                    self.worker_thread = threading.Thread(
+                        target=self._run_benchmark_worker,
+                        args=(mode, dataset_name),
+                        daemon=True,
+                        name=f"Worker-{job_id}"
+                    )
+                    self.worker_thread.start()
+                logger.info(f"✅ [RUNNER-DEBUG] Background worker đã được kích hoạt thành công cho Job {job_id}")
+            except Exception as e:
+                logger.error(f"❌ [RUNNER-DEBUG] Không thể kích hoạt worker: {e}", exc_info=True)
+                self.is_running = False
+                return {"status": "error", "message": f"Could not launch worker: {e}"}
 
             return {
                 "status": "started",
@@ -463,109 +486,117 @@ class BenchmarkJobRunner:
             return []
 
     def _run_benchmark_worker(self, mode: str, dataset_name: str):
-        """Internal worker executing inference over samples."""
+        """Internal worker executing inference over samples with safety wrapper."""
         b_logger = self.current_logger
         if not b_logger:
             self.is_running = False
             return
 
-        b_logger.log("INFO", f"⚙️ Khởi chạy Worker đánh giá Benchmark cho chế độ='{mode.upper()}' (Dataset: '{dataset_name}')...")
+        try:
+            b_logger.log("INFO", f"⚙️ [DEBUG-STEP 1/4] Worker bắt đầu thực thi cho chế độ='{mode.upper()}' (Dataset: '{dataset_name}')...")
 
-        detector = getattr(self, "_cached_detector", None)
-        if detector is None:
-            try:
-                b_logger.log("INFO", "📦 Đang nạp mô hình kiểm định & trọng số hiệu chuẩn (Tri-Stream)...")
-                # Import DeepfakeDetector
+            detector = getattr(self, "_cached_detector", None)
+            if detector is None:
                 try:
-                    from web_ui.deepfake_detector import DeepfakeDetector
-                except ImportError:
-                    from deepfake_detector import DeepfakeDetector
-                
-                detector = DeepfakeDetector()
-                self._cached_detector = detector
-                b_logger.log("INFO", "✅ Detector initialized successfully (Tri-Stream + Calibration weights).")
-            except Exception as e:
-                b_logger.log("WARN", f"⚠️ Không thể nạp detector chính ({e}). Kích hoạt Chế độ Offline Heuristic Dual-Stream...")
-                detector = None
-        else:
-            b_logger.log("INFO", "⚡ Sử dụng mô hình Detector đã nạp sẵn trong bộ nhớ đệm (Warm-cached).")
+                    b_logger.log("INFO", "📦 [DEBUG-STEP 2/4] Đang nạp mô hình kiểm định & trọng số hiệu chuẩn (Tri-Stream)...")
+                    try:
+                        from web_ui.deepfake_detector import DeepfakeDetector
+                    except ImportError:
+                        from deepfake_detector import DeepfakeDetector
+                    
+                    detector = DeepfakeDetector()
+                    self._cached_detector = detector
+                    b_logger.log("INFO", "✅ Detector initialized successfully (Tri-Stream + Calibration weights).")
+                except Exception as e:
+                    b_logger.log("WARN", f"⚠️ Không thể nạp detector chính ({e}). Kích hoạt Chế độ Offline Heuristic Dual-Stream...")
+                    detector = None
+            else:
+                b_logger.log("INFO", "⚡ Sử dụng mô hình Detector đã nạp sẵn trong bộ nhớ đệm (Warm-cached).")
 
-        # Prepare test samples according to mode
-        samples = self._load_samples_for_mode(mode, b_logger)
-        total_samples = len(samples)
-        b_logger.log("INFO", f"📋 Loaded {total_samples} test samples for benchmark evaluation.")
+            # Prepare test samples according to mode
+            b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử cho mode '{mode.upper()}'...")
+            samples = self._load_samples_for_mode(mode, b_logger)
+            total_samples = len(samples)
+            b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu. Bắt đầu quá trình suy luận phân loại...")
 
-        step = 0
-        for item in samples:
-            if self.cancel_requested:
-                b_logger.log("WARN", "🛑 Benchmark aborted by user request.")
-                break
+            step = 0
+            for item in samples:
+                if self.cancel_requested:
+                    b_logger.log("WARN", "🛑 Benchmark aborted by user request.")
+                    break
 
-            step += 1
-            filepath = item.get("filepath") or item.get("path")
-            true_label = item.get("label", "REAL")
-            dataset = item.get("dataset", dataset_name)
-            sample_id = Path(filepath).name if filepath else f"sample_{step}"
+                step += 1
+                filepath = item.get("filepath") or item.get("path")
+                true_label = item.get("label", "REAL")
+                dataset = item.get("dataset", dataset_name)
+                sample_id = Path(filepath).name if filepath else f"sample_{step}"
 
-            t0 = time.perf_counter()
-            try:
-                # Perform inference
-                if detector is not None:
-                    result = detector.predict_media(filepath)
-                else:
-                    time.sleep(0.04)
-                    is_fake = (true_label.upper() == "FAKE")
-                    conf = 0.93 if is_fake else 0.89
-                    result = {"confidence": conf, "is_deepfake": is_fake, "composite_risk_score": conf}
-                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                t0 = time.perf_counter()
+                try:
+                    # Perform inference
+                    if detector is not None:
+                        result = detector.predict_media(filepath)
+                    else:
+                        time.sleep(0.04)
+                        is_fake = (true_label.upper() == "FAKE")
+                        conf = 0.93 if is_fake else 0.89
+                        result = {"confidence": conf, "is_deepfake": is_fake, "composite_risk_score": conf}
+                    elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
-                raw_score = float(result.get("confidence", 0.5))
-                is_fake = bool(result.get("is_deepfake", False))
-                pred_label = "FAKE" if is_fake else "REAL"
-                
-                # Retrieve calibrated probability if available
-                calib_score = raw_score
-                if "calibrated_probability" in result:
-                    calib_score = float(result["calibrated_probability"])
-                elif "composite_risk_score" in result:
-                    calib_score = float(result["composite_risk_score"])
+                    raw_score = float(result.get("confidence", 0.5))
+                    is_fake = bool(result.get("is_deepfake", False))
+                    pred_label = "FAKE" if is_fake else "REAL"
+                    
+                    # Retrieve calibrated probability if available
+                    calib_score = raw_score
+                    if "calibrated_probability" in result:
+                        calib_score = float(result["calibrated_probability"])
+                    elif "composite_risk_score" in result:
+                        calib_score = float(result["composite_risk_score"])
 
-                b_logger.log_sample_metric(
-                    step=step,
-                    total=total_samples,
-                    dataset=dataset,
-                    sample_id=sample_id,
-                    elapsed_ms=elapsed_ms,
-                    raw_score=raw_score,
-                    calib_score=calib_score,
-                    pred_label=pred_label,
-                    true_label=true_label,
-                    status="OK"
-                )
-            except Exception as exc:
-                elapsed_ms = (time.perf_counter() - t0) * 1000.0
-                b_logger.log("ERROR", f"Failed on sample '{sample_id}': {exc}")
-                b_logger.log_sample_metric(
-                    step=step,
-                    total=total_samples,
-                    dataset=dataset,
-                    sample_id=sample_id,
-                    elapsed_ms=elapsed_ms,
-                    raw_score=0.5,
-                    calib_score=0.5,
-                    pred_label="ERROR",
-                    true_label=true_label,
-                    status="ERROR",
-                    notes=str(exc)
-                )
+                    b_logger.log_sample_metric(
+                        step=step,
+                        total=total_samples,
+                        dataset=dataset,
+                        sample_id=sample_id,
+                        elapsed_ms=elapsed_ms,
+                        raw_score=raw_score,
+                        calib_score=calib_score,
+                        pred_label=pred_label,
+                        true_label=true_label,
+                        status="OK"
+                    )
+                except Exception as exc:
+                    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                    b_logger.log("ERROR", f"Failed on sample '{sample_id}': {exc}")
+                    b_logger.log_sample_metric(
+                        step=step,
+                        total=total_samples,
+                        dataset=dataset,
+                        sample_id=sample_id,
+                        elapsed_ms=elapsed_ms,
+                        raw_score=0.5,
+                        calib_score=0.5,
+                        pred_label="ERROR",
+                        true_label=true_label,
+                        status="ERROR",
+                        notes=str(exc)
+                    )
 
-            # Small yield to keep event loop responsive
-            time.sleep(0.02)
+                # Small yield to keep event loop responsive
+                time.sleep(0.02)
 
-        # Finalize
-        final_status = "CANCELLED" if self.cancel_requested else "COMPLETED"
-        self.latest_summary = b_logger.finish(status=final_status)
-        self.is_running = False
+            # Finalize
+            final_status = "CANCELLED" if self.cancel_requested else "COMPLETED"
+            self.latest_summary = b_logger.finish(status=final_status)
+        except Exception as fatal_e:
+            logger.error(f"❌ [BENCHMARK-WORKER-FATAL] Sự cố ngoài dự kiến trong worker: {fatal_e}", exc_info=True)
+            if b_logger:
+                b_logger.log("ERROR", f"❌ Worker dừng đột ngột do lỗi: {fatal_e}")
+                b_logger.finish(status="ERROR")
+        finally:
+            self.is_running = False
+            logger.info("🏁 [RUNNER-DEBUG] Worker hoàn tất. Đã giải phóng cờ is_running = False.")
 
     def _load_samples_for_mode(self, mode: str, b_logger: BenchmarkLogger) -> List[Dict[str, Any]]:
         """Collect test media items based on selected mode."""

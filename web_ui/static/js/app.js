@@ -1009,43 +1009,62 @@ function startBenchmark() {
     const mode = modeSelect ? modeSelect.value : 'quick';
     const dataset = datasetSelect ? datasetSelect.value : 'Synthetic & Curated';
 
+    const apiBase = getBenchmarkApiBase();
     appendTerminalLogLine('INFO', `🚀 Khởi chạy Benchmark Suite [Chế độ: ${mode.toUpperCase()} | Dataset: '${dataset}']...`);
-    
+    appendTerminalLogLine('DEBUG', `[Mạng/Routing] Origin: ${window.location.origin} | API Base: "${apiBase || '(root)'}" | Socket Connected: ${typeof socket !== 'undefined' && socket && socket.connected}`);
+
     const startBtn = document.getElementById('startBenchBtn');
     const stopBtn = document.getElementById('stopBenchBtn');
     if (startBtn) startBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = false;
     updateBenchmarkStatusUI({ is_running: true });
 
-    // Kích hoạt ngay polling fallback chạy song song để không bao giờ bỏ lỡ log đầu tiên
+    // Kích hoạt ngay polling fallback chạy song song để không bao giờ bỏ lỡ log
     startBenchmarkPollingFallback();
 
     // Kênh 1: Gửi qua WebSocket Socket.IO
     try {
-        if (typeof socket !== 'undefined' && socket.connected) {
+        if (typeof socket !== 'undefined' && socket && socket.connected) {
+            appendTerminalLogLine('DEBUG', `[Socket.IO] Gửi emit 'benchmark_start'...`);
             socket.emit('benchmark_start', { mode: mode, dataset: dataset });
+        } else {
+            appendTerminalLogLine('DEBUG', `[Socket.IO] Socket chưa kết nối, chuyển tiếp lệnh qua REST API.`);
         }
     } catch (err) {
         console.warn('Socket emit exception:', err);
     }
 
     // Kênh 2: Gửi qua REST API HTTP POST (Đảm bảo 100% hoạt động qua mọi reverse proxy / Docker mapping / subpath)
-    fetch(`${getBenchmarkApiBase()}/api/benchmark/start`, {
+    const startEndpoint = `${apiBase}/api/benchmark/start`;
+    appendTerminalLogLine('DEBUG', `[REST HTTP] Đang POST tới: ${startEndpoint}...`);
+
+    fetch(startEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: mode, dataset: dataset })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(async res => {
+        appendTerminalLogLine('DEBUG', `[REST HTTP] Nhận phản hồi Status: ${res.status} (${res.statusText})`);
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            appendTerminalLogLine('ERROR', `[REST Lỗi Parse JSON] HTTP ${res.status}: ${text.substring(0, 150)}`);
+            return;
+        }
+
         if (data.status === 'started' || data.status === 'running') {
-            appendTerminalLogLine('INFO', `✅ Tiến trình Benchmark Worker đã được kích hoạt [Job ID: ${data.job_id}]`);
+            appendTerminalLogLine('INFO', `✅ [Worker Kích Hoạt] Job ID: ${data.job_id} | ${data.message || 'Đang thực thi'}`);
         } else if (data.status === 'error') {
-            appendTerminalLogLine('WARN', `Thông báo máy chủ: ${data.message || 'Tiến trình đang hoạt động'}`);
+            appendTerminalLogLine('WARN', `⚠️ [Máy chủ] ${data.message || 'Tiến trình đang hoạt động'}`);
+        } else {
+            appendTerminalLogLine('DEBUG', `[REST Response Data] ${JSON.stringify(data)}`);
         }
     })
     .catch(err => {
         console.error('REST benchmark start error:', err);
-        appendTerminalLogLine('WARN', `Đang kết nối worker qua kênh dự phòng... (${err.message})`);
+        appendTerminalLogLine('ERROR', `❌ [REST Kết nối thất bại] ${err.name}: ${err.message}`);
     });
 }
 
@@ -1055,7 +1074,7 @@ function stopBenchmark() {
     if (stopBtn) stopBtn.disabled = true;
 
     try {
-        if (typeof socket !== 'undefined' && socket.connected) {
+        if (typeof socket !== 'undefined' && socket && socket.connected) {
             socket.emit('benchmark_stop', {});
         }
     } catch (e) {}
@@ -1080,6 +1099,13 @@ function startBenchmarkPollingFallback() {
         fetch(`${getBenchmarkApiBase()}/api/benchmark/status`)
             .then(res => res.json())
             .then(statusData => {
+                // Chống hiện tượng race-condition: trong 5 giây đầu tiên sau khi bấm Start,
+                // nếu server chưa kịp lật cờ is_running=true thì không ghi đè trạng thái RUNNING trên UI
+                if (!statusData.is_running && (Date.now() - pollStartTime < 5000)) {
+                    console.debug('Worker initializing, skipping premature idle update...');
+                    return;
+                }
+
                 updateBenchmarkStatusUI(statusData);
                 if (!statusData.is_running) {
                     pollConsecutiveIdleCount++;
@@ -1110,7 +1136,8 @@ function startBenchmarkPollingFallback() {
             .catch(err => console.debug('Log poll error:', err));
     };
 
-    pollCycle();
+    // Chạy chu kỳ đầu sau 500ms thay vì đồng bộ lập tức để tránh race condition
+    setTimeout(pollCycle, 500);
     benchmarkPollingTimer = setInterval(pollCycle, 1000);
 }
 

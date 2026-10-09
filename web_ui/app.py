@@ -620,9 +620,32 @@ def gate_status():
     }), 200
 
 
+@app.after_request
+def add_header_no_cache(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 # =========================================================================
 # 🚀 LIVE BENCHMARK & OBSERVE TELEMETRY API & SOCKET HANDLERS
 # =========================================================================
+
+@app.route('/api/benchmark/ping', methods=['GET'])
+@app.route('/benchmark/api/benchmark/ping', methods=['GET'])
+def ping_benchmark_api():
+    """Diagnostic healthcheck for benchmark subsystem."""
+    current_port = os.environ.get("PORT", "5000")
+    return jsonify({
+        "status": "pong",
+        "port": current_port,
+        "is_benchmark_mode": (str(current_port) == "5010") or request.path.startswith("/benchmark"),
+        "runner_available": benchmark_runner is not None,
+        "is_running": benchmark_runner.is_running if benchmark_runner else False,
+        "timestamp": datetime.now().isoformat()
+    }), 200
+
 
 @app.route('/api/benchmark/status', methods=['GET'])
 @app.route('/benchmark/api/benchmark/status', methods=['GET'])
@@ -647,12 +670,18 @@ def get_benchmark_logs():
 @app.route('/benchmark/api/benchmark/start', methods=['POST'])
 def start_benchmark_api():
     """Trigger a new benchmark run."""
+    current_port = os.environ.get("PORT", "5000")
+    client_ip = request.remote_addr
+    logger.info(f"🚀 [BENCHMARK-START-DEBUG] Path='{request.path}', Port={current_port}, Client={client_ip}")
     if not benchmark_runner:
+        logger.error("❌ [BENCHMARK-START-DEBUG] benchmark_runner is None!")
         return jsonify({"status": "error", "message": "Benchmark runner not loaded"}), 500
     data = request.get_json(silent=True) or {}
     mode = data.get("mode", "quick")
     dataset = data.get("dataset", "Synthetic & Curated")
+    logger.info(f"⚙️ [BENCHMARK-START-DEBUG] Invoking start_job: mode='{mode}', dataset='{dataset}'")
     res = benchmark_runner.start_job(mode=mode, dataset_name=dataset)
+    logger.info(f"✅ [BENCHMARK-START-DEBUG] start_job returned: {res}")
     return jsonify(res), 200
 
 
@@ -660,6 +689,7 @@ def start_benchmark_api():
 @app.route('/benchmark/api/benchmark/stop', methods=['POST'])
 def stop_benchmark_api():
     """Gracefully cancel current running benchmark job."""
+    logger.info(f"🛑 [BENCHMARK-STOP-DEBUG] Path='{request.path}'")
     if not benchmark_runner:
         return jsonify({"status": "error", "message": "Benchmark runner not loaded"}), 500
     res = benchmark_runner.stop_job()
