@@ -828,9 +828,9 @@ class BenchmarkJobRunner:
 
                 t0 = time.perf_counter()
                 try:
-                    # Priority 1: Physical Media File exists on disk -> Run Neural Model Inference
+                    # Priority 1: Physical Media File exists on disk AND has explicit matched media
                     has_physical_file = bool(filepath and os.path.exists(filepath))
-                    if has_physical_file and detector is not None:
+                    if has_physical_file and item.get("has_explicit_media", False) and detector is not None:
                         result = detector.predict_media(filepath)
                         elapsed_ms = (time.perf_counter() - t0) * 1000.0
                         if "error" not in result:
