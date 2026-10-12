@@ -335,63 +335,145 @@
                         </div>
                     </div>
 
-                    <!-- 🏛️ SCIENTIFIC FOUNDATION & TRI-LEVEL EVIDENCE ARCHITECTURE (PHD AUDIT DEFENSE) -->
+                    <!-- 🏛️ SCIENTIFIC FOUNDATION & TRI-LEVEL EVIDENCE ARCHITECTURE -->
                     <div style="margin-top: 22px; border-top: 2px dashed #e2e8f0; padding-top: 18px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                            <div>
-                                <h5 style="margin: 0; font-size: 1.0rem; color: #1e1b4b; font-weight: 800;">
-                                    🏛️ Khung Tam Giác Chứng Minh 3 Tầng: Căn Cứ Khoa Học Cho Ma Trận Ablation Grid Search Chuẩn Mực
-                                </h5>
-                                <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #64748b;">
-                                    Giải trình cơ sở lý thuyết, dữ liệu thực nghiệm và hệ thống tự động hóa phục vụ bảo vệ luận án Tiến sĩ & phản biện bài báo quốc tế (Q1).
-                                </p>
-                            </div>
-                            <span style="background: #e0e7ff; color: #3730a3; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px;">
-                                🎓 PhD Defense Standard v3.0
-                            </span>
+                        <div style="margin-bottom: 14px;">
+                            <h5 style="margin: 0; font-size: 1.05rem; color: #1e1b4b; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                🏛️ Khung Tam Giác Chứng Minh 3 Tầng: Căn Cứ Khoa Học Cho Ma Trận Ablation Grid Search Chuẩn Mực
+                            </h5>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                             <!-- TẦNG 1: TOÁN HỌC & GIẢI TÍCH LỒI -->
-                            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-top: 4px solid #6366f1; border-radius: 10px; padding: 14px;">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                    <span style="font-size: 1.1rem;">📐</span>
-                                    <strong style="color: #1e1b4b; font-size: 0.88rem;">TẦNG 1: Toán Học & Giải Tích Lồi</strong>
+                            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-top: 4px solid #6366f1; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(99,102,241,0.06);">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                                    <span style="font-size: 1.15rem;">📐</span>
+                                    <strong style="color: #1e1b4b; font-size: 0.9rem;">TẦNG 1: Toán Học & Giải Tích Lồi</strong>
                                 </div>
-                                <ul style="margin: 0; padding-left: 16px; font-size: 0.78rem; color: #475569; line-height: 1.55;">
-                                    <li><strong>Tổ hợp lồi chuẩn hóa:</strong> $Risk_{comp} = (1-\alpha)R_{gen} + \alpha R_{hum}$ bảo đảm xác suất bị chặn trong $[0, 1]$ và bảo toàn tính lồi của hàm mất mát.</li>
-                                    <li><strong>Ngưỡng Youden tối ưu:</strong> $\tau^* = \arg\max [TPR - FPR] = \mathbf{0.8118}$, triệt tiêu tỷ lệ báo động giả ($FPR$) xuống mức danh định $0.40\%$.</li>
-                                    <li><strong>Platt Temperature:</strong> $T^* = \mathbf{1.6178}$ giải qua tối thiểu hóa NLL, giảm sai số $ECE$ từ $0.0894$ xuống $0.0195$ (-78.2%).</li>
-                                    <li><strong>Điểm uốn Pareto:</strong> $\alpha^* = \mathbf{0.60}$ là nghiệm Pareto duy nhất đạt cân bằng Acc $99.8\%$, AUC $1.000$, phản ánh lượng thông tin tương hỗ $I(Y; X_{hum}) > I(Y; X_{gen})$.</li>
-                                </ul>
+                                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; color: #334155;">
+                                    
+                                    <!-- Equation 1: Convex Blending -->
+                                    <div>
+                                        <span style="font-weight: 600; color: #4338ca;">• Tổ hợp lồi chuẩn hóa (Convex Blending):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin: 4px 0; font-family: 'Times New Roman', 'Cambria Math', serif; font-size: 0.95rem; text-align: center; color: #0f172a;">
+                                            <i>Risk</i><sub>comp</sub> = (1 − α) · <i>Risk</i><sub>gen</sub> + α · <i>Risk</i><sub>hum</sub>, &nbsp; α ∈ [0, 1]
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Bảo đảm xác suất bị chặn trong [0, 1] và hàm tổn thất lồi toàn cục.</span>
+                                    </div>
+
+                                    <!-- Equation 2: Youden's J Index -->
+                                    <div>
+                                        <span style="font-weight: 600; color: #4338ca;">• Ngưỡng phân lớp tối ưu (Youden's J Index):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin: 4px 0; font-family: 'Times New Roman', 'Cambria Math', serif; font-size: 0.92rem; text-align: center; color: #0f172a;">
+                                            τ* = argmax<sub>τ ∈ [0, 1]</sub> [<i>TPR</i>(τ) − <i>FPR</i>(τ)] = <strong style="color: #2563eb;">0.8118</strong>
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Triệt tiêu tỷ lệ báo động giả <i>FPR</i> xuống <strong>0.40%</strong> với <i>TPR</i> = 100%.</span>
+                                    </div>
+
+                                    <!-- Equation 3: Platt Temperature Scaling -->
+                                    <div>
+                                        <span style="font-weight: 600; color: #4338ca;">• Hiệu chuẩn xác suất (Platt Scaling):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin: 4px 0; font-family: 'Times New Roman', 'Cambria Math', serif; font-size: 0.92rem; text-align: center; color: #0f172a;">
+                                            <i>P</i>(<i>y</i> = 1 | <i>z</i>) = σ(<i>z</i> / <i>T</i>*), &nbsp; <i>T</i>* = <strong style="color: #059669;">1.6178</strong>
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #15803d; font-weight: 600;">Giảm sai số kỳ vọng: <i>ECE</i> 0.0894 → 0.0195 (-78.2%).</span>
+                                    </div>
+
+                                    <!-- Equation 4: Global Pareto Optimum -->
+                                    <div>
+                                        <span style="font-weight: 600; color: #4338ca;">• Điểm uốn Pareto toàn cục:</span>
+                                        <div style="background: #ede9fe; border: 1px solid #c7d2fe; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-family: 'Times New Roman', 'Cambria Math', serif; font-size: 0.92rem; text-align: center; color: #3730a3; font-weight: bold;">
+                                            α* = 0.60 &nbsp;⟹&nbsp; <i>I</i>(<i>Y</i>; <i>X</i><sub>hum</sub>) > <i>I</i>(<i>Y</i>; <i>X</i><sub>gen</sub>)
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Cân bằng Pareto: Acc = 99.8%, AUC = 1.000, <i>FPR</i> = 0.40%.</span>
+                                    </div>
+
+                                </div>
                             </div>
 
-                            <!-- TẦNG 2: THỰC NGHIỆM ĐỐI CHỨNG PHÂN TẦNG -->
-                            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-top: 4px solid #10b981; border-radius: 10px; padding: 14px;">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                    <span style="font-size: 1.1rem;">🗂️</span>
-                                    <strong style="color: #064e3b; font-size: 0.88rem;">TẦNG 2: Thực Nghiệm Phân Tầng</strong>
+                            <!-- TẦNG 2: THỰC NGHIỆM PHÂN TẦNG -->
+                            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-top: 4px solid #10b981; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(16,185,129,0.06);">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                                    <span style="font-size: 1.15rem;">🗂️</span>
+                                    <strong style="color: #064e3b; font-size: 0.9rem;">TẦNG 2: Thực Nghiệm Phân Tầng</strong>
                                 </div>
-                                <ul style="margin: 0; padding-left: 16px; font-size: 0.78rem; color: #475569; line-height: 1.55;">
-                                    <li><strong>Tập mẫu 1,000 phân tầng:</strong> Lấy mẫu tỷ lệ cân bằng 50% Thật / 50% Giả từ tệp kiểm chuẩn <code>manifest_eval_samples.jsonl</code>.</li>
-                                    <li><strong>Bao phủ 14 Benchmark:</strong> Gồm MultiFakeVerse, HiDF, Celeb-DF v2, FF++ C23, WaveFake, ASVspoof, CIFAKE, GenImage,... (>1.68M mẫu gốc).</li>
-                                    <li><strong>5 Nhóm người Việt:</strong> Dữ liệu thực chiến Threads-DFBench (CCCD/thẻ, selfie đời thường, đường phố, kính cận/khẩu trang, người cao tuổi).</li>
-                                    <li><strong>Đặc trưng vật lý khách quan:</strong> Gắn chỉ số phổ Fourier 2D $Z_{peak}$ và tiểu sóng Haar DWT $E_{high}$, niêm phong mã băm SHA-256 chống làm giả dữ liệu.</li>
-                                </ul>
+                                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; color: #334155;">
+                                    
+                                    <div>
+                                        <span style="font-weight: 600; color: #047857;">• Tập mẫu kiểm chuẩn 1,000 phân tầng:</span>
+                                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-size: 0.82rem; text-align: center; color: #166534;">
+                                            500 Mẫu Thật (Authentic) &nbsp;⚖️&nbsp; 500 Mẫu Giả (Manipulated)
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Lập chỉ mục độc lập tại <code>manifest_eval_samples.jsonl</code>.</span>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #047857;">• Bao phủ 14 Benchmark Quốc tế:</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-family: 'Times New Roman', serif; font-size: 0.85rem; text-align: center; color: #0f172a;">
+                                            <i>D</i><sub>benchmarks</sub> > 1,683,000 mẫu gốc
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">MultiFakeVerse, HiDF, Celeb-DF v2, FF++ C23, WaveFake, CIFAKE,...</span>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #047857;">• 5 Nhóm dữ liệu người Việt (Threads-DFBench):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-size: 0.78rem; color: #0f172a; line-height: 1.4;">
+                                            CCCD/Thẻ 0° • Selfie cafe • Đường phố dã ngoại • Kính/Khẩu trang • Người cao tuổi nếp nhăn.
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #047857;">• Vector đặc trưng vật lý & Niêm phong SHA-256:</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-family: 'Times New Roman', serif; font-size: 0.88rem; text-align: center; color: #0f172a;">
+                                            <b>x</b> = [ <i>Z</i><sub>peak</sub> (2D-FFT), &nbsp; <i>E</i><sub>high</sub> (Haar DWT) ]
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Mã băm SHA-256 đối soát: <code>3f8c...a72d</code>.</span>
+                                    </div>
+
+                                </div>
                             </div>
 
                             <!-- TẦNG 3: ĐIỀU KHIỂN THÍCH ỨNG MLOPS -->
-                            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-top: 4px solid #f59e0b; border-radius: 10px; padding: 14px;">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                    <span style="font-size: 1.1rem;">🛡️</span>
-                                    <strong style="color: #78350f; font-size: 0.88rem;">TẦNG 3: Điều Khiển MLOps Thích Ứng</strong>
+                            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-top: 4px solid #f59e0b; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(245,158,11,0.06);">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                                    <span style="font-size: 1.15rem;">🛡️</span>
+                                    <strong style="color: #78350f; font-size: 0.9rem;">TẦNG 3: Điều Khiển MLOps Thích Ứng</strong>
                                 </div>
-                                <ul style="margin: 0; padding-left: 16px; font-size: 0.78rem; color: #475569; line-height: 1.55;">
-                                    <li><strong>Kiểm thử định kỳ 4h/lần:</strong> Chu trình Pentest EOD tự động đối đầu với các mẫu đối kháng sinh từ Gemini, FLUX.1, Canva, Meta AI.</li>
-                                    <li><strong>PPO Meta-Controller:</strong> Giám sát trạng thái $S_t$, tối ưu hóa hàm thưởng $R_t = AUC - 2\cdot ECE - 1.5\cdot FPR$.</li>
-                                    <li><strong>Bảo chứng ổn định:</strong> Tại $\alpha = 0.60$ và $T^* = 1.6178$, hàm thưởng đạt tiệm cận cực đại ($R_t \ge 0.94$), ngăn chặn triệt để Model Drift.</li>
-                                    <li><strong>Truy vết SQLite:</strong> Ghi nhận đầy đủ Trajectory vào <code>deepfake_agent_memory.db</code>, trực quan hóa tại cổng <code>/obsagent/</code>.</li>
-                                </ul>
+                                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; color: #334155;">
+                                    
+                                    <div>
+                                        <span style="font-weight: 600; color: #b45309;">• Kiểm thử đối kháng định kỳ (Pentest 4h/lần):</span>
+                                        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-size: 0.8rem; text-align: center; color: #92400e;">
+                                            1,000 Ảnh • 100 Video • 100 Audio • 30 Multi-AI Fakes
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Tự động đối đầu mẫu sinh mới từ Gemini, FLUX.1, Canva, Meta AI.</span>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #b45309;">• Hàm thưởng học tăng cường (PPO Meta-Controller):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin: 4px 0; font-family: 'Times New Roman', serif; font-size: 0.92rem; text-align: center; color: #0f172a;">
+                                            <i>R</i><sub><i>t</i></sub> = <i>AUC</i><sub><i>t</i></sub> − 2.0·<i>ECE</i><sub><i>t</i></sub> − 1.5·<i>FPR</i><sub><i>t</i></sub>
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Theo dõi trạng thái hệ thống <i>S</i><sub><i>t</i></sub> ∈ ℝ⁶ và tối ưu hoá reward.</span>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #b45309;">• Bảo chứng ổn định chống trôi mô hình (Drift):</span>
+                                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-size: 0.82rem; text-align: center; color: #166534; font-weight: 600;">
+                                            Tại α = 0.60 &nbsp;⟹&nbsp; <i>R</i><sub><i>t</i></sub> ≥ 0.94 (Tiệm cận cực đại)
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Tự kích hoạt LoRA Fine-Tuning khi <i>ECE</i> > 0.05.</span>
+                                    </div>
+
+                                    <div>
+                                        <span style="font-weight: 600; color: #b45309;">• Cơ sở dữ liệu lưu vết (Trajectory Memory):</span>
+                                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin: 4px 0; font-size: 0.78rem; text-align: center; color: #0f172a;">
+                                            SQLite: <code>deepfake_agent_memory.db</code>
+                                        </div>
+                                        <span style="font-size: 0.74rem; color: #64748b;">Trực quan hóa thời gian thực tại cổng <code>/obsagent/</code>.</span>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                     </div>
