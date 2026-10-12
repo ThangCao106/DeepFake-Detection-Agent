@@ -1,0 +1,17 @@
+{
+  "audit_timestamp": "2026-10-12T18:06:36Z",
+  "mode": "PURGE",
+  "total_scanned": 38,
+  "total_kept_human": 30,
+  "total_purged_cartoons_ai": 8,
+  "purged_filenames": [
+    "threads_20260923_283cfdf12b.jpg",
+    "threads_20260923_389eeb6cdd.jpg",
+    "threads_20260923_0ff9623d6e.jpg",
+    "threads_20260923_3a802af500.jpg",
+    "threads_20260923_13aef9f504.jpg",
+    "threads_20260923_201e8be6b1.jpg",
+    "threads_20260923_acbff2079e.jpg",
+    "threads_20260923_2e5c4bc1f4.jpg"
+  ]
+}
