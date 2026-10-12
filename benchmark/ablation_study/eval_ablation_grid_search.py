@@ -298,11 +298,16 @@ def save_outputs(samples: List[Dict], results: List[Dict], optimum: Dict):
     print(f"✅ Saved raw audit JSON: {RAW_JSON_PATH}")
     
     # Save CSV
-    with open(CSV_PATH, "w", encoding="utf-8") as f:
-        f.write("alpha,accuracy_percent,auc,fpr_percent,fnr_percent,ece_raw,ece_calibrated,youden_tau,platt_T,tp,fp,tn,fn\n")
-        for r in results:
-            f.write(f"{r['alpha']},{r['accuracy']},{r['auc']},{r['fpr_percent']},{r['fnr_percent']},{r['ece_raw']},{r['ece_calibrated']},{r['youden_tau']},{r['platt_T']},{r['tp']},{r['fp']},{r['tn']},{r['fn']}\n")
-    print(f"✅ Saved tabular CSV: {CSV_PATH}")
+    try:
+        with open(CSV_PATH, "w", encoding="utf-8") as f:
+            f.write("alpha,accuracy_percent,auc,fpr_percent,fnr_percent,ece_raw,ece_calibrated,youden_tau,platt_T,tp,fp,tn,fn\n")
+            for r in results:
+                f.write(f"{r['alpha']},{r['accuracy']},{r['auc']},{r['fpr_percent']},{r['fnr_percent']},{r['ece_raw']},{r['ece_calibrated']},{r['youden_tau']},{r['platt_T']},{r['tp']},{r['fp']},{r['tn']},{r['fn']}\n")
+        print(f"✅ Saved tabular CSV: {CSV_PATH}")
+    except PermissionError:
+        print(f"⚠️ Notice: {CSV_PATH} is currently open in another process (e.g., Excel). Skipped rewriting locked CSV file.")
+    except Exception as e:
+        print(f"⚠️ CSV write notice: {e}")
     
     # Save Markdown Summary
     md_content = f"""# 📊 Báo Cáo Thực Nghiệm Ablation Grid Search Xác Định Tỷ Trọng Tối Ưu
