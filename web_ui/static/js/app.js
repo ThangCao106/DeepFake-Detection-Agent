@@ -1249,6 +1249,17 @@ function openReportModal() {
         .then(data => {
             if (data.found && data.content) {
                 body.innerHTML = renderMarkdown(data.content);
+                if (window.renderMathInElement) {
+                    try {
+                        renderMathInElement(body, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false}
+                            ],
+                            throwOnError: false
+                        });
+                    } catch(me) { console.debug("Math render notice:", me); }
+                }
             } else {
                 body.innerHTML = `<div style="text-align: center; padding: 25px; color: #f59e0b;">${data.message || 'No report found.'}</div>`;
             }
