@@ -1315,4 +1315,21 @@ body {
     padding: 0;
 }
 
+/* ===== Ablation Study & Subnav Styles ===== */
+.btn-subtab:hover {
+    color: #4338ca !important;
+    background-color: #f5f3ff !important;
+}
+
+.btn-subtab.active {
+    color: #4338ca !important;
+    border-bottom: 3px solid #4338ca !important;
+    font-weight: 700 !important;
+}
+
+#ablationGridTable tr:hover {
+    background-color: #f1f5f9 !important;
+}
+
+
 

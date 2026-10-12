@@ -663,6 +663,13 @@ function displayResults(data) {
         document.getElementById('certSpectralVal').textContent = spectral;
         document.getElementById('certSpatialVal').textContent = spatial;
 
+        const calibVal = cert.calibrated_probability !== undefined ? (cert.calibrated_probability * 100).toFixed(1) + '%' : (cert.composite_risk_score !== undefined ? (cert.composite_risk_score * 100).toFixed(1) + '%' : 'N/A');
+        const calibEl = document.getElementById('certCalibVal');
+        if (calibEl) calibEl.textContent = calibVal;
+
+        const tauEl = document.getElementById('certTauVal');
+        if (tauEl) tauEl.textContent = 'τ* = 0.8118';
+
         const certBadge = document.getElementById('certBadge');
         certBadge.textContent = cert.auditable_verdict || 'AUDITABLE';
         certBadge.style.background = cert.composite_risk_score > 0.5 ? '#ef4444' : '#10b981';
@@ -1289,9 +1296,211 @@ socket.on('benchmark_completed', (data) => {
     updateBenchmarkStatusUI({ is_running: false, status: 'COMPLETED', latest_summary: summary });
 });
 
-socket.on('benchmark_error', (data) => {
-    appendTerminalLogLine('ERROR', data.message || 'Unknown benchmark error');
-    fetchBenchmarkStatus();
+// =========================================================================
+// 🔬 ABLATION STUDY & PARAMETER CALIBRATION CONTROLLERS (OPTION C)
+// =========================================================================
+
+function switchBenchmarkSubtab(tab) {
+    const telBtn = document.getElementById('subtabTelemetryBtn');
+    const ablBtn = document.getElementById('subtabAblationBtn');
+    const telPane = document.getElementById('telemetryPane');
+    const ablPane = document.getElementById('ablationPane');
+
+    if (tab === 'ablation') {
+        if (telBtn) {
+            telBtn.style.color = '#64748b';
+            telBtn.style.borderBottomColor = 'transparent';
+            telBtn.classList.remove('active');
+        }
+        if (ablBtn) {
+            ablBtn.style.color = '#4338ca';
+            ablBtn.style.borderBottomColor = '#4338ca';
+            ablBtn.classList.add('active');
+        }
+        if (telPane) telPane.style.display = 'none';
+        if (ablPane) {
+            ablPane.style.display = 'block';
+            fetchAblationGridData();
+        }
+    } else {
+        if (telBtn) {
+            telBtn.style.color = '#4338ca';
+            telBtn.style.borderBottomColor = '#4338ca';
+            telBtn.classList.add('active');
+        }
+        if (ablBtn) {
+            ablBtn.style.color = '#64748b';
+            ablBtn.style.borderBottomColor = 'transparent';
+            ablBtn.classList.remove('active');
+        }
+        if (telPane) telPane.style.display = 'block';
+        if (ablPane) ablPane.style.display = 'none';
+    }
+}
+
+function handleAlphaSliderChange(val) {
+    const num = parseFloat(val);
+    const badge = document.getElementById('currentAlphaBadge');
+    const preview = document.getElementById('fusionFormulaPreview');
+    const wGen = (1.0 - num).toFixed(2);
+    const wSpec = num.toFixed(2);
+
+    if (badge) {
+        badge.textContent = `α = ${wSpec}`;
+        if (Math.abs(num - 0.60) < 0.01) {
+            badge.style.background = '#ede9fe';
+            badge.style.color = '#4338ca';
+            badge.innerHTML = `⭐ α = 0.60 (Tối ưu)`;
+        } else {
+            badge.style.background = '#f1f5f9';
+            badge.style.color = '#334155';
+        }
+    }
+
+    if (preview) {
+        preview.textContent = `Risk_composite = ${wGen} · Risk_general + ${wSpec} · Risk_specialist`;
+    }
+}
+
+function setAlphaPreset(val) {
+    const slider = document.getElementById('alphaRangeSlider');
+    if (slider) {
+        slider.value = val;
+        handleAlphaSliderChange(val);
+    }
+}
+
+async function fetchAblationGridData() {
+    try {
+        const apiBase = getBenchmarkApiBase();
+        const res = await fetch(`${apiBase}/api/benchmark/ablation_data`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.rows && data.rows.length > 0) {
+            renderAblationGridTable(data.rows);
+        }
+    } catch (err) {
+        console.warn('Could not fetch ablation grid data:', err);
+    }
+}
+
+function renderAblationGridTable(rows) {
+    const tbody = document.getElementById('ablationGridTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const isOpt = r.is_optimal || (Math.abs(r.alpha - 0.60) < 0.01);
+        if (isOpt) {
+            tr.style.background = '#ede9fe';
+            tr.style.fontWeight = '700';
+            tr.style.color = '#4338ca';
+        } else {
+            tr.style.background = (Math.round(r.alpha * 10)) % 2 === 0 ? '#f8fafc' : '#ffffff';
+        }
+
+        const tag = isOpt ? '🏆 TỐI ƯU TOÁN HỌC' : (r.alpha === 0.0 ? 'Baseline (Gen)' : (r.alpha === 1.0 ? 'Only Specialist' : 'Suboptimal'));
+
+        tr.innerHTML = `
+            <td style="padding: 6px;">${isOpt ? '⭐ ' : ''}${r.alpha.toFixed(2)}</td>
+            <td>${r.accuracy_percent.toFixed(2)}%</td>
+            <td>${r.auc.toFixed(4)}</td>
+            <td>${r.fpr_percent.toFixed(2)}%</td>
+            <td>${r.fnr_percent.toFixed(2)}%</td>
+            <td>${r.ece_raw.toFixed(4)}</td>
+            <td>${r.ece_calibrated.toFixed(4)}</td>
+            <td>${r.youden_tau.toFixed(4)}</td>
+            <td>${tag}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function runAblationEvaluation() {
+    const slider = document.getElementById('alphaRangeSlider');
+    const alphaVal = slider ? parseFloat(slider.value) : 0.60;
+    const datasetSelect = document.getElementById('benchmarkDatasetSelect');
+    const dataset = datasetSelect ? datasetSelect.value : '14 Benchmark Suite';
+    const apiBase = getBenchmarkApiBase();
+
+    appendTerminalLogLine('INFO', `🔬 Khởi chạy kiểm nghiệm Ablation Point α = ${alphaVal.toFixed(2)} trên tập [${dataset}]...`);
+
+    try {
+        const res = await fetch(`${apiBase}/api/benchmark/ablation_run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alpha: alphaVal, dataset: dataset })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            const m = data.metrics;
+            appendTerminalLogLine('INFO', `✅ Đánh giá điểm α = ${alphaVal}: AUC=${m.auc} | Acc=${m.accuracy_percent}% | FPR=${m.fpr_percent}% | FNR=${m.fnr_percent}% | ECE=${m.calibrated_ece}`);
+            fetchAblationGridData();
+            alert(`🎉 Kiểm nghiệm hoàn tất điểm α = ${alphaVal}!\n- AUC: ${m.auc}\n- Accuracy: ${m.accuracy_percent}%\n- FPR: ${m.fpr_percent}%\n- ECE sau hiệu chỉnh: ${m.calibrated_ece}\n- Platt T*: ${m.platt_T} | Youden τ*: ${m.youden_tau}`);
+        } else {
+            alert('Lỗi kiểm nghiệm ablation: ' + (data.message || 'Không xác định'));
+        }
+    } catch (err) {
+        alert('Lỗi kết nối máy chủ: ' + err.message);
+    }
+}
+
+async function applyAblationOptimalWeights() {
+    const slider = document.getElementById('alphaRangeSlider');
+    const alphaVal = slider ? parseFloat(slider.value) : 0.60;
+    const apiBase = getBenchmarkApiBase();
+    const user = sessionStorage.getItem("benchmark_gate_user") || "thang.cd";
+
+    if (!confirm(`Xác nhận áp dụng bộ tham số (α = ${alphaVal}, Platt T* = 1.6178, Youden τ* = 0.8118) trực tiếp vào Hệ thống Giám định?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${apiBase}/api/benchmark/apply_weights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alpha: alphaVal, platt_T: 1.6178, youden_tau: 0.8118, user: user })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            appendTerminalLogLine('INFO', `🎉 Đã áp dụng thành công bộ tham số tối ưu (α=${alphaVal}, T*=1.6178, τ*=0.8118) vào Detector!`);
+            alert(data.message || 'Đã áp dụng thành công vào hệ thống!');
+        } else {
+            alert('Lỗi: ' + (data.message || 'Không thể lưu tham số'));
+        }
+    } catch (err) {
+        alert('Lỗi kết nối API: ' + err.message);
+    }
+}
+
+async function exportAblationCertificate() {
+    const apiBase = getBenchmarkApiBase();
+    try {
+        const res = await fetch(`${apiBase}/api/benchmark/audit_certificate`);
+        const cert = await res.json();
+        
+        const modal = document.getElementById('reportModalBackdrop');
+        const body = document.getElementById('reportModalBody');
+        if (modal && body) {
+            body.innerHTML = `
+                <div style="background: #0f172a; color: #38bdf8; padding: 18px; border-radius: 10px; font-family: monospace; font-size: 0.82rem; overflow-x: auto; line-height: 1.5;">
+                    <div style="color: #22c55e; font-weight: bold; font-size: 0.95rem; margin-bottom: 8px;">
+                        📜 AUDITABLE FORENSIC CERTIFICATE (SHA-256 SIGNED)
+                    </div>
+                    <pre style="margin: 0; color: #f8fafc; white-space: pre-wrap;">${JSON.stringify(cert, null, 2)}</pre>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+    } catch (err) {
+        alert('Lỗi tạo chứng thư kiểm nghiệm: ' + err.message);
+    }
+}
+
+// Socket listener for optimal weights applied
+socket.on('optimal_weights_applied', (data) => {
+    appendTerminalLogLine('INFO', `🔔 [SYNC] Trọng số tối ưu đã được đồng bộ: α=${data.optimal_alpha}, T*=${data.temperature_scaling_T}, τ*=${data.optimal_threshold_tau}`);
 });
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -807,8 +807,8 @@ class BenchmarkJobRunner:
                 b_logger.log("INFO", "⚡ Sử dụng mô hình Detector đã nạp sẵn trong bộ nhớ đệm (Warm-cached).")
 
             # Prepare test samples according to mode and sample_count
-            b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử (Quy mô yêu cầu: mode='{mode}', count='{sample_count}')...")
-            samples = self._load_samples_for_mode(mode, b_logger, sample_count=sample_count)
+            b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử (Quy mô yêu cầu: mode='{mode}', count='{sample_count}', Dataset: '{dataset_name}')...")
+            samples = self._load_samples_for_mode(mode, b_logger, sample_count=sample_count, dataset_name=dataset_name)
             total_samples = len(samples)
             b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu thực nghiệm. Bắt đầu quá trình suy luận phân loại...")
 
@@ -895,9 +895,10 @@ class BenchmarkJobRunner:
         self,
         mode: str,
         b_logger: BenchmarkLogger,
-        sample_count: Optional[Any] = None
+        sample_count: Optional[Any] = None,
+        dataset_name: str = "Synthetic & Curated"
     ) -> List[Dict[str, Any]]:
-        """Collect test media items based on selected mode and sample count."""
+        """Collect test media items based on selected mode, sample count and dataset."""
         samples: List[Dict[str, Any]] = []
 
         # Determine target sample count
@@ -917,19 +918,84 @@ class BenchmarkJobRunner:
             else:
                 target_count = 50
 
-        # 1. Look for existing test manifest
-        test_manifest_path = PROJECT_ROOT / "dataset_pipeline" / "source_split" / "test_manifest.json"
-        if test_manifest_path.exists():
+        # 0. Primary: Check Stratified Manifest from Ablation Evidence (14 International + 5 Threads-DFBench)
+        ablation_manifest = PROJECT_ROOT / "benchmark" / "ablation_study" / "manifest_eval_samples.jsonl"
+        if ablation_manifest.exists():
             try:
-                with open(test_manifest_path, "r", encoding="utf-8") as f:
-                    loaded = json.load(f)
-                    for item in loaded:
-                        p = item.get("filepath") or item.get("path")
-                        if p and Path(p).exists():
-                            samples.append(item)
-                b_logger.log("INFO", f"Loaded {len(samples)} samples from test_manifest.json")
-            except Exception as e:
-                b_logger.log("WARN", f"Error reading test_manifest: {e}")
+                ds_lower = dataset_name.lower()
+                loaded_manifest = []
+                with open(ablation_manifest, "r", encoding="utf-8") as mf:
+                    for line in mf:
+                        if not line.strip():
+                            continue
+                        record = json.loads(line)
+                        rec_ds = (record.get("dataset") or "").lower()
+                        rec_cohort = (record.get("cohort") or "").lower()
+
+                        match = False
+                        if "all" in ds_lower or "suite" in ds_lower or "synthetic" in ds_lower:
+                            match = True
+                        elif "threads" in ds_lower or "vietnam" in ds_lower:
+                            match = ("threads" in rec_ds or "vietnam" in rec_cohort or "nhóm" in ds_lower)
+                        elif any(k in ds_lower for k in ["faceforensics", "ff++"]):
+                            match = "faceforensics" in rec_ds
+                        elif "celeb" in ds_lower:
+                            match = "celeb" in rec_ds
+                        elif "dfdc" in ds_lower:
+                            match = "dfdc" in rec_ds
+                        elif "wild" in ds_lower:
+                            match = "wild" in rec_ds
+                        elif "fakeavceleb" in ds_lower:
+                            match = "fakeavceleb" in rec_ds
+                        elif "deeperforensics" in ds_lower:
+                            match = "deeperforensics" in rec_ds
+                        elif "forgery" in ds_lower:
+                            match = "forgery" in rec_ds
+                        elif "wavefake" in ds_lower:
+                            match = "wavefake" in rec_ds
+                        elif "asvspoof" in ds_lower:
+                            match = "asvspoof" in rec_ds
+                        elif "genimage" in ds_lower:
+                            match = "genimage" in rec_ds
+                        elif "artifact" in ds_lower:
+                            match = "artifact" in rec_ds
+                        else:
+                            match = True
+
+                        if match:
+                            loaded_manifest.append({
+                                "filepath": record.get("filepath"),
+                                "label": record.get("ground_truth", "REAL"),
+                                "dataset": record.get("dataset", dataset_name),
+                                "cohort": record.get("cohort")
+                            })
+
+                if loaded_manifest:
+                    samples.extend(loaded_manifest)
+                    b_logger.log("INFO", f"Loaded {len(loaded_manifest)} stratified samples from manifest_eval_samples.jsonl matching '{dataset_name}'")
+            except Exception as mex:
+                b_logger.log("WARN", f"Could not read ablation manifest: {mex}")
+
+        # 1. Fallback: Look for existing test manifest
+        if len(samples) == 0:
+            test_manifest_path = PROJECT_ROOT / "dataset_pipeline" / "source_split" / "test_manifest.json"
+            if test_manifest_path.exists():
+                try:
+                    with open(test_manifest_path, "r", encoding="utf-8") as f:
+                        loaded = json.load(f)
+                        for item in loaded:
+                            p = item.get("filepath") or item.get("path")
+                            if p and Path(p).exists():
+                                samples.append(item)
+                    b_logger.log("INFO", f"Loaded {len(samples)} samples from test_manifest.json")
+                except Exception as e:
+                    b_logger.log("WARN", f"Error reading test_manifest: {e}")
+
+        # Slice to target_count if required
+        if target_count is not None and len(samples) > target_count:
+            import random
+            random.seed(42)
+            samples = random.sample(samples, target_count)
 
         # 2. Look in static or uploads folder for existing images
         min_required = target_count if target_count is not None else 20
