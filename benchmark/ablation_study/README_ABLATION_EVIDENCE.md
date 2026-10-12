@@ -92,3 +92,72 @@ python eval_ablation_grid_search.py
 ```
 
 *Thời gian thực thi:* **< 1.5 giây** trên bất kỳ máy tính cá nhân nào (không đòi hỏi GPU đắt tiền).
+
+---
+
+## 🔄 4. KIẾN TRÚC VÒNG LẶP KHÉP KÍN OPTION B (CLOSED-LOOP ADAPTIVE MLOPS)
+### Chu trình Tự Động Hóa 4 Trụ Cột: Train – Pentest – Benchmark – Data
+
+Hệ thống được thiết kế theo mô hình điều khiển thích ứng khép kín (Autonomous Closed-Loop), kết nối chặt chẽ giữa 4 trụ cột cốt lõi:
+
+```mermaid
+flowchart TD
+    subgraph P1 ["📦 1. Data Engine (Thu Hoạch & Lập Chỉ Mục)"]
+        D1["Daily Harvest: 1,000 Ảnh + 100 Video + 100 Audio (5 Nhóm VN)"]
+        D2["Adversarial Factory: 30 Mẫu Fake (FaceSwap, Gemini, FLUX, Canva, Meta AI)"]
+        D3["Perceptual Dedup 64-bit dHash & Hard-Negative Mining"]
+        D4["Đóng Gói Hugging Face Hub (ThangCao106/Threads-DFBench-Vietnamese) + GDrive"]
+    end
+
+    subgraph P2 ["🧠 2. Train Engine (Mô Hình Tri-Stream & Dual-Backbone)"]
+        T1["Spatial Stream (ViT-B/16 + ConvNeXt-V2)"]
+        T2["Frequency Stream (2D-FFT Azimuthal Z_peak + Haar DWT E_high)"]
+        T3["Biological/Temporal Stream (rPPG Waveform Consistency)"]
+        T4["Focal Loss (gamma=2.0, alpha=0.25) & LoRA PEFT (r=16, alpha=32)"]
+    end
+
+    subgraph P3 ["🛡️ 3. Pentest Engine (Kiểm Thử Xâm Nhập Đa Tầng)"]
+        PE1["White-box: PGD L-inf (eps=8/255), FGSM"]
+        PE2["Black-box: Nén Mạng Xã Hội (H.264 CRF=35, Blur, Color Jitter)"]
+        PE3["EOD Pentest Job: Đo lường AUC, EER, ECE, Platt T*, Ngưỡng Tau*"]
+        PE4["SQLite Memory: Ghi nhận Trajectory vào deepfake_agent_memory.db"]
+    end
+
+    subgraph P4 ["📊 4. Benchmark & Governance Hub (Kiểm Chuẩn & Hiệu Chỉnh)"]
+        B1["14 Tập Benchmark Quốc Tế (>1.68M Mẫu) + Threads-DFBench"]
+        B2["Ablation Study Grid Search: Tối ưu Tỷ trọng alpha = 0.60"]
+        B3["PPO Meta-Controller: Tự Động Kích Hoạt Tín Hiệu Trigger LoRA"]
+        B4["Đồng Bộ Trực Quan Hóa: / (Web UI), /obsagent/, /benchmark/"]
+    end
+
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4
+    P4 -- "Tín hiệu Trigger LoRA khi phát hiện Drift" --> P2
+    P4 -- "Cập nhật Mẫu Thử Đối Chứng" --> P1
+```
+
+### Chi tiết Thông Số Vận Hành Của 4 Trụ Cột:
+
+1. **Trụ Cột Dữ Liệu (Data Engine):**
+   - Hạn ngạch hàng ngày: **1,000 ảnh thật**, **100 video thật**, **100 audio thật** phân bổ đồng đều trên 5 nhóm người Việt (`vn_id_official`, `vn_selfie_lifestyle`, `vn_street_outdoor`, `vn_occlusion_glasses_mask`, `vn_mature_aging`).
+   - Xưởng sinh đối kháng: **30 ảnh fake** (10 FaceSwap, 10 Gemini Imagen 3/FLUX.1-dev, 10 Consumer AI Dropzone từ Canva/Meta AI).
+   - Lập chỉ mục JSONL tự động tại `dataset_manifest.jsonl` và đồng bộ Hugging Face Hub `ThangCao106/Threads-DFBench-Vietnamese`.
+
+2. **Trụ Cột Huấn Luyện (Training Engine):**
+   - Hợp nhất đặc trưng qua hàm lồi tối ưu:
+     $$Risk_{composite} = (1 - \alpha^*) \cdot Risk_{general} + \alpha^* \cdot Risk_{human}, \quad \text{với } \alpha^* = 0.60$$
+   - Hiệu chuẩn xác suất Platt Scaling đạt $ECE < 0.0195$:
+     $$P(y=1 \mid z) = \sigma\left(\frac{z}{1.6178}\right)$$
+   - Cơ chế Continual Fine-Tuning với LoRA adapter (chỉ huấn luyện $1.34\%$ tham số, tiết kiệm $70\%$ VRAM trên GPU Colab/Server).
+
+3. **Trụ Cột Pentest (Adversarial Pentest Engine):**
+   - Tự động chạy EOD pentest job đánh giá toàn bộ batch dữ liệu ngày hôm đó.
+   - PPO Meta-Controller tính toán Reward:
+     $$R_t = AUC - 2.0 \cdot ECE - 1.5 \cdot FPR_{1\%}$$
+   - Cảnh báo và tự động bật tín hiệu `trigger_lora` khi $ECE > 0.05$ hoặc tỷ lệ mẫu khó vượt ngưỡng $\eta = 0.70$.
+
+4. **Trụ Cột Benchmark & Ablation Study:**
+   - Bao phủ 14 tập benchmark quốc tế (>1.68 triệu mẫu) đối chiếu chéo với 5 nhóm thực chiến Threads-DFBench.
+   - Cập nhật thời gian thực vào bảng ma trận Ablation Study Workbench tại cổng [https://detection.dtpsoft.vn/benchmark/](https://detection.dtpsoft.vn/benchmark/).
+   - Cung cấp chứng chỉ kiểm toán thực nghiệm số hóa SHA-256 cho hội đồng thẩm định luận án NCS.
