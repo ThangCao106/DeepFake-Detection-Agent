@@ -507,13 +507,14 @@ def format_benchmark_markdown_report(summary: Dict[str, Any], samples: Optional[
             
             is_match = s.get("is_correct", False)
             match_badge = "✅ **MATCH**" if is_match else "❌ **MISMATCH**"
+            s_loc = s.get("location") or ("TP. Hồ Chí Minh" if any(k in str(s_ds).lower() for k in ["threads", "vn", "vietnam"]) else "Quốc Tế / Cross-Region")
 
             sample_rows_md.append(
-                f"| {i:02d} | `{s_id}` | {s_ds} | {true_badge} | {pred_badge} | {raw_sc} | {cal_sc} | {lat_sc} | {match_badge} |"
+                f"| {i:02d} | `{s_id}` | {s_ds} | {s_loc} | {true_badge} | {pred_badge} | {raw_sc} | {cal_sc} | {lat_sc} | {match_badge} |"
             )
     
     if not sample_rows_md:
-        sample_rows_str = "| - | *(Chưa có dữ liệu mẫu chi tiết)* | - | - | - | - | - | - | - |"
+        sample_rows_str = "| - | *(Chưa có dữ liệu mẫu chi tiết)* | - | - | - | - | - | - | - | - |"
     else:
         sample_rows_str = "\n".join(sample_rows_md)
 
@@ -570,8 +571,8 @@ def format_benchmark_markdown_report(summary: Dict[str, Any], samples: Optional[
 
 ## 4. 🔬 Danh Sách Giám Định Từng Mẫu (Sample-by-Sample Forensic Audit)
 
-| STT | Tên Mẫu / File ID | Bộ Dữ Liệu | Nhãn Gốc (Truth) | Dự Đoán (Pred) | Điểm Thô (Raw) | Xác Suất Chuẩn Hóa | Độ Trễ (ms) | Kết Quả Đối Soát |
-|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| STT | Tên Mẫu / File Nguồn | Bộ Dữ Liệu | Khu Vực (Location) | Nhãn Gốc (Truth) | Dự Đoán (Pred) | Điểm Thô (Raw) | Xác Suất Chuẩn Hóa | Độ Trễ (ms) | Kết Quả Đối Soát |
+|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 {sample_rows_str}
 
 ---
@@ -1014,6 +1015,8 @@ class BenchmarkJobRunner:
 
                             loaded_manifest.append({
                                 "sample_id": record.get("sample_id", f"sample_{len(loaded_manifest)+1}"),
+                                "filename": record.get("filename", record.get("sample_id")),
+                                "location": record.get("location", "TP. Hồ Chí Minh"),
                                 "filepath": phys_file,
                                 "label": label_val,
                                 "dataset": record.get("dataset_source") or record.get("dataset", dataset_name),

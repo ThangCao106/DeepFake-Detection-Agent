@@ -3,7 +3,7 @@
 
 - **Ngày thực hiện**: `2026-10-12`
 - **Tập mẫu kiểm chuẩn**: `1,000` mẫu phân tầng (500 Real / 500 Fake)
-- **Mã băm toàn vẹn tệp Manifest (SHA-256)**: `e8bc0a11a8db952050e4c28c17ed17e7ff2791e04870f22c6a7e3caf75241176`
+- **Mã băm toàn vẹn tệp Manifest (SHA-256)**: `e248a677525283d0c6521e6dddf189425ca914b6922b6817ee98bb304b5186c3`
 - **Công thức dung hợp tối ưu**:
   $$Risk_{composite} = 0.40 \cdot Risk_{general} + 0.60 \cdot Risk_{human}$$
 

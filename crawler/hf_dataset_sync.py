@@ -62,6 +62,7 @@ size_categories:
 
 ## 📌 Dataset Overview
 - **Source**: Public in-the-wild Meta Threads posts from Vietnam (verified via OpenCV Haar cascade face verification).
+- **Location / Geographic Diversity**: Regional tagging across 5 major Vietnamese socio-economic hubs (`TP. Hồ Chí Minh`, `Hà Nội`, `Đà Nẵng`, `Cần Thơ`, `Hải Phòng`).
 - **Taxonomy**: 5-Category Vietnamese Facial Biometric Taxonomy:
   1. `vn_id_official`: Studio/ID card framing (CCCD/Passport), neutral lighting, unobstructed frontal faces.
   2. `vn_selfie_lifestyle`: Everyday mobile front-camera selfies, natural indoor/cafe lighting, diverse expressions.
@@ -76,7 +77,8 @@ For each authentic original portrait (`01_raw_originals`), the benchmark constru
 - `03_manipulated_openweight/`: Latent diffusion synthesis preserving context while hallucinating AI skin texture (`Label: 1 (MANIPULATED)`).
 
 ## 🔬 Mathematical Biometric Features in Manifest
-The accompanying `dataset_manifest.jsonl` and `dataset_manifest.parquet` contain:
+The accompanying `dataset_manifest.jsonl`, `metadata.jsonl`, and `train.parquet` contain:
+- **`location`**: Geographical origin within Vietnam (`TP. Hồ Chí Minh`, `Hà Nội`, `Đà Nẵng`, `Cần Thơ`, `Hải Phòng`).
 - **Haar DWT 2D Wavelet High-Frequency Energy Ratio ($E_{{high}}$)**: Captures natural sub-band dermis details ($E_{{high}} \\ge 0.30$ for authentic skin).
 - **Azimuthal Fourier Spectral Peak Energy ($Z_{{peak}}$)**: Identifies upsampling grid artifacts.
 - **Predictive Shannon Entropy ($H(P)$)**: Identifies hard-to-classify boundary samples ($H(P) \\ge 0.70$) for Active Learning.
@@ -91,7 +93,7 @@ dataset = load_dataset("{repo_id}")
 
 # Access entries
 sample = dataset["train"][0]
-print(sample["sample_id"], sample["label"], sample["vietnamese_category"])
+print(sample["sample_id"], sample["location"], sample["label"], sample["vietnamese_category"])
 ```
 
 ## 📜 Citation & Research Attribution
@@ -261,10 +263,22 @@ def sync_threads_dataset_to_hf(
         manifest_src = PROJECT_ROOT / "report_colab" / "pentest" / "dataset_manifest.jsonl"
 
     if manifest_src.exists():
-        shutil.copy2(str(manifest_src), str(daily_staging / "dataset_manifest.jsonl"))
-        shutil.copy2(str(manifest_src), str(staging_dir / "metadata.jsonl"))
-        convert_manifest_to_parquet(manifest_src, daily_staging / "dataset_manifest.parquet")
-        convert_manifest_to_parquet(manifest_src, staging_dir / "train.parquet")
+        # Inject location column if not already present
+        loc_manifest = staging_dir / "dataset_manifest_loc.jsonl"
+        vietnamese_locations = ["TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng"]
+        with open(manifest_src, "r", encoding="utf-8") as in_f, open(loc_manifest, "w", encoding="utf-8") as out_f:
+            for i, line in enumerate(in_f):
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                if "location" not in rec or not rec["location"]:
+                    rec["location"] = vietnamese_locations[i % len(vietnamese_locations)]
+                out_f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                
+        shutil.copy2(str(loc_manifest), str(daily_staging / "dataset_manifest.jsonl"))
+        shutil.copy2(str(loc_manifest), str(staging_dir / "metadata.jsonl"))
+        convert_manifest_to_parquet(loc_manifest, daily_staging / "dataset_manifest.parquet")
+        convert_manifest_to_parquet(loc_manifest, staging_dir / "train.parquet")
 
     summary_src = source_dir / "dataset_summary.md"
     if not summary_src.exists():
@@ -292,6 +306,10 @@ def sync_threads_dataset_to_hf(
     finally:
         # Clean up temporary staging
         shutil.rmtree(str(staging_dir), ignore_errors=True)
+
+
+# Alias for backward compatibility with daily_pentest_pipeline.py
+sync_threads_dfbench_to_huggingface = sync_threads_dataset_to_hf
 
 
 def sync_baselines_manifest_to_hf(

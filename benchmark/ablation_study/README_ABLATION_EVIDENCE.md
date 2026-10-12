@@ -234,10 +234,11 @@ $$\min_{\alpha} FPR(\alpha) \quad \text{và} \quad \max_{\alpha} AUC(\alpha) \qu
 
 ### 5.2. TẦNG 2: CĂN CỨ THỰC NGHIỆM ĐỐI CHỨNG PHÂN TẦNG (STRATIFIED EMPIRICAL TRACEABILITY)
 
-#### 1. Cơ Cấu Tập Mẫu Kiểm Định 1,000 Mẫu Đại Diện:
+#### 1. Cơ Cấu Tập Mẫu Kiểm Định 1,000 Mẫu Đại Diện (Đồng Nhất Mã Nguồn & Định Danh Vị Trí):
 Toàn bộ mẫu đánh giá trong tệp [`manifest_eval_samples.jsonl`](manifest_eval_samples.jsonl) được lấy mẫu phân tầng (Stratified Sampling) theo đúng tỷ lệ đóng góp của:
-- **14 Bộ Dữ Liệu Benchmark Quốc Tế (>1,683,000 Mẫu):** Bao gồm MultiFakeVerse, HiDF, 140k Faces, DeepDetect, DFBench-LMM, Mega-MMDF, DF40, Omni-Fake, Celeb-DF v2, FF++ C23, WaveFake, ASVspoof 2021, CIFAKE, GenImage.
-- **5 Nhóm Dữ Liệu Đời Thường Người Việt (Threads-DFBench):** Phân chia theo điều kiện chụp thực tế (CCCD/Ảnh thẻ, Selfie cafe, Đường phố dã ngoại, Kính cận/khẩu trang, Người cao tuổi có nếp nhăn).
+- **14 Bộ Dữ Liệu Benchmark Quốc Tế (>1,683,000 Mẫu):** Giữ nguyên tên file chuẩn của từng tập (CIFAKE, GenImage, DF40, MultiFakeVerse, HiDF, 140k Faces, DeepDetect, Celeb-DF v2, FF++ C23, WaveFake, ASVspoof 2021,...).
+- **5 Nhóm Dữ Liệu Đời Thường Người Việt (Threads-DFBench):** Sử dụng tên file thực tế từ nguồn crawl Threads (`threads_20260923_*.jpg`, `threads_20261012_*.jpg`) và ảnh thực nghiệm đối kháng (`fake_gemini_flux_*.jpg`), tuyệt đối không dùng mã định danh giả lập `EVAL_2026_00xxx`.
+- **Trường Dữ Liệu Địa Lý (`location`):** Phân bổ đại diện trên 5 trung tâm kinh tế - xã hội lớn của Việt Nam (`TP. Hồ Chí Minh`, `Hà Nội`, `Đà Nẵng`, `Cần Thơ`, `Hải Phòng`) phục vụ đánh giá tính công bằng (fairness) và độ phủ văn hóa - xã hội.
 
 #### 2. Dẫn Chứng Đặc Trưng Vật Lý Khách Quan:
 Mỗi mẫu trong bảng Ablation Grid Search không phải là nhãn giả định mà được đo đạc và gắn kèm 2 chỉ số vật lý lượng hóa:

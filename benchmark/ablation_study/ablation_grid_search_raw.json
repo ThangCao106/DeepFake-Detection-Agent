@@ -2,7 +2,7 @@
   "title": "Empirical Ablation Grid Search for Multimodal Deepfake Composite Risk Ratio",
   "timestamp_utc": "2026-10-12T10:30:00Z",
   "manifest_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\benchmark\\ablation_study\\manifest_eval_samples.jsonl",
-  "manifest_sha256": "e8bc0a11a8db952050e4c28c17ed17e7ff2791e04870f22c6a7e3caf75241176",
+  "manifest_sha256": "e248a677525283d0c6521e6dddf189425ca914b6922b6817ee98bb304b5186c3",
   "sample_count": 999,
   "cohorts_evaluated": [
     "CIFAKE",
