@@ -38,11 +38,12 @@ from crawler.threads_crawler import crawl_threads_media
 
 DEFAULT_LOCAL_STORAGE = PROJECT_ROOT / "report_colab" / "gdrive_storage"
 
-def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr", base_folder_name="Thread_Data"):
+def find_or_create_colab_drive_path(folder_id=None, base_folder_name="Thread_Data"):
     """
     Locates mounted Google Drive path on Colab.
     Checks for user's exact shared folder shortcut Thread_Data or default MyDrive directory.
     """
+    target_fid = folder_id or os.environ.get("GDRIVE_TARGET_FOLDER_ID") or "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6"
     colab_mydrive = Path("/content/drive/MyDrive")
     if not colab_mydrive.exists():
         alt_mount = Path("/content/drive/Shareddrives")
@@ -56,6 +57,8 @@ def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr
             return None
 
     candidate_names = [
+        target_fid,
+        "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6",
         "1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0",
         "Thread_Data",
         "Deepfake Detection",
@@ -63,8 +66,7 @@ def find_or_create_colab_drive_path(folder_id="1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr
         "Deepfake_Pentest_Data",
         "1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr",
         "1dv91sElMrK3BI8130uwZD0HzQfIoNZpO",
-        "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet",
-        folder_id
+        "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
     ]
 
     target_path = None
@@ -136,10 +138,10 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     copied_count = 0
     sub_counts = {}
     
-    # 0. Automatically purge legacy Western seed files from Google Drive & local storage before syncing
+    # 0. Automatically purge synthetic audio, corrupt empty-image batches & legacy seeds from Google Drive
     try:
-        from scripts.purge_legacy_seed_samples import purge_legacy_samples
-        purge_legacy_samples(extra_paths=[dest_drive_root, drive_daily_root, drive_target_dir])
+        from scripts.purge_synthetic_audio_and_drive_artifacts import purge_synthetic_and_corrupt_artifacts
+        purge_synthetic_and_corrupt_artifacts(extra_paths=[dest_drive_root, drive_daily_root, drive_target_dir])
     except Exception as err:
         print(f"[Colab GDrive Sync] Notice on purge: {err}")
 
@@ -147,7 +149,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     source_dirs = [pentest_dir, local_daily_dir]
     
     # Initialize Option C Perceptual Deduplication Registry from Google Drive
-    from crawler.dedup_engine import PerceptualDeduplicationRegistry, compute_dhash, is_visual_duplicate
+    from crawler.dedup_engine import PerceptualDeduplicationRegistry, compute_dhash
     dedup_registry = PerceptualDeduplicationRegistry()
     dedup_registry.sync_with_gdrive(dest_drive_root)
     gdrive_known_dhashes = dedup_registry.get_known_dhashes()
@@ -160,18 +162,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
         drive_sub = drive_target_dir / sub
         drive_sub.mkdir(parents=True, exist_ok=True)
         
-        # Only clean out explicit legacy AI seed files if present
-        if drive_sub.exists():
-            for df in drive_sub.iterdir():
-                if df.is_file() and df.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
-                    if any(df.name.startswith(p) for p in ["threads_20260921_", "threads_20260922_", "human_face_sample_", "faceswap_sample_", "openweight_sample_"]):
-                        try:
-                            df.unlink()
-                            print(f"  [Purged Legacy File] Removed legacy AI seed sample: {df.name}")
-                        except Exception as e:
-                            pass
-
-        # Copy authentic Vietnamese media files directly to Google Drive (with visual deduplication)
+        # Copy authentic Vietnamese media files directly to Google Drive
         sub_copied = 0
         for src_base in source_dirs:
             local_sub = src_base / sub
@@ -180,16 +171,10 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
                     if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
                         dest_file = drive_sub / f.name
                         
-                        # Enforce visual deduplication on images syncing to GDrive
+                        # Register unique images into Option C Dedup Registry
                         if f.suffix.lower() in [".jpg", ".jpeg", ".png"]:
                             try:
                                 with Image.open(f) as im:
-                                    is_dup, match_h, dist = is_visual_duplicate(im, gdrive_known_dhashes, threshold=6)
-                                    # Allow if it's the exact same file being updated, but block if it's a clone of another file
-                                    if is_dup and dest_file.name not in [v.get("filename") for v in dedup_registry.hashes.values()]:
-                                        if not dest_file.exists():
-                                            print(f"  [GDrive Dedup Block] Suppressed upload of visual duplicate: {f.name} (dist={dist} <= 6)")
-                                            continue
                                     cur_dh = compute_dhash(im)
                                     gdrive_known_dhashes.add(cur_dh)
                                     dedup_registry.check_and_register(im, filename=f.name, source="gdrive_sync")

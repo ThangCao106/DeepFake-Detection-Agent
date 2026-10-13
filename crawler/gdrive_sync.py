@@ -97,7 +97,7 @@ class DiskGuardAgent:
 
 
 # Default target shared folder on Google Drive (User shared workspace)
-DEFAULT_TARGET_FOLDER_ID = "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
+DEFAULT_TARGET_FOLDER_ID = "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6"
 
 class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="Thread_Data"):
@@ -121,7 +121,15 @@ class GDriveSyncAgent:
         # 1. Check if running on Google Colab with drive.mount('/content/drive')
         colab_mydrive = Path("/content/drive/MyDrive")
         if colab_mydrive.exists():
-            candidate_folders = ["Thread_Data", "DeepFake_Pentest_Data", "Deepfake Detection", self.base_folder_name]
+            candidate_folders = [
+                self.target_folder_id,
+                "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6",
+                "1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0",
+                "Thread_Data",
+                "DeepFake_Pentest_Data",
+                "Deepfake Detection",
+                self.base_folder_name
+            ]
             found_folder = None
             for cname in candidate_folders:
                 cand = colab_mydrive / cname
