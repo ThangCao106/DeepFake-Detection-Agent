@@ -43,7 +43,7 @@ def find_or_create_colab_drive_path(folder_id=None, base_folder_name="Thread_Dat
     Locates mounted Google Drive path on Colab.
     Checks for user's exact shared folder shortcut Thread_Data or default MyDrive directory.
     """
-    target_fid = folder_id or os.environ.get("GDRIVE_TARGET_FOLDER_ID") or "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6"
+    target_fid = folder_id or os.environ.get("GDRIVE_TARGET_FOLDER_ID") or "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
     colab_mydrive = Path("/content/drive/MyDrive")
     if not colab_mydrive.exists():
         alt_mount = Path("/content/drive/Shareddrives")
@@ -58,6 +58,7 @@ def find_or_create_colab_drive_path(folder_id=None, base_folder_name="Thread_Dat
 
     candidate_names = [
         target_fid,
+        "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet",
         "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6",
         "1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0",
         "Thread_Data",
@@ -65,8 +66,7 @@ def find_or_create_colab_drive_path(folder_id=None, base_folder_name="Thread_Dat
         "DeepFake_Pentest_Data",
         "Deepfake_Pentest_Data",
         "1MipTWpXt0o0xz2IyUc_pTvMzo0tcXRlr",
-        "1dv91sElMrK3BI8130uwZD0HzQfIoNZpO",
-        "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
+        "1dv91sElMrK3BI8130uwZD0HzQfIoNZpO"
     ]
 
     target_path = None

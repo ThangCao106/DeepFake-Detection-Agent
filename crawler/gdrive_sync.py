@@ -97,7 +97,7 @@ class DiskGuardAgent:
 
 
 # Default target shared folder on Google Drive (User shared workspace)
-DEFAULT_TARGET_FOLDER_ID = "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6"
+DEFAULT_TARGET_FOLDER_ID = "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
 
 class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="Thread_Data"):
@@ -123,6 +123,7 @@ class GDriveSyncAgent:
         if colab_mydrive.exists():
             candidate_folders = [
                 self.target_folder_id,
+                "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet",
                 "1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6",
                 "1W6R3QYzTI6GJAD2lByKoVaQnXfURcLO0",
                 "Thread_Data",

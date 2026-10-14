@@ -64,7 +64,7 @@ jobs:
       - name: 4. Execute Crawler & Option C Data Pipeline
         env:
           GDRIVE_CREDENTIALS_JSON: ${{ secrets.GDRIVE_CREDENTIALS_JSON }}
-          GDRIVE_TARGET_FOLDER_ID: ${{ secrets.GDRIVE_TARGET_FOLDER_ID || '1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6' }}
+          GDRIVE_TARGET_FOLDER_ID: ${{ secrets.GDRIVE_TARGET_FOLDER_ID || '1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           THREADS_SESSION_COOKIES: ${{ secrets.THREADS_SESSION_COOKIES }}
           THREADS_VAULT_ONLY: ${{ github.event.inputs.vault_only || 'false' }}
@@ -116,3 +116,14 @@ jobs:
               fi
             done
           fi
+
+      - name: 6. Upload Crawled Media Dataset as Artifact (Direct Download)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-threads-dataset-run-${{ github.run_number }}
+          path: |
+            report_colab/pentest/**
+            crawler/dedup_registry.json
+          retention-days: 14
+          if-no-files-found: ignore
