@@ -36,19 +36,19 @@ def exchange_refresh_token_for_access_token(refresh_token: str) -> str:
         print("[OAuth Engine] Input token detected as direct Google Access Token.")
         return clean_token
 
-    # Candidate OAuth client IDs (Playground default, custom env, etc.)
-    custom_client_id = os.environ.get("GDRIVE_CLIENT_ID")
-    custom_client_secret = os.environ.get("GDRIVE_CLIENT_SECRET")
+    # Candidate OAuth client IDs
+    DEFAULT_CLIENT_ID = "891972860412-4chuehnfujg29c9gp78mrs4e49r7ejkn.apps.googleusercontent.com"
+    DEFAULT_CLIENT_SECRET = "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"
 
-    candidates = []
-    if custom_client_id:
-        candidates.append({"client_id": custom_client_id, "client_secret": custom_client_secret})
-    
-    # Google OAuth 2.0 Playground public client credentials
-    candidates.extend([
+    custom_client_id = os.environ.get("GDRIVE_CLIENT_ID") or DEFAULT_CLIENT_ID
+    custom_client_secret = os.environ.get("GDRIVE_CLIENT_SECRET") or DEFAULT_CLIENT_SECRET
+
+    candidates = [
+        {"client_id": custom_client_id, "client_secret": custom_client_secret},
+        {"client_id": DEFAULT_CLIENT_ID, "client_secret": DEFAULT_CLIENT_SECRET},
         {"client_id": "407408718192.apps.googleusercontent.com", "client_secret": None},
         {"client_id": None, "client_secret": None}
-    ])
+    ]
 
     last_error = None
     for cfg in candidates:

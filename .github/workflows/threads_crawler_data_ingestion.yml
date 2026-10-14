@@ -64,6 +64,8 @@ jobs:
       - name: 4. Execute Crawler & Option C Data Pipeline
         env:
           GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           GDRIVE_CREDENTIALS_JSON: ${{ secrets.GDRIVE_CREDENTIALS_JSON }}
           GDRIVE_TARGET_FOLDER_ID: ${{ secrets.GDRIVE_TARGET_FOLDER_ID || '1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

@@ -25,6 +25,8 @@ jobs:
       - name: 4. Execute OAuth2 Test
         env:
           GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           GDRIVE_TARGET_FOLDER_ID: ${{ secrets.GDRIVE_TARGET_FOLDER_ID || '1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet' }}
         run: |
           python tools/test_gdrive_oauth.py
