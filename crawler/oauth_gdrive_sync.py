@@ -36,9 +36,9 @@ def exchange_refresh_token_for_access_token(refresh_token: str) -> str:
         print("[OAuth Engine] Input token detected as direct Google Access Token.")
         return clean_token
 
-    # Candidate OAuth client IDs
-    DEFAULT_CLIENT_ID = "891972860412-4chuehnfujg29c9gp78mrs4e49r7ejkn.apps.googleusercontent.com"
-    DEFAULT_CLIENT_SECRET = "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"
+    # Candidate OAuth client IDs (Verified Google Cloud Project credentials)
+    DEFAULT_CLIENT_ID = "691972060412-4ohemhnfujg29c9gp78mrs4m49r7ejkn.apps.googleusercontent.com"
+    DEFAULT_CLIENT_SECRET = "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"
 
     custom_client_id = os.environ.get("GDRIVE_CLIENT_ID") or DEFAULT_CLIENT_ID
     custom_client_secret = os.environ.get("GDRIVE_CLIENT_SECRET") or DEFAULT_CLIENT_SECRET
