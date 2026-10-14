@@ -150,20 +150,41 @@ class GDriveSyncAgent:
         # 2. Check if Google Drive Service Account Credentials JSON is provided
         if self.credentials_json:
             try:
+                import base64
                 from google.oauth2 import service_account
                 from googleapiclient.discovery import build
 
                 creds_dict = None
-                # Support both raw JSON string and path to credentials JSON file
-                if os.path.isfile(str(self.credentials_json)):
-                    with open(self.credentials_json, "r", encoding="utf-8") as cf:
-                        creds_dict = json.load(cf)
-                elif isinstance(self.credentials_json, str) and self.credentials_json.strip().startswith("{"):
-                    creds_dict = json.loads(self.credentials_json)
-                elif isinstance(self.credentials_json, dict):
-                    creds_dict = self.credentials_json
+                raw_input = self.credentials_json
 
-                if creds_dict:
+                if isinstance(raw_input, dict):
+                    creds_dict = raw_input
+                elif isinstance(raw_input, str):
+                    clean_str = raw_input.strip()
+                    # Strip wrapping single/double quotes if added accidentally
+                    if (clean_str.startswith('"') and clean_str.endswith('"')) or (clean_str.startswith("'") and clean_str.endswith("'")):
+                        clean_str = clean_str[1:-1].strip()
+
+                    if os.path.isfile(clean_str):
+                        with open(clean_str, "r", encoding="utf-8") as cf:
+                            creds_dict = json.load(cf)
+                    elif clean_str.startswith("{"):
+                        creds_dict = json.loads(clean_str)
+                    else:
+                        # Attempt Base64 decode
+                        try:
+                            decoded = base64.b64decode(clean_str).decode("utf-8").strip()
+                            if decoded.startswith("{"):
+                                creds_dict = json.loads(decoded)
+                        except Exception:
+                            pass
+
+                if not creds_dict:
+                    err_msg = f"GDRIVE_CREDENTIALS_JSON is provided ({len(str(self.credentials_json))} chars) but failed to parse as JSON or Base64 JSON."
+                    print(f"[GDrive Sync] [AUTH ERROR] {err_msg}")
+                    if os.environ.get("GITHUB_ACTIONS") == "true":
+                        print(f"::error title=GDrive Credentials Error::{err_msg}")
+                else:
                     creds = service_account.Credentials.from_service_account_info(
                         creds_dict, scopes=['https://www.googleapis.com/auth/drive']
                     )
@@ -179,7 +200,10 @@ class GDriveSyncAgent:
                         print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
                     return
             except Exception as e:
-                print(f"[GDrive Sync] [AUTH ERROR] Google Drive API init failed ({e}). Falling back to local storage structure.")
+                err_msg = f"Google Drive API init failed: {e}"
+                print(f"[GDrive Sync] [AUTH ERROR] {err_msg}")
+                if os.environ.get("GITHUB_ACTIONS") == "true":
+                    print(f"::error title=GDrive Auth Error::{err_msg}")
         else:
             print("[GDrive Sync] [NOTICE] No GDRIVE_CREDENTIALS_JSON found. Falling back to local storage structure.")
             if os.environ.get("GITHUB_ACTIONS") == "true":
