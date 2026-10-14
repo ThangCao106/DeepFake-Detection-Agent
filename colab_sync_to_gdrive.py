@@ -465,6 +465,58 @@ def ensure_browser_environment():
         subprocess.run([sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"], check=False)
 
 
+def check_drive_media_availability(drive_root, date_str):
+    """
+    Checks if Google Drive already has authentic images, audios, and videos for today.
+    Supports Option C Drive-First architecture:
+      - If Drive already has sufficient data from external crawler, Colab skips crawling and feeds directly to GPU.
+      - If Drive is empty or deficient, Colab triggers autonomous Vietnam Face Vault.
+    """
+    if not drive_root:
+        return {"images": 0, "audios": 0, "videos": 0, "has_manifest": False, "search_dirs": []}
+
+    daily_dir = Path(drive_root) / date_str
+    search_dirs = []
+    if daily_dir.exists():
+        search_dirs.append(daily_dir)
+        search_dirs.extend([p for p in daily_dir.glob("batch_*") if p.is_dir()])
+    else:
+        # Also check root level or latest date folders
+        p_root = Path(drive_root)
+        search_dirs.append(p_root)
+        latest_dates = sorted([d for d in p_root.glob("202*") if d.is_dir()])
+        if latest_dates:
+            search_dirs.append(latest_dates[-1])
+            search_dirs.extend([p for p in latest_dates[-1].glob("batch_*") if p.is_dir()])
+
+    raw_images = set()
+    raw_audios = set()
+    raw_videos = set()
+    has_manifest = False
+
+    for sdir in search_dirs:
+        raw_dir = sdir / "01_raw_originals"
+        target_dir = raw_dir if raw_dir.exists() else sdir
+        for f in target_dir.glob("*.*"):
+            suf = f.suffix.lower()
+            if suf in [".jpg", ".jpeg", ".png"]:
+                raw_images.add(f.name)
+            elif suf == ".wav":
+                raw_audios.add(f.name)
+            elif suf == ".mp4":
+                raw_videos.add(f.name)
+        if (sdir / "dataset_manifest.parquet").exists() or (sdir / "dataset_manifest.jsonl").exists():
+            has_manifest = True
+
+    return {
+        "images": len(raw_images),
+        "audios": len(raw_audios),
+        "videos": len(raw_videos),
+        "has_manifest": has_manifest,
+        "search_dirs": [str(d) for d in search_dirs]
+    }
+
+
 def run_option_a_pipeline(
     num_images=10000, 
     num_videos=500, 
@@ -476,21 +528,24 @@ def run_option_a_pipeline(
     batch_size=32,
     lr=1e-4,
     job_batch="auto",
-    vault_only=False
+    vault_only=False,
+    skip_crawl=False,
+    force_crawl=False
 ):
     """
-    Executes end-to-end Option A scheduled pipeline:
-      1. Generates 5-category Vietnamese inspection samples & crawls Meta Threads media (Option C: Vietnam Face Vault)
-      2. Direct-syncs to mounted Google Drive (supports Option C 4h batch subfolders)
-      3. Trains Model 1 (ViT General Vision Continual with Focal Loss)
-      4. Trains Model 2 (Human Biometric Multi-Modal with 4 Human Datasets + Threads Media)
-      5. Generates and synchronizes master training report (training_report_dual_stream.md)
+    Executes end-to-end Option A / C scheduled pipeline:
+      1. Option C Drive-First: If Drive already has crawled data, skips crawler & feeds directly to GPU
+      2. If Drive is empty/insufficient: Generates authentic samples via Vietnam Face Vault
+      3. Direct-syncs to mounted Google Drive (supports Option C 4h batch subfolders)
+      4. Trains Model 1 (ViT General Vision Continual with Focal Loss)
+      5. Trains Model 2 (Human Biometric Multi-Modal with 4 Human Datasets + Threads Media)
+      6. Generates and synchronizes master training report (training_report_dual_stream.md)
     """
     date_str = time.strftime("%Y-%m-%d")
     timestamp_tag = time.strftime("%Y-%m-%d_%Hh")
     
     print("=" * 75)
-    print(f"🚀 Option A: Google Colab Dual-Stream Training & GDrive Direct Sync ({timestamp_tag})")
+    print(f"🚀 Option A/C: Google Colab Dual-Stream Training & GDrive Direct Sync ({timestamp_tag})")
     print(f"⚙️ Quota: Images={num_images:,}, Videos={num_videos:,}, Audios={num_audios:,} | Visual Samples={num_samples}")
     print(f"⏱️ 4h Job Batch: {job_batch}")
     print(f"🧠 Model 1 (General Vision): {'ENABLED' if do_train_model1 else 'DISABLED'}")
@@ -501,53 +556,66 @@ def run_option_a_pipeline(
     # 1. Locate Google Drive
     drive_root = find_or_create_colab_drive_path()
     
-    # 2. Sourcing Meta Threads media & generating paired counterfactual manipulations
-    source_label = "Autonomous Vietnam Face Vault (Option C)" if vault_only else "Meta Threads Live Scraper + Vault Fallback"
-    print(f"\n[Step 1] Sourcing authentic media ({source_label}) ({num_samples} samples) & generating paired manipulations...")
-    if not vault_only:
-        ensure_browser_environment()
-    import asyncio
-    from crawler.dedup_engine import PerceptualDeduplicationRegistry, is_visual_duplicate
-    
-    pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
-    raw_orig_dir = pentest_dir / "01_raw_originals"
-    raw_orig_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Initialize Option C Dedup Registry & sync with mounted GDrive
-    dedup_registry = PerceptualDeduplicationRegistry(pentest_dir / "perceptual_dhash_registry.json")
-    if drive_root:
-        dedup_registry.sync_with_gdrive(drive_root)
-        
-    # 2.1 Media Acquisition -> 01_raw_originals (Vault or Live Scraper)
-    try:
-        asyncio.run(crawl_threads_media(
-            batch_size_images=num_images,
-            batch_size_audios=num_audios,
-            batch_size_videos=num_videos,
-            output_dir=str(pentest_dir),
-            vault_only=vault_only
-        ))
-    except Exception as err:
-        print(f"⚠️ Notice on live Threads crawl: {err}. Falling back to autonomous Vietnam Face Vault.")
-        from crawler.vietnam_face_vault import load_vault_portraits
-        load_vault_portraits(output_dir=raw_orig_dir, count=num_images)
-        
-    # 2.2 Paired FaceSwap & Diffusion manipulations -> 02_manipulated_faceswap & 03_manipulated_openweight
-    generate_and_upload_pentest_sample_images(
-        num_samples=num_samples,
-        date_str=date_str,
-        pentest_dir=str(pentest_dir)
-    )
-    
-    # 3. Synchronize media assets to Google Drive
-    if drive_root:
-        print(f"\n[Step 2] Transferring Threads media directly to Google Drive...")
-        total_copied = sync_local_samples_to_drive(drive_root, date_str=date_str, job_batch=job_batch)
-        print(f"✅ Success: {total_copied} Threads media assets synchronized to Google Drive!")
+    # 2. Option C Drive-First Architecture:
+    # Check if Google Drive has already been populated by external crawler job (Local/VPS/Jenkins)
+    drive_status = check_drive_media_availability(drive_root, date_str) if drive_root else {"images": 0, "audios": 0, "videos": 0}
+    threshold = min(num_samples, 25)
+    drive_has_data = (drive_status["images"] >= threshold)
 
+    if skip_crawl or (drive_has_data and not force_crawl):
+        print("\n" + "=" * 75)
+        print(f"🎯 [Option C: Drive-First MLOps Active]")
+        print(f"   Google Drive already has {drive_status['images']} authentic images & {drive_status['videos']} videos ready for {date_str}!")
+        print(f"   ⚡ External Crawler Job has already populated Google Drive.")
+        print(f"   ⏩ SKIPPING crawler & media generation on Colab -> feeding directly to GPU Training.")
+        print("=" * 75)
     else:
-        print(f"\n[Step 2 Notice] Running in standalone/local mode. Files stored at:")
-        print(f"   {pentest_dir}")
+        # Sourcing Meta Threads media & generating paired counterfactual manipulations
+        source_label = "Autonomous Vietnam Face Vault (Option C)" if vault_only else "Meta Threads Live Scraper + Vault Fallback"
+        print(f"\n[Step 1] Sourcing authentic media ({source_label}) ({num_samples} samples) & generating paired manipulations...")
+        if not vault_only:
+            ensure_browser_environment()
+        import asyncio
+        from crawler.dedup_engine import PerceptualDeduplicationRegistry, is_visual_duplicate
+        
+        pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
+        raw_orig_dir = pentest_dir / "01_raw_originals"
+        raw_orig_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize Option C Dedup Registry & sync with mounted GDrive
+        dedup_registry = PerceptualDeduplicationRegistry(pentest_dir / "perceptual_dhash_registry.json")
+        if drive_root:
+            dedup_registry.sync_with_gdrive(drive_root)
+            
+        # 2.1 Media Acquisition -> 01_raw_originals (Vault or Live Scraper)
+        try:
+            asyncio.run(crawl_threads_media(
+                batch_size_images=num_images,
+                batch_size_audios=num_audios,
+                batch_size_videos=num_videos,
+                output_dir=str(pentest_dir),
+                vault_only=vault_only
+            ))
+        except Exception as err:
+            print(f"⚠️ Notice on live Threads crawl: {err}. Falling back to autonomous Vietnam Face Vault.")
+            from crawler.vietnam_face_vault import load_vault_portraits
+            load_vault_portraits(output_dir=raw_orig_dir, count=num_images)
+            
+        # 2.2 Paired FaceSwap & Diffusion manipulations -> 02_manipulated_faceswap & 03_manipulated_openweight
+        generate_and_upload_pentest_sample_images(
+            num_samples=num_samples,
+            date_str=date_str,
+            pentest_dir=str(pentest_dir)
+        )
+        
+        # 3. Synchronize media assets to Google Drive
+        if drive_root:
+            print(f"\n[Step 2] Transferring Threads media directly to Google Drive...")
+            total_copied = sync_local_samples_to_drive(drive_root, date_str=date_str, job_batch=job_batch)
+            print(f"✅ Success: {total_copied} Threads media assets synchronized to Google Drive!")
+        else:
+            print(f"\n[Step 2 Notice] Running in standalone/local mode. Files stored at:")
+            print(f"   {pentest_dir}")
 
     model1_res = None
     model2_res = None
@@ -675,7 +743,9 @@ def run_continuous_loop(args):
             batch_size=args.batch_size,
             lr=args.lr,
             job_batch=args.job_batch,
-            vault_only=getattr(args, "vault_only", False)
+            vault_only=getattr(args, "vault_only", False),
+            skip_crawl=getattr(args, "skip_crawl", False),
+            force_crawl=getattr(args, "force_crawl", False)
         )
         
         if args.max_loops and loop_idx >= args.max_loops:
@@ -712,6 +782,8 @@ if __name__ == "__main__":
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
     parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h job batch subfolder name (default: 'auto', or 'none' to disable)")
     parser.add_argument("--vault-only", "--offline", dest="vault_only", action="store_true", help="Option C: Use 100% autonomous Vietnam Face Vault (zero network dependency)")
+    parser.add_argument("--skip-crawl", "--train-only", dest="skip_crawl", action="store_true", help="Option C: Skip crawling/generation and train only from mounted Google Drive")
+    parser.add_argument("--force-crawl", "--force-harvest", dest="force_crawl", action="store_true", help="Force crawling or regenerating media even if Google Drive already has data")
     args = parser.parse_args()
 
     from crawler.crawler_config import get_crawler_config
@@ -745,6 +817,8 @@ if __name__ == "__main__":
             batch_size=args.batch_size,
             lr=args.lr,
             job_batch=args.job_batch,
-            vault_only=args.vault_only
+            vault_only=args.vault_only,
+            skip_crawl=args.skip_crawl,
+            force_crawl=args.force_crawl
         )
 
