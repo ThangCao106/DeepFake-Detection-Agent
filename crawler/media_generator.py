@@ -246,7 +246,8 @@ def apply_faceswap_manipulation(
     img: Image.Image,
     seed: Optional[int] = None,
     source_cat: Optional[str] = None,
-    dedup_registry: Optional[PerceptualDeduplicationRegistry] = None
+    dedup_registry: Optional[PerceptualDeduplicationRegistry] = None,
+    sample_idx: Optional[int] = None
 ) -> Image.Image:
     """
     Applies authentic FaceSwap RoI boundary manipulation between Vietnamese facial features:
@@ -255,6 +256,8 @@ def apply_faceswap_manipulation(
     3. Blends counterfactual feature perturbation with boundary feathering.
     4. Leaves Poisson boundary gradient seam.
     """
+    if seed is None and sample_idx is not None:
+        seed = int(time.time()) + sample_idx * 997
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed % (2**31 - 1))
@@ -327,12 +330,14 @@ def apply_faceswap_manipulation(
     swapped.paste(face_roi, (x1, y1))
     return swapped
 
-def apply_openweight_gen_manipulation(img: Image.Image, seed=None) -> Image.Image:
+def apply_openweight_gen_manipulation(img: Image.Image, seed=None, sample_idx: Optional[int] = None) -> Image.Image:
     """
     Applies Latent Diffusion & GAN synthesis artifacts (Flux.1 / SDXL / Midjourney):
     1. Skin pore over-smoothing (Bilateral edge-preserving smoothing, lowering DWT E_high).
     2. Latent patch grid periodic frequency excitation (8x8 patch grid, raising FFT Z_peak > 4.2).
     """
+    if seed is None and sample_idx is not None:
+        seed = int(time.time()) + sample_idx * 997
     if seed is not None:
         random.seed(seed)
         
@@ -354,6 +359,32 @@ def apply_openweight_gen_manipulation(img: Image.Image, seed=None) -> Image.Imag
                 pixels[x, y] = (min(255, r + 5), min(255, g + 5), min(255, b + 5))
                 
     return generated
+
+
+def generate_paired_faceswap_manipulation(
+    img: Image.Image,
+    sample_idx: Optional[int] = None,
+    seed: Optional[int] = None,
+    source_cat: Optional[str] = None,
+    dedup_registry: Optional[PerceptualDeduplicationRegistry] = None
+) -> Image.Image:
+    """Convenience alias for apply_faceswap_manipulation."""
+    return apply_faceswap_manipulation(
+        img,
+        seed=seed,
+        source_cat=source_cat,
+        dedup_registry=dedup_registry,
+        sample_idx=sample_idx
+    )
+
+
+def generate_paired_generative_diffusion_artifact(
+    img: Image.Image,
+    sample_idx: Optional[int] = None,
+    seed: Optional[int] = None
+) -> Image.Image:
+    """Convenience alias for apply_openweight_gen_manipulation."""
+    return apply_openweight_gen_manipulation(img, seed=seed, sample_idx=sample_idx)
 
 
 def create_manipulated_video(
