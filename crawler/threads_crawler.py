@@ -628,7 +628,13 @@ def fetch_authentic_human_image_unique(
         "is_synthetic_suspect": False
     }
 
-async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, batch_size_videos=1000, output_dir="report_colab/pentest"):
+async def crawl_threads_media(
+    batch_size_images=1000,
+    batch_size_audios=1000,
+    batch_size_videos=1000,
+    output_dir="report_colab/pentest",
+    vault_only: bool = False
+):
     """
     Option C Pipeline: Crawls and validates public Threads Human Media.
     Preserves original full-frame images, post metadata, and computes SHA256 digests.
@@ -713,64 +719,38 @@ async def crawl_threads_media(batch_size_images=1000, batch_size_audios=1000, ba
             pass
     print(f"[Option C Threads Crawler] Preserving {len(seen_hashes)} existing media in 01_raw_originals ({len(dedup_registry.get_known_dhashes())} unique dHashes).")
     
-    # 1. Fetch 100% Real Human Face Images from Meta Threads (Option A Default + Option B Advanced)
-    from crawler.threads_browser_scraper import ThreadsBrowserScraper
-    scraper = ThreadsBrowserScraper(session_cookie_str=cookie_str, headless=True)
-    
-    cfg = get_crawler_config()
-    clean_topics = cfg["keywords"]
-    print(f"[Option A+C Crawler] Active keywords ({len(clean_topics)}): {', '.join(clean_topics[:8])}...")
-        
-    harvested = await scraper.harvest_real_threads_human_images_async(
-        keywords=clean_topics,
-        min_images=batch_size_images,
-        seen_hashes=seen_hashes,
-        dedup_registry=dedup_registry
-    )
+    # 1. Fetch 100% Real Human Face Images from Meta Threads or Option C Offline Vietnam Face Vault
+    harvested = []
+    is_vault_mode = vault_only or os.environ.get("THREADS_VAULT_ONLY", "").lower() in ["true", "1", "yes"]
 
-    # Option A+C Fallback Guard: If live Threads returns fewer images (e.g. headless blocked on Colab datacenter IP),
-    # automatically backfill with authentic Wikimedia Commons Vietnamese human portraits and the 5-taxonomy verified pool.
-    if len(harvested) < batch_size_images:
-        deficit = batch_size_images - len(harvested)
-        print(f"[Option A+C Crawler] Harvested {len(harvested)} from live Threads. Need {deficit} more. Activating Wikimedia Commons & 5-Taxonomy Vietnamese pool...")
-        from crawler.threads_browser_scraper import harvest_wikimedia_vietnamese_portraits
+    if is_vault_mode:
+        print(f"[Option C Crawler] Vault-Only mode active. Instantly loading {batch_size_images} verified portraits from Vietnam Face Vault...")
+        from crawler.vietnam_face_vault import load_vault_portraits
+        harvested = load_vault_portraits(min_images=batch_size_images, dedup_registry=dedup_registry)
+    else:
         try:
-            wiki_photos = harvest_wikimedia_vietnamese_portraits(min_images=deficit, dedup_registry=dedup_registry)
-            harvested.extend(wiki_photos)
-        except Exception as e_wiki:
-            print(f"[Option A+C Crawler] Wikimedia harvest notice: {e_wiki}")
+            from crawler.threads_browser_scraper import ThreadsBrowserScraper
+            scraper = ThreadsBrowserScraper(session_cookie_str=cookie_str, headless=True)
+            cfg = get_crawler_config()
+            clean_topics = cfg["keywords"]
+            print(f"[Option A+C Crawler] Active keywords ({len(clean_topics)}): {', '.join(clean_topics[:8])}...")
+            harvested = await scraper.harvest_real_threads_human_images_async(
+                keywords=clean_topics,
+                min_images=batch_size_images,
+                seen_hashes=seen_hashes,
+                dedup_registry=dedup_registry
+            )
+        except Exception as e_live:
+            print(f"[Option C Crawler] Notice on live scraper ({e_live}). Instantly activating Vietnam Face Vault...")
+            harvested = []
 
+        # Option C Fallback Guard: If live Threads returns fewer images, backfill immediately from Vault
         if len(harvested) < batch_size_images:
-            from crawler.media_generator import fetch_authentic_human_portrait, VIETNAMESE_CATEGORIES
-            deficit2 = batch_size_images - len(harvested)
-            print(f"[Option A+C Crawler] Pulling {deficit2} high-confidence authentic Vietnamese portraits from 5-category verified pool...")
-            for s_idx in range(1, deficit2 + 1):
-                cat = VIETNAMESE_CATEGORIES[(s_idx - 1) % len(VIETNAMESE_CATEGORIES)]
-                portrait_im, meta_info = fetch_authentic_human_portrait(
-                    sample_idx=s_idx + int(time.time()) % 1000,
-                    category=cat,
-                    dedup_registry=dedup_registry
-                )
-                buf = io.BytesIO()
-                portrait_im.save(buf, format="JPEG", quality=95)
-                raw_bytes = buf.getvalue()
-                h = hashlib.sha256(raw_bytes).hexdigest()
-                dhash_val = compute_dhash(portrait_im)
-                w, h_dim = portrait_im.size
-                harvested.append({
-                    "image_bytes": raw_bytes,
-                    "sha256": h,
-                    "dhash": dhash_val,
-                    "face_count": 1,
-                    "primary_bbox": [int(0.2 * w), int(0.1 * h_dim), int(0.8 * w), int(0.8 * h_dim)],
-                    "width": w,
-                    "height": h_dim,
-                    "post_url": f"https://www.threads.com/@vn_citizen_{cat}_{s_idx}",
-                    "author": f"vn_user_{cat}_{s_idx}",
-                    "caption": f"NCS Authentic Vietnamese Human Portrait [{cat}]",
-                    "keyword": cat,
-                    "source": "verified_vietnamese_pool"
-                })
+            from crawler.vietnam_face_vault import load_vault_portraits
+            deficit = batch_size_images - len(harvested)
+            print(f"[Option C Crawler] Backfilling {deficit} portraits directly from Option C Offline Vietnam Face Vault...")
+            vault_photos = load_vault_portraits(min_images=deficit, dedup_registry=dedup_registry)
+            harvested.extend(vault_photos)
     
     for idx, item in enumerate(harvested, 1):
         sha = item["sha256"]

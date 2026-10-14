@@ -475,11 +475,12 @@ def run_option_a_pipeline(
     epochs=3,
     batch_size=32,
     lr=1e-4,
-    job_batch="auto"
+    job_batch="auto",
+    vault_only=False
 ):
     """
     Executes end-to-end Option A scheduled pipeline:
-      1. Generates 5-category Vietnamese inspection samples & crawls Meta Threads media
+      1. Generates 5-category Vietnamese inspection samples & crawls Meta Threads media (Option C: Vietnam Face Vault)
       2. Direct-syncs to mounted Google Drive (supports Option C 4h batch subfolders)
       3. Trains Model 1 (ViT General Vision Continual with Focal Loss)
       4. Trains Model 2 (Human Biometric Multi-Modal with 4 Human Datasets + Threads Media)
@@ -500,9 +501,11 @@ def run_option_a_pipeline(
     # 1. Locate Google Drive
     drive_root = find_or_create_colab_drive_path()
     
-    # 2. Crawl Meta Threads media & generate paired counterfactual manipulations
-    print(f"\n[Step 1] Crawling Meta Threads media ({num_samples} samples) & generating paired manipulations...")
-    ensure_browser_environment()
+    # 2. Sourcing Meta Threads media & generating paired counterfactual manipulations
+    source_label = "Autonomous Vietnam Face Vault (Option C)" if vault_only else "Meta Threads Live Scraper + Vault Fallback"
+    print(f"\n[Step 1] Sourcing authentic media ({source_label}) ({num_samples} samples) & generating paired manipulations...")
+    if not vault_only:
+        ensure_browser_environment()
     import asyncio
     from crawler.dedup_engine import PerceptualDeduplicationRegistry, is_visual_duplicate
     
@@ -515,19 +518,19 @@ def run_option_a_pipeline(
     if drive_root:
         dedup_registry.sync_with_gdrive(drive_root)
         
-    # Option B: Strictly enforce genuine live crawling from Threads & Wikimedia Commons.
-    # Completely eliminated seed preloading to prevent recycling old AI faces.
-    
-    # 2.1 Live Threads & Open-Web Diverse Crawl -> 01_raw_originals
+    # 2.1 Media Acquisition -> 01_raw_originals (Vault or Live Scraper)
     try:
         asyncio.run(crawl_threads_media(
             batch_size_images=num_images,
             batch_size_audios=num_audios,
             batch_size_videos=num_videos,
-            output_dir=str(pentest_dir)
+            output_dir=str(pentest_dir),
+            vault_only=vault_only
         ))
     except Exception as err:
-        print(f"⚠️ Notice on live Threads crawl: {err}. Falling back to verified portrait pool.")
+        print(f"⚠️ Notice on live Threads crawl: {err}. Falling back to autonomous Vietnam Face Vault.")
+        from crawler.vietnam_face_vault import load_vault_portraits
+        load_vault_portraits(output_dir=raw_orig_dir, count=num_images)
         
     # 2.2 Paired FaceSwap & Diffusion manipulations -> 02_manipulated_faceswap & 03_manipulated_openweight
     generate_and_upload_pentest_sample_images(
@@ -671,7 +674,8 @@ def run_continuous_loop(args):
             epochs=args.epochs,
             batch_size=args.batch_size,
             lr=args.lr,
-            job_batch=args.job_batch
+            job_batch=args.job_batch,
+            vault_only=getattr(args, "vault_only", False)
         )
         
         if args.max_loops and loop_idx >= args.max_loops:
@@ -707,6 +711,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
     parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h job batch subfolder name (default: 'auto', or 'none' to disable)")
+    parser.add_argument("--vault-only", "--offline", dest="vault_only", action="store_true", help="Option C: Use 100% autonomous Vietnam Face Vault (zero network dependency)")
     args = parser.parse_args()
 
     from crawler.crawler_config import get_crawler_config
@@ -739,6 +744,7 @@ if __name__ == "__main__":
             epochs=args.epochs,
             batch_size=args.batch_size,
             lr=args.lr,
-            job_batch=args.job_batch
+            job_batch=args.job_batch,
+            vault_only=args.vault_only
         )
 

@@ -127,13 +127,8 @@ REAL_VIETNAMESE_THREADS_FALLBACK_POOL = [
 def harvest_wikimedia_vietnamese_portraits(
     min_images: int = 25,
     dedup_registry: Optional[PerceptualDeduplicationRegistry] = None,
-    user_agent: str = "Threads-DFBench-Bot/2.0 (research@ncs.vn)"
+    user_agent: str = "ThreadsDFBench/2.0 (https://github.com/ThangCao106/DeepFake-Detection-Agent; research_ncs@domain.vn) python-urllib/3.13"
 ) -> list:
-    """
-    Harvests authentic, public-domain and CC-licensed Vietnamese human portraits
-    directly from Wikimedia Commons categories without authentication or rate limits.
-    Enforces face detection and perceptual deduplication (dHash Hamming distance > 6).
-    """
     categories = [
         "Category:People_of_Vietnam",
         "Category:Vietnamese_people",
@@ -159,7 +154,7 @@ def harvest_wikimedia_vietnamese_portraits(
             api_url = (
                 f"https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers"
                 f"&gcmtitle={urllib.request.quote(cat)}&gcmlimit=50&gcmtype=file"
-                f"&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=800&format=json"
+                f"&prop=imageinfo&iiprop=url|size|mime&format=json"
             )
             req = urllib.request.Request(api_url, headers={"User-Agent": user_agent})
             with urllib.request.urlopen(req, timeout=12) as resp:
@@ -170,7 +165,7 @@ def harvest_wikimedia_vietnamese_portraits(
                 if len(harvested) >= min_images or (time.time() - start_time) > 90.0:
                     break
                 ii = info.get("imageinfo", [{}])[0]
-                thumb_url = ii.get("thumburl") or ii.get("url")
+                thumb_url = ii.get("url")
                 if not thumb_url:
                     continue
                 mime = ii.get("mime", "").lower()
@@ -635,22 +630,22 @@ class ThreadsBrowserScraper:
                 except Exception:
                     pass
 
-        # Option B: If still needing images, do an extended pass on Wikimedia Commons Photography
-        # Strictly eliminated all local AI seed pools and artificial augmentation.
+        # Option C Master Vault: Guaranteed 100% Vietnamese Human Portraits backfill
         if len(verified_results) < min_images:
             deficit = min_images - len(verified_results)
-            print(f"[Threads Real Harvester] Option B: Need {deficit} more real portraits. Fetching authentic camera photography from Wikimedia...")
-            wiki_photos = harvest_wikimedia_vietnamese_portraits(min_images=deficit, dedup_registry=dedup_registry)
-            for wp in wiki_photos:
+            print(f"[Threads Real Harvester] Option C Vault: Need {deficit} more real portraits. Invoking Offline Vietnam Face Vault...")
+            from crawler.vietnam_face_vault import load_vault_portraits
+            vault_photos = load_vault_portraits(min_images=deficit, dedup_registry=dedup_registry)
+            for vp in vault_photos:
                 if len(verified_results) >= min_images:
                     break
-                sha = wp["sha256"]
+                sha = vp["sha256"]
                 if sha not in batch_seen_hashes:
                     batch_seen_hashes.add(sha)
                     if seen_hashes is not None:
                         seen_hashes.add(sha)
-                    verified_results.append(wp)
-            print(f"[Threads Real Harvester] Option B Harvest total: {len(verified_results)}/{min_images} real human photos.")
+                    verified_results.append(vp)
+            print(f"[Threads Real Harvester] Option C Harvest total: {len(verified_results)}/{min_images} real human photos.")
 
         dedup_registry.save()
         print(f"[Threads Real Harvester] Verification complete: {len(verified_results)}/{min_images} unique real human photos accepted (0 duplicates).")

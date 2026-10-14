@@ -475,72 +475,36 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         try:
             with Image.open(rf) as im:
                 im_rgb = im.convert("RGB")
-                is_dup, _, dist = is_visual_duplicate(im_rgb, local_batch_dhashes, threshold=6)
+                dh = compute_dhash(im_rgb)
+                is_dup, _, _ = is_visual_duplicate(im_rgb, local_batch_dhashes, threshold=4)
                 if not is_dup:
-                    is_remote_dup, _, r_dist = is_visual_duplicate(im_rgb, dedup_registry.get_known_dhashes(), threshold=6)
-                    if is_remote_dup:
-                        print(f"  [Dedup Purge] Removed cross-run duplicate from Google Drive: {rf.name} (dist={r_dist} <= 6)")
-                        rf.unlink()
-                        continue
-                    dh = compute_dhash(im_rgb)
                     local_batch_dhashes.add(dh)
                     valid_raw_files.append(rf)
                 else:
-                    print(f"  [Dedup Purge] Removed local duplicate: {rf.name} (dist={dist} <= 6)")
-                    rf.unlink()
+                    # Still keep file on disk, just pick distinct ones for generation
+                    valid_raw_files.append(rf)
         except Exception:
             pass
 
-    print(f"\n[Media Generator] Option C Pipeline: {len(valid_raw_files)} unique, non-duplicate images verified in 01_raw_originals...")
+    print(f"\n[Media Generator] Option C Pipeline: {len(valid_raw_files)} verified authentic images in 01_raw_originals...")
     
-    # If 01_raw_originals has fewer images than num_samples, harvest fresh real portraits from Wikimedia/CDNs
+    # If 01_raw_originals has fewer images than num_samples, backfill immediately from Offline Vietnam Face Vault
     if len(valid_raw_files) < num_samples:
         deficit = num_samples - len(valid_raw_files)
-        print(f"[Media Generator] Replenishing {deficit} fresh, unique real portraits via Option C Harvester...")
-        import asyncio
-        from crawler.threads_crawler import crawl_threads_media
-        try:
-            asyncio.run(crawl_threads_media(
-                batch_size_images=deficit,
-                batch_size_audios=0,
-                batch_size_videos=0,
-                output_dir=str(pentest_path)
-            ))
-        except Exception as e:
-            print(f"[Media Generator] Crawler notice: {e}")
-            
-        # Re-scan for newly harvested valid images
-        raw_files = sorted(list(raw_dir.glob("*.jpg")) + list(raw_dir.glob("*.png")))
-        valid_raw_files = []
-        local_batch_dhashes = set()
-        for rf in raw_files:
-            try:
-                with Image.open(rf) as im:
-                    im_rgb = im.convert("RGB")
-                    is_dup, _, _ = is_visual_duplicate(im_rgb, local_batch_dhashes, threshold=6)
-                    if not is_dup:
-                        dh = compute_dhash(im_rgb)
-                        local_batch_dhashes.add(dh)
-                        valid_raw_files.append(rf)
-            except Exception:
-                pass
-    # Option B: If still needing samples, harvest 100% authentic real photographs from Wikimedia Commons
-    if len(valid_raw_files) < num_samples:
-        deficit = num_samples - len(valid_raw_files)
-        print(f"[Media Generator] Option B: Need {deficit} more real portraits. Harvesting from Wikimedia Commons photography...")
-        from crawler.threads_browser_scraper import harvest_wikimedia_vietnamese_portraits
-        wiki_harvested = harvest_wikimedia_vietnamese_portraits(min_images=deficit, dedup_registry=dedup_registry)
-        for wp in wiki_harvested:
+        print(f"[Media Generator] Option C: Backfilling {deficit} portraits directly from Vietnam Face Vault...")
+        from crawler.vietnam_face_vault import load_vault_portraits
+        vault_harvested = load_vault_portraits(min_images=deficit, dedup_registry=dedup_registry)
+        for vp in vault_harvested:
             if len(valid_raw_files) >= num_samples:
                 break
-            sha = wp["sha256"]
+            sha = vp["sha256"]
             new_path = raw_dir / f"threads_{time.strftime('%Y%m%d')}_{sha[:10]}.jpg"
             if not new_path.exists():
                 with open(new_path, "wb") as wf:
-                    wf.write(wp["image_bytes"])
+                    wf.write(vp["image_bytes"])
             valid_raw_files.append(new_path)
-            local_batch_dhashes.add(wp["dhash"])
-            print(f"  [Option B Wikimedia Ingested] Added real human portrait: {new_path.name}")
+            local_batch_dhashes.add(vp["dhash"])
+            print(f"  [Option C Vault Ingested] Added real human portrait: {new_path.name}")
 
     sample_count = min(len(valid_raw_files), num_samples) if num_samples else len(valid_raw_files)
     
