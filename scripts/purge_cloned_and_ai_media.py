@@ -129,7 +129,7 @@ def purge_cloned_media(include_drive: bool = True, date_str: str = None):
                                         pass
                     print(f"  🗑️ Cleared Google Drive folder: {ddir.name}")
 
-            # Reset Drive Registry
+            # Reset Drive Registry & old manifests in purged targets
             drive_reg = drive_root / "registry" / "perceptual_dhash_registry.json"
             if drive_reg.exists():
                 try:
@@ -137,8 +137,32 @@ def purge_cloned_media(include_drive: bool = True, date_str: str = None):
                     print("  🔄 Reset Google Drive perceptual_dhash_registry.json")
                 except Exception:
                     pass
+
+            for mf in drive_root.glob("**/dataset_manifest.jsonl"):
+                try:
+                    mf.unlink()
+                    purged_files += 1
+                except Exception:
+                    pass
         else:
             print("  ℹ️ Google Drive mount not detected (run on Colab to purge Drive directly).")
+
+    # 4. Clean Colab Local SSD Training Cache (/content/train_cache)
+    colab_train_cache = Path("/content/train_cache")
+    if colab_train_cache.exists():
+        try:
+            for f in colab_train_cache.glob("**/*.*"):
+                if f.is_file():
+                    try:
+                        sz = f.stat().st_size
+                        f.unlink()
+                        purged_files += 1
+                        purged_bytes += sz
+                    except Exception:
+                        pass
+            print(f"  🗑️ Cleared Colab local SSD cache: {colab_train_cache}")
+        except Exception as e:
+            print(f"  Notice cleaning /content/train_cache: {e}")
 
     mb_freed = purged_bytes / (1024 * 1024)
     print("=" * 75)

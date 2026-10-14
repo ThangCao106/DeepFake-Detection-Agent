@@ -59,44 +59,42 @@ class FocalLoss(nn.Module):
 class ThreadsDriveDataset(Dataset):
     """
     PyTorch Dataset that loads real & manipulated face images directly from
-    Google Drive daily folders (Thread_Data/YYYY-MM-DD/) using dataset_manifest.jsonl.
+    staged local NVMe SSD or mounted Google Drive using dataset manifests.
     """
     def __init__(self, manifest_entries, base_search_dirs=None, processor=None):
         self.entries = manifest_entries
         self.processor = processor
         self.base_search_dirs = [Path(d) for d in base_search_dirs or [] if Path(d).exists()]
-        # Fast path indexing to avoid recursive FUSE globs on each sample during training
         self.file_map = {}
-        for bdir in self.base_search_dirs:
-            try:
-                for p in bdir.glob("**/*.*"):
-                    if p.is_file() and p.name not in self.file_map:
-                        self.file_map[p.name] = str(p)
-            except Exception:
-                pass
 
     def _resolve_file_path(self, entry):
         # 1. Check direct local_path
         lp = entry.get("local_path")
         if lp and os.path.exists(lp):
             return lp
-            
+
         # 2. Check gdrive_file_id (if it's a mounted filesystem path)
         gid = entry.get("gdrive_file_id")
         if gid and os.path.exists(gid):
             return gid
-            
-        # 3. Fast lookup from pre-indexed map
+
+        # 3. Check cached path map
         fname = entry.get("filename", "")
         if fname and fname in self.file_map:
             return self.file_map[fname]
 
-        # 4. Search candidate directories
+        # 4. Search candidate directories on-demand (no full-drive glob)
         subfolder = entry.get("subfolder", "")
         for bdir in self.base_search_dirs:
-            p1 = bdir / subfolder / fname
-            if p1.exists():
-                return str(p1)
+            if subfolder:
+                p1 = bdir / subfolder / fname
+                if p1.exists():
+                    self.file_map[fname] = str(p1)
+                    return str(p1)
+            p2 = bdir / fname
+            if p2.exists():
+                self.file_map[fname] = str(p2)
+                return str(p2)
         return None
 
     def __len__(self):
@@ -105,7 +103,7 @@ class ThreadsDriveDataset(Dataset):
     def __getitem__(self, idx):
         entry = self.entries[idx]
         file_path = self._resolve_file_path(entry)
-        
+
         if file_path and os.path.exists(file_path):
             try:
                 img = Image.open(file_path).convert("RGB")
@@ -113,14 +111,13 @@ class ThreadsDriveDataset(Dataset):
                 img = Image.new("RGB", (224, 224), (128, 128, 128))
         else:
             img = Image.new("RGB", (224, 224), (128, 128, 128))
-            
+
         label = int(entry.get("label", 0))
-        
+
         if self.processor:
             inputs = self.processor(images=img, return_tensors="pt")
             pixel_values = inputs["pixel_values"].squeeze(0)
         else:
-            # Fallback tensor conversion
             from torchvision import transforms
             t_func = transforms.Compose([
                 transforms.Resize((224, 224)),
@@ -128,8 +125,108 @@ class ThreadsDriveDataset(Dataset):
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
             pixel_values = t_func(img)
-            
+
         return pixel_values, torch.tensor(label, dtype=torch.long), entry.get("is_hard_sample", False)
+
+
+def stage_active_training_samples(
+    records,
+    candidate_roots,
+    local_cache_dir=Path("/content/train_cache/staged"),
+    max_train_samples=800
+):
+    """
+    Selects a high-quality active learning window and stages images from Google Drive
+    to fast local NVMe SSD (/content/train_cache/staged).
+    Eliminates Google Drive FUSE latency, rate-limiting, and training freezes.
+    """
+    if not records:
+        return []
+
+    # 1. Budgeting / Active Sliding Window
+    hard_samples = [r for r in records if r.get("is_hard_sample")]
+    normal_samples = [r for r in records if not r.get("is_hard_sample")]
+
+    # Allocation: prioritize hard negatives (benchmark errors, high entropy)
+    max_hard = min(len(hard_samples), max_train_samples // 3)
+    max_normal = max_train_samples - max_hard
+
+    selected = []
+    if hard_samples:
+        selected.extend(hard_samples[-max_hard:])
+    if normal_samples:
+        if len(normal_samples) > max_normal:
+            recent_count = int(max_normal * 0.75)
+            replay_count = max_normal - recent_count
+            selected.extend(normal_samples[-recent_count:]) # Most recent batches
+            selected.extend(normal_samples[:replay_count])  # Rehearsal memory buffer
+        else:
+            selected.extend(normal_samples)
+
+    local_cache_dir.mkdir(parents=True, exist_ok=True)
+    staged_records = []
+    to_copy = []
+
+    for r in selected:
+        fname = r.get("filename", "")
+        lp = r.get("local_path")
+
+        # Case A: Already on local SSD (not in /content/drive)
+        if lp and os.path.exists(lp) and not str(lp).startswith("/content/drive"):
+            r_copy = dict(r)
+            r_copy["local_path"] = str(lp)
+            staged_records.append(r_copy)
+            continue
+
+        # Case B: Already staged in local_cache_dir
+        staged_p = local_cache_dir / fname
+        if staged_p.exists() and staged_p.stat().st_size > 100:
+            r_copy = dict(r)
+            r_copy["local_path"] = str(staged_p)
+            staged_records.append(r_copy)
+            continue
+
+        # Case C: Needs staging from Google Drive or candidate roots
+        found_source = None
+        if lp and os.path.exists(lp):
+            found_source = Path(lp)
+        else:
+            subfolder = r.get("subfolder", "")
+            for c_root in candidate_roots:
+                if subfolder:
+                    p1 = c_root / subfolder / fname
+                    if p1.exists():
+                        found_source = p1
+                        break
+                p2 = c_root / fname
+                if p2.exists():
+                    found_source = p2
+                    break
+
+        if found_source:
+            to_copy.append((found_source, staged_p, dict(r)))
+
+    # Copy files concurrently to local NVMe SSD
+    if to_copy:
+        print(f"⚡ [Fast Local Staging] Pre-caching {len(to_copy)} samples from Drive to NVMe SSD ({local_cache_dir})...")
+        from concurrent.futures import ThreadPoolExecutor
+        def _copy_task(item):
+            src, dst, rec = item
+            try:
+                shutil.copy2(src, dst)
+                rec["local_path"] = str(dst)
+                return rec
+            except Exception:
+                return None
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(_copy_task, to_copy))
+            for res in results:
+                if res is not None:
+                    staged_records.append(res)
+        print(f"✅ [Fast Local Staging] {len(staged_records)} samples staged on local SSD (Zero FUSE latency)!")
+
+    return staged_records if staged_records else records
 
 
 def load_benchmark_hard_negatives(benchmark_dir=None):
@@ -194,10 +291,11 @@ def find_all_manifests(target_dir):
 def run_threads_continual_training(
     drive_root=None,
     epochs=3,
-    batch_size=16,
+    batch_size=32,
     lr=1e-5,
     base_model="dima806/deepfake_vs_real_image_detection",
-    output_checkpoint_dir=None
+    output_checkpoint_dir=None,
+    max_train_samples=800
 ):
     """
     Executes Active Continual Fine-Tuning on Google Colab:
@@ -222,9 +320,17 @@ def run_threads_continual_training(
     if colab_default.exists():
         candidate_roots.append(colab_default)
         
+    colab_cache = Path("/content/train_cache")
+    if colab_cache.exists():
+        candidate_roots.append(colab_cache)
+        
     local_storage = PROJECT_ROOT / "report_colab" / "gdrive_storage"
     if local_storage.exists():
         candidate_roots.append(local_storage)
+        
+    pentest_storage = PROJECT_ROOT / "report_colab" / "pentest"
+    if pentest_storage.exists():
+        candidate_roots.append(pentest_storage)
         
     temp_storage = PROJECT_ROOT / "report_colab" / "temp_media_samples"
     if temp_storage.exists():
@@ -260,22 +366,32 @@ def run_threads_continual_training(
         print(f"[Hard Negative Mining] Ingested {len(bench_hards)} misclassified edge cases from benchmark_results.json")
         records.extend(bench_hards)
 
+    # 2. Stage active training set to local NVMe SSD to avoid Google Drive FUSE latency
+    staged_records = stage_active_training_samples(
+        records,
+        candidate_roots=candidate_roots,
+        max_train_samples=max_train_samples
+    )
+    if staged_records:
+        records = staged_records
+
     total_count = len(records)
     hard_count = sum(1 for r in records if r.get("is_hard_sample"))
-    print(f"\n[Dataset Summary] Total Samples: {total_count} | Hard Negatives (H(P)>=0.70 & Benchmark Errors): {hard_count} ({hard_count/total_count*100 if total_count else 0:.1f}%)")
+    print(f"\n[Dataset Summary] Active Continual Window: {total_count} Samples | Hard Negatives: {hard_count} ({hard_count/total_count*100 if total_count else 0:.1f}%)")
 
-    # Split dataset
-    base_train = [r for r in records if r.get("split") == "train"] or records[:int(total_count*0.7)] or records
-    test_records = [r for r in records if r.get("split") in ["val", "test_ood"]] or records[int(total_count*0.7):] or records
+    # Split dataset (80% train, 20% test_ood)
+    split_idx = max(1, int(total_count * 0.8))
+    base_train = records[:split_idx]
+    test_records = records[split_idx:] if split_idx < total_count else records[:min(50, total_count)]
 
-    # Prioritize hard samples in training (2x weighting for hard negatives under Focal Loss)
+    # Prioritize hard samples in training (weighting for hard borderline samples under Focal Loss)
     train_records = []
     for r in base_train:
         train_records.append(r)
-        if r.get("is_hard_sample"):
-            train_records.append(r) # Double representation for hard borderline samples
+        if r.get("is_hard_sample") and len(train_records) < max_train_samples:
+            train_records.append(r)
 
-    # 2. Setup Image Processor and Model
+    # 3. Setup Image Processor and Model
     processor = None
     model = None
     try:
@@ -288,21 +404,40 @@ def run_threads_continual_training(
         from torchvision.models import resnet18
         model = resnet18(weights=None, num_classes=2).to(device)
 
-    # 3. Create DataLoaders
-    search_dirs = candidate_roots
+    # 4. Create DataLoaders with local caching & multi-worker prefetching
+    search_dirs = [Path("/content/train_cache/staged")] + candidate_roots
     train_ds = ThreadsDriveDataset(train_records, base_search_dirs=search_dirs, processor=processor)
     test_ds = ThreadsDriveDataset(test_records, base_search_dirs=search_dirs, processor=processor)
 
-    train_loader = DataLoader(train_ds, batch_size=min(batch_size, max(1, len(train_ds))), shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=min(batch_size, max(1, len(test_ds))), shuffle=False)
+    num_workers = 2 if (device == "cuda" and sys.platform.startswith("linux")) else 0
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=min(batch_size, max(1, len(train_ds))),
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=(device == "cuda")
+    )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=min(batch_size, max(1, len(test_ds))),
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device == "cuda")
+    )
 
     # 4. Optimizer & Focal Loss
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
     criterion = FocalLoss(alpha=0.25, gamma=2.0)
 
-    # 5. Continual Training Loop
+    # 5. Continual Training Loop with Real-Time Progress Bar
+    try:
+        from tqdm.auto import tqdm
+    except Exception:
+        tqdm = None
+
     print("\n" + "=" * 60)
     print(f"🚀 Starting Continual Fine-Tuning ({epochs} Epochs with Focal Loss gamma=2.0)...")
+    print(f"   Batches per Epoch: {len(train_loader)} | Batch Size: {train_loader.batch_size}")
     print("=" * 60)
 
     model.train()
@@ -311,7 +446,8 @@ def run_threads_continual_training(
         ep_loss = 0.0
         correct = 0
         total = 0
-        for pixel_values, labels, is_hard in train_loader:
+        pbar = tqdm(train_loader, desc=f"  Epoch [{ep + 1}/{epochs}]", unit="batch") if tqdm else train_loader
+        for step, (pixel_values, labels, is_hard) in enumerate(pbar):
             pixel_values = pixel_values.to(device)
             labels = labels.to(device)
 
@@ -327,17 +463,25 @@ def run_threads_continual_training(
             correct += (preds == labels).sum().item()
             total += len(labels)
 
+            cur_loss = ep_loss / max(1, total)
+            cur_acc = (correct / max(1, total)) * 100.0
+            if tqdm:
+                pbar.set_postfix({"loss": f"{cur_loss:.4f}", "acc": f"{cur_acc:.1f}%"})
+            elif (step + 1) % 5 == 0 or (step + 1) == len(train_loader):
+                print(f"    Batch [{step + 1}/{len(train_loader)}] Loss: {cur_loss:.4f} | Acc: {cur_acc:.1f}%")
+
         acc = correct / total if total > 0 else 1.0
         avg_loss = ep_loss / total if total > 0 else 0.0
         history.append({"epoch": ep + 1, "loss": round(avg_loss, 4), "accuracy": round(acc * 100, 2)})
-        print(f"  Epoch [{ep + 1}/{epochs}] — Loss: {avg_loss:.4f} | Train Acc: {acc * 100:.2f}%")
+        print(f"  ✔ Finished Epoch [{ep + 1}/{epochs}] — Loss: {avg_loss:.4f} | Train Acc: {acc * 100:.2f}%\n")
 
     # 6. Evaluation on test_ood split
     model.eval()
     test_correct = 0
     test_total = 0
+    eval_pbar = tqdm(test_loader, desc="  [OOD Evaluation]", unit="batch") if tqdm else test_loader
     with torch.no_grad():
-        for pixel_values, labels, _ in test_loader:
+        for pixel_values, labels, _ in eval_pbar:
             pixel_values = pixel_values.to(device)
             labels = labels.to(device)
             outputs = model(pixel_values)
