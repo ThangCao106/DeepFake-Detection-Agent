@@ -197,68 +197,8 @@ def load_vault_portraits(
     seen_hashes = set()
     current_date = time.strftime("%Y%m%d")
 
-    # 1. Harvest all distinct high-res local seeds first (45 distinct real Vietnamese people)
-    local_seeds = []
-    if SEEDS_DIR.exists():
-        local_seeds.extend(sorted(list(SEEDS_DIR.glob("*.jpg"))))
-    if VERIFIED_THREADS_SEEDS_DIR.exists():
-        local_seeds.extend(sorted(list(VERIFIED_THREADS_SEEDS_DIR.glob("*.jpg"))))
-
-    used_seed_paths = set()
-    for s_path in local_seeds:
-        if len(results) >= min_images:
-            break
-        if s_path in used_seed_paths:
-            continue
-        used_seed_paths.add(s_path)
-        try:
-            with Image.open(s_path) as im:
-                rgb_im = im.convert("RGB")
-                if rgb_im.size != target_size:
-                    rgb_im = rgb_im.resize(target_size, Image.Resampling.LANCZOS)
-                buf = io.BytesIO()
-                rgb_im.save(buf, format="JPEG", quality=95)
-                raw_bytes = buf.getvalue()
-                sha = hashlib.sha256(raw_bytes).hexdigest()
-                if sha in seen_hashes:
-                    continue
-                seen_hashes.add(sha)
-
-                cat = VIETNAMESE_CATEGORIES[len(results) % len(VIETNAMESE_CATEGORIES)]
-                author_list = CATEGORY_AUTHORS[cat]
-                author = author_list[len(results) % len(author_list)]
-                dhash_val = compute_dhash(rgb_im)
-
-                if dedup_registry:
-                    dedup_registry.check_and_register(
-                        rgb_im,
-                        filename=f"threads_{current_date}_{sha[:10]}.jpg",
-                        source="verified_vietnamese_local_seed",
-                        category=cat,
-                        sha256=sha
-                    )
-
-                results.append({
-                    "image_bytes": raw_bytes,
-                    "sha256": sha,
-                    "dhash": dhash_val,
-                    "face_count": 1,
-                    "primary_bbox": [int(target_size[0]*0.2), int(target_size[1]*0.12), int(target_size[0]*0.8), int(target_size[1]*0.78)],
-                    "width": target_size[0],
-                    "height": target_size[1],
-                    "post_url": f"https://www.threads.com/@{author}/post/{sha[:11]}",
-                    "author": author,
-                    "caption": f"NCS Authentic Vietnamese Human Portrait #{len(results)+1} - {CATEGORY_CAPTIONS[cat]}",
-                    "keyword": cat,
-                    "source": "verified_vietnamese_local_seed",
-                    "category": cat,
-                    "validation": "PASSED_AUTHENTIC_VIETNAMESE_VAULT_GATE",
-                    "is_synthetic_suspect": False
-                })
-        except Exception:
-            pass
-
-    # 2. Fill the remaining quota from Academic Asian Face Benchmark (1 unique human per row!)
+    # 1. Source 100% of real portraits exclusively from Academic Asian Face Benchmark
+    # (Bypasses legacy local synthetic/StyleGAN seeds entirely to ensure 100% genuine real people)
     if benchmark_df is not None and len(results) < min_images:
         needed = min_images - len(results)
         print(f"🧬 [Option A+C Face Engine] Sourcing {needed} distinct human identities from Academic Benchmark...")
