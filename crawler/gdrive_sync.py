@@ -216,9 +216,11 @@ class GDriveSyncAgent:
 
         # Mode 3: Google Drive API v3
         try:
-            # Check or create base folder inside target_folder_id if specified
-            base_id = self._find_or_create_drive_folder(self.base_folder_name, parent_id=self.target_folder_id)
-            daily_id = self._find_or_create_drive_folder(date_str, parent_id=base_id)
+            # Use target_folder_id directly if provided (e.g. shared Thread_Data folder)
+            parent_id = self.target_folder_id
+            if not parent_id:
+                parent_id = self._find_or_create_drive_folder(self.base_folder_name)
+            daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)
             
             for sub in subfolders:
                 sub_id = self._find_or_create_drive_folder(sub, parent_id=daily_id)
@@ -478,6 +480,8 @@ class GDriveSyncAgent:
             print(f"[GDrive Sync] [NOTICE] Could not load rolling auth state from GDrive ({e}).")
 
         return None
+
+GoogleDriveSync = GDriveSyncAgent
 
 if __name__ == "__main__":
     agent = GDriveSyncAgent()
