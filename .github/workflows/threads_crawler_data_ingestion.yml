@@ -39,7 +39,7 @@ jobs:
   crawl-and-sync-data:
     name: Crawl Threads Data & Sync Google Drive
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: 1. Checkout Repository
@@ -120,13 +120,18 @@ jobs:
             done
           fi
 
-      - name: 6. Upload Crawled Media Dataset as Artifact (Direct Download)
+      - name: 6. Upload Crawled Manifests & Reports as Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: daily-threads-dataset-run-${{ github.run_number }}
           path: |
-            report_colab/pentest/**
+            report_colab/pentest/**/*.json
+            report_colab/pentest/**/*.parquet
+            report_colab/pentest/**/*.md
+            report_colab/pentest/*.json
+            report_colab/pentest/*.parquet
+            report_colab/pentest/*.md
             crawler/dedup_registry.json
           retention-days: 14
           if-no-files-found: ignore

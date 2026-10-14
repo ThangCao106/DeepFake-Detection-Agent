@@ -261,10 +261,13 @@ class GDriveSyncAgent:
             if not parent_id:
                 parent_id = self._find_or_create_drive_folder(self.base_folder_name)
             daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)
+            print(f"[GDrive Sync] 📁 Daily Folder: {date_str} (ID: {daily_id})")
+            print(f"[GDrive Sync] 🔗 Daily Folder Web Link: https://drive.google.com/drive/folders/{daily_id}")
             
             for sub in subfolders:
                 sub_id = self._find_or_create_drive_folder(sub, parent_id=daily_id)
                 paths[sub] = sub_id
+                print(f"[GDrive Sync]   📂 Subfolder '{sub}' Web Link: https://drive.google.com/drive/folders/{sub_id}")
             return paths
         except Exception as e:
             print(f"[GDrive Sync] API Error in folder creation: {e}. Falling back to local storage.")
@@ -309,7 +312,16 @@ class GDriveSyncAgent:
             fields='id',
             supportsAllDrives=True
         ).execute()
-        return folder.get('id')
+        folder_id = folder.get('id')
+        try:
+            self.service.permissions().create(
+                fileId=folder_id,
+                body={'type': 'anyone', 'role': 'reader'},
+                supportsAllDrives=True
+            ).execute()
+        except Exception:
+            pass
+        return folder_id
 
     def upload_file(self, local_path, date_str=None, target_subfolder="01_raw_originals"):
         """Uploads a local media file to specified GDrive daily subfolder and cleans local file if uploaded."""
@@ -349,7 +361,16 @@ class GDriveSyncAgent:
                 fields='id',
                 supportsAllDrives=True
             ).execute()
-            print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {uploaded_file.get('id')})")
+            file_id = uploaded_file.get('id')
+            try:
+                self.service.permissions().create(
+                    fileId=file_id,
+                    body={'type': 'anyone', 'role': 'reader'},
+                    supportsAllDrives=True
+                ).execute()
+            except Exception:
+                pass
+            print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {file_id})")
             
             # Post-sync cleanup: Remove binary local file after successful GDrive upload
             if os.path.exists(local_path) and not local_path.endswith(".json"):
