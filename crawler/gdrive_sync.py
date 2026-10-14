@@ -142,12 +142,28 @@ class GDriveSyncAgent:
                 found_folder.mkdir(parents=True, exist_ok=True)
                 
             self.colab_mount_path = str(found_folder)
-            self.use_mock_storage = False
-            self.sync_mode = "COLAB_DIRECT_MOUNT"
-            print(f"[GDrive Sync] [AUTH SUCCESS] Connected directly to mounted Google Drive: {self.colab_mount_path}")
-            return
+        # 2. Check if Google Drive User OAuth2 Refresh Token is provided (Personal Quota - Option A)
+        oauth_token = (
+            os.environ.get("GDRIVE_REFRESH_TOKEN") 
+            or os.environ.get("GOOGLE_REFRESH_TOKEN")
+        )
+        if oauth_token and oauth_token.strip():
+            try:
+                from crawler.oauth_gdrive_sync import get_oauth_drive_service
+                self.service = get_oauth_drive_service(oauth_token)
+                self.use_mock_storage = False
+                self.sync_mode = "API_USER_OAUTH"
+                print("[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via User OAuth (Personal Quota - No 0MB Service Account Limit)!")
+                print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
+                print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
+                return
+            except Exception as e:
+                err_msg = f"User OAuth initialization failed: {e}"
+                print(f"[GDrive Sync] [OAUTH ERROR] {err_msg}")
+                if os.environ.get("GITHUB_ACTIONS") == "true":
+                    print(f"::error title=GDrive OAuth Error::{err_msg}")
 
-        # 2. Check if Google Drive Service Account Credentials JSON is provided
+        # 3. Check if Google Drive Service Account Credentials JSON is provided
         if self.credentials_json:
             try:
                 import base64
