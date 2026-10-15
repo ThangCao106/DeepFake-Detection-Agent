@@ -70,6 +70,8 @@ jobs:
           GDRIVE_CREDENTIALS_JSON: ${{ secrets.GDRIVE_CREDENTIALS_JSON }}
           GDRIVE_TARGET_FOLDER_ID: ${{ secrets.GDRIVE_TARGET_FOLDER_ID || '1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_HUB_ENABLE_HF_TRANSFER: "0"
+          PYTHONUNBUFFERED: "1"
           THREADS_SESSION_COOKIES: ${{ secrets.THREADS_SESSION_COOKIES }}
           THREADS_VAULT_ONLY: ${{ github.event.inputs.vault_only || 'false' }}
           CRAWL_NUM_IMAGES: ${{ github.event.inputs.num_images || '250' }}

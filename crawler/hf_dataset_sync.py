@@ -33,8 +33,11 @@ try:
 except ImportError:
     pass
 
-DEFAULT_HF_DATASET_REPO = "ThangCao/Threads-DFBench-Vietnamese"
-DEFAULT_BASELINES_REPO = "ThangCao/DualStream-Foundational-Manifests"
+# Disable hf_transfer to avoid C/Rust extension crashes in CI
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+
+DEFAULT_HF_DATASET_REPO = "ThangCao106/Threads-DFBench-Vietnamese"
+DEFAULT_BASELINES_REPO = "ThangCao106/DualStream-Foundational-Manifests"
 
 DATASET_CARD_TEMPLATE = """---
 language:
@@ -147,12 +150,14 @@ This repository provides standardized data connectors, download manifests, and p
 
 def convert_manifest_to_parquet(jsonl_path: Path, parquet_path: Path) -> bool:
     """Converts JSONL manifest to Parquet format for native Hugging Face Viewer."""
-    if not jsonl_path.exists():
+    if not jsonl_path.exists() or jsonl_path.stat().st_size == 0:
         return False
         
     try:
         import pandas as pd
         df = pd.read_json(str(jsonl_path), lines=True)
+        if df.empty:
+            return False
         df.to_parquet(str(parquet_path), index=False)
         print(f"  [Parquet Converter] Successfully converted manifest -> {parquet_path}")
         return True
@@ -184,15 +189,18 @@ def sync_threads_dataset_to_hf(
         return False
 
     if source_dir is None:
-        # Check standard locations: GDrive mount on Colab vs local pentest dir
+        # Check standard locations: GDrive mount on Colab vs daily pentest dir vs base pentest dir
         colab_gdrive = Path(f"/content/drive/MyDrive/Thread_Data/{date_str}")
+        daily_pentest = PROJECT_ROOT / "report_colab" / "pentest" / date_str
         local_pentest = PROJECT_ROOT / "report_colab" / "pentest"
         if colab_gdrive.exists():
             source_dir = colab_gdrive
+        elif daily_pentest.exists():
+            source_dir = daily_pentest
         elif local_pentest.exists():
             source_dir = local_pentest
         else:
-            print(f"[HF Dataset Sync] Error: Neither {colab_gdrive} nor {local_pentest} found.")
+            print(f"[HF Dataset Sync] Error: Neither {colab_gdrive} nor {daily_pentest} found.")
             return False
 
     print("\n" + "=" * 75)
