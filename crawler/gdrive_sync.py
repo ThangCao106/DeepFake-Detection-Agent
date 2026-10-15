@@ -11,6 +11,7 @@ import sys
 import json
 import time
 import shutil
+import threading
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -113,6 +114,8 @@ class GDriveSyncAgent:
         self.sync_mode = "MOCK_LOCAL_STORAGE"
         self.colab_mount_path = None
         self.disk_guard = DiskGuardAgent()
+        self._upload_lock = threading.Lock()
+        self._cached_daily_folders = {}
         
         self._initialize_service()
 
@@ -232,6 +235,10 @@ class GDriveSyncAgent:
         """Creates or gets daily folder structure YYYY-MM-DD."""
         if not date_str:
             date_str = time.strftime("%Y-%m-%d")
+
+        with self._upload_lock:
+            if date_str in self._cached_daily_folders:
+                return self._cached_daily_folders[date_str]
         
         subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
         paths = {}
@@ -243,6 +250,8 @@ class GDriveSyncAgent:
                 full_p = os.path.join(base_dir, sub)
                 os.makedirs(full_p, exist_ok=True)
                 paths[sub] = full_p
+            with self._upload_lock:
+                self._cached_daily_folders[date_str] = paths
             return paths
 
         # Mode 2: Local Mock Storage
@@ -252,23 +261,31 @@ class GDriveSyncAgent:
                 full_p = os.path.join(base_dir, sub)
                 os.makedirs(full_p, exist_ok=True)
                 paths[sub] = full_p
+            with self._upload_lock:
+                self._cached_daily_folders[date_str] = paths
             return paths
 
         # Mode 3: Google Drive API v3
         try:
-            # Use target_folder_id directly if provided (e.g. shared Thread_Data folder)
-            parent_id = self.target_folder_id
-            if not parent_id:
-                parent_id = self._find_or_create_drive_folder(self.base_folder_name)
-            daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)
-            print(f"[GDrive Sync] 📁 Daily Folder: {date_str} (ID: {daily_id})")
-            print(f"[GDrive Sync] 🔗 Daily Folder Web Link: https://drive.google.com/drive/folders/{daily_id}")
-            
-            for sub in subfolders:
-                sub_id = self._find_or_create_drive_folder(sub, parent_id=daily_id)
-                paths[sub] = sub_id
-                print(f"[GDrive Sync]   📂 Subfolder '{sub}' Web Link: https://drive.google.com/drive/folders/{sub_id}")
-            return paths
+            with self._upload_lock:
+                # Double check cache inside lock
+                if date_str in self._cached_daily_folders:
+                    return self._cached_daily_folders[date_str]
+
+                # Use target_folder_id directly if provided (e.g. shared Thread_Data folder)
+                parent_id = self.target_folder_id
+                if not parent_id:
+                    parent_id = self._find_or_create_drive_folder(self.base_folder_name)
+                daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)
+                print(f"[GDrive Sync] 📁 Daily Folder: {date_str} (ID: {daily_id})")
+                print(f"[GDrive Sync] 🔗 Daily Folder Web Link: https://drive.google.com/drive/folders/{daily_id}")
+                
+                for sub in subfolders:
+                    sub_id = self._find_or_create_drive_folder(sub, parent_id=daily_id)
+                    paths[sub] = sub_id
+                    print(f"[GDrive Sync]   📂 Subfolder '{sub}' Web Link: https://drive.google.com/drive/folders/{sub_id}")
+                self._cached_daily_folders[date_str] = paths
+                return paths
         except Exception as e:
             print(f"[GDrive Sync] API Error in folder creation: {e}. Falling back to local storage.")
             base_dir = os.path.join(DEFAULT_LOCAL_STORAGE, date_str)
@@ -276,6 +293,8 @@ class GDriveSyncAgent:
                 full_p = os.path.join(base_dir, sub)
                 os.makedirs(full_p, exist_ok=True)
                 paths[sub] = full_p
+            with self._upload_lock:
+                self._cached_daily_folders[date_str] = paths
             return paths
 
 
@@ -323,13 +342,13 @@ class GDriveSyncAgent:
             pass
         return folder_id
 
-    def upload_file(self, local_path, date_str=None, target_subfolder="01_raw_originals"):
+    def upload_file(self, local_path, date_str=None, target_subfolder="01_raw_originals", target_folder_id=None):
         """Uploads a local media file to specified GDrive daily subfolder and cleans local file if uploaded."""
-        paths = self.get_or_create_daily_folder(date_str)
         filename = os.path.basename(local_path)
 
         # Mode 1: Colab Direct Mount (Direct copy into mounted Google Drive)
         if self.sync_mode == "COLAB_DIRECT_MOUNT" and self.colab_mount_path:
+            paths = self.get_or_create_daily_folder(date_str)
             dest_dir = paths.get(target_subfolder, os.path.join(self.colab_mount_path, date_str, target_subfolder))
             dest_path = os.path.join(dest_dir, filename)
             if os.path.exists(local_path) and local_path != dest_path:
@@ -338,6 +357,7 @@ class GDriveSyncAgent:
 
         # Mode 2: Local Mock Storage
         if self.use_mock_storage:
+            paths = self.get_or_create_daily_folder(date_str)
             dest_dir = paths.get(target_subfolder, os.path.join(DEFAULT_LOCAL_STORAGE, date_str, target_subfolder))
             dest_path = os.path.join(dest_dir, filename)
             if os.path.exists(local_path) and local_path != dest_path:
@@ -349,27 +369,33 @@ class GDriveSyncAgent:
         # Mode 3: Upload via Google Drive API
         try:
             from googleapiclient.http import MediaFileUpload
-            folder_id = paths.get(target_subfolder)
+            folder_id = target_folder_id
+            if not folder_id:
+                paths = self.get_or_create_daily_folder(date_str)
+                folder_id = paths.get(target_subfolder)
+
             file_metadata = {
                 'name': filename,
                 'parents': [folder_id]
             }
             media = MediaFileUpload(local_path, resumable=True)
-            uploaded_file = self.service.files().create(
-                body=file_metadata, 
-                media_body=media, 
-                fields='id',
-                supportsAllDrives=True
-            ).execute()
-            file_id = uploaded_file.get('id')
-            try:
-                self.service.permissions().create(
-                    fileId=file_id,
-                    body={'type': 'anyone', 'role': 'reader'},
+            with self._upload_lock:
+                uploaded_file = self.service.files().create(
+                    body=file_metadata, 
+                    media_body=media, 
+                    fields='id',
                     supportsAllDrives=True
                 ).execute()
-            except Exception:
-                pass
+                file_id = uploaded_file.get('id')
+                try:
+                    self.service.permissions().create(
+                        fileId=file_id,
+                        body={'type': 'anyone', 'role': 'reader'},
+                        supportsAllDrives=True
+                    ).execute()
+                except Exception:
+                    pass
+
             print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {file_id})")
             
             # Post-sync cleanup: Remove binary local file after successful GDrive upload
@@ -377,7 +403,7 @@ class GDriveSyncAgent:
                 os.remove(local_path)
                 print(f"[Disk Guard] Post-Sync Purge: Deleted local file {filename} after GDrive sync.")
                 
-            return uploaded_file.get('id')
+            return file_id
         except Exception as e:
             print(f"[GDrive Sync] Failed to upload {filename} via API: {e}")
             return None
