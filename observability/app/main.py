@@ -379,6 +379,25 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
 
     # Persist to .env file in project root
     env_file = Path(PROJECT_ROOT) / ".env"
+    try:
+        env_lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.exists() else []
+        new_lines = [
+            line for line in env_lines
+            if not line.startswith("GEMINI_API_KEY=")
+        ]
+        new_lines.append(f"GEMINI_API_KEY={key}")
+        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as e:
+        _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Gemini): {e}")
+
+    _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment!")
+    return {
+        "status": "SUCCESS",
+        "message": "Đã lưu GEMINI_API_KEY thành công vào hệ thống!",
+        "authenticated": True,
+    }
+
+
 class SendInputRequest(BaseModel):
     input_text: str
 

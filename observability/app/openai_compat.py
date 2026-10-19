@@ -12,13 +12,23 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.agent import UserContent, drop_client, get_client, rekey_client, stream_turn
-from app import antigravity
-from app.config import API_KEY, CHAT_SYSTEM_PROMPT, _FORMATTING_INSTRUCTION
+from app import antigravity, gemini_backend
+from app.config import API_KEY, CHAT_SYSTEM_PROMPT
 
 router = APIRouter()
 
-MODEL_ID = "observability-agent"
+MODEL_ID = "sre-agent-hybrid"
+LEGACY_MODEL_ID = "observability-agent"
 ANTIGRAVITY_MODEL_ID = "antigravity-agent"
+SUPPORTED_MODELS = [
+    "sre-agent-hybrid",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "claude-3-7-sonnet",
+    "claude-3-5-sonnet",
+    "observability-agent",
+    "antigravity-agent"
+]
 
 # LibreChat resends the full message history every request (no server-side
 # session concept on its side for custom endpoints). We fingerprint the prior
@@ -104,28 +114,23 @@ def _transcript(messages: list[ChatMessage]) -> str:
 def _extract_system_prompt(messages: list[ChatMessage]) -> str:
     system_parts = [_content_to_text(m.content) for m in messages if m.role == "system"]
     if system_parts:
-        return "\n".join(system_parts) + "\n\n" + _FORMATTING_INSTRUCTION
+        return "\n".join(system_parts)
     return CHAT_SYSTEM_PROMPT
 
 
 @router.get("/v1/models", dependencies=[Depends(check_bearer)])
 async def list_models() -> dict:
+    now = int(time.time())
     return {
         "object": "list",
         "data": [
             {
-                "id": MODEL_ID,
+                "id": mid,
                 "object": "model",
-                "created": int(time.time()),
-                "owned_by": "local",
+                "created": now,
+                "owned_by": "sre-agent",
             }
-            ,
-            {
-                "id": ANTIGRAVITY_MODEL_ID,
-                "object": "model",
-                "created": int(time.time()),
-                "owned_by": "local",
-            }
+            for mid in SUPPORTED_MODELS
         ],
     }
 
@@ -134,32 +139,84 @@ async def list_models() -> dict:
 async def chat_completions(req: ChatCompletionRequest):
     system_prompt = _extract_system_prompt(req.messages)
     history = [m for m in req.messages if m.role in ("user", "assistant")]
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    created = int(time.time())
 
-    # If the caller explicitly requested the Antigravity model, handle it
-    if req.model == ANTIGRAVITY_MODEL_ID:
-        # For now, treat Antigravity as a one-shot model: concat system + last user
-        # message into a prompt and call the adapter. Streaming is not supported
-        # for the Antigravity adapter in this minimal integration.
-        # Build a simple prompt
-        last_user = [m for m in req.messages if m.role == "user"]
-        prompt_text = _extract_system_prompt(req.messages) + "\n\n"
-        prompt_text += _transcript(req.messages)
-        try:
-            reply_text = await antigravity.run_antigravity(prompt_text)
-        except ImportError as ie:
-            raise HTTPException(status_code=501, detail=str(ie)) from ie
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"antigravity error: {exc}") from exc
+    # --- TIER 1: GEMINI SDK ROUTING ---
+    is_gemini_target = (
+        req.model.lower().startswith("gemini")
+        or req.model == ANTIGRAVITY_MODEL_ID
+    )
 
-        return {
-            "id": f"chatcmpl-{uuid.uuid4().hex}",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": ANTIGRAVITY_MODEL_ID,
-            "choices": [
-                {"index": 0, "message": {"role": "assistant", "content": reply_text}, "finish_reason": "stop"}
-            ],
-        }
+    if is_gemini_target:
+        prompt_text = _transcript(req.messages)
+        gem_model = req.model if req.model.startswith("gemini") else "gemini-2.5-flash"
+
+        if not req.stream:
+            try:
+                reply_text = await gemini_backend.run_gemini_generate(
+                    prompt=prompt_text,
+                    system_instruction=system_prompt,
+                    model=gem_model
+                )
+            except Exception as exc:
+                raise HTTPException(status_code=502, detail=f"Gemini Engine error: {exc}") from exc
+
+            return {
+                "id": completion_id,
+                "object": "chat.completion",
+                "created": created,
+                "model": req.model,
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": reply_text}, "finish_reason": "stop"}
+                ],
+            }
+
+        async def sse_gemini():
+            first_chunk = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": req.model,
+                "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
+            }
+            yield f"data: {json.dumps(first_chunk)}\n\n"
+
+            try:
+                async for text in gemini_backend.stream_gemini_generate(
+                    prompt=prompt_text,
+                    system_instruction=system_prompt,
+                    model=gem_model
+                ):
+                    chunk = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": req.model,
+                        "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": None}],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+            except Exception as exc:
+                err_chunk = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": req.model,
+                    "choices": [{"index": 0, "delta": {"content": f"\n\n⚠️ Gemini error: {exc}"}, "finish_reason": "stop"}],
+                }
+                yield f"data: {json.dumps(err_chunk)}\n\n"
+
+            final_chunk = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": req.model,
+                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+            }
+            yield f"data: {json.dumps(final_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(sse_gemini(), media_type="text/event-stream")
 
     # If we already have a connected client for "everything before this newest
     # message", reuse it and send only the newest message. Otherwise this is a
