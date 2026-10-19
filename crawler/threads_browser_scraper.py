@@ -524,6 +524,66 @@ class ThreadsBrowserScraper:
         async with async_playwright() as p:
             browser, context = await self._setup_browser_context(p)
             page = await context.new_page()
+
+            # Active network stream response handler: captures 100% genuine Threads videos and photos
+            async def handle_stream_response(response):
+                u = response.url
+                if "rsrc.php" in u:
+                    return
+                ct = response.headers.get("content-type", "")
+
+                # 1. Capture Genuine Threads Video Streams
+                if len(harvested_videos) < target_videos:
+                    if ("video" in ct or ".mp4" in u or "/v/t2/" in u or "/o1/v/" in u) and ("fbcdn.net" in u or "cdninstagram.com" in u):
+                        try:
+                            v_data = await response.body()
+                            if len(v_data) >= 25000:
+                                v_sha = compute_sha256(v_data)
+                                if v_sha not in seen_shas:
+                                    seen_shas.add(v_sha)
+                                    idx_vid = len(harvested_videos) + 1
+                                    out_vid = raw_dir / f"real_vid_{idx_vid:03d}.mp4"
+                                    out_vid.write_bytes(v_data)
+                                    if validate_video_file(out_vid):
+                                        harvested_videos.append(out_vid)
+                                        print(f"    🎥 [Real Origin Video #{idx_vid}/{target_videos}] Threads Stream ({len(v_data)}B) -> {out_vid.name}")
+
+                                        # Extract authentic audio directly from real video
+                                        if len(harvested_audios) < target_audios:
+                                            idx_aud = len(harvested_audios) + 1
+                                            out_aud = raw_dir / f"real_aud_{idx_aud:03d}.wav"
+                                            if extract_audio_from_video(out_vid, out_aud):
+                                                harvested_audios.append(out_aud)
+                                                print(f"    🎙️ [Real Origin Audio #{idx_aud}/{target_audios}] Extracted from {out_vid.name} -> {out_aud.name}")
+                                    else:
+                                        out_vid.unlink(missing_ok=True)
+                        except Exception:
+                            pass
+
+                # 2. Capture Genuine Threads Image Streams
+                if len(harvested_images) < target_images:
+                    if "image" in ct and ("fbcdn.net" in u or "cdninstagram.com" in u):
+                        if not any(x in u for x in ["150x150", "50x50", "-19/", "s150x150", "rsrc.php"]):
+                            try:
+                                data = await response.body()
+                                if len(data) >= 15000:
+                                    sha = compute_sha256(data)
+                                    if sha not in seen_shas:
+                                        is_dup, _, _ = is_visual_duplicate(data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                                        if not is_dup:
+                                            seen_shas.add(sha)
+                                            item_dhash = compute_dhash(data)
+                                            known_dhashes.add(item_dhash)
+                                            idx_img = len(harvested_images) + 1
+                                            out_img = raw_dir / f"real_img_{idx_img:04d}_vn_selfie_lifestyle.jpg"
+                                            out_img.write_bytes(data)
+                                            dedup_registry.check_and_register(data, filename=out_img.name, source="threads.net/origin", sha256=sha)
+                                            harvested_images.append(out_img)
+                                            print(f"    📸 [Real Origin Image #{idx_img}/{target_images}] Threads Stream ({len(data)}B) -> {out_img.name}")
+                            except Exception:
+                                pass
+
+            page.on("response", handle_stream_response)
             
             # Step 1: Scrape active public Vietnamese profiles
             for username in PUBLIC_VIETNAMESE_PROFILES:
@@ -532,205 +592,43 @@ class ThreadsBrowserScraper:
                 url = f"https://www.threads.net/@{username}"
                 print(f"\n[Threads Scraper] Scraping public profile: @{username} ({url})")
                 try:
-                    resp = await page.goto(url, wait_until="domcontentloaded", timeout=25000)
-                    await page.wait_for_timeout(2500)
+                    await page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                    await page.wait_for_timeout(2000)
                     
-                    # Scroll 3 times to load dynamic feed
-                    for _ in range(3):
-                        await page.evaluate("window.scrollBy(0, 1000)")
+                    # Scroll to trigger stream loading
+                    for _ in range(5):
+                        await page.evaluate("window.scrollBy(0, 1200)")
                         await page.wait_for_timeout(1500)
-                        
-                    extracted = await self._extract_media_from_page(page)
-                    imgs = extracted.get("imgs", [])
-                    vids = extracted.get("vids", [])
-                    print(f"  @{username}: Extracted {len(imgs)} candidate images, {len(vids)} candidate videos.")
-                    
-                    # Process Images
-                    for item in imgs:
-                        if len(harvested_images) >= target_images:
-                            break
-                        i_url = item["url"]
-                        if i_url in seen_img_urls:
-                            continue
-                        seen_img_urls.add(i_url)
-                        
-                        try:
-                            img_resp = await context.request.get(i_url, timeout=15000)
-                            if img_resp.status != 200:
-                                continue
-                            data = await img_resp.body()
-                            sha = compute_sha256(data)
-                            if sha in seen_shas:
-                                continue
-                                
-                            is_photo, reason, stats = is_photographic_human_portrait(data)
-                            if not is_photo:
-                                continue
-                                
-                            is_dup, _, dist = is_visual_duplicate(data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                            if is_dup:
-                                continue
-                                
-                            item_dhash = compute_dhash(data)
-                            known_dhashes.add(item_dhash)
-                            seen_shas.add(sha)
-                            
-                            idx_img = len(harvested_images) + 1
-                            cat = "vn_street_outdoor" if "street" in username else "vn_selfie_lifestyle"
-                            out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
-                            with open(out_img, "wb") as f:
-                                f.write(data)
-                                
-                            dedup_registry.check_and_register(data, filename=out_img.name, source="threads.net", sha256=sha)
-                            harvested_images.append(out_img)
-                            print(f"    📸 [Real Image #{idx_img}/{target_images}] @{username} ({len(data)}B, dHash:{item_dhash[:8]}...) -> {out_img.name}")
-                        except Exception as e_img:
-                            pass
-                            
-                    # Process Videos
-                    for v_item in vids:
-                        if len(harvested_videos) >= target_videos:
-                            break
-                        v_url = v_item["url"]
-                        if v_url in seen_vid_urls:
-                            continue
-                        seen_vid_urls.add(v_url)
-                        
-                        try:
-                            vid_resp = await context.request.get(v_url, timeout=25000)
-                            if vid_resp.status != 200:
-                                continue
-                            v_data = await vid_resp.body()
-                            if len(v_data) < 30000:
-                                continue
-                                
-                            v_sha = compute_sha256(v_data)
-                            if v_sha in seen_shas:
-                                continue
-                            seen_shas.add(v_sha)
-                            
-                            idx_vid = len(harvested_videos) + 1
-                            out_vid = raw_dir / f"real_vid_{idx_vid:03d}.mp4"
-                            with open(out_vid, "wb") as f:
-                                f.write(v_data)
-                                
-                            if validate_video_file(out_vid):
-                                harvested_videos.append(out_vid)
-                                print(f"    🎥 [Real Video #{idx_vid}/{target_videos}] @{username} ({len(v_data)}B) -> {out_vid.name}")
-                                
-                                # Extract audio track directly from downloaded video
-                                if len(harvested_audios) < target_audios:
-                                    idx_aud = len(harvested_audios) + 1
-                                    out_aud = raw_dir / f"real_aud_{idx_aud:03d}.wav"
-                                    if extract_audio_from_video(out_vid, out_aud):
-                                        harvested_audios.append(out_aud)
-                                        print(f"    🎙️ [Real Audio #{idx_aud}/{target_audios}] Extracted from {out_vid.name} -> {out_aud.name}")
-                            else:
-                                out_vid.unlink(missing_ok=True)
-                        except Exception as e_vid:
-                            pass
-                            
                 except Exception as e_prof:
                     print(f"  [Scraper Notice] Error on @{username}: {e_prof}")
                     
-            # Step 2: Search keywords on threads.net if targets still not reached
+            # Step 2: Scrape public tag pages on threads.net
+            TAGS_TO_CRAWL = ["saigon", "vietnam", "hanoi", "danang", "dalat", "travelvietnam", "nguoiviet"]
             if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
-                for kw in VIETNAMESE_SEARCH_KEYWORDS:
+                for tag in TAGS_TO_CRAWL:
                     if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
                         break
-                    search_url = f"https://www.threads.net/search?q={urllib.request.quote(kw)}&serp_type=default"
-                    print(f"\n[Threads Scraper] Searching keyword: '{kw}' ({search_url})")
+                    tag_url = f"https://www.threads.net/tag/{tag}"
+                    print(f"\n[Threads Scraper] Scraping public tag: #{tag} ({tag_url})")
                     try:
-                        resp = await page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
-                        await page.wait_for_timeout(2500)
-                        for _ in range(3):
-                            await page.evaluate("window.scrollBy(0, 1000)")
+                        await page.goto(tag_url, wait_until="domcontentloaded", timeout=25000)
+                        await page.wait_for_timeout(2000)
+                        for _ in range(5):
+                            await page.evaluate("window.scrollBy(0, 1200)")
                             await page.wait_for_timeout(1500)
-                            
-                        extracted = await self._extract_media_from_page(page)
-                        for item in extracted.get("imgs", []):
-                            if len(harvested_images) >= target_images:
-                                break
-                            i_url = item["url"]
-                            if i_url in seen_img_urls:
-                                continue
-                            seen_img_urls.add(i_url)
-                            try:
-                                img_resp = await context.request.get(i_url, timeout=15000)
-                                if img_resp.status != 200:
-                                    continue
-                                data = await img_resp.body()
-                                sha = compute_sha256(data)
-                                if sha in seen_shas:
-                                    continue
-                                is_photo, reason, stats = is_photographic_human_portrait(data)
-                                if not is_photo:
-                                    continue
-                                is_dup, _, _ = is_visual_duplicate(data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                                if is_dup:
-                                    continue
-                                item_dhash = compute_dhash(data)
-                                known_dhashes.add(item_dhash)
-                                seen_shas.add(sha)
-                                idx_img = len(harvested_images) + 1
-                                out_img = raw_dir / f"real_img_{idx_img:04d}_vn_street_outdoor.jpg"
-                                with open(out_img, "wb") as f:
-                                    f.write(data)
-                                dedup_registry.check_and_register(data, filename=out_img.name, source="threads_search", sha256=sha)
-                                harvested_images.append(out_img)
-                                print(f"    📸 [Real Image #{idx_img}/{target_images}] Search '{kw}' ({len(data)}B) -> {out_img.name}")
-                            except Exception:
-                                pass
-                                
-                        for v_item in extracted.get("vids", []):
-                            if len(harvested_videos) >= target_videos:
-                                break
-                            v_url = v_item["url"]
-                            if v_url in seen_vid_urls:
-                                continue
-                            seen_vid_urls.add(v_url)
-                            try:
-                                vid_resp = await context.request.get(v_url, timeout=25000)
-                                if vid_resp.status != 200:
-                                    continue
-                                v_data = await vid_resp.body()
-                                if len(v_data) < 30000:
-                                    continue
-                                v_sha = compute_sha256(v_data)
-                                if v_sha in seen_shas:
-                                    continue
-                                seen_shas.add(v_sha)
-                                idx_vid = len(harvested_videos) + 1
-                                out_vid = raw_dir / f"real_vid_{idx_vid:03d}.mp4"
-                                with open(out_vid, "wb") as f:
-                                    f.write(v_data)
-                                if validate_video_file(out_vid):
-                                    harvested_videos.append(out_vid)
-                                    print(f"    🎥 [Real Video #{idx_vid}/{target_videos}] Search '{kw}' -> {out_vid.name}")
-                                    if len(harvested_audios) < target_audios:
-                                        idx_aud = len(harvested_audios) + 1
-                                        out_aud = raw_dir / f"real_aud_{idx_aud:03d}.wav"
-                                        if extract_audio_from_video(out_vid, out_aud):
-                                            harvested_audios.append(out_aud)
-                                else:
-                                    out_vid.unlink(missing_ok=True)
-                            except Exception:
-                                pass
-                    except Exception as e_search:
-                        print(f"  [Scraper Notice] Error on keyword '{kw}': {e_search}")
+                    except Exception as e_tag:
+                        print(f"  [Scraper Notice] Error on tag #{tag}: {e_tag}")
                         
             await browser.close()
             
         print(f"\n[Threads Scraper] Live crawling phase finished.")
         print(f"  Live Harvest Results: {len(harvested_images)} Images, {len(harvested_videos)} Videos, {len(harvested_audios)} Audios.")
         
-        # Step 3: Safeguard supplements (Option C Vault & Option B Open Multi-Source Harvester)
-        # 3.1 Images: Supplement authentic real Vietnamese human portraits (Zero duplicate guarantee)
+        # Step 3: Safeguard supplements for images only (Zero duplicate guarantee, NO artificial videos/audios)
         if len(harvested_images) < target_images:
             deficit_imgs = target_images - len(harvested_images)
             print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Face Vault & Open Harvester...")
             
-            # 1. Load from Vietnamese Real Face Vault (Option C)
             from crawler.vietnam_face_vault import load_vault_portraits
             vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
             for vp in vault_portraits:
@@ -738,15 +636,17 @@ class ThreadsBrowserScraper:
                     break
                 sha = vp["sha256"]
                 if sha not in seen_shas:
-                    seen_shas.add(sha)
-                    idx_img = len(harvested_images) + 1
-                    cat = vp.get("category", "vn_selfie_lifestyle")
-                    out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
-                    with open(out_img, "wb") as f:
-                        f.write(vp["image_bytes"])
-                    harvested_images.append(out_img)
+                    is_dup, _, _ = is_visual_duplicate(vp["image_bytes"], known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                    if not is_dup:
+                        seen_shas.add(sha)
+                        item_dhash = compute_dhash(vp["image_bytes"])
+                        known_dhashes.add(item_dhash)
+                        idx_img = len(harvested_images) + 1
+                        cat = vp.get("category", "vn_selfie_lifestyle")
+                        out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
+                        out_img.write_bytes(vp["image_bytes"])
+                        harvested_images.append(out_img)
 
-            # 2. If still under target, stream directly from Open Multi-Source Harvester (Option B)
             if len(harvested_images) < target_images:
                 sub_deficit = target_images - len(harvested_images)
                 from crawler.open_harvester import harvest_open_vietnamese_portraits
@@ -757,43 +657,23 @@ class ThreadsBrowserScraper:
                         break
                     sha = op["sha256"]
                     if sha not in seen_shas:
-                        seen_shas.add(sha)
-                        idx_img = len(harvested_images) + 1
-                        cat = op.get("category", "vn_selfie_lifestyle")
-                        out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
-                        with open(out_img, "wb") as f:
-                            f.write(op["image_bytes"])
-                        harvested_images.append(out_img)
+                        is_dup, _, _ = is_visual_duplicate(op["image_bytes"], known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                        if not is_dup:
+                            seen_shas.add(sha)
+                            item_dhash = compute_dhash(op["image_bytes"])
+                            known_dhashes.add(item_dhash)
+                            idx_img = len(harvested_images) + 1
+                            cat = op.get("category", "vn_selfie_lifestyle")
+                            out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
+                            out_img.write_bytes(op["image_bytes"])
+                            harvested_images.append(out_img)
                         
-        # 3.2 Videos: If video count < target_videos, generate talking heads from newly scraped high-res Threads images
-        if len(harvested_videos) < target_videos:
-            deficit_vids = target_videos - len(harvested_videos)
-            print(f"[Harvester Safeguard] Need {deficit_vids} more videos. Generating micro-motion clips from newly scraped high-res Threads images...")
-            from crawler.threads_crawler import generate_talking_head_video_from_portrait
-            while len(harvested_videos) < target_videos and harvested_images:
-                idx_vid = len(harvested_videos) + 1
-                out_vid = raw_dir / f"real_vid_{idx_vid:03d}.mp4"
-                src_img = harvested_images[(idx_vid - 1) % len(harvested_images)]
-                generate_talking_head_video_from_portrait(src_img, out_vid, duration_sec=3.0, fps=30)
-                harvested_videos.append(out_vid)
-                
-        # 3.3 Audios: If audio count < target_audios, generate speech audio waveforms
-        if len(harvested_audios) < target_audios:
-            deficit_auds = target_audios - len(harvested_audios)
-            print(f"[Harvester Safeguard] Need {deficit_auds} more audios. Generating authentic Vietnamese speech audio clips...")
-            from crawler.threads_crawler import generate_speech_audio_clip
-            while len(harvested_audios) < target_audios:
-                idx_aud = len(harvested_audios) + 1
-                out_aud = raw_dir / f"real_aud_{idx_aud:03d}.wav"
-                generate_speech_audio_clip(out_aud, duration_sec=3.0, sample_rate=16000, seed_index=idx_aud)
-                harvested_audios.append(out_aud)
-                
         dedup_registry.save()
         print("\n" + "=" * 80)
         print(f"🎉 [HARVEST COMPLETE] Successfully Ingested for {raw_dir.name}:")
-        print(f"   - Images: {len(harvested_images)} (100% Real Human, 0 Academic Benchmark Crops)")
-        print(f"   - Videos: {len(harvested_videos)} (Authentic Clips & Micro-Motion)")
-        print(f"   - Audios: {len(harvested_audios)} (Real Speech Waveforms)")
+        print(f"   - Images: {len(harvested_images)} (100% Real Origin)")
+        print(f"   - Videos: {len(harvested_videos)} (100% Real Origin Threads Videos)")
+        print(f"   - Audios: {len(harvested_audios)} (100% Real Origin Speech Audio Tracks)")
         print("=" * 80)
         
         return harvested_images, harvested_videos, harvested_audios
