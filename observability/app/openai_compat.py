@@ -150,7 +150,7 @@ async def chat_completions(req: ChatCompletionRequest):
 
     if is_gemini_target:
         prompt_text = _transcript(req.messages)
-        gem_model = req.model if req.model.startswith("gemini") else "gemini-2.5-flash"
+        gem_model = req.model if req.model.startswith("gemini") else "gemini-flash-latest"
 
         if not req.stream:
             try:

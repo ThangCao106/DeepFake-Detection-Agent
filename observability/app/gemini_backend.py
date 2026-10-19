@@ -14,7 +14,7 @@ import urllib.request
 import urllib.error
 from typing import AsyncIterator, Optional, Dict, Any, List
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 
 def get_gemini_api_key() -> str:
     """Retrieve Gemini API key from environment."""
@@ -98,11 +98,21 @@ async def run_gemini_generate(
     if not key:
         raise ValueError("GEMINI_API_KEY is not configured. Please set it in .env or via Web UI.")
 
-    # Normalize model ID
-    if model in ["gemini-flash", "fast", "l1"]:
-        model = "gemini-2.5-flash"
-    elif model in ["gemini-pro", "deep"]:
-        model = "gemini-2.5-pro"
+    # Normalize deprecated or alias model IDs to current active endpoints
+    MODEL_MAP = {
+        "gemini-2.5-flash": "gemini-flash-latest",
+        "gemini-2.5-pro": "gemini-flash-latest",
+        "gemini-1.5-flash": "gemini-flash-latest",
+        "gemini-1.5-pro": "gemini-flash-latest",
+        "gemini-flash": "gemini-flash-latest",
+        "gemini-pro": "gemini-flash-latest",
+        "fast": "gemini-flash-latest",
+        "l1": "gemini-flash-latest",
+        "deep": "gemini-flash-latest"
+    }
+    model = MODEL_MAP.get(model, model)
+    if not model or model.startswith("gemini-2.5") or model.startswith("gemini-1.5"):
+        model = "gemini-flash-latest"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
@@ -141,13 +151,19 @@ async def run_gemini_generate(
                 return json.loads(res_body)
         except urllib.error.HTTPError as e:
             err_text = e.read().decode("utf-8", errors="ignore")
-            # If 2.5-flash is not yet activated on the API key tier, fallback to 1.5-flash
-            if e.code == 404 and "2.5" in model:
-                fallback_model = "gemini-1.5-flash"
-                fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
-                fb_req = urllib.request.Request(fb_url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST")
-                with urllib.request.urlopen(fb_req, timeout=30) as fb_resp:
-                    return json.loads(fb_resp.read().decode("utf-8"))
+            # If the requested model is 404 (retired) or 429 (rate-limited), fallback to gemini-flash-latest or gemini-3.8-flash
+            if e.code in [404, 429]:
+                candidates = ["gemini-flash-latest", "gemini-3.8-flash"]
+                for fallback_model in candidates:
+                    if fallback_model == model:
+                        continue
+                    try:
+                        fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
+                        fb_req = urllib.request.Request(fb_url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST")
+                        with urllib.request.urlopen(fb_req, timeout=30) as fb_resp:
+                            return json.loads(fb_resp.read().decode("utf-8"))
+                    except Exception:
+                        continue
             raise RuntimeError(f"Gemini API Error (HTTP {e.code}): {err_text}")
         except Exception as ex:
             raise RuntimeError(f"Gemini Request Failed: {ex}")

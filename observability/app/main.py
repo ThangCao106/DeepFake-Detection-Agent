@@ -918,7 +918,7 @@ async def chat(req: ChatRequest):
         # --- PATH 1: GEMINI SDK ROUTING ---
         if target_model.lower().startswith("gemini"):
             from app.gemini_backend import stream_gemini_generate
-            gem_model = "gemini-2.5-flash" if "flash" in target_model.lower() else "gemini-2.5-pro"
+            gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-flash-latest")
             try:
                 async for chunk in stream_gemini_generate(
                     prompt=req.message,
@@ -939,10 +939,10 @@ async def chat(req: ChatRequest):
             # Token expired or not logged in: Auto-fallback to Gemini 2.5
             from app.gemini_backend import is_gemini_configured, stream_gemini_generate
             if is_gemini_configured():
-                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-flash-latest")
                 fallback_header = (
                     "> ⚠️ **[Dual-Engine Smart Fallback]**: Phiên Claude OAuth PKCE đã hết hạn (`OAuth session expired`). "
-                    f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini 2.5 ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
+                    f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
                 )
                 yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': fallback_header}})}\n\n"
                 try:
@@ -988,10 +988,10 @@ async def chat(req: ChatRequest):
                 _CLAUDE_OAUTH_EXPIRED = True
                 from app.gemini_backend import is_gemini_configured, stream_gemini_generate
                 if is_gemini_configured():
-                    gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+                    gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-flash-latest")
                     fallback_header = (
                         "> ⚠️ **[Dual-Engine Smart Fallback]**: Phiên Claude OAuth PKCE đã hết hạn (`OAuth session expired`). "
-                        f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini 2.5 ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
+                        f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
                     )
                     yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': fallback_header}})}\n\n"
                     try:
