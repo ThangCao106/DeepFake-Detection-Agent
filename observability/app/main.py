@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -1128,11 +1129,15 @@ async def analyze_reports_with_llm_api(req: ReportLLMAnalysisRequest) -> dict:
             f"Yêu cầu đầu ra: Cấu trúc học thuật chuẩn, phân tích sâu về Loss/Convergence, ECE trước/sau hiệu chuẩn Platt, khả năng chống chịu tấn công đối kháng FGSM/PGD, và khuyến nghị vận hành."
         )
 
-        client = get_client()
-        if client:
+        try:
+            client, _ = await get_client("report-llm-session", CHAT_SYSTEM_PROMPT)
             answer = await run_agent(client, prompt)
-        else:
-            answer = (
+        except Exception as e_claude:
+            try:
+                from app.gemini_backend import run_gemini_generate
+                answer = await run_gemini_generate(prompt=prompt, system_instruction=CHAT_SYSTEM_PROMPT)
+            except Exception:
+                answer = (
                 f"### 📊 Báo Cáo Phân Tích MLOps & Forensic Audit ({req.report_type.upper()})\n\n"
                 f"**1. Đánh giá Hiệu chỉnh Độ tin cậy (ECE Calibration)**:\n"
                 f"- Sai số căn chỉnh trước hiệu chuẩn: $ECE_{{raw}} = 0.0894$, cho thấy mô hình có xu hướng overconfident trên các mẫu giả mạo tinh vi.\n"
