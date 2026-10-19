@@ -378,23 +378,53 @@ class GDriveSyncAgent:
                 'name': filename,
                 'parents': [folder_id]
             }
-            # For fast upload of images/audio (< 5MB), multipart upload (resumable=False) cuts latency by 50%
-            file_sz = os.path.getsize(local_path) if os.path.exists(local_path) else 0
-            is_resumable = file_sz > 5 * 1024 * 1024
-            media = MediaFileUpload(local_path, resumable=is_resumable)
 
-            uploaded_file = self.service.files().create(
-                body=file_metadata, 
-                media_body=media, 
-                fields='id',
-                supportsAllDrives=True
-            ).execute()
-            file_id = uploaded_file.get('id')
+            # Map exact MIME types to prevent Google Drive 400 Bad Request
+            ext = os.path.splitext(local_path)[1].lower()
+            mimetype_map = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.mp4': 'video/mp4',
+                '.wav': 'audio/wav',
+                '.json': 'application/json',
+                '.parquet': 'application/octet-stream',
+                '.md': 'text/markdown'
+            }
+            mime = mimetype_map.get(ext, 'application/octet-stream')
+
+            # Videos & large binaries must use resumable=True to prevent chunk/boundary HTTP 400 errors
+            file_sz = os.path.getsize(local_path) if os.path.exists(local_path) else 0
+            is_resumable = ext in ['.mp4', '.wav'] or file_sz > 2 * 1024 * 1024
+            media = MediaFileUpload(local_path, mimetype=mime, resumable=is_resumable)
+
+            file_id = None
+            last_err = None
+
+            # Retry up to 3 times with lock to ensure 100% SSL thread safety and avoid OpenSSL segfaults
+            for attempt in range(1, 4):
+                try:
+                    with self._upload_lock:
+                        uploaded_file = self.service.files().create(
+                            body=file_metadata, 
+                            media_body=media, 
+                            fields='id',
+                            supportsAllDrives=True
+                        ).execute()
+                        file_id = uploaded_file.get('id')
+                    if file_id:
+                        break
+                except Exception as e_att:
+                    last_err = e_att
+                    if attempt < 3:
+                        time.sleep(1.0 * attempt)
+                    else:
+                        raise last_err
 
             print(f"[GDrive Sync] Uploaded {filename} to GDrive folder {target_subfolder} (ID: {file_id})")
             
-            # Post-sync cleanup: Remove binary local file after successful GDrive upload
-            if os.path.exists(local_path) and not local_path.endswith(".json"):
+            # Post-sync cleanup: Remove binary local file after verified GDrive upload
+            if file_id and os.path.exists(local_path) and not local_path.endswith(".json"):
                 try:
                     os.remove(local_path)
                     print(f"[Disk Guard] Post-Sync Purge: Deleted local file {filename} after GDrive sync.")
