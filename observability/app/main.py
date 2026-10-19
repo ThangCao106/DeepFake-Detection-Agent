@@ -327,13 +327,15 @@ async def _read_subprocess_output(proc):
 
 
 class SetApiKeyRequest(BaseModel):
-    claude_api_key: str
+    claude_api_key: Optional[str] = None
+    api_key: Optional[str] = None
 
 
 @app.post("/api/auth/set-key")
+@app.post("/api/claude/key")
 async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
     """Dynamically set CLAUDE_API_KEY environment variable and persist to .env."""
-    key = req.claude_api_key.strip()
+    key = (req.claude_api_key or req.api_key or "").strip()
     if not key:
         raise HTTPException(status_code=400, detail="Vui lòng nhập API Key hợp lệ.")
 
@@ -366,17 +368,38 @@ async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
 
 
 class SetGeminiKeyRequest(BaseModel):
-    gemini_api_key: str
+    gemini_api_key: Optional[str] = None
+    api_key: Optional[str] = None
+    default_model: Optional[str] = "gemini-2.5-flash"
+
+
+@app.get("/api/gemini/status")
+async def get_gemini_status_api() -> dict:
+    """Return status and configuration of Google Gemini SDK engine."""
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    has_key = bool(key)
+    masked = (key[:8] + "...") if len(key) > 8 else ("***" if has_key else "")
+    model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+    return {
+        "status": "SUCCESS",
+        "has_key": has_key,
+        "authenticated": has_key,
+        "active_model": model,
+        "masked_key": masked
+    }
 
 
 @app.post("/api/auth/set-gemini-key")
+@app.post("/api/gemini/key")
 async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
     """Dynamically set GEMINI_API_KEY environment variable and persist to .env."""
-    key = req.gemini_api_key.strip()
+    key = (req.gemini_api_key or req.api_key or "").strip()
     if not key:
         raise HTTPException(status_code=400, detail="Vui lòng nhập Gemini API Key hợp lệ.")
 
     os.environ["GEMINI_API_KEY"] = key
+    if req.default_model:
+        os.environ["GEMINI_DEFAULT_MODEL"] = req.default_model
 
     # Persist to .env file in project root
     env_file = Path(PROJECT_ROOT) / ".env"
@@ -384,9 +407,11 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
         env_lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.exists() else []
         new_lines = [
             line for line in env_lines
-            if not line.startswith("GEMINI_API_KEY=")
+            if not line.startswith("GEMINI_API_KEY=") and not line.startswith("GEMINI_DEFAULT_MODEL=")
         ]
         new_lines.append(f"GEMINI_API_KEY={key}")
+        if req.default_model:
+            new_lines.append(f"GEMINI_DEFAULT_MODEL={req.default_model}")
         env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     except Exception as e:
         _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Gemini): {e}")
@@ -395,6 +420,7 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
     return {
         "status": "SUCCESS",
         "message": "Đã lưu GEMINI_API_KEY thành công vào hệ thống!",
+        "has_key": True,
         "authenticated": True,
     }
 

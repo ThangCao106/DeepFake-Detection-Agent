@@ -1537,8 +1537,8 @@
           fetch(getApiUrl('api/auth/status')),
           fetch(getApiUrl('api/gemini/status'))
         ]);
-        const claudeData = await claudeRes.json();
-        const geminiData = await geminiRes.json();
+        const claudeData = claudeRes.ok ? await claudeRes.json() : {};
+        const geminiData = geminiRes.ok ? await geminiRes.json() : {};
 
         // Claude Badge
         const claudeBadge = document.getElementById('claudeStatusBadge');
@@ -1557,6 +1557,9 @@
         if (geminiData.has_key) {
           geminiBadge.className = 'engine-badge active';
           geminiText.innerText = `Online (${geminiData.active_model || 'Flash'})`;
+          if (geminiData.masked_key) {
+            document.getElementById('geminiApiKeyInput').placeholder = `Đã cấu hình: ${geminiData.masked_key}`;
+          }
         } else {
           geminiBadge.className = 'engine-badge warn';
           geminiText.innerText = 'Key Missing';
@@ -1870,36 +1873,52 @@ Mô hình đã loại bỏ hoàn toàn tình trạng tự tin thái quá (over-c
     // TAB 5: SAVE KEYS
     async function saveClaudeKey() {
       const key = document.getElementById('claudeApiKeyInput').value.trim();
-      if (!key) return;
+      if (!key) {
+        alert('Vui lòng nhập Anthropic API Key!');
+        return;
+      }
       try {
         const res = await fetch(getApiUrl('api/claude/key'), {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({api_key: key})
+          body: JSON.stringify({api_key: key, claude_api_key: key})
         });
+        if (!res.ok) {
+          const errText = await res.text();
+          alert('Lỗi lưu Anthropic Key (' + res.status + '): ' + errText);
+          return;
+        }
         const json = await res.json();
         alert('Lưu Anthropic Key thành công!');
         checkAuthStatus();
       } catch (err) {
-        alert('Lỗi lưu Anthropic Key: ' + err);
+        alert('Lỗi lưu Anthropic Key: ' + err.message);
       }
     }
 
     async function saveGeminiKey() {
       const key = document.getElementById('geminiApiKeyInput').value.trim();
       const model = document.getElementById('geminiDefaultModel').value;
-      if (!key) return;
+      if (!key) {
+        alert('Vui lòng nhập Google Gemini API Key!');
+        return;
+      }
       try {
         const res = await fetch(getApiUrl('api/gemini/key'), {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({api_key: key, default_model: model})
+          body: JSON.stringify({api_key: key, gemini_api_key: key, default_model: model})
         });
+        if (!res.ok) {
+          const errText = await res.text();
+          alert('Lỗi lưu Gemini Key (' + res.status + '): ' + errText);
+          return;
+        }
         const json = await res.json();
         alert('Lưu Gemini Key thành công!');
         checkAuthStatus();
       } catch (err) {
-        alert('Lỗi lưu Gemini Key: ' + err);
+        alert('Lỗi lưu Gemini Key: ' + err.message);
       }
     }
 
