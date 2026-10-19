@@ -9,15 +9,15 @@ on:
       num_images:
         description: 'Số lượng ảnh chân dung thật cần thu thập (Images)'
         required: false
-        default: '250'
+        default: '2500'
       num_videos:
         description: 'Số lượng video talking head thật (Videos)'
         required: false
-        default: '25'
+        default: '100'
       num_audios:
         description: 'Số lượng audio giọng nói tiếng Việt (Audios)'
         required: false
-        default: '25'
+        default: '50'
       num_fakes:
         description: 'Số lượng ảnh đối kháng FaceSwap & Diffusion (Adversarial Fakes)'
         required: false
