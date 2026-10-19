@@ -1,7 +1,7 @@
 {
   "version": "2.0_dhash",
-  "updated_at": "2026-10-19T09:54:05Z",
-  "total_unique_faces": 10,
+  "updated_at": "2026-10-19T06:34:52Z",
+  "total_unique_faces": 25,
   "total_rejections": 0,
   "hashes": {
     "6f6e4f532c797171": {
@@ -73,6 +73,111 @@
       "source": "threads.net",
       "sha256": "308a09fadc0c5731b32dea7d25f83e19a773830b8227ec39af7a28a03bbeb024",
       "registered_at": "2026-10-19T09:53:40Z"
+    },
+    "f8705c6e179987c6": {
+      "filename": "threads_20260923_389eeb6cdd.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "389eeb6cddf8309ec8bc384a84e53e7da67e404c13b5a7d8c8baadc7129d4c0d",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "f43779bbccc061e1": {
+      "filename": "threads_20260923_deb86e5342.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "deb86e5342019e4ad0e2be06353227ffc1467f06b3c43fa78d6d0ed11a64f968",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "459c383829687070": {
+      "filename": "threads_20260923_acbff2079e.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "acbff2079e8ab7c071f5fef56073ba4ee87a2e388e0042c35eb93cff22469402",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "dcfc1c1c1939f978": {
+      "filename": "threads_20260923_0ff9623d6e.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "0ff9623d6ee93f43ee7699b48a839097d74da5686907a1cd01c13fab3d876b84",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "c2c818181918b0f0": {
+      "filename": "threads_20260923_a6cdcb50b7.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "a6cdcb50b70a04466f9c8250b26fe1da300fddb20361687784347e466fa7a014",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "d1919191e3c6c1c9": {
+      "filename": "threads_20260923_201e8be6b1.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "201e8be6b176ab606c2a4a2dac600048fcf92bfc53528f45baa763bcfa525dc3",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "87f0f2767eceeefe": {
+      "filename": "threads_20260923_3a802af500.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "3a802af50026403b90710826ac53d14bd31ae00eea8bd8f1e777d51413c203a1",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "f8f0f0e467c7277f": {
+      "filename": "threads_20260923_269f118da5.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "269f118da563982e2a797875fe47c2422b51db089c7a3f1ab5ea3af5286d6fcd",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "712d8f9b278d8f8f": {
+      "filename": "threads_20260923_73d8188849.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "73d8188849da6dcc48b258338f03c65b3e9ba62d269b5a469b8d44125b31d254",
+      "registered_at": "2026-10-19T06:34:11Z"
+    },
+    "8723629395373763": {
+      "filename": "threads_20260923_d385238655.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "d385238655e8eb798b29c041a06607493161549e72a56d1e4ad3a2add6f2e0be",
+      "registered_at": "2026-10-19T06:34:12Z"
+    },
+    "3727273737170707": {
+      "filename": "threads_20260923_dd320e6675.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "dd320e6675ff0581b535c653a0c7778bf866e7a2de7e1598e4d4a5129ef032e7",
+      "registered_at": "2026-10-19T06:34:12Z"
+    },
+    "3333329785cd0203": {
+      "filename": "threads_20260923_4bb00a885d.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "4bb00a885d44a7dc89f153df1581f61df0cdc37eb72c74584d7a1147e5191550",
+      "registered_at": "2026-10-19T06:34:12Z"
+    },
+    "d9d838282960b070": {
+      "filename": "threads_20260923_27bed83e78.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "27bed83e78881973270450ef7fc1d903f9f3df44590980bcc813850273a7812e",
+      "registered_at": "2026-10-19T06:34:12Z"
+    },
+    "43e36b6dcad27070": {
+      "filename": "threads_20260923_25f40c3e90.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "25f40c3e9087d1f457a93ccb157337b8945be571430cdf5a32cee9d67a70f3b2",
+      "registered_at": "2026-10-19T06:34:12Z"
+    },
+    "ffdd892eaa54dc9c": {
+      "filename": "threads_20260923_748740e79f.jpg",
+      "category": "",
+      "source": "vietnam_face_vault",
+      "sha256": "748740e79f7213f15b6637d0ff720803f386bb31aa45be4f511fc4b8d995b8bb",
+      "registered_at": "2026-10-19T06:34:12Z"
     }
   },
   "sha256_map": {
@@ -85,6 +190,21 @@
     "1fde5b9ab40fbc2d14c0ea67710827469acc445feaea5702cfa90822e506cb84": "9c8e26277763fc6c",
     "4e3694b60aea14bd5800b08255df006bed5cd94659013878f429c1c495f40e93": "ce8e464747476647",
     "3aedeee26c85e7912aba0a642003c19586df143940e9f820efaacad796c021da": "1f1f1c5aeaef87c6",
-    "308a09fadc0c5731b32dea7d25f83e19a773830b8227ec39af7a28a03bbeb024": "afcc6c1e97833139"
+    "308a09fadc0c5731b32dea7d25f83e19a773830b8227ec39af7a28a03bbeb024": "afcc6c1e97833139",
+    "389eeb6cddf8309ec8bc384a84e53e7da67e404c13b5a7d8c8baadc7129d4c0d": "f8705c6e179987c6",
+    "deb86e5342019e4ad0e2be06353227ffc1467f06b3c43fa78d6d0ed11a64f968": "f43779bbccc061e1",
+    "acbff2079e8ab7c071f5fef56073ba4ee87a2e388e0042c35eb93cff22469402": "459c383829687070",
+    "0ff9623d6ee93f43ee7699b48a839097d74da5686907a1cd01c13fab3d876b84": "dcfc1c1c1939f978",
+    "a6cdcb50b70a04466f9c8250b26fe1da300fddb20361687784347e466fa7a014": "c2c818181918b0f0",
+    "201e8be6b176ab606c2a4a2dac600048fcf92bfc53528f45baa763bcfa525dc3": "d1919191e3c6c1c9",
+    "3a802af50026403b90710826ac53d14bd31ae00eea8bd8f1e777d51413c203a1": "87f0f2767eceeefe",
+    "269f118da563982e2a797875fe47c2422b51db089c7a3f1ab5ea3af5286d6fcd": "f8f0f0e467c7277f",
+    "73d8188849da6dcc48b258338f03c65b3e9ba62d269b5a469b8d44125b31d254": "712d8f9b278d8f8f",
+    "d385238655e8eb798b29c041a06607493161549e72a56d1e4ad3a2add6f2e0be": "8723629395373763",
+    "dd320e6675ff0581b535c653a0c7778bf866e7a2de7e1598e4d4a5129ef032e7": "3727273737170707",
+    "4bb00a885d44a7dc89f153df1581f61df0cdc37eb72c74584d7a1147e5191550": "3333329785cd0203",
+    "27bed83e78881973270450ef7fc1d903f9f3df44590980bcc813850273a7812e": "d9d838282960b070",
+    "25f40c3e9087d1f457a93ccb157337b8945be571430cdf5a32cee9d67a70f3b2": "43e36b6dcad27070",
+    "748740e79f7213f15b6637d0ff720803f386bb31aa45be4f511fc4b8d995b8bb": "ffdd892eaa54dc9c"
   }
 }
