@@ -21,6 +21,11 @@ from claude_agent_sdk import (
 from app.config import ALL_MCP_SERVERS, ALLOWED_TOOLS, DISALLOWED_TOOLS, PROJECT_ROOT
 
 
+class ClaudeAuthenticationError(RuntimeError):
+    """Raised when Claude CLI or SDK encounters an expired OAuth session or invalid credentials."""
+    pass
+
+
 @dataclass
 class _PooledClient:
     client: ClaudeSDKClient
@@ -427,11 +432,14 @@ async def stream_turn(
                 delta_type = delta.get("type")
 
                 if delta_type == "text_delta" and delta.get("text"):
+                    chunk_text = delta["text"]
+                    if any(kw in chunk_text.lower() for kw in ["failed to authenticate", "oauth session expired", "could not be refreshed", "please run /login"]):
+                        raise ClaudeAuthenticationError(chunk_text.strip())
                     streamed_any_delta = True
                     piece = _close_trace() if trace_open else ""
                     if answer_parts is not None:
-                        answer_parts.append(delta["text"])
-                    yield piece + delta["text"]
+                        answer_parts.append(chunk_text)
+                    yield piece + chunk_text
 
                 elif delta_type == "thinking_delta" and delta.get("thinking"):
                     streamed_any_delta = True
@@ -489,6 +497,8 @@ async def stream_turn(
             # happen with include_partial_messages=True), emit the full text at once.
             for block in message.content:
                 if isinstance(block, TextBlock) and block.text:
+                    if any(kw in block.text.lower() for kw in ["failed to authenticate", "oauth session expired", "could not be refreshed", "please run /login"]):
+                        raise ClaudeAuthenticationError(block.text.strip())
                     piece = _close_trace() if trace_open else ""
                     if answer_parts is not None:
                         answer_parts.append(block.text)

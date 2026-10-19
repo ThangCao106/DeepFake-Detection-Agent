@@ -898,11 +898,11 @@
     </div>
 
     <div class="header-status-area">
-      <div class="engine-badge active" id="claudeStatusBadge" title="Claude 3.7 Sonnet (Anthropic SDK)">
+      <div class="engine-badge active" id="claudeStatusBadge" onclick="checkAuthStatus(true)" style="cursor: pointer;" title="Nhấn để kiểm tra lại Token Claude 3.7">
         <span class="dot"></span>
         <span>Claude 3.7: <strong id="claudeStatusText">Active (PKCE)</strong></span>
       </div>
-      <div class="engine-badge" id="geminiStatusBadge" title="Gemini 2.5 Pro/Flash (Google GenAI)">
+      <div class="engine-badge" id="geminiStatusBadge" onclick="checkAuthStatus(true)" style="cursor: pointer;" title="Nhấn để kiểm tra lại Token Google Gemini">
         <span class="dot"></span>
         <span>Gemini 2.5: <strong id="geminiStatusText">Checking...</strong></span>
       </div>
@@ -1623,10 +1623,11 @@
     }
 
     // ENGINE STATUS CHECK (UPFRONT TOKEN PRE-CHECK)
-    async function checkAuthStatus() {
+    async function checkAuthStatus(manual = false) {
       try {
+        const url = manual ? getApiUrl('api/auth/verify-tokens') : getApiUrl('api/auth/status');
         const [claudeRes, geminiRes] = await Promise.all([
-          fetch(getApiUrl('api/auth/status')),
+          fetch(url),
           fetch(getApiUrl('api/gemini/status'))
         ]);
         const claudeData = claudeRes.ok ? await claudeRes.json() : {};
@@ -2290,6 +2291,8 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
         }
 
         renderAllMath();
+        // Automatically synchronize engine status badges after chat turn
+        checkAuthStatus();
       } catch (err) {
         assistantBubble.innerHTML = `<span style="color: var(--accent-rose);">Lỗi streaming: ${err.message}</span>`;
       }

@@ -32,6 +32,7 @@ def _log_debug(msg: str) -> None:
         pass
 
 from app.agent import (
+    ClaudeAuthenticationError,
     build_user_content,
     drop_client,
     get_client,
@@ -68,6 +69,43 @@ async def gate_login(req: GateLoginRequest) -> dict:
 _CLAUDE_OAUTH_EXPIRED = False
 
 
+def _parse_expiration_ms(val: Any) -> Optional[float]:
+    """Parse integer, float, numeric string or ISO timestamp into milliseconds."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val) if val > 10000000000 else float(val) * 1000
+    if isinstance(val, str):
+        s = val.strip()
+        try:
+            num = float(s)
+            return num if num > 10000000000 else num * 1000
+        except ValueError:
+            pass
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return dt.timestamp() * 1000
+        except Exception:
+            pass
+    return None
+
+
+def _find_expiry_in_dict(d: Any) -> Optional[float]:
+    """Recursively search dictionary for any key representing expiration timestamps."""
+    if not isinstance(d, dict):
+        return None
+    for k, v in d.items():
+        if any(target in k.lower() for target in ["expire", "expiry", "valid_until", "expiration"]):
+            ms = _parse_expiration_ms(v)
+            if ms is not None:
+                return ms
+        if isinstance(v, dict):
+            ms = _find_expiry_in_dict(v)
+            if ms is not None:
+                return ms
+    return None
+
+
 def check_claude_token_validity() -> dict:
     """Pre-check Claude token status: permanent API key, valid OAuth session, or expired."""
     global _CLAUDE_OAUTH_EXPIRED
@@ -78,6 +116,20 @@ def check_claude_token_validity() -> dict:
 
     if _CLAUDE_OAUTH_EXPIRED:
         return {"valid": False, "auth_type": "OAUTH_PKCE", "status": "EXPIRED", "message": "OAuth session expired and could not be refreshed"}
+
+    # Check recent debug traces or stdout logs for expired auth messages
+    if any(kw in log.lower() for log in _LOGIN_LOGS[-30:] for kw in ["oauth session expired", "failed to authenticate", "could not be refreshed"]):
+        _CLAUDE_OAUTH_EXPIRED = True
+        return {"valid": False, "auth_type": "OAUTH_PKCE", "status": "EXPIRED", "message": "OAuth session expired and could not be refreshed"}
+
+    if DEBUG_LOG_FILE.exists():
+        try:
+            log_tail = DEBUG_LOG_FILE.read_text(encoding="utf-8", errors="ignore")[-4000:].lower()
+            if any(k in log_tail for k in ["failed to authenticate", "oauth session expired", "could not be refreshed"]):
+                _CLAUDE_OAUTH_EXPIRED = True
+                return {"valid": False, "auth_type": "OAUTH_PKCE", "status": "EXPIRED", "message": "OAuth session expired and could not be refreshed"}
+        except Exception:
+            pass
 
     home_candidates = [
         Path("/home/agent"),
@@ -107,14 +159,10 @@ def check_claude_token_validity() -> dict:
                     if content:
                         data = json.loads(content)
                         if isinstance(data, dict):
-                            # Inspect potential expiration timestamps in token object
-                            for exp_k in ["expiresAt", "expires_at", "expiry", "expiration"]:
-                                exp_val = data.get(exp_k) or (data.get("oauthAccount", {}).get(exp_k) if isinstance(data.get("oauthAccount"), dict) else None)
-                                if exp_val and isinstance(exp_val, (int, float)):
-                                    exp_ts = exp_val if exp_val > 10000000000 else exp_val * 1000
-                                    if exp_ts < now_ms:
-                                        _CLAUDE_OAUTH_EXPIRED = True
-                                        return {"valid": False, "auth_type": "OAUTH_PKCE", "status": "EXPIRED", "message": "OAuth session expired"}
+                            exp_ts = _find_expiry_in_dict(data)
+                            if exp_ts is not None and exp_ts < now_ms:
+                                _CLAUDE_OAUTH_EXPIRED = True
+                                return {"valid": False, "auth_type": "OAUTH_PKCE", "status": "EXPIRED", "message": "OAuth session expired"}
 
                             if data.get("sessionKey"):
                                 return {"valid": True, "auth_type": "OAUTH_PKCE", "status": "AUTHENTICATED"}
@@ -451,6 +499,23 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
         "has_key": True,
         "authenticated": True,
     }
+
+
+@app.get("/api/auth/verify-tokens")
+@app.post("/api/auth/verify-tokens")
+@app.get("/api/auth/check-tokens")
+async def verify_tokens_endpoint() -> dict:
+    """Explicitly verify and pre-check Claude and Gemini tokens upfront."""
+    claude_info = check_claude_token_validity()
+    from app.gemini_backend import verify_gemini_api_key
+    gemini_info = await verify_gemini_api_key()
+    return {
+        "status": "SUCCESS",
+        "claude": claude_info,
+        "gemini": gemini_info,
+        "auto_fallback_ready": gemini_info["valid"]
+    }
+
 
 
 class SendInputRequest(BaseModel):
@@ -903,6 +968,8 @@ async def chat(req: ChatRequest):
                 content = prepend_history(content, sess_id)
             answer_parts: list[str] = []
             async for chunk in stream_turn(client, content, answer_parts=answer_parts):
+                if any(kw in chunk.lower() for kw in ["failed to authenticate", "oauth session expired", "could not be refreshed", "please run /login"]):
+                    raise ClaudeAuthenticationError(chunk.strip())
                 event = {"type": "content_block_delta", "delta": {"text": chunk}}
                 yield f"data: {json.dumps(event)}\n\n"
 
@@ -913,9 +980,9 @@ async def chat(req: ChatRequest):
             await drop_client(sess_id)
             err_msg = str(exc)
             global _CLAUDE_OAUTH_EXPIRED
-            is_auth_error = any(k in err_msg.lower() for k in [
+            is_auth_error = isinstance(exc, ClaudeAuthenticationError) or any(k in err_msg.lower() for k in [
                 "oauth session expired", "not logged in", "failed to authenticate",
-                "authentication error", "invalid api key", "refresh"
+                "authentication error", "invalid api key", "refresh", "could not be refreshed", "please run /login"
             ])
             if is_auth_error:
                 _CLAUDE_OAUTH_EXPIRED = True
@@ -928,12 +995,12 @@ async def chat(req: ChatRequest):
                     )
                     yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': fallback_header}})}\n\n"
                     try:
-                        async for chunk in stream_gemini_generate(
+                        async for gchunk in stream_gemini_generate(
                             prompt=req.message,
                             system_instruction=CHAT_SYSTEM_PROMPT,
                             model=gem_model
                         ):
-                            yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': chunk}})}\n\n"
+                            yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': gchunk}})}\n\n"
                         yield "data: [DONE]\n\n"
                         return
                     except Exception as ge:
