@@ -1,0 +1,60 @@
+{
+  "timestamp_utc": "2026-10-19T07:10:26Z",
+  "model_type": "human",
+  "target_model": "Human-Centric Detector (WAVIE + SSL Vocal Trajectory + LipSync)",
+  "human_image_evaluation": {
+    "media_path": "human_face_test.jpg",
+    "modality": "image",
+    "raw_logit": -1.3436,
+    "calibrated_probability": 0.3035,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "wavelet_high_freq_artifacts": false,
+      "skin_rppg_consistency": 0.9204,
+      "corneal_reflection_symmetry": 0.7805,
+      "corneal_asymmetry_score": 0.2195,
+      "optical_gaze_consistent": true
+    },
+    "inference_latency_ms": 48.94
+  },
+  "human_audio_evaluation": {
+    "media_path": "human_speech_test.wav",
+    "modality": "audio",
+    "raw_logit": 0.3297,
+    "calibrated_probability": 0.5508,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "ssl_vocal_trajectory_smoothness": 0.8717,
+      "voiced_unvoiced_transition_anomaly": true
+    },
+    "inference_latency_ms": 18.96
+  },
+  "human_video_evaluation": {
+    "media_path": "human_video_test.mp4",
+    "modality": "video",
+    "raw_logit": -0.9305,
+    "calibrated_probability": 0.36,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "df26_lipsync_correlation": 0.8908,
+      "microexpression_temporal_jitter": 0.0238
+    },
+    "inference_latency_ms": 24.31
+  },
+  "compliance_audit": {
+    "ece_status": "COMPLIANT (ECE < 0.020)",
+    "platt_temperature_T": 1.6178
+  }
+}
