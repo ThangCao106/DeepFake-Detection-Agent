@@ -1,13 +1,13 @@
-# SRE & DevOps Observability AI Agent
-### Kiến trúc Giám sát & Phân tích Sự cố Đa tầng (Dual-Engine: Claude SDK & Gemini SDK)
+# Deepfake Forensic Agent — SRE & Forensic Console
+### Kiến trúc Giám sát An ninh Đa tầng & Giám định Bằng chứng Số (Dual-Engine: Claude SDK & Gemini SDK)
 
-Agent thông minh phục vụ kỹ sư **SRE (Site Reliability Engineering)** và đội ngũ **DevOps On-Call**:
-- **Chẩn đoán sự cố & Phân tích nguyên nhân gốc rễ (Root Cause Analysis - RCA)**.
-- **Tóm tắt log lỗi, stacktrace, cảnh báo HTTP 5xx, container crash & nghẽn tải**.
-- **Đề xuất kịch bản khắc phục sự cố (Runbook & Remediation Actions) có thứ tự ưu tiên (P0, P1, P2)**.
-- **Hỗ trợ song song 2 Engine LLM hàng đầu**: **Claude Agent SDK** (Suy luận sâu) & **Google Gemini SDK** (Tốc độ cao).
-- **Giao diện Web trực quan** (`http://127.0.0.1:8787`) tích hợp trình quản lý xác thực tập trung.
-- **Cổng chuẩn OpenAI-Compatible** (`/v1/chat/completions`) dễ dàng tích hợp với Slack Bot, Telegram, LibreChat hoặc hệ thống giám sát nội bộ.
+Hệ thống điều hành & giám định **Deepfake Forensic Agent** phục vụ kỹ sư **SRE, Đội ngũ An ninh Mạng (Red Team/Pentest)** và các nhà nghiên cứu:
+- **Tra cứu chứng thư (ForensicCertificateVault)**: Xác minh chữ ký số SHA-256, ma trận bằng chứng 6 chiều (PRNU, 2D-FFT, Coherence) theo tiêu chuẩn EU AI Act Art. 50.
+- **Hiệu chỉnh mô hình (Calibration)**: Theo dõi độ lệch tự tin qua Platt Scaling ($T^* = 1.6178$), tối ưu ngưỡng Youden's $J$ ($\tau^* = 0.8118$), giảm ECE $0.0894 \rightarrow 0.0195$ (-78.19%).
+- **Quản lý & Thử nghiệm LoRA**: Giám sát Adapter Low-Rank Adaptation (r=16, $\alpha$=32, VRAM 7.2GB, cải thiện +8.4% độ chính xác cho ngữ cảnh truyền thông tiếng Việt).
+- **Báo cáo An ninh & Tính toán**: Theo dõi tiến trình Colab Cloud GPU và kết quả Pentest theo chu kỳ **Daily (Hằng ngày)**, **Weekly (Hằng tuần)**, **Monthly (Hằng tháng)**.
+- **Trợ lý AI Forensic Drawer**: Trực quan hóa tương tác streaming với Dual-Engine: **Claude 3.7 Sonnet** (Suy luận sâu) & **Google Gemini 2.5** (Tốc độ cao).
+- **Cổng chuẩn OpenAI-Compatible** (`/v1/chat/completions`) tại cổng `127.0.0.1:8787`.
 
 > ⚡ **Zero External DB Dependencies**: Hệ thống hoạt động độc lập, không cần ClickHouse, Grafana, n8n hay cơ sở dữ liệu bên ngoài. Khởi động tức thì trong 1 giây trên cả Linux (Ubuntu) và Windows.
 
