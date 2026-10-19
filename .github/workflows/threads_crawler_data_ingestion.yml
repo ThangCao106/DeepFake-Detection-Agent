@@ -84,6 +84,9 @@ jobs:
           echo "   Chỉ tiêu: Images=$CRAWL_NUM_IMAGES | Videos=$CRAWL_NUM_VIDEOS | Audios=$CRAWL_NUM_AUDIOS | Fakes=$CRAWL_NUM_FAKES"
           echo "   Vault-Only Mode: $THREADS_VAULT_ONLY"
           echo "=========================================================================="
+          # Option C & B: Pre-prime Vietnamese Real Face Vault with authentic human portraits
+          python scripts/populate_vietnamese_real_vault.py --target "$CRAWL_NUM_IMAGES" --workers 8 || true
+          
           python crawler/daily_pentest_pipeline.py \
             --images "$CRAWL_NUM_IMAGES" \
             --videos "$CRAWL_NUM_VIDEOS" \

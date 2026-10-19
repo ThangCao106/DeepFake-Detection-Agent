@@ -193,95 +193,14 @@ def harvest_wikimedia_vietnamese_portraits(
     dedup_registry: Optional[PerceptualDeduplicationRegistry] = None,
     user_agent: str = "ThreadsDFBench/2.0 (https://github.com/ThangCao106/DeepFake-Detection-Agent; research_ncs@domain.vn) python-urllib/3.13"
 ) -> list:
-    """Fallback harvester for real high-resolution Vietnamese portraits from Wikimedia Commons."""
-    categories = [
-        "Category:People_of_Vietnam",
-        "Category:Vietnamese_people",
-        "Category:People_of_Hanoi",
-        "Category:People_of_Ho_Chi_Minh_City",
-        "Category:Women_of_Vietnam",
-        "Category:Vietnamese_women",
-        "Category:Men_of_Vietnam",
-        "Category:Vietnamese_men",
-        "Category:People_of_Da_Nang",
-        "Category:People_of_Hue"
-    ]
-    
-    harvested = []
-    known_dhashes = dedup_registry.get_known_dhashes() if dedup_registry else set()
-    start_time = time.time()
-    
-    for cat in categories:
-        if len(harvested) >= min_images or (time.time() - start_time) > 90.0:
-            break
-        try:
-            api_url = (
-                f"https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers"
-                f"&gcmtitle={urllib.request.quote(cat)}&gcmlimit=40&gcmtype=file"
-                f"&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=800&format=json"
-            )
-            req = urllib.request.Request(api_url, headers={"User-Agent": user_agent})
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                
-            pages = data.get("query", {}).get("pages", {})
-            for pid, info in pages.items():
-                if len(harvested) >= min_images or (time.time() - start_time) > 90.0:
-                    break
-                ii = info.get("imageinfo", [{}])[0]
-                thumb_url = ii.get("thumburl") or ii.get("url")
-                if not thumb_url:
-                    continue
-                mime = ii.get("mime", "").lower()
-                if not any(t in mime for t in ["jpeg", "jpg", "png"]):
-                    continue
-                    
-                try:
-                    img_req = urllib.request.Request(thumb_url, headers={"User-Agent": user_agent})
-                    with urllib.request.urlopen(img_req, timeout=12) as img_resp:
-                        raw_bytes = img_resp.read()
-                        
-                    sha = compute_sha256(raw_bytes)
-                    is_photo, reason, photo_stats = is_photographic_human_portrait(raw_bytes)
-                    if not is_photo:
-                        continue
-                    face_count = photo_stats.get("face_count", 1)
-                    primary_bbox = photo_stats.get("primary_bbox", [100, 100, 400, 400])
-                        
-                    is_dup, match_h, dist = is_visual_duplicate(raw_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                    if is_dup:
-                        continue
-                        
-                    with Image.open(io.BytesIO(raw_bytes)) as pil_im:
-                        w, h = pil_im.size
-                        
-                    title = info.get("title", f"Vietnamese_Portrait_{len(harvested)+1}")
-                    item_dhash = compute_dhash(raw_bytes)
-                    known_dhashes.add(item_dhash)
-                    if dedup_registry:
-                        dedup_registry.check_and_register(raw_bytes, filename=title, source="wikimedia_commons", sha256=sha)
-                        
-                    harvested.append({
-                        "image_bytes": raw_bytes,
-                        "sha256": sha,
-                        "dhash": item_dhash,
-                        "face_count": face_count,
-                        "primary_bbox": primary_bbox,
-                        "width": w,
-                        "height": h,
-                        "post_url": f"https://commons.wikimedia.org/wiki/{urllib.request.quote(title)}",
-                        "author": "wikimedia_commons_contributor",
-                        "caption": f"Authentic Vietnamese portrait from Wikimedia Commons [{cat}]",
-                        "keyword": cat.replace("Category:", ""),
-                        "source": "commons.wikimedia.org"
-                    })
-                    print(f"  [Wikimedia Ingested] {title} ({w}x{h}, {face_count} face(s), dHash: {item_dhash[:8]}...)")
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"[Wikimedia Harvester Notice] {cat}: {e}")
-            
-    return harvested
+    """Fallback harvester for real high-resolution Vietnamese portraits using Open Multi-Source Harvester."""
+    from crawler.open_harvester import harvest_open_vietnamese_portraits
+    return harvest_open_vietnamese_portraits(
+        target_count=min_images,
+        dedup_registry=dedup_registry,
+        max_workers=8,
+        max_time_sec=180.0
+    )
 
 
 def is_photographic_human_portrait(
@@ -805,79 +724,46 @@ class ThreadsBrowserScraper:
         print(f"\n[Threads Scraper] Live crawling phase finished.")
         print(f"  Live Harvest Results: {len(harvested_images)} Images, {len(harvested_videos)} Videos, {len(harvested_audios)} Audios.")
         
-        # Step 3: Safeguard supplements (Only if CI network limits or quota deficit occurs)
-        # 3.1 Images: Supplement from Wikimedia Commons or Unsplash curated Vietnamese pool (NEVER landmark parquet crops!)
+        # Step 3: Safeguard supplements (Option C Vault & Option B Open Multi-Source Harvester)
+        # 3.1 Images: Supplement authentic real Vietnamese human portraits (Zero duplicate guarantee)
         if len(harvested_images) < target_images:
             deficit_imgs = target_images - len(harvested_images)
-            print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Wikimedia Commons & curated pool...")
-            wiki_photos = harvest_wikimedia_vietnamese_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
-            for wp in wiki_photos:
+            print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Face Vault & Open Harvester...")
+            
+            # 1. Load from Vietnamese Real Face Vault (Option C)
+            from crawler.vietnam_face_vault import load_vault_portraits
+            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
+            for vp in vault_portraits:
                 if len(harvested_images) >= target_images:
                     break
-                sha = wp["sha256"]
+                sha = vp["sha256"]
                 if sha not in seen_shas:
                     seen_shas.add(sha)
                     idx_img = len(harvested_images) + 1
-                    out_img = raw_dir / f"real_img_{idx_img:04d}_vn_street_outdoor.jpg"
-                    with open(out_img, "wb") as f:
-                        f.write(wp["image_bytes"])
-                    harvested_images.append(out_img)
-                    
-            if len(harvested_images) < target_images:
-                for pool_item in REAL_VIETNAMESE_THREADS_FALLBACK_POOL:
-                    if len(harvested_images) >= target_images:
-                        break
-                    p_data = None
-                    img_path = pool_item.get("image_path")
-                    if img_path:
-                        local_f = PROJECT_ROOT / img_path if not os.path.isabs(img_path) else Path(img_path)
-                        if local_f.exists():
-                            p_data = local_f.read_bytes()
-                    if not p_data and pool_item.get("image_url"):
-                        try:
-                            req = urllib.request.Request(pool_item["image_url"], headers={"User-Agent": self.user_agent})
-                            with urllib.request.urlopen(req, timeout=10) as resp:
-                                p_data = resp.read()
-                        except Exception:
-                            pass
-                    if not p_data:
-                        continue
-
-                    p_sha = compute_sha256(p_data)
-                    if p_sha in seen_shas:
-                        continue
-                    seen_shas.add(p_sha)
-                    idx_img = len(harvested_images) + 1
-                    cat = pool_item.get("keyword", "vn_selfie_lifestyle")
+                    cat = vp.get("category", "vn_selfie_lifestyle")
                     out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
                     with open(out_img, "wb") as f:
-                        f.write(p_data)
+                        f.write(vp["image_bytes"])
                     harvested_images.append(out_img)
 
-                # If still under target, supplement with authentic biometric variations of verified seeds
-                if len(harvested_images) < target_images:
-                    verified_dir = PROJECT_ROOT / "crawler" / "verified_threads_seeds"
-                    if verified_dir.exists():
-                        seed_files = sorted(list(verified_dir.glob("*.jpg")))
-                        from crawler.vietnam_face_vault import generate_biometric_variation
-                        seed_idx = 0
-                        while len(harvested_images) < target_images and seed_files:
-                            src_seed = seed_files[seed_idx % len(seed_files)]
-                            seed_idx += 1
-                            with Image.open(src_seed) as s_im:
-                                var_im = generate_biometric_variation(s_im, seed_val=int(time.time()) + seed_idx * 73)
-                                buf = io.BytesIO()
-                                var_im.save(buf, format="JPEG", quality=95)
-                                var_data = buf.getvalue()
-                            v_sha = compute_sha256(var_data)
-                            if v_sha in seen_shas:
-                                continue
-                            seen_shas.add(v_sha)
-                            idx_img = len(harvested_images) + 1
-                            out_img = raw_dir / f"real_img_{idx_img:04d}_vn_selfie_lifestyle.jpg"
-                            with open(out_img, "wb") as f:
-                                f.write(var_data)
-                            harvested_images.append(out_img)
+            # 2. If still under target, stream directly from Open Multi-Source Harvester (Option B)
+            if len(harvested_images) < target_images:
+                sub_deficit = target_images - len(harvested_images)
+                from crawler.open_harvester import harvest_open_vietnamese_portraits
+                print(f"[Harvester Safeguard] Sub-deficit of {sub_deficit} images. Querying Open Harvester live...")
+                open_photos = harvest_open_vietnamese_portraits(target_count=sub_deficit, dedup_registry=dedup_registry)
+                for op in open_photos:
+                    if len(harvested_images) >= target_images:
+                        break
+                    sha = op["sha256"]
+                    if sha not in seen_shas:
+                        seen_shas.add(sha)
+                        idx_img = len(harvested_images) + 1
+                        cat = op.get("category", "vn_selfie_lifestyle")
+                        out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
+                        with open(out_img, "wb") as f:
+                            f.write(op["image_bytes"])
+                        harvested_images.append(out_img)
                         
         # 3.2 Videos: If video count < target_videos, generate talking heads from newly scraped high-res Threads images
         if len(harvested_videos) < target_videos:
