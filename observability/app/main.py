@@ -1517,184 +1517,61 @@ async def get_lora_status_api() -> dict:
     }
 
 
+@app.get("/api/reports/calendar")
+async def get_reports_calendar_api() -> dict:
+    """Return available dates, weeks, and months with drift indicators."""
+    from app.report_engine import get_available_calendar
+    return get_available_calendar()
+
+
+@app.get("/api/reports/detail")
+async def get_reports_detail_api(cadence: str = "daily", target: str = "") -> dict:
+    """Return structured report detail and raw markdown for selected daily/weekly/monthly target."""
+    from app.report_engine import (
+        get_available_calendar,
+        parse_daily_report_detail,
+        parse_weekly_report_detail,
+        parse_monthly_report_detail
+    )
+    cal = get_available_calendar()
+    if cadence == "weekly":
+        if not target:
+            target = cal.get("weekly", [{}])[0].get("week_id", "2026-W43")
+        return {"status": "SUCCESS", "report": parse_weekly_report_detail(target)}
+    elif cadence == "monthly":
+        if not target:
+            target = cal.get("monthly", [{}])[0].get("month_id", "2026-10")
+        return {"status": "SUCCESS", "report": parse_monthly_report_detail(target)}
+    else:  # daily
+        if not target:
+            target = cal.get("daily", [{}])[0].get("date", "2026-10-19")
+        return {"status": "SUCCESS", "report": parse_daily_report_detail(target)}
+
+
 @app.get("/api/reports/digest")
 async def get_reports_digest_api() -> dict:
     """Return comprehensive consolidated executive reports across Daily, Weekly, and Monthly cadences."""
+    from app.report_engine import (
+        get_available_calendar,
+        parse_daily_report_detail,
+        parse_weekly_report_detail,
+        parse_monthly_report_detail
+    )
+    cal = get_available_calendar()
+    latest_date = cal.get("daily", [{}])[0].get("date", "2026-10-19")
+    latest_week = cal.get("weekly", [{}])[0].get("week_id", "2026-W43")
+    latest_month = cal.get("monthly", [{}])[0].get("month_id", "2026-10")
+
+    daily_data = parse_daily_report_detail(latest_date)
+    weekly_data = parse_weekly_report_detail(latest_week)
+    monthly_data = parse_monthly_report_detail(latest_month)
+
     return {
         "status": "SUCCESS",
         "cadences": {
-            "daily": {
-                "period": "24 giờ qua (Hôm nay)",
-                "kpis": {
-                    "total_audits": "1,420 mẫu",
-                    "real_pct": "94.2%",
-                    "fake_detected": "82 ca (5.8%)",
-                    "pentest_status": "PASSED (0 Lỗ hổng)",
-                    "calib_ece": "0.0195 (-78.2%)",
-                    "lora_acc": "96.6%"
-                },
-                "colab_runs": [
-                    {
-                        "job_id": "COLAB-RUN-20261019-01",
-                        "task": "Batch Crawl Validation & Real Media Hash Integrity",
-                        "status": "COMPLETED",
-                        "duration": "18m 42s",
-                        "samples_processed": 1420,
-                        "accuracy": "99.8%",
-                        "gpu": "NVIDIA T4 (Colab Pro)",
-                        "log_summary": "1,420 media items verified against Thread origin hash. Zero synthetic hallucination detected."
-                    },
-                    {
-                        "job_id": "COLAB-RUN-20261019-02",
-                        "task": "Post-Hoc Platt Scaling Calibration Check",
-                        "status": "COMPLETED",
-                        "duration": "6m 15s",
-                        "samples_processed": 500,
-                        "accuracy": "ECE 0.0195",
-                        "gpu": "NVIDIA A100 (Colab High-RAM)",
-                        "log_summary": "Platt scaling T*=1.6178 verified stable. ECE drop confirmed -78.19%."
-                    }
-                ],
-                "pentest_scans": [
-                    {
-                        "scan_id": "PENTEST-DAY-8841",
-                        "target": "FastAPI Gateway & Claude/Gemini Proxy",
-                        "status": "PASSED",
-                        "severity": "LOW / SAFE",
-                        "findings": "0 Critical, 0 High, 1 Info (HSTS preload recommendation)",
-                        "attack_vectors_tested": ["Prompt Injection in Certificate ID", "API Key leak via SSE headers", "Replay attacks"]
-                    },
-                    {
-                        "scan_id": "PENTEST-DAY-8842",
-                        "target": "Forensic Vault Database & Media Storage",
-                        "status": "PASSED",
-                        "severity": "CLEAN",
-                        "findings": "All certificates cryptographically signed with SHA-256 HMAC integrity.",
-                        "attack_vectors_tested": ["Arbitrary File Read", "SQL/JSON Injection on cert lookup"]
-                    }
-                ],
-                "vault_audits": [
-                    {
-                        "category": "Thẩm tra Chứng thư Pháp lý (EU AI Act)",
-                        "summary": "1,420 mẫu đã cấp chứng thư số. 82 mẫu Deepfake AI được cách ly và lưu vết PRNU.",
-                        "compliance": "EU AI Act Art. 50 & DSA Compliance 100%"
-                    }
-                ],
-                "model_metrics": [
-                    {
-                        "model": "ViT Base + LoRA Adapter",
-                        "metric_name": "Calibration ECE & Youden Cutoff",
-                        "metric_value": "ECE 0.0195 | tau* = 0.8118",
-                        "verdict": "OPTIMAL"
-                    }
-                ]
-            },
-            "weekly": {
-                "period": "Tuần 42 (13/10/2026 - 19/10/2026)",
-                "kpis": {
-                    "total_audits": "8,950 mẫu",
-                    "real_pct": "93.8%",
-                    "fake_detected": "555 ca (6.2%)",
-                    "pentest_status": "PASSED (OWASP Top 10)",
-                    "calib_ece": "0.0210",
-                    "lora_acc": "96.6%"
-                },
-                "colab_runs": [
-                    {
-                        "job_id": "COLAB-WEEK-W42-A",
-                        "task": "VisionTransformer-LoRA Fine-tuning on Vietnamese Media",
-                        "status": "COMPLETED",
-                        "duration": "3h 45m",
-                        "samples_processed": 12500,
-                        "accuracy": "96.6% (+8.4% vs Base)",
-                        "gpu": "2x NVIDIA A100-SXM4-80GB",
-                        "log_summary": "LoRA rank 16 converged at epoch 10. Checkpoint saved to model registry."
-                    },
-                    {
-                        "job_id": "COLAB-WEEK-W42-B",
-                        "task": "Adversarial Robustness Stress Test (FGSM & PGD 10-step)",
-                        "status": "COMPLETED",
-                        "duration": "1h 12m",
-                        "samples_processed": 3200,
-                        "accuracy": "AUC 0.934 (FGSM) / 0.918 (PGD)",
-                        "gpu": "NVIDIA A100",
-                        "log_summary": "Model retains >91% detection AUC even under eps=0.03 gradient noise."
-                    }
-                ],
-                "pentest_scans": [
-                    {
-                        "scan_id": "PENTEST-WEEK-710",
-                        "target": "OWASP API Security Top 10 Audit",
-                        "status": "PASSED",
-                        "severity": "SAFE",
-                        "findings": "BOLA / BFLA verified negative. Rate limiting enforced on /v1/chat/completions.",
-                        "attack_vectors_tested": ["Broken Object Level Auth", "Mass Assignment", "Server-Side Request Forgery (SSRF)"]
-                    }
-                ],
-                "vault_audits": [
-                    {
-                        "category": "Kiểm định Nguồn gốc Dữ liệu Crawl (Provenance)",
-                        "summary": "12,500 mẫu đối soát hash nguồn Threads/TikTok. Không có mẫu giả lập tự tạo.",
-                        "compliance": "Zero Hallucinated Origin Data"
-                    }
-                ],
-                "model_metrics": [
-                    {
-                        "model": "Vietnamese Domain Adaptation",
-                        "metric_name": "False Alarm Reduction",
-                        "metric_value": "FPR giảm từ 8.2% xuống 0.4%",
-                        "verdict": "CONVERGED"
-                    }
-                ]
-            },
-            "monthly": {
-                "period": "Tháng 10/2026 (01/10 - 19/10/2026)",
-                "kpis": {
-                    "total_audits": "45,000 mẫu",
-                    "real_pct": "95.1%",
-                    "fake_detected": "2,205 ca (4.9%)",
-                    "pentest_status": "CERTIFIED (ISO/IEC 42001)",
-                    "calib_ece": "0.0195",
-                    "lora_acc": "98.2% Cross-Dataset"
-                },
-                "colab_runs": [
-                    {
-                        "job_id": "COLAB-MONTH-OCT-01",
-                        "task": "Cross-Dataset Generalization Benchmark (FF++, Celeb-DF, WildDeepfake)",
-                        "status": "COMPLETED",
-                        "duration": "8h 20m",
-                        "samples_processed": 45000,
-                        "accuracy": "AUC 0.982 Avg",
-                        "gpu": "Multi-GPU Cluster",
-                        "log_summary": "State-of-the-art transferability achieved across all 3 international benchmarks."
-                    }
-                ],
-                "pentest_scans": [
-                    {
-                        "scan_id": "PENTEST-MONTH-M10",
-                        "target": "EU AI Act Article 50 & ISO/IEC 42001 Compliance Red Teaming",
-                        "status": "CERTIFIED",
-                        "severity": "FULL COMPLIANCE",
-                        "findings": "Watermark detection, biometric traceability, and tamper-evident audit logs validated.",
-                        "attack_vectors_tested": ["Poisoning attack on calibration set", "Model extraction via query scraping"]
-                    }
-                ],
-                "vault_audits": [
-                    {
-                        "category": "Đánh giá Pháp lý Chuẩn Quốc tế",
-                        "summary": "Toàn bộ chuỗi cung ứng bằng chứng số sẵn sàng cho kiểm toán độc lập.",
-                        "compliance": "ISO/IEC 42001 & EU AI Act Accredited"
-                    }
-                ],
-                "model_metrics": [
-                    {
-                        "model": "LoRA Adapter Memory Efficiency",
-                        "metric_name": "VRAM Savings",
-                        "metric_value": "7.2 GB (Tiết kiệm 70% so với 24GB)",
-                        "verdict": "EXCELLENT"
-                    }
-                ]
-            }
+            "daily": daily_data,
+            "weekly": weekly_data,
+            "monthly": monthly_data
         }
     }
 
