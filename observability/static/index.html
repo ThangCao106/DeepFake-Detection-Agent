@@ -1111,16 +1111,14 @@
         <div class="card" style="margin-bottom: 1.5rem;">
           <div class="form-label">Nhập mã định danh chứng thư giám định (Certificate ID)</div>
           <div class="vault-search-box">
-            <input type="text" id="certIdInput" class="form-input mono" placeholder="VD: CERT-DF-20261019-9041 hoặc CERT-DF-20261018-4821" value="CERT-DF-20261019-9041">
+            <input type="text" id="certIdInput" class="form-input mono" placeholder="VD: Nhập mã CERT-DF-XXXXXXXX vừa kiểm tra..." value="">
             <button class="btn btn-primary" onclick="lookupCertificate()">
               <span>🔍</span>
               <span>Tra cứu ngay</span>
             </button>
           </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
-            <span>Mẫu thử nghiệm nhanh:</span>
-            <span class="chip-prompt" onclick="fillCertChip('CERT-DF-20261019-9041')">CERT-DF-20261019-9041 (Ảnh thật)</span>
-            <span class="chip-prompt" onclick="fillCertChip('CERT-DF-20261018-4821')">CERT-DF-20261018-4821 (Deepfake AI)</span>
+          <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap;">
+            <span>Gợi ý: Nhấp vào bất kỳ mã chứng chỉ nào trong bảng Lịch sử phía dưới để tra cứu ngay lập tức.</span>
           </div>
         </div>
 
@@ -1908,19 +1906,34 @@
         let localQueries = [];
         try {
           const stored = localStorage.getItem('recent_vault_queries');
-          if (stored) localQueries = JSON.parse(stored);
+          if (stored) {
+            localQueries = JSON.parse(stored).filter(item => 
+              item && item.certificate_id && 
+              !(item.image_filename || '').includes('sample_cert-df-20261019-9041')
+            );
+          }
         } catch (e) {}
 
         const seen = new Set();
         const combined = [];
-        for (const item of [...localQueries, ...apiLookups]) {
+        // Server API records take precedence over client-side localStorage
+        for (const item of [...apiLookups, ...localQueries]) {
           if (item && item.certificate_id && !seen.has(item.certificate_id)) {
             seen.add(item.certificate_id);
             combined.push(item);
           }
         }
-        recentVaultLookups = combined.slice(0, 8);
+        recentVaultLookups = combined.slice(0, 10);
+        try {
+          localStorage.setItem('recent_vault_queries', JSON.stringify(recentVaultLookups));
+        } catch (e) {}
         renderRecentVaultTable();
+        // If search input is empty, auto-fill and display the most recent audited certificate
+        const inputElem = document.getElementById('certIdInput');
+        if (inputElem && !inputElem.value.trim() && recentVaultLookups.length > 0) {
+          inputElem.value = recentVaultLookups[0].certificate_id;
+          lookupCertificate();
+        }
       } catch (e) {
         console.error('Lỗi nạp lịch sử tra cứu gần đây:', e);
       }
@@ -1943,18 +1956,23 @@
         const badgeClass = isReal ? 'real' : 'fake';
         const labelText = isReal ? 'AUTHENTIC (THẬT)' : 'DEEPFAKE (AI)';
         const confPct = item.confidence_score ? `${(item.confidence_score * 100).toFixed(1)}%` : '98.0%';
-        const prnuText = item.prnu_score ? `${item.prnu_score.toFixed(3)}` : '0.545';
-        const fftText = item.fft_score ? `${item.fft_score.toFixed(3)}` : '0.156';
-        const thumbUrl = item.sample_image_url || (isReal ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80');
+        const prnuText = (item.prnu_score !== undefined && item.prnu_score !== null) ? `${Number(item.prnu_score).toFixed(3)}` : '0.545';
+        const fftText = (item.fft_score !== undefined && item.fft_score !== null) ? `${Number(item.fft_score).toFixed(3)}` : '0.156';
+        let thumbUrl = item.sample_image_url || '';
+        if (!thumbUrl) {
+          thumbUrl = isReal 
+            ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80' 
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80';
+        }
 
         const row = `
           <tr>
             <td>
-              <img src="${thumbUrl}" class="recent-thumb" alt="${item.certificate_id}">
+              <img src="${thumbUrl}" class="recent-thumb" alt="${item.certificate_id}" onerror="this.onerror=null; this.src='/static/favicon.ico';">
             </td>
             <td>
               <strong style="font-family: var(--font-mono); color: var(--accent-cyan); cursor: pointer;" onclick="fillCertChip('${item.certificate_id}')">${item.certificate_id}</strong>
-              <div style="font-size: 0.68rem; color: var(--text-dim);">${item.image_filename || 'sample.jpg'}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim);">${item.image_filename || 'media_evidence.png'}</div>
             </td>
             <td style="font-size: 0.75rem; color: var(--text-muted);">${item.timestamp || 'Vừa xong'}</td>
             <td>
@@ -2023,7 +2041,9 @@
         document.getElementById('certTimestamp').innerText = data.timestamp;
         document.getElementById('certSha256').innerText = data.media_sha256;
         document.getElementById('certFilename').innerText = data.image_filename;
-        document.getElementById('certImagePreview').src = data.sample_image_url;
+        const imgElem = document.getElementById('certImagePreview');
+        imgElem.onerror = function() { this.src = '/static/favicon.ico'; };
+        imgElem.src = data.sample_image_url || '/static/favicon.ico';
 
         const isReal = data.label.includes('REAL');
         const badge = document.getElementById('certBadgeStatus');

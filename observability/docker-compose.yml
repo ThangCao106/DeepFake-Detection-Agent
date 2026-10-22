@@ -18,6 +18,8 @@ services:
     volumes:
       - claude-home-new:/home/agent
       - ../report_colab:/app/report_colab
+      - ../uploads:/app/uploads:ro
+      - ../web_ui/uploads:/app/web_ui_uploads:ro
     restart: unless-stopped
 
   login:

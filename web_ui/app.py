@@ -289,6 +289,24 @@ def verify_certificate(cert_id):
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
 
+@app.route('/api/certificates/recent', methods=['GET'])
+def api_recent_certificates():
+    """Return recent digital forensic certificates for Observability Agent and Vault."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from benchmark.deepfake_memory import get_recent_forensic_certificates
+        limit = int(request.args.get('limit', 15))
+        recent = get_recent_forensic_certificates(limit=limit)
+        return jsonify({
+            "status": "SUCCESS",
+            "recent_queries": recent
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching recent certificates: {e}")
+        return jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
 @app.route('/certificate/<cert_id>', methods=['GET'])
 def view_certificate_page(cert_id):
     """Server-Side Rendered (SSR) Public Certificate Page with Schema.org ClaimReview JSON-LD for Googlebot."""

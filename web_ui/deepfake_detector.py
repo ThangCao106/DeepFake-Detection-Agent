@@ -24,7 +24,20 @@ except Exception:
         pass
     HumanMultiModalDetector = None
 
-# optional face cropping (fast/simple) using face_recognition if available
+import cv2
+
+# Initialize OpenCV Haar Cascades for reliable, offline, lightweight geometric face and eye detection
+try:
+    CV2_FACE_CASCADE = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    CV2_EYE_CASCADE = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    CV2_CASCADES_AVAILABLE = (CV2_FACE_CASCADE is not None and not CV2_FACE_CASCADE.empty() and
+                              CV2_EYE_CASCADE is not None and not CV2_EYE_CASCADE.empty())
+except Exception:
+    CV2_FACE_CASCADE = None
+    CV2_EYE_CASCADE = None
+    CV2_CASCADES_AVAILABLE = False
+
+# Optional face cropping using face_recognition if available
 try:
     import face_recognition
     FACE_REC_AVAILABLE = True
@@ -35,35 +48,54 @@ except Exception:
 class HumanPresenceDetector:
     """
     Scans media to detect presence of human entities:
-      - Primary: Face detection using face_recognition (HOG / CNN).
-      - Secondary: Skin-tone chrominance distribution in YCbCr color space (Cb in [77, 127], Cr in [133, 173]).
-    Returns: {
-        "has_human": bool,
-        "face_count": int,
-        "skin_percentage": float,
-        "presence_evidence": list
-    }
+      - Primary Gate: Geometric human face detection (OpenCV Haar Cascade + face_recognition if available).
+      - Secondary Telemetry: Skin-tone chrominance distribution in YCbCr color space.
+      
+    STRICT DUAL-GATE RULE (Non-Human Biometric Bypass):
+      has_human is True ONLY IF geometric face detection confirms at least 1 human face (face_count >= 1).
+      Skin chrominance alone NEVER triggers human biometric pipelines (prevents false positives on
+      earth tones, terracotta roofs, brick walls, wooden furniture, or nature scenery).
     """
     @staticmethod
     def analyze_human_presence(pil_image):
-        img_np = np.array(pil_image)
+        img_np = np.array(pil_image.convert("RGB"))
         face_count = 0
+        detected_faces = []
         evidence = []
         
-        # 1. Face recognition check
-        if FACE_REC_AVAILABLE:
+        # 1. Primary Geometric Face Detection via OpenCV Haar Cascade
+        if CV2_CASCADES_AVAILABLE:
+            try:
+                gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+                gray_eq = cv2.equalizeHist(gray)
+                faces = CV2_FACE_CASCADE.detectMultiScale(
+                    gray_eq,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(32, 32)
+                )
+                if len(faces) > 0:
+                    face_count = len(faces)
+                    detected_faces = [(int(x), int(y), int(w), int(h)) for (x, y, w, h) in faces]
+                    evidence.append(f"Detected {face_count} human face(s) via OpenCV Geometric Cascade")
+            except Exception:
+                pass
+
+        # Fallback / augment with face_recognition if available
+        if face_count == 0 and FACE_REC_AVAILABLE:
             try:
                 boxes = face_recognition.face_locations(img_np, model="hog")
-                face_count = len(boxes)
-                if face_count > 0:
+                if boxes:
+                    face_count = len(boxes)
+                    for (top, right, bottom, left) in boxes:
+                        detected_faces.append((int(left), int(top), int(right - left), int(bottom - top)))
                     evidence.append(f"Detected {face_count} human face(s) via HOG detector")
             except Exception:
                 pass
                 
-        # 2. Skin chrominance segmentation (YCbCr)
+        # 2. Secondary Skin chrominance segmentation (YCbCr) - for telemetry/evidence only
         skin_pct = 0.0
         try:
-            # Downsample image for fast skin pixel calculation
             small_img = pil_image.resize((128, 128)).convert("YCbCr")
             ycbcr = np.array(small_img)
             cb = ycbcr[:, :, 1]
@@ -72,16 +104,18 @@ class HumanPresenceDetector:
             skin_mask = (cb >= 77) & (cb <= 127) & (cr >= 133) & (cr <= 173)
             skin_pct = round(float(np.mean(skin_mask) * 100), 1)
             if skin_pct >= 8.0:
-                evidence.append(f"Human skin chrominance detected ({skin_pct}% of frame)")
+                evidence.append(f"Warm/skin-tone chrominance observed ({skin_pct}% of frame)")
         except Exception:
             pass
 
-        has_human = (face_count > 0) or (skin_pct >= 10.0)
+        # STRICT DUAL-GATE DECISION: Only True if verified human face geometry exists
+        has_human = (face_count > 0)
         return {
             "has_human": has_human,
             "face_count": face_count,
+            "detected_faces": detected_faces,
             "skin_percentage": skin_pct,
-            "presence_evidence": evidence if evidence else ["No prominent human biometrics detected (Non-human / object media)"]
+            "presence_evidence": evidence if evidence else ["No human face geometry detected (Non-human / scenery / object media)"]
         }
 
 
@@ -142,25 +176,39 @@ class SpatialConsistencyAnalyzer:
     Analyzes spatial noise variance and edge inconsistency across image regions.
     """
     @staticmethod
-    def analyze_spatial_inconsistency(pil_image, cropped_face=None):
+    def analyze_spatial_inconsistency(pil_image, cropped_face=None, has_human=True, face_found=False):
         """
         Compute noise variance differential between center/face region and peripheral background.
+        For non-human images, evaluates spatial noise homogeneity across uniform grid tiles.
         """
         try:
             img_np = np.array(pil_image.convert("RGB"), dtype=np.float32)
             h, w, _ = img_np.shape
-            
-            # Divide into center and background regions
-            cy_start, cy_end = int(h * 0.25), int(h * 0.75)
-            cx_start, cx_end = int(w * 0.25), int(w * 0.75)
-            
-            center_region = img_np[cy_start:cy_end, cx_start:cx_end]
-            
-            center_var = float(np.mean(np.var(center_region, axis=(0, 1))))
-            full_var = float(np.mean(np.var(img_np, axis=(0, 1)))) + 1e-8
-            
-            variance_ratio = abs(center_var - full_var) / full_var
-            inconsistency_score = float(np.clip(variance_ratio * 1.5, 0.0, 1.0))
+
+            if has_human and face_found and cropped_face is not None:
+                # Facial tampering analysis: differential between face crop and background
+                face_np = np.array(cropped_face.convert("RGB"), dtype=np.float32)
+                face_var = float(np.mean(np.var(face_np, axis=(0, 1))))
+                full_var = float(np.mean(np.var(img_np, axis=(0, 1)))) + 1e-8
+                variance_ratio = abs(face_var - full_var) / full_var
+                inconsistency_score = float(np.clip(variance_ratio * 1.2, 0.0, 1.0))
+            else:
+                # Non-human / scenery analysis: 4x4 uniform grid block noise variance dispersion
+                gh, gw = 4, 4
+                bh, bw = h // gh, w // gw
+                if bh < 4 or bw < 4:
+                    return 0.0
+                block_vars = []
+                for r in range(gh):
+                    for c in range(gw):
+                        blk = img_np[r*bh:(r+1)*bh, c*bw:(c+1)*bw]
+                        block_vars.append(float(np.mean(np.var(blk, axis=(0, 1)))))
+                b_mean = float(np.mean(block_vars)) + 1e-6
+                b_std = float(np.std(block_vars))
+                relative_dispersion = b_std / b_mean
+                # Natural images show smooth noise roll-off (dispersion < 0.6)
+                inconsistency_score = float(np.clip((relative_dispersion - 0.40) * 0.8, 0.0, 1.0))
+
             return round(inconsistency_score, 4)
         except Exception:
             return 0.0
@@ -171,15 +219,15 @@ class SpatialHeatmapGenerator:
     SARAAB-Inspired Frame-by-Frame Heatmap & Manipulation Hotspot Analyzer.
     Divides the face/frame into an 8x8 Patch Grid (matching ViT patch spatial layout)
     and computes localized high-frequency gradient variances and pixel blending differentials.
-    Highlights specific facial regions exhibiting blending boundary anomalies or synthetic artifacts.
+    Highlights specific facial or scene regions exhibiting blending boundary anomalies.
     """
     @staticmethod
-    def generate_patch_heatmap(pil_image, grid_size=8):
+    def generate_patch_heatmap(pil_image, grid_size=8, has_human=True):
         """
         Generate localized patch anomaly heatmap normalized between [0.0, 1.0].
         Returns:
             - heatmap_grid: List of lists containing normalized patch anomaly scores.
-            - peak_hotspot: Dict with coordinates (row, col) and anatomical region name.
+            - peak_hotspot: Dict with coordinates (row, col) and anatomical/scene region name.
             - spatial_dispersion: Variance of heatmap (high dispersion indicates localized tampering).
         """
         try:
@@ -205,15 +253,23 @@ class SpatialHeatmapGenerator:
             max_idx = np.unravel_index(np.argmax(grid_np), grid_np.shape)
             peak_val = float(grid_np[max_idx])
             
-            # Map grid position to estimated facial anatomical zone
+            # Map grid position to estimated facial or scene zone
             r_ratio = max_idx[0] / grid_size
             c_ratio = max_idx[1] / grid_size
-            if 0.2 <= r_ratio <= 0.5 and 0.2 <= c_ratio <= 0.8:
-                region_name = "Periorbital / Upper Facial Zone (Eyes/Forehead)"
-            elif 0.5 < r_ratio <= 0.8 and 0.25 <= c_ratio <= 0.75:
-                region_name = "Perioral / Mandibular Zone (Mouth/Jaw Blending Boundary)"
+            if has_human:
+                if 0.2 <= r_ratio <= 0.5 and 0.2 <= c_ratio <= 0.8:
+                    region_name = "Periorbital / Upper Facial Zone (Eyes/Forehead)"
+                elif 0.5 < r_ratio <= 0.8 and 0.25 <= c_ratio <= 0.75:
+                    region_name = "Perioral / Mandibular Zone (Mouth/Jaw Blending Boundary)"
+                else:
+                    region_name = "Peripheral Silhouette / Hairline Boundary"
             else:
-                region_name = "Peripheral Silhouette / Hairline Boundary"
+                if 0.25 <= r_ratio <= 0.75 and 0.25 <= c_ratio <= 0.75:
+                    region_name = "Central Salient Object / Architecture Structural Region"
+                elif r_ratio < 0.25:
+                    region_name = "Upper Scene Boundary / Skylight Contrast Zone"
+                else:
+                    region_name = "Peripheral Frame / Background Landscape Boundary"
 
             return {
                 "grid_size": f"{grid_size}x{grid_size}",
@@ -240,10 +296,10 @@ class SensorPRNUAnalyzer:
     Based on CVIU 2022 survey & Lukáš / Koopman et al. hardware forensic noise extraction.
     Camera hardware sensors (CMOS/CCD) impart physical, high-frequency PRNU noise W = I - F(I).
     Synthetic generative pipelines (Latent Diffusion, GANs, FaceSwap) either omit physical PRNU
-    or introduce severe noise residual variance differentials across spliced facial boundaries.
+    or introduce severe noise residual variance differentials across spliced boundaries.
     """
     @staticmethod
-    def analyze_sensor_prnu(pil_image, cropped_face=None):
+    def analyze_sensor_prnu(pil_image, cropped_face=None, has_human=True):
         try:
             # Convert to grayscale float32 array
             gray = pil_image.convert("L").resize((256, 256))
@@ -292,10 +348,11 @@ class SensorPRNUAnalyzer:
             prnu_discrepancy = float(np.clip(0.45 * variance_penalty + 0.35 * kurtosis_penalty + 0.20 * energy_penalty, 0.0, 1.0))
             has_sensor_prnu = prnu_discrepancy < 0.40
 
+            subject_term = "khuôn mặt và phông nền" if has_human else "vùng đối tượng trung tâm và phông nền cảm biến"
             interpretation = (
                 "Sensor PRNU hardware fingerprint verified; uniform camera sensor residual."
                 if has_sensor_prnu
-                else "Sensor PRNU discrepancy detected; noise residual mismatch consistent with synthetic generation / splicing."
+                else f"Sensor PRNU discrepancy detected; noise residual mismatch between {subject_term}."
             )
 
             return {
@@ -321,24 +378,52 @@ class CornealReflectionAnalyzer:
     """
     Ophthalmic Corneal Specular Reflection & Gaze Consistency Analyzer.
     Based on CVIU 2022 survey & Matern et al. / Yang et al. corneal light reflection physics.
-    In genuine physical portraits, both corneas act as convex optical reflectors reflecting
-    external ambient light sources with consistent angular position, centroid ratio, and intensity.
-    Synthetic models (StyleGAN, Diffusion, FaceSwap) often generate inconsistent or asymmetric corneal glints.
+    Strictly requires verified human face presence AND bilateral eye geometry.
+    If media is non-human, or eye geometry is unresolvable, strictly bypasses with 0 penalty.
     """
     @staticmethod
-    def analyze_corneal_reflections(pil_image, cropped_face=None, has_human=True):
-        if not has_human:
+    def analyze_corneal_reflections(pil_image, cropped_face=None, has_human=True, face_found=False):
+        if not has_human or not face_found:
             return {
                 "corneal_asymmetry_score": 0.0,
                 "corneal_reflection_symmetry": 1.0,
                 "optical_gaze_consistent": True,
                 "specular_glints_detected": False,
                 "glints_count": 0,
-                "details": "Non-human media; corneal reflection analysis not applicable."
+                "status": "BYPASS_NON_HUMAN",
+                "details": "Corneal reflection analysis bypassed: non-human media / no verified facial geometry."
             }
 
         try:
             face_img = cropped_face if cropped_face is not None else pil_image
+            face_np = np.array(face_img.convert("RGB"))
+            fh, fw, _ = face_np.shape
+
+            # Verify presence of bilateral eyes using OpenCV Eye Cascade in upper half of face
+            eyes_found_count = 0
+            if CV2_CASCADES_AVAILABLE and fh >= 48 and fw >= 48:
+                try:
+                    gray_face = cv2.cvtColor(face_np, cv2.COLOR_RGB2GRAY)
+                    upper_face = gray_face[:int(fh * 0.65), :]
+                    eyes = CV2_EYE_CASCADE.detectMultiScale(
+                        upper_face, scaleFactor=1.1, minNeighbors=3, minSize=(12, 12)
+                    )
+                    eyes_found_count = len(eyes)
+                except Exception:
+                    pass
+
+            # If fewer than 2 eyes detected, safely neutral bypass (profile face, sunglasses, or occluded)
+            if CV2_CASCADES_AVAILABLE and eyes_found_count < 2:
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_OCCLUDED_OR_PROFILE",
+                    "details": "Bilateral eye regions occluded or unresolvable; corneal reflection neutral."
+                }
+
             gray = face_img.convert("L").resize((160, 160))
             arr = np.array(gray, dtype=np.float32)
             h, w = arr.shape
@@ -358,6 +443,7 @@ class CornealReflectionAnalyzer:
                     "optical_gaze_consistent": True,
                     "specular_glints_detected": False,
                     "glints_count": 0,
+                    "status": "BYPASS_UNRESOLVABLE",
                     "details": "Eye regions too small or unresolvable."
                 }
 
@@ -384,13 +470,13 @@ class CornealReflectionAnalyzer:
                 asymmetry_score = float(np.clip(offset_dist * 2.2, 0.0, 1.0))
                 glints_count = 2
             elif has_glint_l != has_glint_r:
-                asymmetry_score = 0.68
+                asymmetry_score = 0.35 # Mild unilateral light source
                 glints_count = 1
             else:
                 var_l = np.var(left_eye)
                 var_r = np.var(right_eye) + 1e-6
                 diff_var = abs(var_l - var_r) / max(var_l, var_r)
-                asymmetry_score = float(np.clip(diff_var * 0.4, 0.0, 0.40))
+                asymmetry_score = float(np.clip(diff_var * 0.25, 0.0, 0.30))
                 glints_count = 0
 
             symmetry_score = round(1.0 - asymmetry_score, 4)
@@ -408,6 +494,7 @@ class CornealReflectionAnalyzer:
                 "optical_gaze_consistent": is_consistent,
                 "specular_glints_detected": glints_count > 0,
                 "glints_count": glints_count,
+                "status": "EVALUATED",
                 "details": details
             }
         except Exception as e:
@@ -417,6 +504,7 @@ class CornealReflectionAnalyzer:
                 "optical_gaze_consistent": True,
                 "specular_glints_detected": False,
                 "glints_count": 0,
+                "status": "ERROR_BYPASS",
                 "details": f"Corneal reflection check bypassed: {str(e)}"
             }
 
@@ -435,26 +523,30 @@ class XAIExplainabilityGenerator:
         spatial_score = ev.get("dim4_spatial_inconsistency", {}).get("score", 0.0)
         corneal_score = ev.get("dim5_corneal_reflection", {}).get("score", 0.0)
         hotspot = ev.get("dim6_patch_heatmap_uncertainty", {}).get("peak_hotspot", {})
-        region = hotspot.get("anatomical_region", "Facial Silhouette")
+        region = hotspot.get("anatomical_region", "Central Salient Region")
         peak_score = hotspot.get("peak_anomaly_score", 0.0)
 
         reasons = []
         if prnu_score > 0.40:
-            reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) bất thường: thiếu vân nhiễu quang học tự nhiên hoặc có độ lệch lớn giữa khuôn mặt và phông nền.")
+            target_str = "khuôn mặt và phông nền" if has_human else "đối tượng chính và môi trường phông nền"
+            reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) bất thường: thiếu vân nhiễu quang học tự nhiên hoặc có độ lệch lớn giữa {target_str}.")
         else:
-            reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất, phù hợp với ảnh chụp từ cảm biến máy ảnh thực tế.")
+            reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất, phù hợp với ảnh chụp từ cảm biến máy ảnh vật lý thực tế.")
 
         if has_human:
             if corneal_score > 0.35:
                 reasons.append(f"Bất đối xứng phản xạ giác mạc mắt (Corneal Asymmetry = {corneal_score:.2f}): nguồn sáng phản xạ giữa hai mắt không trùng khớp vector quang học, dấu hiệu của công nghệ FaceSwap/Diffusion.")
             else:
                 reasons.append(f"Phản xạ ánh sáng giác mạc (Symmetry = {1.0 - corneal_score:.2f}) quang học nhất quán giữa hai mắt.")
+        else:
+            reasons.append("Chỉ số sinh trắc học giác mạc: Bỏ qua (ảnh phi nhân vật / phong cảnh / đồ vật / kiến trúc).")
 
         if fft_score > 0.40:
             reasons.append(f"Phổ tần số cao 2D FFT ({fft_score:.2f}) xuất hiện các đỉnh năng lượng chu kỳ dạng lưới đặc trưng của mô hình tạo ảnh sinh (Diffusion/GAN).")
         
         if spatial_score > 0.35:
-            reasons.append(f"Nhiễu không gian ({spatial_score:.2f}) có sự gián đoạn giữa vùng biên ghép và môi trường xung quanh.")
+            target_zone = "vùng biên khuôn mặt" if has_human else "vùng trọng tâm kiến trúc/đối tượng"
+            reasons.append(f"Nhiễu không gian ({spatial_score:.2f}) có sự gián đoạn giữa {target_zone} và môi trường xung quanh.")
 
         if peak_score > 0.50:
             reasons.append(f"Bản đồ nhiệt SARAAB khoanh vùng bất thường tập trung tại: {region} (Hotspot score = {peak_score:.2f}).")
@@ -531,31 +623,68 @@ class DeepfakeDetector:
         print("[info] DeepfakeDetector initialized successfully.")
 
 
-    def _crop_face_if_possible(self, pil_image):
+    def _crop_face_if_possible(self, pil_image, detected_faces=None):
         """
-        If face_recognition is installed, detect faces and return the largest face crop.
-        Otherwise, return the center crop (square) as a fallback.
+        Detects faces and returns (cropped_face, face_found_bool).
+        Uses pre-detected OpenCV faces or runs cascade / face_recognition.
+        If no face is detected, returns (original_pil_image, False) - NEVER crops arbitrary center patches.
         """
-        if FACE_REC_AVAILABLE:
-            img_np = np.array(pil_image)
-            boxes = face_recognition.face_locations(img_np, model="hog")
-            if boxes:
-                areas = [(b[2]-b[0])*(b[1]-b[3]) for b in boxes]
-                idx = int(np.argmax(areas))
-                top, right, bottom, left = boxes[idx]
-                hpad = int(0.15 * (bottom - top))
-                wpad = int(0.15 * (right - left))
-                top = max(0, top - hpad)
-                left = max(0, left - wpad)
-                bottom = min(pil_image.height, bottom + hpad)
-                right = min(pil_image.width, right + wpad)
-                return pil_image.crop((left, top, right, bottom))
-        
         w, h = pil_image.size
-        side = min(w, h)
-        left = (w - side) // 2
-        top = (h - side) // 2
-        return pil_image.crop((left, top, left + side, top + side))
+        img_np = np.array(pil_image.convert("RGB"))
+
+        # 1. Use pre-detected OpenCV bounding boxes if available
+        if detected_faces and len(detected_faces) > 0:
+            sorted_faces = sorted(detected_faces, key=lambda f: f[2] * f[3], reverse=True)
+            x, y, fw, fh = sorted_faces[0]
+            pad_w = int(0.15 * fw)
+            pad_h = int(0.15 * fh)
+            left = max(0, x - pad_w)
+            top = max(0, y - pad_h)
+            right = min(w, x + fw + pad_w)
+            bottom = min(h, y + fh + pad_h)
+            return pil_image.crop((left, top, right, bottom)), True
+
+        # 2. Try OpenCV Cascade directly
+        if CV2_CASCADES_AVAILABLE:
+            try:
+                gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+                gray_eq = cv2.equalizeHist(gray)
+                faces = CV2_FACE_CASCADE.detectMultiScale(
+                    gray_eq, scaleFactor=1.1, minNeighbors=5, minSize=(32, 32)
+                )
+                if len(faces) > 0:
+                    sorted_faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+                    x, y, fw, fh = sorted_faces[0]
+                    pad_w = int(0.15 * fw)
+                    pad_h = int(0.15 * fh)
+                    left = max(0, x - pad_w)
+                    top = max(0, y - pad_h)
+                    right = min(w, x + fw + pad_w)
+                    bottom = min(h, y + fh + pad_h)
+                    return pil_image.crop((left, top, right, bottom)), True
+            except Exception:
+                pass
+
+        # 3. Try face_recognition if available
+        if FACE_REC_AVAILABLE:
+            try:
+                boxes = face_recognition.face_locations(img_np, model="hog")
+                if boxes:
+                    areas = [(b[2]-b[0])*(b[1]-b[3]) for b in boxes]
+                    idx = int(np.argmax(areas))
+                    top, right, bottom, left = boxes[idx]
+                    hpad = int(0.15 * (bottom - top))
+                    wpad = int(0.15 * (right - left))
+                    top = max(0, top - hpad)
+                    left = max(0, left - wpad)
+                    bottom = min(h, bottom + hpad)
+                    right = min(w, right + wpad)
+                    return pil_image.crop((left, top, right, bottom)), True
+            except Exception:
+                pass
+
+        # Fallback: No verified human face detected -> return whole image and False
+        return pil_image, False
 
     def predict(self, image_path, use_face_crop=True):
         """
@@ -569,14 +698,16 @@ class DeepfakeDetector:
         try:
             image = Image.open(image_path).convert("RGB")
 
-            # Step 1: Pre-flight Human Presence Gate
+            # Step 1: Pre-flight Human Presence Gate (Strict Dual-Gate)
             human_presence = HumanPresenceDetector.analyze_human_presence(image)
             has_human = human_presence.get("has_human", False)
+            detected_faces = human_presence.get("detected_faces", [])
 
+            face_found = False
             if use_face_crop and has_human:
-                cropped = self._crop_face_if_possible(image)
+                cropped, face_found = self._crop_face_if_possible(image, detected_faces=detected_faces)
             else:
-                cropped = image
+                cropped, face_found = image, False
 
             # Stream 1: General Multi-Modal Vision Stream (Custom ViT)
             inputs = self.processor(images=cropped, return_tensors="pt")
@@ -606,31 +737,47 @@ class DeepfakeDetector:
             spectral_anomaly = FrequencyDomainAnalyzer.analyze_spectral_anomaly(image)
 
             # 3. Compute Spatial Noise Inconsistency
-            spatial_inconsistency = SpatialConsistencyAnalyzer.analyze_spatial_inconsistency(image, cropped)
+            spatial_inconsistency = SpatialConsistencyAnalyzer.analyze_spatial_inconsistency(
+                image, cropped, has_human=has_human, face_found=face_found
+            )
 
             # 4. Compute SARAAB-Inspired Patch Anomaly Heatmap (8x8 ViT Grid)
-            spatial_patch_heatmap = SpatialHeatmapGenerator.generate_patch_heatmap(cropped)
+            spatial_patch_heatmap = SpatialHeatmapGenerator.generate_patch_heatmap(
+                cropped, has_human=has_human
+            )
             heatmap_peak_val = spatial_patch_heatmap.get("peak_hotspot", {}).get("peak_anomaly_score", 0.0)
 
             # 5. Compute Sensor PRNU Hardware Residual Anomaly (CVIU 2022 / Koopman et al.)
-            prnu_analysis = SensorPRNUAnalyzer.analyze_sensor_prnu(image, cropped)
+            prnu_analysis = SensorPRNUAnalyzer.analyze_sensor_prnu(
+                image, cropped, has_human=has_human
+            )
             prnu_score = prnu_analysis.get("prnu_discrepancy_score", 0.0)
 
             # 6. Compute Ophthalmic Corneal Specular Reflection Consistency (CVIU 2022 / Matern et al.)
-            corneal_analysis = CornealReflectionAnalyzer.analyze_corneal_reflections(image, cropped, has_human)
+            corneal_analysis = CornealReflectionAnalyzer.analyze_corneal_reflections(
+                image, cropped, has_human=has_human, face_found=face_found
+            )
             corneal_score = corneal_analysis.get("corneal_asymmetry_score", 0.0)
 
             # Stream 1 General Risk Calculation:
             # 55% ViT passive probability, 15% 2D FFT spectral lattice, 15% Sensor PRNU, 10% spatial noise, 5% patch heatmap peak
             is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
             fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
-            general_risk = round(float(
+            
+            raw_general_risk = (
                 0.55 * fake_prob + 
                 0.15 * spectral_anomaly + 
                 0.15 * prnu_score + 
                 0.10 * spatial_inconsistency + 
                 0.05 * heatmap_peak_val
-            ), 4)
+            )
+
+            # If ViT predicts Real with high confidence (< 0.35 fake_prob) and no generative grid spikes (< 0.40 spectral)
+            # and no human biometrics were detected, calibrate general_risk to prevent auxiliary noise false positives
+            if not is_fake_pred and fake_prob < 0.35 and spectral_anomaly < 0.40 and not has_human:
+                general_risk = round(float(min(raw_general_risk * 0.70, fake_prob + 0.05)), 4)
+            else:
+                general_risk = round(float(raw_general_risk), 4)
 
             # Step 2: Parallel Stream 2 & Cross-Evidence Fusion Engine
             if has_human and self.human_detector is not None:
@@ -668,7 +815,7 @@ class DeepfakeDetector:
                     }
                 }
             else:
-                # Single Stream: Non-Human Media (Nature, Objects, Non-human AI Art)
+                # Single Stream: Non-Human Media (Nature, Objects, Architecture, Scenery)
                 composite_risk = general_risk
                 analysis_mode = "SINGLE_STREAM_GENERAL"
                 dual_stream_breakdown = {
@@ -727,7 +874,7 @@ class DeepfakeDetector:
                 "dim5_corneal_reflection": {
                     "dimension_name": "5. Ophthalmic Corneal Specular Reflection Symmetry",
                     "score": corneal_score,
-                    "status": "OPTICAL_ASYMMETRY" if corneal_score > 0.35 else "CONSISTENT_LIGHT_SOURCE",
+                    "status": "BYPASS_NON_HUMAN" if not has_human else ("OPTICAL_ASYMMETRY" if corneal_score > 0.35 else "CONSISTENT_LIGHT_SOURCE"),
                     "optical_gaze_consistent": corneal_analysis.get("optical_gaze_consistent", True),
                     "details": corneal_analysis
                 },
@@ -755,11 +902,18 @@ class DeepfakeDetector:
             canonical_repr = f"{cert_id}:{timestamp}:{media_sha256}:{composite_risk}:{analysis_mode}"
             sig_hex = hashlib.sha256(canonical_repr.encode("utf-8")).hexdigest()
 
+            # Determine media filename and relative URL for frontend & vault rendering
+            media_filename = os.path.basename(str(image_path)) if image_path else f"media_{cert_id.lower()}.png"
+            media_url = f"/uploads/{media_filename}" if media_filename else ""
+
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
                 "forensic_version": "3.0-XAI-6D-AUDITABLE",
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
+                "media_filename": media_filename,
+                "media_url": media_url,
+                "sample_image_url": media_url,
                 "analysis_mode": analysis_mode,
                 "human_presence_evaluation": human_presence,
                 "dual_stream_breakdown": dual_stream_breakdown,
@@ -767,12 +921,18 @@ class DeepfakeDetector:
                 "xai_explainability_statement": xai_explanation,
                 "media_integrity": {
                     "sha256": media_sha256,
+                    "media_filename": media_filename,
+                    "media_url": media_url,
                     "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
                 },
                 "image_metadata": {
                     "dimensions": f"{image.width}x{image.height}",
                     "format": image.format or "RGB",
-                    "face_cropping_applied": use_face_crop and has_human
+                    "face_cropping_applied": use_face_crop and has_human and face_found,
+                    "face_detected": face_found,
+                    "media_filename": media_filename,
+                    "media_url": media_url,
+                    "filepath": str(image_path) if image_path else ""
                 },
                 "multi_dimensional_evidence": {
                     "passive_model_score": {

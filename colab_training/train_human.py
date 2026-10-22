@@ -20,6 +20,14 @@ import time
 import json
 import argparse
 from pathlib import Path
+
+# Ensure UTF-8 output on Windows console
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 import torch
 import torch.nn as nn
 
@@ -65,31 +73,56 @@ MODEL_2_DATASETS = {
     }
 }
 
+class NoiseInconsistencyLoss(nn.Module):
+    """
+    Noise Inconsistency Loss inspired by MVIM Network (IEEE T-DSC 2025).
+    Penalizes discrepancies between facial hardware sensor noise variance (PRNU)
+    and peripheral background sensor noise variance for authentic captures (label=0),
+    while enforcing a separation margin on synthetic face-swaps (label=1).
+    """
+    def __init__(self, margin: float = 0.45):
+        super().__init__()
+        self.margin = margin
+
+    def forward(self, face_noise_var: torch.Tensor, bg_noise_var: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        diff = torch.abs(face_noise_var - bg_noise_var)
+        loss_real = (1.0 - labels.float()) * torch.square(diff)
+        loss_fake = labels.float() * torch.square(torch.clamp(self.margin - diff, min=0.0))
+        return torch.mean(loss_real + loss_fake)
+
+
 class BiometricFusionHead(nn.Module):
     """
     Multimodal fusion head combining:
       - Face Visual Biometric (ViT + WAVIE DWT pore energy + rPPG pulse) [dim: 768]
       - Voice Speech Trajectory (WavLM SSL Layer 12 vocal features) [dim: 768]
       - Audio-Visual Lip-Sync (DF26 temporal coherence score) [dim: 128]
+      - Sensor PRNU & Noise Inconsistency (MVIM inspired: IEEE T-DSC 2025) [dim: 64]
     """
-    def __init__(self, visual_dim=768, audio_dim=768, sync_dim=128, hidden_dim=512):
+    def __init__(self, visual_dim=768, audio_dim=768, sync_dim=128, noise_dim=64, hidden_dim=512):
         super().__init__()
         self.visual_proj = nn.Linear(visual_dim, hidden_dim)
         self.audio_proj = nn.Linear(audio_dim, hidden_dim)
         self.sync_proj = nn.Linear(sync_dim, hidden_dim // 2)
+        self.noise_proj = nn.Linear(noise_dim, 64)
         
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim * 2 + (hidden_dim // 2), 256),
+            nn.Linear(hidden_dim * 2 + (hidden_dim // 2) + 64, 256),
             nn.GELU(),
             nn.Dropout(0.2),
             nn.Linear(256, 2)
         )
+        self.noise_loss_fn = NoiseInconsistencyLoss(margin=0.45)
         
-    def forward(self, feat_visual, feat_audio, feat_sync):
+    def forward(self, feat_visual, feat_audio, feat_sync, feat_noise=None):
         v = torch.relu(self.visual_proj(feat_visual))
         a = torch.relu(self.audio_proj(feat_audio))
         s = torch.relu(self.sync_proj(feat_sync))
-        fused = torch.cat([v, a, s], dim=-1)
+        if feat_noise is None:
+            # Default zero embedding if noise tensor is absent
+            feat_noise = torch.zeros((v.size(0), 64), device=v.device)
+        n = torch.relu(self.noise_proj(feat_noise))
+        fused = torch.cat([v, a, s, n], dim=-1)
         return self.classifier(fused)
 
 def train_human_model(

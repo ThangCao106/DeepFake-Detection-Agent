@@ -165,10 +165,11 @@ class ParquetBiometricDataset(Dataset if HAS_TORCH else object):
         row = self.df.iloc[idx]
         
         # 1. Visual Feature Vector (768-dim synthetic or scaled embedding from E_high, Z_peak, Heatmap, Entropy)
-        e_high = row["e_high"]
-        z_peak = row["z_peak"]
-        ent = row["entropy_hp"]
-        heat_peak = float(row["heatmap_peak_val"]) if "heatmap_peak_val" in row else 0.5
+        e_high = float(row["e_high"]) if not pd.isna(row["e_high"]) else 0.35
+        z_peak = float(row["z_peak"]) if not pd.isna(row["z_peak"]) else 0.50
+        ent = float(row["entropy_hp"]) if not pd.isna(row["entropy_hp"]) else 0.45
+        hp_val = row["heatmap_peak_val"] if "heatmap_peak_val" in row else None
+        heat_peak = 0.50 if (hp_val is None or pd.isna(hp_val)) else float(hp_val)
         visual_feat = torch.zeros(768, dtype=torch.float32)
         visual_feat[0] = e_high
         visual_feat[1] = z_peak
@@ -178,16 +179,20 @@ class ParquetBiometricDataset(Dataset if HAS_TORCH else object):
 
         # 2. Audio Feature Vector (768-dim WavLM Layer 12 representation)
         audio_feat = torch.zeros(768, dtype=torch.float32)
-        audio_feat[0] = row["hubert_mean"]
-        audio_feat[1] = row["hubert_std"]
-        audio_feat[2:] = torch.randn(766) * row["hubert_std"]
+        h_mean = float(row["hubert_mean"]) if not pd.isna(row["hubert_mean"]) else 0.0
+        h_std = float(row["hubert_std"]) if not pd.isna(row["hubert_std"]) else 0.05
+        audio_feat[0] = h_mean
+        audio_feat[1] = h_std
+        audio_feat[2:] = torch.randn(766) * max(0.01, h_std)
 
         # 3. Lip-Sync & Short-Clip Temporal Coherence Feature Vector (128-dim DF26 + Motion Jitter)
-        motion_jitter = float(row["temporal_motion_anomaly"]) if "temporal_motion_anomaly" in row else 0.15
+        mot_val = row["temporal_motion_anomaly"] if "temporal_motion_anomaly" in row else None
+        motion_jitter = 0.15 if (mot_val is None or pd.isna(mot_val)) else float(mot_val)
+        lip_score = float(row["lipsync_score"]) if not pd.isna(row["lipsync_score"]) else 0.50
         sync_feat = torch.zeros(128, dtype=torch.float32)
-        sync_feat[0] = row["lipsync_score"]
+        sync_feat[0] = lip_score
         sync_feat[1] = motion_jitter
-        sync_feat[2:] = torch.randn(126) * 0.02 + row["lipsync_score"]
+        sync_feat[2:] = torch.randn(126) * 0.02 + lip_score
 
         label = torch.tensor(int(row["label"]), dtype=torch.long)
         return visual_feat, audio_feat, sync_feat, label

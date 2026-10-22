@@ -271,10 +271,16 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
     cursor = conn.cursor()
 
     clean_id = cert_id.strip().upper()
+    prefix_id = clean_id if clean_id.startswith("CERT-DF-") else f"CERT-DF-{clean_id}"
+    raw_suffix = clean_id.replace("CERT-DF-", "")
+
     cursor.execute("""
     SELECT * FROM forensic_certificates 
-    WHERE UPPER(certificate_id) = ? OR UPPER(certificate_id) = ?
-    """, (clean_id, f"CERT-DF-{clean_id}"))
+    WHERE UPPER(certificate_id) = ? 
+       OR UPPER(certificate_id) = ?
+       OR UPPER(certificate_id) LIKE ?
+    LIMIT 1
+    """, (clean_id, prefix_id, f"%{raw_suffix}%"))
     
     row = cursor.fetchone()
     conn.close()
@@ -287,6 +293,12 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
         try:
             full_cert = json.loads(data["full_certificate_json"])
             full_cert["status"] = "VERIFIED_VALID"
+            # Ensure media_filename and sample_image_url are populated
+            if "media_filename" not in full_cert:
+                media_meta = full_cert.get("image_metadata") or {}
+                full_cert["media_filename"] = media_meta.get("media_filename") or f"media_{clean_id.lower()}.png"
+            if "sample_image_url" not in full_cert:
+                full_cert["sample_image_url"] = f"/uploads/{full_cert['media_filename']}"
             return full_cert
         except Exception:
             pass
@@ -297,8 +309,76 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
         "auditable_verdict": data.get("auditable_verdict"),
         "composite_risk_score": data.get("composite_risk_score"),
         "media_sha256": data.get("media_sha256"),
+        "image_filename": f"media_{clean_id.lower()}.png",
+        "sample_image_url": f"/uploads/media_{clean_id.lower()}.png",
         "status": "VERIFIED_VALID"
     }
+
+
+def get_recent_forensic_certificates(limit: int = 15, db_path=None) -> list:
+    """Fetch the most recent forensic certificates from SQLite for real-time streaming vault."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM forensic_certificates 
+    ORDER BY created_at DESC 
+    LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        data = dict(row)
+        full_cert = {}
+        if data.get("full_certificate_json"):
+            try:
+                full_cert = json.loads(data["full_certificate_json"])
+            except Exception:
+                pass
+
+        cid = data.get("certificate_id") or full_cert.get("certificate_id", "CERT-DF-UNKNOWN")
+        ts = data.get("created_at") or full_cert.get("timestamp", "")
+        verdict = data.get("auditable_verdict") or full_cert.get("auditable_verdict", "AUTHENTIC_MEDIA_LIKELY")
+        is_real = "SUSPECTED" not in verdict and "DETECTED" not in verdict and "FAKE" not in verdict
+        risk = float(data.get("composite_risk_score") or full_cert.get("composite_risk_score") or 0.0)
+
+        # Image references
+        media_fn = (
+            full_cert.get("media_filename") or 
+            (full_cert.get("image_metadata") or {}).get("media_filename") or 
+            (full_cert.get("media_integrity") or {}).get("media_filename") or 
+            f"media_{cid.lower()}.png"
+        )
+        sample_img = full_cert.get("sample_image_url") or full_cert.get("media_url") or f"/uploads/{media_fn}"
+
+        # Evidence scores
+        ev = full_cert.get("multi_dimensional_evidence") or {}
+        prnu_val = 0.545
+        fft_val = 0.156
+        if "sensor_prnu_analysis" in ev:
+            prnu_val = float(ev["sensor_prnu_analysis"].get("prnu_discrepancy_score", 0.545))
+        if "spectral_frequency_analysis" in ev:
+            fft_val = float(ev["spectral_frequency_analysis"].get("high_frequency_anomaly_score", 0.156))
+
+        passive = ev.get("passive_model_score") or {}
+        conf = float(passive.get("confidence", round(1.0 - risk if is_real else risk, 4)))
+
+        results.append({
+            "certificate_id": cid,
+            "timestamp": ts,
+            "label": "REAL / AUTHENTIC" if is_real else "SYNTHETIC / DEEPFAKE",
+            "is_real": is_real,
+            "confidence_score": conf,
+            "composite_risk_score": risk,
+            "image_filename": media_fn,
+            "sample_image_url": sample_img,
+            "prnu_score": prnu_val,
+            "fft_score": fft_val,
+            "compliance_standard": full_cert.get("compliance_standard", "EU AI Act Article 50 & DSA Auditable Media")
+        })
+    return results
 
 
 def get_all_certificates(limit: int = 1000, db_path=None) -> list:

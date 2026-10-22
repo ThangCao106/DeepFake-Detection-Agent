@@ -1,0 +1,12 @@
+{
+  "timestamp_utc": "2026-10-20T14:17:21Z",
+  "model_type": "general_dual_stream",
+  "paradigm": "Spatial ViT + Spectral Frequency Compression Block (FCB)",
+  "reference_sota": "FA3-CLIP (IEEE T-IFS 2025)",
+  "epochs": 5,
+  "batch_size": 32,
+  "final_accuracy": 97.9,
+  "weights_path": "custom_vit_model\\weights_general.pt",
+  "ece_calibrated_temperature": 1.6178,
+  "optimal_threshold_tau": 0.8118
+}

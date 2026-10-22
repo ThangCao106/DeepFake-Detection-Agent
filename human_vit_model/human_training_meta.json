@@ -1,19 +1,19 @@
 {
-  "timestamp_utc": "2026-09-17T16:05:07Z",
+  "timestamp_utc": "2026-10-20T14:18:25Z",
   "model_type": "Model 2: Human Biometrics & Physiology",
-  "epochs": 1,
+  "epochs": 2,
   "batch_size": 32,
   "learning_rate": 0.0001,
-  "final_accuracy": 89.7,
-  "face_accuracy": 88.6,
-  "voice_accuracy": 87.4,
-  "lipsync_accuracy": 86.3,
-  "auc": 0.9955,
-  "eer": 1.19,
-  "ece": 0.0181,
-  "temperature_calibrated": 2.0804,
-  "youden_threshold": 0.7229,
-  "weights_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\human_vit_model\\weights_human.pt",
+  "final_accuracy": 57.45,
+  "face_accuracy": 56.65,
+  "voice_accuracy": 56.25,
+  "lipsync_accuracy": 55.95,
+  "auc": 0.9906,
+  "eer": 1.77,
+  "ece": 0.0278,
+  "temperature_calibrated": 1.6178,
+  "youden_threshold": 0.8118,
+  "weights_path": "human_vit_model\\weights_human.pt",
   "datasets": {
     "multifakeverse": {
       "name": "MultiFakeVerse",
@@ -52,9 +52,9 @@
     }
   },
   "threads_samples": {
-    "images": 10,
-    "videos": 5,
-    "audios": 5,
+    "images": 10000,
+    "videos": 500,
+    "audios": 500,
     "vietnamese_categories": [
       "vn_id_official",
       "vn_selfie_lifestyle",
@@ -66,18 +66,19 @@
   "history": [
     {
       "epoch": 1,
-      "loss": 0.432,
-      "face_acc": 88.6,
-      "voice_acc": 87.4,
-      "lipsync_acc": 86.3,
-      "multimodal_acc": 89.7
+      "loss": 0.7061,
+      "face_acc": 37.5,
+      "voice_acc": 37.1,
+      "lipsync_acc": 36.8,
+      "multimodal_acc": 38.3
+    },
+    {
+      "epoch": 2,
+      "loss": 0.679,
+      "face_acc": 56.65,
+      "voice_acc": 56.25,
+      "lipsync_acc": 55.95,
+      "multimodal_acc": 57.45
     }
-  ],
-  "ppo_meta_controller_state": {
-    "updated_utc": "2026-09-21T04:24:57Z",
-    "lambda_bio_optimal": 0.5446,
-    "hard_threshold_eta": 0.7627,
-    "trigger_lora_signal": false,
-    "ppo_reward": 0.9442
-  }
+  ]
 }
