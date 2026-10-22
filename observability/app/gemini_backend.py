@@ -114,9 +114,8 @@ async def run_gemini_generate(
         "l1": "gemini-flash-latest",
         "deep": "gemini-flash-latest"
     }
-    model = MODEL_MAP.get(model, model)
-    if not model or model.startswith("gemini-2.5") or model.startswith("gemini-1.5"):
-        model = "gemini-flash-latest"
+    # Normalize requested model
+    model = model.strip() if model else "gemini-2.5-flash"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
@@ -164,19 +163,32 @@ async def run_gemini_generate(
                     f"Gemini API Error (HTTP 401): API key không hợp lệ hoặc không có quyền truy cập (ACCESS_TOKEN_TYPE_UNSUPPORTED). "
                     f"Vui lòng tạo Google AI Studio API Key (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey và cập nhật qua menu 'Cài đặt kết nối'."
                 )
-            # If the requested model is 404 (retired) or 429 (rate-limited), fallback to gemini-flash-latest or gemini-3.8-flash
-            if e.code in [404, 429]:
-                candidates = ["gemini-flash-latest", "gemini-3.8-flash"]
-                for fallback_model in candidates:
+
+            # Auto-fallback on 503 (High demand / Unavailable), 429 (Rate-limited), 404 (Retired), or 500/502/504
+            if e.code in [404, 429, 500, 502, 503, 504]:
+                fallback_chain = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-pro", "gemini-1.5-pro"]
+                for fallback_model in fallback_chain:
                     if fallback_model == model:
                         continue
                     try:
                         fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
                         fb_req = urllib.request.Request(fb_url, data=data_bytes, headers=req_headers, method="POST")
-                        with urllib.request.urlopen(fb_req, timeout=30) as fb_resp:
-                            return json.loads(fb_resp.read().decode("utf-8"))
+                        with urllib.request.urlopen(fb_req, timeout=25) as fb_resp:
+                            fb_body = fb_resp.read().decode("utf-8")
+                            parsed = json.loads(fb_body)
+                            if parsed.get("candidates"):
+                                return parsed
+                    except urllib.error.HTTPError as fb_err:
+                        continue
                     except Exception:
                         continue
+
+            if e.code == 503:
+                raise RuntimeError(
+                    "Google Gemini đang gặp tình trạng quá tải tạm thời (HTTP 503: High demand). "
+                    "Hệ thống đã thử các model dự phòng nhưng cụm máy chủ Google vẫn đang bận. "
+                    "Vui lòng thử lại sau 5–10 giây hoặc chọn model khác."
+                )
             raise RuntimeError(f"Gemini API Error (HTTP {e.code}): {err_text}")
         except Exception as ex:
             raise RuntimeError(f"Gemini Request Failed: {ex}")

@@ -918,7 +918,7 @@ async def chat(req: ChatRequest):
         # --- PATH 1: GEMINI SDK ROUTING ---
         if target_model.lower().startswith("gemini"):
             from app.gemini_backend import stream_gemini_generate
-            gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-flash-latest")
+            gem_model = target_model if target_model.lower().startswith("gemini") else os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
             try:
                 async for chunk in stream_gemini_generate(
                     prompt=req.message,
@@ -939,7 +939,7 @@ async def chat(req: ChatRequest):
             # Token expired or not logged in: Auto-fallback to Gemini 2.5
             from app.gemini_backend import is_gemini_configured, stream_gemini_generate
             if is_gemini_configured():
-                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-flash-latest")
+                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
                 fallback_header = (
                     "> ⚠️ **[Dual-Engine Smart Fallback]**: Phiên Claude OAuth PKCE đã hết hạn (`OAuth session expired`). "
                     f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
