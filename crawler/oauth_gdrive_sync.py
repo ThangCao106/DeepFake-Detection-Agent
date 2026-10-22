@@ -43,22 +43,20 @@ def exchange_refresh_token_for_access_token(refresh_token: str) -> str:
     custom_client_id = os.environ.get("GDRIVE_CLIENT_ID") or DEFAULT_CLIENT_ID
     custom_client_secret = os.environ.get("GDRIVE_CLIENT_SECRET") or DEFAULT_CLIENT_SECRET
 
-    candidates = [
-        {"client_id": custom_client_id, "client_secret": custom_client_secret},
-        {"client_id": DEFAULT_CLIENT_ID, "client_secret": DEFAULT_CLIENT_SECRET},
-        {"client_id": "407408718192.apps.googleusercontent.com", "client_secret": None},
-        {"client_id": None, "client_secret": None}
-    ]
+    candidates = []
+    if os.environ.get("GDRIVE_CLIENT_ID"):
+        candidates.append({"name": "Custom Repo Client", "client_id": os.environ.get("GDRIVE_CLIENT_ID"), "client_secret": os.environ.get("GDRIVE_CLIENT_SECRET")})
+    candidates.append({"name": "Default Project Client", "client_id": DEFAULT_CLIENT_ID, "client_secret": DEFAULT_CLIENT_SECRET})
+    candidates.append({"name": "OAuth Playground Public Client", "client_id": "407408718192.apps.googleusercontent.com", "client_secret": os.environ.get("GDRIVE_CLIENT_SECRET", "")})
 
-    last_error = None
+    error_logs = []
     for cfg in candidates:
         data = {
             "grant_type": "refresh_token",
             "refresh_token": clean_token,
+            "client_id": cfg["client_id"]
         }
-        if cfg["client_id"]:
-            data["client_id"] = cfg["client_id"]
-        if cfg["client_secret"]:
+        if cfg.get("client_secret"):
             data["client_secret"] = cfg["client_secret"]
 
         try:
@@ -67,17 +65,24 @@ def exchange_refresh_token_for_access_token(refresh_token: str) -> str:
                 body = resp.json()
                 acc_token = body.get("access_token")
                 if acc_token:
-                    cid_label = cfg['client_id'] or 'public_token_endpoint'
-                    print(f"[OAuth Engine] [TOKEN SUCCESS] Successfully refreshed Google Drive Access Token via {cid_label}!")
+                    print(f"[OAuth Engine] [TOKEN SUCCESS] Successfully refreshed Google Drive Access Token via {cfg['name']} ({cfg['client_id']})!")
                     return acc_token
             else:
-                last_error = f"HTTP {resp.status_code}: {resp.text}"
-                print(f"[OAuth Engine] Candidate {cfg['client_id']} failed ({resp.status_code}): {resp.text}")
+                err_text = resp.text.strip()
+                error_logs.append(f"{cfg['name']}: HTTP {resp.status_code} - {err_text}")
+                print(f"[OAuth Engine] Candidate {cfg['name']} failed ({resp.status_code}): {err_text}")
         except Exception as e:
-            last_error = str(e)
-            print(f"[OAuth Engine] Candidate {cfg['client_id']} request exception: {e}")
+            error_logs.append(f"{cfg['name']}: {e}")
+            print(f"[OAuth Engine] Candidate {cfg['name']} request exception: {e}")
 
-    raise RuntimeError(f"Failed to refresh Google Drive token from refresh_token. Last response: {last_error}")
+    summary_err = " | ".join(error_logs)
+    if "unauthorized_client" in summary_err:
+        raise RuntimeError(
+            f"Google OAuth: Token và Client ID không khớp (HTTP 401: unauthorized_client). "
+            f"Mã GDRIVE_REFRESH_TOKEN này được tạo từ một Client ID khác với Client ID mặc định. "
+            f"Vui lòng tạo Google Cloud Service Account JSON (vào GDRIVE_CREDENTIALS_JSON) hoặc cấu hình đồng bộ GDRIVE_CLIENT_ID + GDRIVE_CLIENT_SECRET tương ứng. Chi tiết: {summary_err}"
+        )
+    raise RuntimeError(f"Failed to refresh Google Drive token from refresh_token. Last response: {summary_err}")
 
 
 def get_oauth_drive_service(refresh_token: str):

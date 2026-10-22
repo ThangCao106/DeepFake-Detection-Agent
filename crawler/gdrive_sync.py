@@ -199,7 +199,11 @@ class GDriveSyncAgent:
                             pass
 
                 if not creds_dict:
-                    err_msg = f"GDRIVE_CREDENTIALS_JSON is provided ({len(str(self.credentials_json))} chars) but failed to parse as JSON or Base64 JSON."
+                    raw_len = len(str(self.credentials_json))
+                    hint = ""
+                    if raw_len in [23, 33, 44] and not str(self.credentials_json).strip().startswith("{"):
+                        hint = f" (CẢNH BÁO: Giá trị {raw_len} ký tự này có vẻ là Google Drive Folder ID chứ không phải Service Account JSON key. Cần dán toàn bộ nội dung file JSON vào secret GDRIVE_CREDENTIALS_JSON)"
+                    err_msg = f"GDRIVE_CREDENTIALS_JSON is provided ({raw_len} chars) but failed to parse as JSON or Base64 JSON.{hint}"
                     print(f"[GDrive Sync] [AUTH ERROR] {err_msg}")
                     if os.environ.get("GITHUB_ACTIONS") == "true":
                         print(f"::error title=GDrive Credentials Error::{err_msg}")
