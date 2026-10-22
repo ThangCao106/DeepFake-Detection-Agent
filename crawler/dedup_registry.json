@@ -1,7 +1,7 @@
 {
   "version": "2.0_dhash",
-  "updated_at": "2026-10-22T09:34:19Z",
-  "total_unique_faces": 425,
+  "updated_at": "2026-10-22T11:27:43Z",
+  "total_unique_faces": 444,
   "total_rejections": 15,
   "hashes": {
     "6f6e4f532c797171": {
@@ -2978,6 +2978,139 @@
       "source": "threads.net/origin",
       "sha256": "ded169a36b63206724764438a6ac0e88cf666f6ae6aa4d2cc885a4f19837d91b",
       "registered_at": "2026-10-22T08:08:47Z"
+    },
+    "5ffccd73f1e1e6ec": {
+      "filename": "real_img_0001_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "923628e0a9ae77e48822a19c110329ae81b5e20846e25138d8e303e183803cf8",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "7e1f1fd383932360": {
+      "filename": "real_img_0002_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "34e3cb352768bf4cf79af87a18f17ab9008b5f73e01a3d9cda56ca13b991b0f9",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "13cbb3f3133131b0": {
+      "filename": "real_img_0003_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "27e5c0f38e76537eb84b111a369f5fd753684da3d73ddf18736bc7f310455166",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "f0f80ccc615d5d83": {
+      "filename": "real_img_0004_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "750dbe2df8d1fd33606ca830c61b08307152844d9ff3a9427eb78ec9e200c6d0",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "06161759d9995958": {
+      "filename": "real_img_0005_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "b8ca617865c7d09e198aacce69b62a1792d42fbae640122a29145f8052e53d5b",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "3e6fa5a67696c2cc": {
+      "filename": "real_img_0006_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "aa0cccbb278f782c014a07b5a830c0bf1c3949642fef2562c859ddd98be80002",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "1b1e08580d3833f0": {
+      "filename": "real_img_0007_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "a34b30b95ed5541e962ea86598e27db2fff05f5a765e5467ade89a086b712459",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "490f0d0d4d4f0f8f": {
+      "filename": "real_img_0008_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "54fe395d29594c5e544365d38a58460becd13357aa60dc2b8c3de44b6db237bd",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "3e3f9ccd2b7161b1": {
+      "filename": "real_img_0009_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "8eb5a33fd7f7b74bdd881cd6b8c781950476674b67fe6f3f4be255ddea8fbc92",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "f7f6eeefef4f379f": {
+      "filename": "real_img_0010_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "7ce955c09c332df7988df302bf17661e173b976f5e17a0f6ea8feace05615100",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "6f07e465e9e9e1e5": {
+      "filename": "real_img_0011_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "a57fa16f4afa3391ae16fec36d33c287c96ea12abae215b2d3dd840e06b39533",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "921361c7c73372f8": {
+      "filename": "real_img_0012_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "b3d539408eb9a4f4b905cc3e2dff8e528b4b91232e34efe84dfea5e715a79c19",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "bc382d2fd7939382": {
+      "filename": "real_img_0013_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "d7e93c654e9aeeedca55c5329c85e48f068ff77d8966864503f86824615c72d4",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "3678c3a3e3c38640": {
+      "filename": "real_img_0014_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "d44d002b68197c4a0d56b02c293aa9d0366cfdeae057e8acdebebcb46848775e",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "17cdc8c8d8c9c0d1": {
+      "filename": "real_img_0015_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "0f4238d22591cfc17f4ce398ae73ee9a63a4482e31f016d88cf06fe8746ef4f7",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "07efd078fc782f99": {
+      "filename": "real_img_0016_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "7466a500c70627e202ae8557af6db208c6ab5d4664bc830f0efe7d4c64faa0d8",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "4f1e3f70f4bc0c0c": {
+      "filename": "real_img_0017_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "3424034f11bc9cdc9904e9b29142a159e639f2f0d1ff2bbf84d5211400497b21",
+      "registered_at": "2026-10-22T11:26:01Z"
+    },
+    "0b070707704082e2": {
+      "filename": "real_img_0018_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "71666b6f5c944c738937fa12e2523745352b1cc76d0eb06122359b7c5356d24d",
+      "registered_at": "2026-10-22T11:27:25Z"
+    },
+    "01048080010108c0": {
+      "filename": "real_img_0019_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "52cc496324a47f096b27f69edbbb0d07f3d224163d0231f791199c8984670f2a",
+      "registered_at": "2026-10-22T11:27:25Z"
     }
   },
   "sha256_map": {
@@ -3405,6 +3538,25 @@
     "78c63d66cd812b93d0e4302f403ddb2f408542c9128e2dc765121a0bad8e4a6b": "00151d1f9f9b0181",
     "e4413fdf52657008f6dc156750155980222e13549b825f36bd1bb05ffee2bc70": "e061d8cc71e1ccc0",
     "8dea019d175391e8029bd0a8e10da600b91b0e67ebeb8c47a51bf59bcd214b24": "9d41f5e5f0f3f3b0",
-    "ded169a36b63206724764438a6ac0e88cf666f6ae6aa4d2cc885a4f19837d91b": "8000800080000080"
+    "ded169a36b63206724764438a6ac0e88cf666f6ae6aa4d2cc885a4f19837d91b": "8000800080000080",
+    "923628e0a9ae77e48822a19c110329ae81b5e20846e25138d8e303e183803cf8": "5ffccd73f1e1e6ec",
+    "34e3cb352768bf4cf79af87a18f17ab9008b5f73e01a3d9cda56ca13b991b0f9": "7e1f1fd383932360",
+    "27e5c0f38e76537eb84b111a369f5fd753684da3d73ddf18736bc7f310455166": "13cbb3f3133131b0",
+    "750dbe2df8d1fd33606ca830c61b08307152844d9ff3a9427eb78ec9e200c6d0": "f0f80ccc615d5d83",
+    "b8ca617865c7d09e198aacce69b62a1792d42fbae640122a29145f8052e53d5b": "06161759d9995958",
+    "aa0cccbb278f782c014a07b5a830c0bf1c3949642fef2562c859ddd98be80002": "3e6fa5a67696c2cc",
+    "a34b30b95ed5541e962ea86598e27db2fff05f5a765e5467ade89a086b712459": "1b1e08580d3833f0",
+    "54fe395d29594c5e544365d38a58460becd13357aa60dc2b8c3de44b6db237bd": "490f0d0d4d4f0f8f",
+    "8eb5a33fd7f7b74bdd881cd6b8c781950476674b67fe6f3f4be255ddea8fbc92": "3e3f9ccd2b7161b1",
+    "7ce955c09c332df7988df302bf17661e173b976f5e17a0f6ea8feace05615100": "f7f6eeefef4f379f",
+    "a57fa16f4afa3391ae16fec36d33c287c96ea12abae215b2d3dd840e06b39533": "6f07e465e9e9e1e5",
+    "b3d539408eb9a4f4b905cc3e2dff8e528b4b91232e34efe84dfea5e715a79c19": "921361c7c73372f8",
+    "d7e93c654e9aeeedca55c5329c85e48f068ff77d8966864503f86824615c72d4": "bc382d2fd7939382",
+    "d44d002b68197c4a0d56b02c293aa9d0366cfdeae057e8acdebebcb46848775e": "3678c3a3e3c38640",
+    "0f4238d22591cfc17f4ce398ae73ee9a63a4482e31f016d88cf06fe8746ef4f7": "17cdc8c8d8c9c0d1",
+    "7466a500c70627e202ae8557af6db208c6ab5d4664bc830f0efe7d4c64faa0d8": "07efd078fc782f99",
+    "3424034f11bc9cdc9904e9b29142a159e639f2f0d1ff2bbf84d5211400497b21": "4f1e3f70f4bc0c0c",
+    "71666b6f5c944c738937fa12e2523745352b1cc76d0eb06122359b7c5356d24d": "0b070707704082e2",
+    "52cc496324a47f096b27f69edbbb0d07f3d224163d0231f791199c8984670f2a": "01048080010108c0"
   }
 }
