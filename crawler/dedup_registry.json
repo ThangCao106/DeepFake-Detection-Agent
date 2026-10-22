@@ -1,7 +1,7 @@
 {
   "version": "2.0_dhash",
-  "updated_at": "2026-10-22T07:09:18Z",
-  "total_unique_faces": 424,
+  "updated_at": "2026-10-22T08:09:05Z",
+  "total_unique_faces": 425,
   "total_rejections": 15,
   "hashes": {
     "6f6e4f532c797171": {
@@ -2971,6 +2971,13 @@
       "source": "threads.net/origin",
       "sha256": "8dea019d175391e8029bd0a8e10da600b91b0e67ebeb8c47a51bf59bcd214b24",
       "registered_at": "2026-10-22T07:09:01Z"
+    },
+    "8000800080000080": {
+      "filename": "real_img_0001_vn_selfie_lifestyle.jpg",
+      "category": "",
+      "source": "threads.net/origin",
+      "sha256": "ded169a36b63206724764438a6ac0e88cf666f6ae6aa4d2cc885a4f19837d91b",
+      "registered_at": "2026-10-22T08:08:47Z"
     }
   },
   "sha256_map": {
@@ -3397,6 +3404,7 @@
     "3144fa14d0ded2c4dba76f006bf6463cec8861801fe197ba369054b6f4fa1f5d": "ff39331b1f232f0d",
     "78c63d66cd812b93d0e4302f403ddb2f408542c9128e2dc765121a0bad8e4a6b": "00151d1f9f9b0181",
     "e4413fdf52657008f6dc156750155980222e13549b825f36bd1bb05ffee2bc70": "e061d8cc71e1ccc0",
-    "8dea019d175391e8029bd0a8e10da600b91b0e67ebeb8c47a51bf59bcd214b24": "9d41f5e5f0f3f3b0"
+    "8dea019d175391e8029bd0a8e10da600b91b0e67ebeb8c47a51bf59bcd214b24": "9d41f5e5f0f3f3b0",
+    "ded169a36b63206724764438a6ac0e88cf666f6ae6aa4d2cc885a4f19837d91b": "8000800080000080"
   }
 }
