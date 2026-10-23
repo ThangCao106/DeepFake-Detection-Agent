@@ -151,7 +151,26 @@ class GDriveSyncAgent:
                 found_folder.mkdir(parents=True, exist_ok=True)
                 
             self.colab_mount_path = str(found_folder)
-        # 2. Check if Google Drive Service Account Credentials JSON is provided (Priority 1: Enterprise Stable Auth)
+        # 2. Check if Google Drive User OAuth2 Refresh Token is provided (Priority 1: User 5 TB Personal Quota)
+        oauth_token = (
+            os.environ.get("GDRIVE_REFRESH_TOKEN") 
+            or os.environ.get("GOOGLE_REFRESH_TOKEN")
+        )
+        if oauth_token and oauth_token.strip():
+            try:
+                from crawler.oauth_gdrive_sync import get_oauth_drive_service
+                self.service = get_oauth_drive_service(oauth_token)
+                self.use_mock_storage = False
+                self.sync_mode = "API_USER_OAUTH"
+                print("[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via User OAuth (Utilizing User's 5 TB Quota)!")
+                print(f"[GDrive Sync] [FOLDER] Target Drive Folder ID: {self.target_folder_id}")
+                print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
+                return
+            except Exception as e:
+                err_msg = f"User OAuth initialization failed: {e}"
+                print(f"[GDrive Sync] [OAUTH NOTICE] {err_msg}. Falling back to Service Account check...")
+
+        # 3. Check if Google Drive Service Account Credentials JSON is provided (Priority 2: Shared Drive or Bot Auth)
         if self.credentials_json:
             try:
                 import base64
@@ -192,8 +211,9 @@ class GDriveSyncAgent:
                     self.sync_mode = "API_SERVICE_ACCOUNT"
                     bot_email = creds_dict.get("client_email", "service_account_bot")
                     print(f"[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via Service Account: {bot_email}")
+                    print(f"[GDrive Sync] [SA QUOTA NOTE] Service Accounts have 0 MB quota in personal 'Drive của tôi'. For personal folders, supply GDRIVE_REFRESH_TOKEN to use your 5 TB quota.")
                     if self.target_folder_id:
-                        print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
+                        print(f"[GDrive Sync] [FOLDER] Target Folder ID: {self.target_folder_id}")
                         print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
                     else:
                         print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
@@ -209,28 +229,9 @@ class GDriveSyncAgent:
                 err_msg = f"Google Drive Service Account init failed: {e}"
                 print(f"[GDrive Sync] [SA ERROR] {err_msg}")
 
-        # 3. Check if Google Drive User OAuth2 Refresh Token is provided (Priority 2 Fallback)
-        oauth_token = (
-            os.environ.get("GDRIVE_REFRESH_TOKEN") 
-            or os.environ.get("GOOGLE_REFRESH_TOKEN")
-        )
-        if oauth_token and oauth_token.strip():
-            try:
-                from crawler.oauth_gdrive_sync import get_oauth_drive_service
-                self.service = get_oauth_drive_service(oauth_token)
-                self.use_mock_storage = False
-                self.sync_mode = "API_USER_OAUTH"
-                print("[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via User OAuth!")
-                print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
-                print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
-                return
-            except Exception as e:
-                err_msg = f"User OAuth initialization failed: {e}"
-                print(f"[GDrive Sync] [OAUTH NOTICE] {err_msg}")
-
-        print("[GDrive Sync] [NOTICE] Neither Service Account nor valid OAuth could connect. Falling back to local storage structure.")
+        print("[GDrive Sync] [NOTICE] Neither valid OAuth nor Service Account could connect. Falling back to local storage structure.")
         if os.environ.get("GITHUB_ACTIONS") == "true":
-            print("::warning title=Google Drive Sync Notice::Could not connect to Google Drive API via Service Account or OAuth. Files are saved to the runner's ephemeral storage only and preserved in Artifacts.")
+            print("::warning title=Google Drive Sync Notice::Could not connect to Google Drive API via OAuth or Service Account. Files are saved to the runner's ephemeral storage only and preserved in Artifacts.")
         
         self.sync_mode = "MOCK_LOCAL_STORAGE"
         print(f"[GDrive Sync] Active Mode: Structured Local Storage at {DEFAULT_LOCAL_STORAGE}")
@@ -461,6 +462,21 @@ class GDriveSyncAgent:
                         break
                 except Exception as e_att:
                     last_err = e_att
+                    err_str = str(e_att)
+                    if "storageQuotaExceeded" in err_str or "Service Accounts do not have storage quota" in err_str:
+                        # Attempt immediate auto-healing if User OAuth refresh token is available
+                        oauth_token = os.environ.get("GDRIVE_REFRESH_TOKEN") or os.environ.get("GOOGLE_REFRESH_TOKEN")
+                        if oauth_token and oauth_token.strip() and self.sync_mode != "API_USER_OAUTH":
+                            print(f"[GDrive Sync] [AUTO-HEAL] Service Account has 0 MB quota on personal Drive. Hot-swapping to User OAuth (Utilizing your 5 TB storage)...")
+                            try:
+                                from crawler.oauth_gdrive_sync import get_oauth_drive_service
+                                self.service = get_oauth_drive_service(oauth_token)
+                                self.sync_mode = "API_USER_OAUTH"
+                                time.sleep(1.0)
+                                continue
+                            except Exception as oe:
+                                print(f"[GDrive Sync] [AUTO-HEAL FAILED] OAuth swap failed: {oe}")
+
                     if attempt < 3:
                         time.sleep(1.0 * attempt)
                     else:
@@ -478,6 +494,10 @@ class GDriveSyncAgent:
                 
             return file_id
         except Exception as e:
+            err_str = str(e)
+            if "storageQuotaExceeded" in err_str or "Service Accounts do not have storage quota" in err_str:
+                print(f"[GDrive Sync] [CRITICAL QUOTA ERROR] Service Account có dung lượng lưu trữ 0 MB trên 'Drive của tôi' (My Drive).")
+                print(f"[GDrive Sync] [GIẢI PHÁP]: Bạn có tài khoản 5 TB. Hãy thêm secret GDRIVE_REFRESH_TOKEN vào GitHub Repo để hệ thống tải trực tiếp dưới tài khoản 5 TB của bạn (hoặc tạo 'Bộ nhớ dùng chung' / Shared Drive và thêm email Service Account làm Người quản lý nội dung).")
             print(f"[GDrive Sync] Failed to upload {filename} via API: {e}")
             return None
 
