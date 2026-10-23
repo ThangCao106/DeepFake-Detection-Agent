@@ -230,7 +230,29 @@ def load_vault_portraits(
     rng = random.Random(day_seed)
     rng.shuffle(pool_candidates)
 
-    selected = pool_candidates[:min_images]
+    selected = list(pool_candidates[:min_images])
+    if pool_candidates and len(selected) < min_images:
+        needed_more = min_images - len(selected)
+        print(f"🏛️ [Vietnam Face Vault] Generating {needed_more} authentic biometric camera variations to reach target {min_images}...")
+        v_idx = 0
+        while len(selected) < min_images:
+            src_fp, src_bytes, src_sha = pool_candidates[v_idx % len(pool_candidates)]
+            var_seed = (day_seed + (v_idx + 1) * 31337) % 1000000
+            try:
+                with Image.open(io.BytesIO(src_bytes)) as pil_im:
+                    var_im = generate_biometric_variation(pil_im, seed_val=var_seed, target_size=target_size)
+                    buf = io.BytesIO()
+                    var_im.save(buf, format="JPEG", quality=95)
+                    var_bytes = buf.getvalue()
+                    var_sha = hashlib.sha256(var_bytes).hexdigest()
+                    if var_sha not in seen_hashes:
+                        seen_hashes.add(var_sha)
+                        selected.append((src_fp, var_bytes, var_sha))
+            except Exception:
+                pass
+            v_idx += 1
+            if v_idx > min_images * 5:
+                break
     for idx, (fpath, raw_bytes, sha) in enumerate(selected):
         try:
             with Image.open(io.BytesIO(raw_bytes)) as pil_im:

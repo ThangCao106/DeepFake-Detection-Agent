@@ -104,11 +104,17 @@ class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="Thread_Data"):
         self.base_folder_name = base_folder_name
         self.credentials_json = credentials_json or os.environ.get("GDRIVE_CREDENTIALS_JSON")
-        self.target_folder_id = (
+        raw_target_id = (
             os.environ.get("GDRIVE_TARGET_FOLDER_ID") 
             or os.environ.get("GDRIVE_FOLDER_ID") 
             or DEFAULT_TARGET_FOLDER_ID
         )
+        # Safeguard against legacy or misconfigured folder IDs (e.g. subfolder 01_raw_originals)
+        if raw_target_id in ["1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6", "1Tgcijz7CdD2J9Db7Hc2xGxP32ZrcBbxs", "01_raw_originals"]:
+            print(f"[GDrive Sync] [SAFETY REDIRECT] Detected legacy/subfolder target ID '{raw_target_id}'. Redirecting to root Thread_Data: {DEFAULT_TARGET_FOLDER_ID}")
+            raw_target_id = DEFAULT_TARGET_FOLDER_ID
+
+        self.target_folder_id = raw_target_id
         self.service = None
         self.use_mock_storage = True
         self.sync_mode = "MOCK_LOCAL_STORAGE"
@@ -272,6 +278,21 @@ class GDriveSyncAgent:
 
                 # Use target_folder_id directly if provided (e.g. shared Thread_Data folder)
                 parent_id = self.target_folder_id
+                if parent_id and self.service:
+                    try:
+                        p_meta = self.service.files().get(
+                            fileId=parent_id, 
+                            fields="id, name, mimeType", 
+                            supportsAllDrives=True
+                        ).execute()
+                        p_name = p_meta.get("name", "")
+                        if p_name in ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]:
+                            print(f"[GDrive Sync] [SAFETY REDIRECT] Target folder ID '{parent_id}' is named '{p_name}', which is a daily subfolder! Redirecting to Thread_Data ({DEFAULT_TARGET_FOLDER_ID}).")
+                            parent_id = DEFAULT_TARGET_FOLDER_ID
+                            self.target_folder_id = DEFAULT_TARGET_FOLDER_ID
+                    except Exception:
+                        pass
+
                 if not parent_id:
                     parent_id = self._find_or_create_drive_folder(self.base_folder_name)
                 daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)

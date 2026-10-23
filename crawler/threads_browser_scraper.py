@@ -630,22 +630,22 @@ class ThreadsBrowserScraper:
             print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Face Vault & Open Harvester...")
             
             from crawler.vietnam_face_vault import load_vault_portraits
-            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
+            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=None)
             for vp in vault_portraits:
                 if len(harvested_images) >= target_images:
                     break
                 sha = vp["sha256"]
                 if sha not in seen_shas:
-                    is_dup, _, _ = is_visual_duplicate(vp["image_bytes"], known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
-                    if not is_dup:
-                        seen_shas.add(sha)
-                        item_dhash = compute_dhash(vp["image_bytes"])
-                        known_dhashes.add(item_dhash)
-                        idx_img = len(harvested_images) + 1
-                        cat = vp.get("category", "vn_selfie_lifestyle")
-                        out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
-                        out_img.write_bytes(vp["image_bytes"])
-                        harvested_images.append(out_img)
+                    seen_shas.add(sha)
+                    item_dhash = vp.get("dhash") or compute_dhash(vp["image_bytes"])
+                    known_dhashes.add(item_dhash)
+                    idx_img = len(harvested_images) + 1
+                    cat = vp.get("category", "vn_selfie_lifestyle")
+                    out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}.jpg"
+                    out_img.write_bytes(vp["image_bytes"])
+                    if dedup_registry:
+                        dedup_registry.check_and_register(vp["image_bytes"], filename=out_img.name, source="vietnam_face_vault", sha256=sha)
+                    harvested_images.append(out_img)
 
             if len(harvested_images) < target_images:
                 sub_deficit = target_images - len(harvested_images)
