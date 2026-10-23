@@ -226,7 +226,9 @@ def load_vault_portraits(
     # This guarantees that:
     #   - Every image within a day's 250 batch is unique (0 duplicates).
     #   - Different days get different permutations from the pool.
-    day_seed = int(hashlib.md5(current_date.encode()).hexdigest(), 16) % 1000000
+    # Use run entropy with sub-second timestamp so multiple runs on the same day generate fresh non-colliding variations
+    run_entropy = f"{current_date}_{int(time.time() * 1000)}"
+    day_seed = int(hashlib.md5(run_entropy.encode()).hexdigest(), 16) % 1000000
     rng = random.Random(day_seed)
     rng.shuffle(pool_candidates)
 

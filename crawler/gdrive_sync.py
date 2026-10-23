@@ -424,13 +424,39 @@ class GDriveSyncAgent:
             for attempt in range(1, 4):
                 try:
                     with self._upload_lock:
-                        uploaded_file = self.service.files().create(
-                            body=file_metadata, 
-                            media_body=media, 
-                            fields='id',
-                            supportsAllDrives=True
-                        ).execute()
-                        file_id = uploaded_file.get('id')
+                        # Check if file with same name already exists in target folder to prevent Google Drive duplicate files
+                        existing_id = None
+                        try:
+                            q_exist = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
+                            res_ex = self.service.files().list(
+                                q=q_exist, 
+                                fields='files(id, name)', 
+                                supportsAllDrives=True, 
+                                includeItemsFromAllDrives=True
+                            ).execute()
+                            files_found = res_ex.get('files', [])
+                            if files_found:
+                                existing_id = files_found[0]['id']
+                        except Exception:
+                            pass
+
+                        if existing_id:
+                            uploaded_file = self.service.files().update(
+                                fileId=existing_id,
+                                media_body=media,
+                                fields='id',
+                                supportsAllDrives=True
+                            ).execute()
+                            file_id = uploaded_file.get('id')
+                            print(f"[GDrive Sync] [UPDATED] Replaced existing {filename} in {target_subfolder} (ID: {file_id})")
+                        else:
+                            uploaded_file = self.service.files().create(
+                                body=file_metadata, 
+                                media_body=media, 
+                                fields='id',
+                                supportsAllDrives=True
+                            ).execute()
+                            file_id = uploaded_file.get('id')
                     if file_id:
                         break
                 except Exception as e_att:
