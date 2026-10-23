@@ -73,6 +73,8 @@ jobs:
           HF_HUB_ENABLE_HF_TRANSFER: "0"
           PYTHONUNBUFFERED: "1"
           THREADS_SESSION_COOKIES: ${{ secrets.THREADS_SESSION_COOKIES }}
+          INSTAGRAM_SESSION_COOKIES: ${{ secrets.INSTAGRAM_SESSION_COOKIES }}
+          FACEBOOK_SESSION_COOKIES: ${{ secrets.FACEBOOK_SESSION_COOKIES }}
           THREADS_VAULT_ONLY: ${{ github.event.inputs.vault_only || 'false' }}
           CRAWL_NUM_IMAGES: ${{ github.event.inputs.num_images || '1000' }}
           CRAWL_NUM_VIDEOS: ${{ github.event.inputs.num_videos || '100' }}

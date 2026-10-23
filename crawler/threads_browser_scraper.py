@@ -187,6 +187,40 @@ VIETNAMESE_SEARCH_KEYWORDS = [
     "hcm"
 ]
 
+# Active public Vietnamese photography & lifestyle accounts on Instagram (instagram.com)
+PUBLIC_INSTAGRAM_TARGETS = [
+    "https://www.instagram.com/humansofvietnam/",
+    "https://www.instagram.com/humansofsaigon/",
+    "https://www.instagram.com/humansofhanoi.official/",
+    "https://www.instagram.com/vietnamtravelers/",
+    "https://www.instagram.com/vietnam.portraits/",
+    "https://www.instagram.com/chuyen.cua.hanoi/",
+    "https://www.instagram.com/saigonngaynang/",
+    "https://www.instagram.com/streetphotography.vietnam/",
+    "https://www.instagram.com/dananglocal/",
+    "https://www.instagram.com/saigonese.lifestyle/",
+    "https://www.instagram.com/vietnam_streetphotography/",
+    "https://www.instagram.com/explore/tags/saigon/",
+    "https://www.instagram.com/explore/tags/vietnam/",
+    "https://www.instagram.com/explore/tags/hanoi/",
+    "https://www.instagram.com/explore/tags/danang/",
+    "https://www.instagram.com/explore/tags/selfievietnam/",
+    "https://www.instagram.com/explore/tags/nguoivietnam/"
+]
+
+# Active public Vietnamese photography pages on Facebook (facebook.com)
+PUBLIC_FACEBOOK_TARGETS = [
+    "https://m.facebook.com/humansofhanoi.page/photos",
+    "https://m.facebook.com/humansofsaigonvn/photos",
+    "https://m.facebook.com/chuyencuahanoi.official/photos",
+    "https://m.facebook.com/VietnamTravelersOfficial/photos",
+    "https://m.facebook.com/streetphotographyvietnam/photos",
+    "https://m.facebook.com/nguoisaigon.page/photos",
+    "https://www.facebook.com/humansofhanoi.page/photos",
+    "https://www.facebook.com/humansofsaigonvn/photos"
+]
+
+
 
 def harvest_wikimedia_vietnamese_portraits(
     min_images: int = 25,
@@ -382,7 +416,7 @@ class ThreadsBrowserScraper:
             });
         """)
         
-        # Inject session cookies if provided
+        # Inject session cookies if provided (Threads, Instagram, Facebook)
         if self.session_cookie_str:
             cookie_items = []
             for part in self.session_cookie_str.split(";"):
@@ -397,9 +431,47 @@ class ThreadsBrowserScraper:
             if cookie_items:
                 try:
                     await context.add_cookies(cookie_items)
-                    print(f"[Threads Scraper] Injected {len(cookie_items)} session cookies into browser context.")
+                    print(f"[Threads Scraper] Injected {len(cookie_items)} Threads session cookies.")
                 except Exception as e:
                     print(f"[Threads Scraper] Cookie injection notice: {e}")
+
+        ig_cookie_str = os.environ.get("INSTAGRAM_SESSION_COOKIES") or os.environ.get("INSTAGRAM_COOKIES")
+        if ig_cookie_str:
+            ig_cookies = []
+            for part in ig_cookie_str.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    ig_cookies.append({
+                        "name": k.strip(),
+                        "value": v.strip(),
+                        "domain": ".instagram.com",
+                        "path": "/"
+                    })
+            if ig_cookies:
+                try:
+                    await context.add_cookies(ig_cookies)
+                    print(f"[Meta Harvester] Injected {len(ig_cookies)} Instagram session cookies.")
+                except Exception as e:
+                    print(f"[Meta Harvester] Instagram cookie notice: {e}")
+
+        fb_cookie_str = os.environ.get("FACEBOOK_SESSION_COOKIES") or os.environ.get("FACEBOOK_COOKIES")
+        if fb_cookie_str:
+            fb_cookies = []
+            for part in fb_cookie_str.split(";"):
+                if "=" in part:
+                    k, v = part.strip().split("=", 1)
+                    fb_cookies.append({
+                        "name": k.strip(),
+                        "value": v.strip(),
+                        "domain": ".facebook.com",
+                        "path": "/"
+                    })
+            if fb_cookies:
+                try:
+                    await context.add_cookies(fb_cookies)
+                    print(f"[Meta Harvester] Injected {len(fb_cookies)} Facebook session cookies.")
+                except Exception as e:
+                    print(f"[Meta Harvester] Facebook cookie notice: {e}")
                     
         return browser, context
 
@@ -425,17 +497,17 @@ class ThreadsBrowserScraper:
                 
                 // Exclude avatars and UI icons
                 const isAvatar = bestSrc.includes('-19/') || bestSrc.includes('150x150') || bestSrc.includes('s50x50') || bestSrc.includes('rsrc.php');
-                const isMetaCDN = bestSrc.includes('cdninstagram.com') || bestSrc.includes('fbcdn.net');
+                const isMetaCDN = bestSrc.includes('cdninstagram.com') || bestSrc.includes('fbcdn.net') || bestSrc.includes('facebook.com');
                 if (!isAvatar && isMetaCDN) {
-                    let postLink = 'https://www.threads.net/';
+                    let postLink = window.location.href;
                     let author = '';
                     let caption = '';
-                    const postElem = img.closest('div[data-pressable-container="true"]') || img.closest('article') || img.parentElement?.parentElement;
+                    const postElem = img.closest('div[data-pressable-container="true"]') || img.closest('article') || img.closest('div[role="feed"]') || img.closest('div[data-pagelet]') || img.parentElement?.parentElement;
                     if (postElem) {
-                        const aTag = postElem.querySelector('a[href*="/post/"]');
+                        const aTag = postElem.querySelector('a[href*="/post/"], a[href*="/p/"], a[href*="/reel/"], a[href*="/photo/"], a[href*="photo.php"]');
                         if (aTag) {
                             postLink = aTag.href;
-                            const match = aTag.href.match(/@([^/]+)/);
+                            const match = aTag.href.match(/@([^/]+)/) || aTag.href.match(/instagram\.com\/([^/]+)/);
                             if (match) author = match[1];
                         }
                         caption = postElem.innerText?.slice(0, 200) || '';
@@ -457,16 +529,16 @@ class ThreadsBrowserScraper:
                     const st = v.querySelector('source');
                     if (st) src = st.src;
                 }
-                if (src && !src.startsWith('blob:') && (src.includes('cdninstagram.com') || src.includes('fbcdn.net'))) {
-                    let postLink = 'https://www.threads.net/';
+                if (src && !src.startsWith('blob:') && (src.includes('cdninstagram.com') || src.includes('fbcdn.net') || src.includes('facebook.com'))) {
+                    let postLink = window.location.href;
                     let author = '';
                     let caption = '';
-                    const postElem = v.closest('div[data-pressable-container="true"]') || v.closest('article') || v.parentElement?.parentElement;
+                    const postElem = v.closest('div[data-pressable-container="true"]') || v.closest('article') || v.closest('div[role="feed"]') || v.closest('div[data-pagelet]') || v.parentElement?.parentElement;
                     if (postElem) {
-                        const aTag = postElem.querySelector('a[href*="/post/"]');
+                        const aTag = postElem.querySelector('a[href*="/post/"], a[href*="/p/"], a[href*="/reel/"], a[href*="/videos/"]');
                         if (aTag) {
                             postLink = aTag.href;
-                            const match = aTag.href.match(/@([^/]+)/);
+                            const match = aTag.href.match(/@([^/]+)/) || aTag.href.match(/instagram\.com\/([^/]+)/);
                             if (match) author = match[1];
                         }
                         caption = postElem.innerText?.slice(0, 200) || '';
@@ -585,7 +657,42 @@ class ThreadsBrowserScraper:
 
             page.on("response", handle_stream_response)
             
-            # Step 1: Scrape active public Vietnamese profiles
+            # Active DOM media extractor to capture high-res elements rendered in viewport
+            async def drain_dom_media(src_platform: str):
+                try:
+                    dom_media = await self._extract_media_from_page(page)
+                    for m_item in dom_media.get("imgs", []):
+                        if len(harvested_images) >= target_images:
+                            break
+                        u_img = m_item.get("url")
+                        if u_img and u_img not in seen_img_urls:
+                            seen_img_urls.add(u_img)
+                            try:
+                                resp_b = await page.request.get(u_img, timeout=8000)
+                                if resp_b.ok:
+                                    b_data = await resp_b.body()
+                                    if len(b_data) >= 15000:
+                                        s_val = compute_sha256(b_data)
+                                        if s_val not in seen_shas:
+                                            is_d, _, _ = is_visual_duplicate(b_data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                                            if not is_d:
+                                                is_p, _, _ = is_photographic_human_portrait(b_data)
+                                                if is_p:
+                                                    seen_shas.add(s_val)
+                                                    d_val = compute_dhash(b_data)
+                                                    known_dhashes.add(d_val)
+                                                    idx = len(harvested_images) + 1
+                                                    out_f = raw_dir / f"real_img_{idx:04d}_vn_selfie_lifestyle_{s_val[:8]}.jpg"
+                                                    out_f.write_bytes(b_data)
+                                                    dedup_registry.check_and_register(b_data, filename=out_f.name, source=f"{src_platform}/dom", sha256=s_val)
+                                                    harvested_images.append(out_f)
+                                                    print(f"    📸 [{src_platform} DOM #{idx}/{target_images}] ({len(b_data)}B) -> {out_f.name}")
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+
+            # Step 1: Scrape active public Vietnamese profiles on Threads (threads.net)
             for username in PUBLIC_VIETNAMESE_PROFILES:
                 if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
                     break
@@ -594,11 +701,10 @@ class ThreadsBrowserScraper:
                 try:
                     await page.goto(url, wait_until="domcontentloaded", timeout=25000)
                     await page.wait_for_timeout(2000)
-                    
-                    # Scroll to trigger stream loading
                     for _ in range(5):
                         await page.evaluate("window.scrollBy(0, 1200)")
                         await page.wait_for_timeout(1500)
+                    await drain_dom_media("threads.net")
                 except Exception as e_prof:
                     print(f"  [Scraper Notice] Error on @{username}: {e_prof}")
                     
@@ -616,8 +722,43 @@ class ThreadsBrowserScraper:
                         for _ in range(5):
                             await page.evaluate("window.scrollBy(0, 1200)")
                             await page.wait_for_timeout(1500)
+                        await drain_dom_media("threads.net/tag")
                     except Exception as e_tag:
                         print(f"  [Scraper Notice] Error on tag #{tag}: {e_tag}")
+
+            # Step 3: Scrape public Instagram targets (instagram.com)
+            if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
+                print(f"\n📸 [Instagram Harvester] Scraping public Instagram targets ({len(harvested_images)}/{target_images} images)...")
+                for ig_target in PUBLIC_INSTAGRAM_TARGETS:
+                    if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
+                        break
+                    print(f"  [Instagram Scraper] Visiting: {ig_target}")
+                    try:
+                        await page.goto(ig_target, wait_until="domcontentloaded", timeout=25000)
+                        await page.wait_for_timeout(2000)
+                        for _ in range(6):
+                            await page.evaluate("window.scrollBy(0, 1200)")
+                            await page.wait_for_timeout(1500)
+                        await drain_dom_media("instagram.com")
+                    except Exception as e_ig:
+                        print(f"  [Instagram Notice] Error on {ig_target}: {e_ig}")
+
+            # Step 4: Scrape public Facebook targets (facebook.com)
+            if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
+                print(f"\n👥 [Facebook Harvester] Scraping public Facebook targets ({len(harvested_images)}/{target_images} images)...")
+                for fb_target in PUBLIC_FACEBOOK_TARGETS:
+                    if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
+                        break
+                    print(f"  [Facebook Scraper] Visiting: {fb_target}")
+                    try:
+                        await page.goto(fb_target, wait_until="domcontentloaded", timeout=25000)
+                        await page.wait_for_timeout(2000)
+                        for _ in range(6):
+                            await page.evaluate("window.scrollBy(0, 1200)")
+                            await page.wait_for_timeout(1500)
+                        await drain_dom_media("facebook.com")
+                    except Exception as e_fb:
+                        print(f"  [Facebook Notice] Error on {fb_target}: {e_fb}")
                         
             await browser.close()
             
