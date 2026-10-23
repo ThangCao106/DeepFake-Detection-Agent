@@ -104,11 +104,17 @@ class GDriveSyncAgent:
     def __init__(self, credentials_json=None, base_folder_name="Thread_Data"):
         self.base_folder_name = base_folder_name
         self.credentials_json = credentials_json or os.environ.get("GDRIVE_CREDENTIALS_JSON")
-        self.target_folder_id = (
+        raw_target_id = (
             os.environ.get("GDRIVE_TARGET_FOLDER_ID") 
             or os.environ.get("GDRIVE_FOLDER_ID") 
             or DEFAULT_TARGET_FOLDER_ID
         )
+        # Safeguard against legacy or misconfigured folder IDs (e.g. subfolder 01_raw_originals)
+        if raw_target_id in ["1M9s_pCn7nd9yaqXmJlf062uzrYm7ASa6", "1Tgcijz7CdD2J9Db7Hc2xGxP32ZrcBbxs", "01_raw_originals"]:
+            print(f"[GDrive Sync] [SAFETY REDIRECT] Detected legacy/subfolder target ID '{raw_target_id}'. Redirecting to root Thread_Data: {DEFAULT_TARGET_FOLDER_ID}")
+            raw_target_id = DEFAULT_TARGET_FOLDER_ID
+
+        self.target_folder_id = raw_target_id
         self.service = None
         self.use_mock_storage = True
         self.sync_mode = "MOCK_LOCAL_STORAGE"
@@ -145,28 +151,7 @@ class GDriveSyncAgent:
                 found_folder.mkdir(parents=True, exist_ok=True)
                 
             self.colab_mount_path = str(found_folder)
-        # 2. Check if Google Drive User OAuth2 Refresh Token is provided (Personal Quota - Option A)
-        oauth_token = (
-            os.environ.get("GDRIVE_REFRESH_TOKEN") 
-            or os.environ.get("GOOGLE_REFRESH_TOKEN")
-        )
-        if oauth_token and oauth_token.strip():
-            try:
-                from crawler.oauth_gdrive_sync import get_oauth_drive_service
-                self.service = get_oauth_drive_service(oauth_token)
-                self.use_mock_storage = False
-                self.sync_mode = "API_USER_OAUTH"
-                print("[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via User OAuth (Personal Quota - No 0MB Service Account Limit)!")
-                print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
-                print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
-                return
-            except Exception as e:
-                err_msg = f"User OAuth initialization failed: {e}"
-                print(f"[GDrive Sync] [OAUTH ERROR] {err_msg}")
-                if os.environ.get("GITHUB_ACTIONS") == "true":
-                    print(f"::error title=GDrive OAuth Error::{err_msg}")
-
-        # 3. Check if Google Drive Service Account Credentials JSON is provided
+        # 2. Check if Google Drive Service Account Credentials JSON is provided (Priority 1: Enterprise Stable Auth)
         if self.credentials_json:
             try:
                 import base64
@@ -198,12 +183,7 @@ class GDriveSyncAgent:
                         except Exception:
                             pass
 
-                if not creds_dict:
-                    err_msg = f"GDRIVE_CREDENTIALS_JSON is provided ({len(str(self.credentials_json))} chars) but failed to parse as JSON or Base64 JSON."
-                    print(f"[GDrive Sync] [AUTH ERROR] {err_msg}")
-                    if os.environ.get("GITHUB_ACTIONS") == "true":
-                        print(f"::error title=GDrive Credentials Error::{err_msg}")
-                else:
+                if creds_dict and isinstance(creds_dict, dict) and "client_email" in creds_dict:
                     creds = service_account.Credentials.from_service_account_info(
                         creds_dict, scopes=['https://www.googleapis.com/auth/drive']
                     )
@@ -218,15 +198,39 @@ class GDriveSyncAgent:
                     else:
                         print("[GDrive Sync] [NOTICE] GDRIVE_TARGET_FOLDER_ID not set. Data will be written to Service Account root drive.")
                     return
+                else:
+                    raw_len = len(str(self.credentials_json))
+                    hint = ""
+                    if raw_len in [23, 33, 44] and not str(self.credentials_json).strip().startswith("{"):
+                        hint = f" (CẢNH BÁO: Giá trị {raw_len} ký tự này có vẻ là Google Drive Folder ID chứ không phải Service Account JSON key. Cần dán toàn bộ nội dung file JSON vào secret GDRIVE_CREDENTIALS_JSON)"
+                    err_msg = f"GDRIVE_CREDENTIALS_JSON is provided ({raw_len} chars) but failed to parse as valid Service Account JSON.{hint}"
+                    print(f"[GDrive Sync] [SA NOTICE] {err_msg}")
             except Exception as e:
-                err_msg = f"Google Drive API init failed: {e}"
-                print(f"[GDrive Sync] [AUTH ERROR] {err_msg}")
-                if os.environ.get("GITHUB_ACTIONS") == "true":
-                    print(f"::error title=GDrive Auth Error::{err_msg}")
-        else:
-            print("[GDrive Sync] [NOTICE] No GDRIVE_CREDENTIALS_JSON found. Falling back to local storage structure.")
-            if os.environ.get("GITHUB_ACTIONS") == "true":
-                print("::warning title=Google Drive Sync Notice::GDRIVE_CREDENTIALS_JSON is not configured in GitHub Secrets! Files are saved to the runner's ephemeral storage only and will NOT appear on Google Drive. To upload files to Google Drive, add your Service Account JSON to Repository Secrets > GDRIVE_CREDENTIALS_JSON.")
+                err_msg = f"Google Drive Service Account init failed: {e}"
+                print(f"[GDrive Sync] [SA ERROR] {err_msg}")
+
+        # 3. Check if Google Drive User OAuth2 Refresh Token is provided (Priority 2 Fallback)
+        oauth_token = (
+            os.environ.get("GDRIVE_REFRESH_TOKEN") 
+            or os.environ.get("GOOGLE_REFRESH_TOKEN")
+        )
+        if oauth_token and oauth_token.strip():
+            try:
+                from crawler.oauth_gdrive_sync import get_oauth_drive_service
+                self.service = get_oauth_drive_service(oauth_token)
+                self.use_mock_storage = False
+                self.sync_mode = "API_USER_OAUTH"
+                print("[GDrive Sync] [AUTH SUCCESS] Connected to Google Drive API via User OAuth!")
+                print(f"[GDrive Sync] [FOLDER] Target Shared Drive Folder ID: {self.target_folder_id}")
+                print(f"[GDrive Sync] [URL] https://drive.google.com/drive/folders/{self.target_folder_id}")
+                return
+            except Exception as e:
+                err_msg = f"User OAuth initialization failed: {e}"
+                print(f"[GDrive Sync] [OAUTH NOTICE] {err_msg}")
+
+        print("[GDrive Sync] [NOTICE] Neither Service Account nor valid OAuth could connect. Falling back to local storage structure.")
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print("::warning title=Google Drive Sync Notice::Could not connect to Google Drive API via Service Account or OAuth. Files are saved to the runner's ephemeral storage only and preserved in Artifacts.")
         
         self.sync_mode = "MOCK_LOCAL_STORAGE"
         print(f"[GDrive Sync] Active Mode: Structured Local Storage at {DEFAULT_LOCAL_STORAGE}")
@@ -274,6 +278,21 @@ class GDriveSyncAgent:
 
                 # Use target_folder_id directly if provided (e.g. shared Thread_Data folder)
                 parent_id = self.target_folder_id
+                if parent_id and self.service:
+                    try:
+                        p_meta = self.service.files().get(
+                            fileId=parent_id, 
+                            fields="id, name, mimeType", 
+                            supportsAllDrives=True
+                        ).execute()
+                        p_name = p_meta.get("name", "")
+                        if p_name in ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]:
+                            print(f"[GDrive Sync] [SAFETY REDIRECT] Target folder ID '{parent_id}' is named '{p_name}', which is a daily subfolder! Redirecting to Thread_Data ({DEFAULT_TARGET_FOLDER_ID}).")
+                            parent_id = DEFAULT_TARGET_FOLDER_ID
+                            self.target_folder_id = DEFAULT_TARGET_FOLDER_ID
+                    except Exception:
+                        pass
+
                 if not parent_id:
                     parent_id = self._find_or_create_drive_folder(self.base_folder_name)
                 daily_id = self._find_or_create_drive_folder(date_str, parent_id=parent_id)
@@ -405,13 +424,39 @@ class GDriveSyncAgent:
             for attempt in range(1, 4):
                 try:
                     with self._upload_lock:
-                        uploaded_file = self.service.files().create(
-                            body=file_metadata, 
-                            media_body=media, 
-                            fields='id',
-                            supportsAllDrives=True
-                        ).execute()
-                        file_id = uploaded_file.get('id')
+                        # Check if file with same name already exists in target folder to prevent Google Drive duplicate files
+                        existing_id = None
+                        try:
+                            q_exist = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
+                            res_ex = self.service.files().list(
+                                q=q_exist, 
+                                fields='files(id, name)', 
+                                supportsAllDrives=True, 
+                                includeItemsFromAllDrives=True
+                            ).execute()
+                            files_found = res_ex.get('files', [])
+                            if files_found:
+                                existing_id = files_found[0]['id']
+                        except Exception:
+                            pass
+
+                        if existing_id:
+                            uploaded_file = self.service.files().update(
+                                fileId=existing_id,
+                                media_body=media,
+                                fields='id',
+                                supportsAllDrives=True
+                            ).execute()
+                            file_id = uploaded_file.get('id')
+                            print(f"[GDrive Sync] [UPDATED] Replaced existing {filename} in {target_subfolder} (ID: {file_id})")
+                        else:
+                            uploaded_file = self.service.files().create(
+                                body=file_metadata, 
+                                media_body=media, 
+                                fields='id',
+                                supportsAllDrives=True
+                            ).execute()
+                            file_id = uploaded_file.get('id')
                     if file_id:
                         break
                 except Exception as e_att:

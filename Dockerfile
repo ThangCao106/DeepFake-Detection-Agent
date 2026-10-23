@@ -41,7 +41,7 @@ EXPOSE 5000
 
 # Healthcheck to verify Flask Web Service status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:5000/api/status || exit 1
+    CMD curl -f http://localhost:${PORT:-5000}/api/status || exit 1
 
 # Start Flask web server with SocketIO eventlet
 CMD ["python", "app.py"]

@@ -40,7 +40,7 @@ services:
   deepfake-benchmark-hub:
     build:
       context: .
-      dockerfile: Dockerfile.benchmark
+      dockerfile: Dockerfile
     container_name: deepfake_benchmark_hub
     restart: unless-stopped
     ports:

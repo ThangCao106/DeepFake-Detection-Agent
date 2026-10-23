@@ -9,7 +9,7 @@ on:
       num_images:
         description: 'Số lượng ảnh chân dung thật cần thu thập (Images)'
         required: false
-        default: '2500'
+        default: '1000'
       num_videos:
         description: 'Số lượng video talking head thật (Videos)'
         required: false
@@ -21,7 +21,7 @@ on:
       num_fakes:
         description: 'Số lượng ảnh đối kháng FaceSwap & Diffusion (Adversarial Fakes)'
         required: false
-        default: '25'
+        default: '30'
       vault_only:
         description: 'Chỉ dùng Vietnam Face Vault offline (không cào internet)?'
         required: false
@@ -73,11 +73,13 @@ jobs:
           HF_HUB_ENABLE_HF_TRANSFER: "0"
           PYTHONUNBUFFERED: "1"
           THREADS_SESSION_COOKIES: ${{ secrets.THREADS_SESSION_COOKIES }}
+          INSTAGRAM_SESSION_COOKIES: ${{ secrets.INSTAGRAM_SESSION_COOKIES }}
+          FACEBOOK_SESSION_COOKIES: ${{ secrets.FACEBOOK_SESSION_COOKIES }}
           THREADS_VAULT_ONLY: ${{ github.event.inputs.vault_only || 'false' }}
-          CRAWL_NUM_IMAGES: ${{ github.event.inputs.num_images || '250' }}
-          CRAWL_NUM_VIDEOS: ${{ github.event.inputs.num_videos || '25' }}
-          CRAWL_NUM_AUDIOS: ${{ github.event.inputs.num_audios || '25' }}
-          CRAWL_NUM_FAKES: ${{ github.event.inputs.num_fakes || '25' }}
+          CRAWL_NUM_IMAGES: ${{ github.event.inputs.num_images || '1000' }}
+          CRAWL_NUM_VIDEOS: ${{ github.event.inputs.num_videos || '100' }}
+          CRAWL_NUM_AUDIOS: ${{ github.event.inputs.num_audios || '50' }}
+          CRAWL_NUM_FAKES: ${{ github.event.inputs.num_fakes || '30' }}
         run: |
           echo "=========================================================================="
           echo "🚀 Khởi chạy Job Cào Threads & Sinh Dữ liệu Đa Phương Thức trên GitHub Actions"

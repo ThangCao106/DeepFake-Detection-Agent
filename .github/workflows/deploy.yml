@@ -27,6 +27,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
+          command_timeout: 30m
           script: |
             # Clean and sanitize TARGET_DIR path string (strip trailing control characters / newlines)
             RAW_DIR="${{ secrets.TARGET_DIR }}"

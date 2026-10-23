@@ -50,7 +50,11 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
 
     def _sync_check():
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Deepfake-Forensic-Agent/2.5"})
+            headers = {
+                "User-Agent": "Deepfake-Forensic-Agent/2.5",
+                "x-goog-api-key": key
+            }
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=5) as resp:
                 if resp.status == 200:
                     return {
@@ -60,28 +64,28 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
                         "masked": masked
                     }
         except urllib.error.HTTPError as e:
-            if e.code in [400, 403]:
+            if e.code in [400, 401, 403]:
                 return {
                     "valid": False,
                     "status": "INVALID_KEY",
-                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code})",
+                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code}). Cần lấy API key chuẩn tại aistudio.google.com",
                     "masked": masked
                 }
             return {
-                "valid": True,
-                "status": "AUTHENTICATED",
-                "message": f"HTTP {e.code} (cho phép thử nghiệm)",
+                "valid": False,
+                "status": "ERROR",
+                "message": f"HTTP {e.code} lỗi xác thực API",
                 "masked": masked
             }
         except Exception as ex:
-            # Container network or DNS fallback: assume valid if format matches
+            # Container network or DNS fallback
             return {
-                "valid": True,
-                "status": "AUTHENTICATED",
-                "message": f"Format hợp lệ ({masked})",
+                "valid": False,
+                "status": "CONNECTION_ERROR",
+                "message": f"Không thể kết nối Google AI ({ex})",
                 "masked": masked
             }
-        return {"valid": True, "status": "AUTHENTICATED", "message": "Key configured", "masked": masked}
+        return {"valid": False, "status": "INVALID_KEY", "message": "Key không phản hồi", "masked": masked}
 
     return await loop.run_in_executor(None, _sync_check)
 
@@ -110,9 +114,8 @@ async def run_gemini_generate(
         "l1": "gemini-flash-latest",
         "deep": "gemini-flash-latest"
     }
-    model = MODEL_MAP.get(model, model)
-    if not model or model.startswith("gemini-2.5") or model.startswith("gemini-1.5"):
-        model = "gemini-flash-latest"
+    # Normalize requested model
+    model = model.strip() if model else "gemini-2.5-flash"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
@@ -135,10 +138,14 @@ async def run_gemini_generate(
         }
 
     data_bytes = json.dumps(payload).encode("utf-8")
+    req_headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key
+    }
     req = urllib.request.Request(
         url,
         data=data_bytes,
-        headers={"Content-Type": "application/json"},
+        headers=req_headers,
         method="POST"
     )
 
@@ -151,19 +158,37 @@ async def run_gemini_generate(
                 return json.loads(res_body)
         except urllib.error.HTTPError as e:
             err_text = e.read().decode("utf-8", errors="ignore")
-            # If the requested model is 404 (retired) or 429 (rate-limited), fallback to gemini-flash-latest or gemini-3.8-flash
-            if e.code in [404, 429]:
-                candidates = ["gemini-flash-latest", "gemini-3.8-flash"]
-                for fallback_model in candidates:
+            if e.code == 401:
+                raise RuntimeError(
+                    f"Gemini API Error (HTTP 401): API key không hợp lệ hoặc không có quyền truy cập (ACCESS_TOKEN_TYPE_UNSUPPORTED). "
+                    f"Vui lòng tạo Google AI Studio API Key (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey và cập nhật qua menu 'Cài đặt kết nối'."
+                )
+
+            # Auto-fallback on 503 (High demand / Unavailable), 429 (Rate-limited), 404 (Retired), or 500/502/504
+            if e.code in [404, 429, 500, 502, 503, 504]:
+                fallback_chain = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-pro", "gemini-1.5-pro"]
+                for fallback_model in fallback_chain:
                     if fallback_model == model:
                         continue
                     try:
                         fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
-                        fb_req = urllib.request.Request(fb_url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST")
-                        with urllib.request.urlopen(fb_req, timeout=30) as fb_resp:
-                            return json.loads(fb_resp.read().decode("utf-8"))
+                        fb_req = urllib.request.Request(fb_url, data=data_bytes, headers=req_headers, method="POST")
+                        with urllib.request.urlopen(fb_req, timeout=25) as fb_resp:
+                            fb_body = fb_resp.read().decode("utf-8")
+                            parsed = json.loads(fb_body)
+                            if parsed.get("candidates"):
+                                return parsed
+                    except urllib.error.HTTPError as fb_err:
+                        continue
                     except Exception:
                         continue
+
+            if e.code == 503:
+                raise RuntimeError(
+                    "Google Gemini đang gặp tình trạng quá tải tạm thời (HTTP 503: High demand). "
+                    "Hệ thống đã thử các model dự phòng nhưng cụm máy chủ Google vẫn đang bận. "
+                    "Vui lòng thử lại sau 5–10 giây hoặc chọn model khác."
+                )
             raise RuntimeError(f"Gemini API Error (HTTP {e.code}): {err_text}")
         except Exception as ex:
             raise RuntimeError(f"Gemini Request Failed: {ex}")
