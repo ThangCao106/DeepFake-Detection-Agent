@@ -87,6 +87,7 @@ services:
     volumes:
       - claude-home-new:/home/agent
       - ./report_colab:/app/report_colab
+      - ./observability/static:/app/static
     networks:
       - deepfake-agent-network
 
