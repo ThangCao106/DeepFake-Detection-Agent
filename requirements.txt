@@ -10,6 +10,8 @@ scikit-learn
 google-generativeai
 python-dotenv
 colorama
+langgraph
+langchain-core
 
 # Web Framework Dependencies
 flask
