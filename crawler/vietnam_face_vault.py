@@ -179,8 +179,15 @@ def load_vault_portraits(
     if verified_dir.exists():
         local_files.extend(list(verified_dir.glob("*.jpg")) + list(verified_dir.glob("*.png")))
 
-    # Deduplicate candidate files by SHA-256
+    # Deduplicate candidate files by SHA-256 and perceptual dHash (zero duplicates, real human faces only)
+    from crawler.dedup_engine import compute_dhash, is_visual_duplicate, DEFAULT_HAMMING_THRESHOLD
+    from crawler.threads_browser_scraper import is_photographic_human_portrait
+
     pool_candidates = []
+    known_dhashes = set()
+    if dedup_registry:
+        known_dhashes.update(dedup_registry.get_known_dhashes())
+
     for fp in local_files:
         try:
             data = fp.read_bytes()
@@ -189,12 +196,23 @@ def load_vault_portraits(
             sha = hashlib.sha256(data).hexdigest()
             if sha in seen_hashes:
                 continue
+            # 1. Quality Gate: verify authentic human face
+            is_p, _, _ = is_photographic_human_portrait(data)
+            if not is_p:
+                continue
+            # 2. Perceptual Deduplication: must not be visually similar to existing items
+            is_dup, _, _ = is_visual_duplicate(data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+            if is_dup:
+                continue
+
             seen_hashes.add(sha)
+            dh = compute_dhash(data)
+            known_dhashes.add(dh)
             pool_candidates.append((fp, data, sha))
         except Exception:
             pass
 
-    print(f"🏛️ [Vietnam Face Vault] Available local authentic portraits: {len(pool_candidates)} (Target: {min_images})")
+    print(f"🏛️ [Vietnam Face Vault] Available local verified human portraits: {len(pool_candidates)} (Target: {min_images})")
 
     # 2. If pool is insufficient, harvest new authentic portraits via Open Multi-Source Harvester
     if len(pool_candidates) < min_images:
@@ -208,53 +226,40 @@ def load_vault_portraits(
         )
         for h_item in harvested:
             sha = h_item["sha256"]
-            if sha not in seen_hashes:
-                seen_hashes.add(sha)
-                pool_candidates.append((None, h_item["image_bytes"], sha))
-                # Also save to vault for future runs
-                try:
-                    cat = h_item.get("category", "vn_selfie_lifestyle")
-                    v_dir = vault_dir / cat
-                    v_dir.mkdir(parents=True, exist_ok=True)
-                    dest_f = v_dir / f"vault_{cat}_{sha[:12]}.jpg"
-                    if not dest_f.exists():
-                        dest_f.write_bytes(h_item["image_bytes"])
-                except Exception:
-                    pass
+            h_data = h_item["image_bytes"]
+            if sha in seen_hashes:
+                continue
+            is_dup, _, _ = is_visual_duplicate(h_data, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+            if is_dup:
+                continue
+            is_p, _, _ = is_photographic_human_portrait(h_data)
+            if not is_p:
+                continue
+
+            seen_hashes.add(sha)
+            dh = h_item.get("dhash") or compute_dhash(h_data)
+            known_dhashes.add(dh)
+            pool_candidates.append((None, h_data, sha))
+
+            # Also save to vault for future runs
+            try:
+                cat = h_item.get("category", "vn_selfie_lifestyle")
+                v_dir = vault_dir / cat
+                v_dir.mkdir(parents=True, exist_ok=True)
+                dest_f = v_dir / f"vault_{cat}_{sha[:12]}.jpg"
+                if not dest_f.exists():
+                    dest_f.write_bytes(h_data)
+            except Exception:
+                pass
 
     # 3. Deterministically sample min_images without replacement based on day seed
-    # This guarantees that:
-    #   - Every image within a day's 250 batch is unique (0 duplicates).
-    #   - Different days get different permutations from the pool.
-    # Use run entropy with sub-second timestamp so multiple runs on the same day generate fresh non-colliding variations
+    # Guarantees ZERO duplicate identities within the batch.
     run_entropy = f"{current_date}_{int(time.time() * 1000)}"
     day_seed = int(hashlib.md5(run_entropy.encode()).hexdigest(), 16) % 1000000
     rng = random.Random(day_seed)
     rng.shuffle(pool_candidates)
 
     selected = list(pool_candidates[:min_images])
-    if pool_candidates and len(selected) < min_images:
-        needed_more = min_images - len(selected)
-        print(f"🏛️ [Vietnam Face Vault] Generating {needed_more} authentic biometric camera variations to reach target {min_images}...")
-        v_idx = 0
-        while len(selected) < min_images:
-            src_fp, src_bytes, src_sha = pool_candidates[v_idx % len(pool_candidates)]
-            var_seed = (day_seed + (v_idx + 1) * 31337) % 1000000
-            try:
-                with Image.open(io.BytesIO(src_bytes)) as pil_im:
-                    var_im = generate_biometric_variation(pil_im, seed_val=var_seed, target_size=target_size)
-                    buf = io.BytesIO()
-                    var_im.save(buf, format="JPEG", quality=95)
-                    var_bytes = buf.getvalue()
-                    var_sha = hashlib.sha256(var_bytes).hexdigest()
-                    if var_sha not in seen_hashes:
-                        seen_hashes.add(var_sha)
-                        selected.append((src_fp, var_bytes, var_sha))
-            except Exception:
-                pass
-            v_idx += 1
-            if v_idx > min_images * 5:
-                break
     for idx, (fpath, raw_bytes, sha) in enumerate(selected):
         try:
             with Image.open(io.BytesIO(raw_bytes)) as pil_im:

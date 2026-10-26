@@ -52,7 +52,7 @@ from crawler.dedup_engine import (
     DEFAULT_HAMMING_THRESHOLD
 )
 
-USER_AGENT = "ThreadsDFBench/2.0 (https://github.com/ThangCao106/DeepFake-Detection-Agent; research_df@domain.vn) python-urllib/3.13"
+USER_AGENT = "ThreadsDFBench/2.0 (https://github.com/ThangCao106/DeepFake-Detection-Agent; thangcao106@gmail.com) python-urllib/3.10"
 
 # 40+ Rich Vietnamese Categories on Wikimedia Commons
 WIKIMEDIA_VIETNAMESE_CATEGORIES = [
@@ -169,6 +169,7 @@ def query_wikimedia_category_items(cat_name: str, limit: int = 50) -> List[Dict]
             })
         return items
     except Exception as e:
+        print(f"  [Wikimedia Query Notice] Category {clean_cat}: {e}")
         return []
 
 
@@ -200,7 +201,8 @@ def query_wikimedia_search_items(query: str, limit: int = 40) -> List[Dict]:
                 "source_cat": f"search:{query}"
             })
         return items
-    except Exception:
+    except Exception as e:
+        print(f"  [Wikimedia Search Notice] Query '{query}': {e}")
         return []
 
 

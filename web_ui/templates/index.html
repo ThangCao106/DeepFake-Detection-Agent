@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deepfake Detection AI - Multi-Agent Forensic System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.0.2&t=20261012_1445">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.2.0&t=20261026_101500">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -536,6 +536,58 @@
                         <span class="btn-icon">🔍</span>
                         <span id="analyzeBtnText" data-i18n="analyze_btn">Analyze Media</span>
                     </button>
+
+                    <!-- Auditable Forensic Certificate Section (Immediately Below Analyze Media) -->
+                    <div class="forensic-cert-card genui-artifact-card gold-border" id="forensicCertCard" style="margin-top: 18px; padding: 18px; display: none; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fed7aa; padding-bottom: 10px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="cert-seal-badge">🛡️ VERIFIED FORENSIC SEAL</span>
+                                <h4 style="margin: 0; color: #9a3412; font-size: 0.95rem; font-weight: 800;" data-i18n="cert_title">📜 Digital Forensic Certificate (EU AI Act)</h4>
+                            </div>
+                            <span id="certBadge" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #fff;">-</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; font-size: 0.82rem;" id="certMetricsGrid">
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_id_label">Certificate ID</div>
+                                <div id="certIdVal" style="font-family: monospace; font-weight: bold; color: #1e293b; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_risk_label">Composite Risk</div>
+                                <div id="certRiskVal" style="font-weight: bold; color: #d97706; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;">Hiệu Chuẩn (Platt T*)</div>
+                                <div id="certCalibVal" style="font-weight: bold; color: #059669; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;">Ngưỡng (Youden τ*)</div>
+                                <div id="certTauVal" style="font-weight: bold; color: #2563eb; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_spectral_label">Spectral Anomaly (FFT 2D)</div>
+                                <div id="certSpectralVal" style="font-weight: bold; color: #2563eb; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_spatial_label">Spatial Noise Inconsistency</div>
+                                <div id="certSpatialVal" style="font-weight: bold; color: #db2777; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_prnu_label">Dấu vết Cảm biến PRNU</div>
+                                <div id="certPrnuVal" style="font-weight: bold; color: #0891b2; font-size: 0.8rem;">-</div>
+                            </div>
+                            <div style="background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fed7aa;">
+                                <div style="color: #64748b; font-size: 0.7rem;" data-i18n="cert_corneal_label">Đối xứng Quang học Giác mạc</div>
+                                <div id="certCornealVal" style="font-weight: bold; color: #7c3aed; font-size: 0.8rem;">-</div>
+                            </div>
+                        </div>
+
+                        <div id="certXaiContainer" style="margin-top: 12px; background: #ffffff; padding: 10px 14px; border-radius: 8px; border: 1px solid #fed7aa; font-size: 0.8rem; line-height: 1.5; color: #334155; display: none;">
+                            <div style="font-weight: 700; color: #9a3412; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                                <span>⚖️ Giải trình XAI Chuẩn EU AI Act Art. 50 (Ma trận 6D):</span>
+                            </div>
+                            <div id="certXaiVal" style="white-space: pre-line; color: #475569;"></div>
+                        </div>
+                    </div>
                     
                     <!-- Footnote Formats -->
                     <div class="upload-footer-info" style="margin-top: 14px;">
@@ -576,82 +628,6 @@
                 
             </div>
 
-            <!-- ========================================================= -->
-            <!-- 🌟 GENERATIVE UI (GenUI): LIVE MULTI-AGENT EXECUTION STEPPER -->
-            <!-- ========================================================= -->
-            <section class="card genui-stepper-card" id="genUiAgentStepper" style="display: none; margin-top: 25px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="genui-radar-dot"></span>
-                        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
-                            <span>🤖</span>
-                            <span data-i18n="genui_stepper_title">Hệ Thống Đa Agent Giám Định Tự Động (Option B Multi-Agent Pipeline)</span>
-                        </h3>
-                    </div>
-                    <span id="genUiOverallBadge" style="font-size: 0.75rem; background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border: 1px solid rgba(165, 180, 252, 0.4); padding: 4px 12px; border-radius: 20px; font-weight: 600;">
-                        STANDBY
-                    </span>
-                </div>
-
-                <div class="genui-stepper-grid">
-                    <!-- Step 1: Vision & Wavelet Agent -->
-                    <div class="genui-step-item" id="genUiStepVision">
-                        <div class="genui-step-header">
-                            <span class="genui-step-icon">🌐</span>
-                            <div class="genui-step-meta">
-                                <div class="genui-step-name">Vision & Spectral Agent</div>
-                                <div class="genui-step-task">2D-DWT WAVIE High-Freq</div>
-                            </div>
-                            <span class="genui-step-status" id="genUiStatusVision">Waiting</span>
-                        </div>
-                        <div class="genui-step-metric" id="genUiMetricVision">Chờ tensor ảnh đầu vào...</div>
-                        <div class="genui-progress-bar"><div class="genui-progress-fill" id="genUiProgVision"></div></div>
-                    </div>
-
-                    <!-- Step 2: Corneal Specular Agent -->
-                    <div class="genui-step-item" id="genUiStepCorneal">
-                        <div class="genui-step-header">
-                            <span class="genui-step-icon">👁️</span>
-                            <div class="genui-step-meta">
-                                <div class="genui-step-name">Ophthalmic Corneal Agent</div>
-                                <div class="genui-step-task">3D Specular Ray-Tracing</div>
-                            </div>
-                            <span class="genui-step-status" id="genUiStatusCorneal">Waiting</span>
-                        </div>
-                        <div class="genui-step-metric" id="genUiMetricCorneal">Chờ trích xuất mốc mặt & giác mạc...</div>
-                        <div class="genui-progress-bar"><div class="genui-progress-fill" id="genUiProgCorneal"></div></div>
-                    </div>
-
-                    <!-- Step 3: LipSync Temporal Agent -->
-                    <div class="genui-step-item" id="genUiStepLipSync">
-                        <div class="genui-step-header">
-                            <span class="genui-step-icon">👄</span>
-                            <div class="genui-step-meta">
-                                <div class="genui-step-name">Audio-Visual LipSync Agent</div>
-                                <div class="genui-step-task">DF26 Phoneme-Viseme Sync</div>
-                            </div>
-                            <span class="genui-step-status" id="genUiStatusLipSync">Waiting</span>
-                        </div>
-                        <div class="genui-step-metric" id="genUiMetricLipSync">Đối soát đồng bộ khẩu hình - âm thanh...</div>
-                        <div class="genui-progress-bar"><div class="genui-progress-fill" id="genUiProgLipSync"></div></div>
-                    </div>
-
-                    <!-- Step 4: Chief Magistrate Agent -->
-                    <div class="genui-step-item" id="genUiStepMagistrate">
-                        <div class="genui-step-header">
-                            <span class="genui-step-icon">⚖️</span>
-                            <div class="genui-step-meta">
-                                <div class="genui-step-name">Chief Magistrate (Gemini)</div>
-                                <div class="genui-step-task">Bayesian Platt Calibration & XAI</div>
-                            </div>
-                            <span class="genui-step-status" id="genUiStatusMagistrate">Waiting</span>
-                        </div>
-                        <div class="genui-step-metric" id="genUiMetricMagistrate">Hội đồng đồng thuận & Chuẩn EU AI Act...</div>
-                        <div class="genui-progress-bar"><div class="genui-progress-fill" id="genUiProgMagistrate"></div></div>
-                    </div>
-                </div>
-            </section>
-
             <!-- Full Width Results Section (Below Upload & Chat) -->
             <section class="card results-card" id="resultsCard" style="display: none; margin-top: 30px;">
                 <h3 class="card-title">
@@ -678,6 +654,66 @@
                     
                     <!-- Detailed Scores -->
                     <div class="detailed-scores" id="detailedScores"></div>
+
+                    <!-- VISUAL 6-STEP FORENSIC DETECTION PIPELINE FLOW (General vs Human Routing) -->
+                    <div class="forensic-pipeline-banner" id="forensicPipelineFlow">
+                        <div class="pipeline-header">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="pipeline-pulse-icon">⚡</span>
+                                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e293b;">Quy Trình Giám Định & Định Tuyến Mô Hình (6-Step Detection Pipeline)</h4>
+                            </div>
+                            <span class="pipeline-route-badge" id="pipelineRouteBadge">Single-Stream (General)</span>
+                        </div>
+                        <div class="pipeline-steps-grid">
+                            <!-- Step 1: Input & Ingestion -->
+                            <div class="pipeline-step-node active" id="pipeStep1">
+                                <div class="step-num">BƯỚC 1</div>
+                                <div class="step-icon">📁</div>
+                                <div class="step-name">Nạp & Phân Tích File</div>
+                                <div class="step-desc" id="pipeStep1Desc">Ảnh Tĩnh RGB</div>
+                            </div>
+                            <div class="pipeline-arrow">➔</div>
+                            <!-- Step 2: Scene & Human Gate -->
+                            <div class="pipeline-step-node active" id="pipeStep2">
+                                <div class="step-num">BƯỚC 2</div>
+                                <div class="step-icon" id="pipeStep2Icon">🏞️</div>
+                                <div class="step-name">Phân Loại Ngữ Cảnh</div>
+                                <div class="step-desc" id="pipeStep2Desc">Phi Sinh Trắc (General)</div>
+                            </div>
+                            <div class="pipeline-arrow">➔</div>
+                            <!-- Step 3: Model Routing -->
+                            <div class="pipeline-step-node active" id="pipeStep3">
+                                <div class="step-num">BƯỚC 3</div>
+                                <div class="step-icon" id="pipeStep3Icon">🧠</div>
+                                <div class="step-name">Chọn Mô Hình Detect</div>
+                                <div class="step-desc" id="pipeStep3Desc">ViT 6D General</div>
+                            </div>
+                            <div class="pipeline-arrow">➔</div>
+                            <!-- Step 4: 6D Evidence Extraction -->
+                            <div class="pipeline-step-node active" id="pipeStep4">
+                                <div class="step-num">BƯỚC 4</div>
+                                <div class="step-icon">🔬</div>
+                                <div class="step-name">Trích Xuất 6 Chiều</div>
+                                <div class="step-desc" id="pipeStep4Desc">PRNU + FFT + Spatial</div>
+                            </div>
+                            <div class="pipeline-arrow">➔</div>
+                            <!-- Step 5: Biometric Verification / Bypass -->
+                            <div class="pipeline-step-node" id="pipeStep5">
+                                <div class="step-num">BƯỚC 5</div>
+                                <div class="step-icon" id="pipeStep5Icon">👁️</div>
+                                <div class="step-name">Sinh Trắc Học Mắt/Môi</div>
+                                <div class="step-desc" id="pipeStep5Desc">Bypass (An Toàn)</div>
+                            </div>
+                            <div class="pipeline-arrow">➔</div>
+                            <!-- Step 6: Platt Calibration & Verdict -->
+                            <div class="pipeline-step-node active" id="pipeStep6">
+                                <div class="step-num">BƯỚC 6</div>
+                                <div class="step-icon">⚖️</div>
+                                <div class="step-name">Hiệu Chuẩn Platt & τ*</div>
+                                <div class="step-desc" id="pipeStep6Desc">Youden τ* = 0.8118</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- ========================================================= -->
                     <!-- 🔬 GENERATIVE UI: INTERACTIVE FORENSIC EVIDENCE STUDIO -->
@@ -781,109 +817,13 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- WIDGET 4: Multi-Agent Consensus & Debate Thread -->
-                        <div class="genui-artifact-card" id="genUiDebateCard">
-                            <div class="genui-artifact-header">
-                                <div class="genui-artifact-title">
-                                    <span>💬</span>
-                                    <span>Hội Đồng Tranh Biện Đa Agent (Consensus)</span>
-                                </div>
-                                <span class="genui-artifact-badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">4 Agents Quorum</span>
-                            </div>
-                            <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
-                                Quá trình phản biện và hội tụ ý kiến giữa 4 Specialist Agents trước khi đưa ra phán quyết cuối cùng.
-                            </p>
-                            
-                            <div class="debate-thread" id="genUiDebateThread">
-                                <div class="debate-bubble vision">
-                                    <div class="debate-speaker"><span>🌐 Vision Agent:</span></div>
-                                    <div id="debateMsgVision">Đang phân tích suy giảm năng lượng bậc cao tại biên ảnh...</div>
-                                </div>
-                                <div class="debate-bubble corneal">
-                                    <div class="debate-speaker"><span>👁️ Corneal Agent:</span></div>
-                                    <div id="debateMsgCorneal">Đang kiểm tra vector phản xạ tia sáng qua bề mặt 2 giác mạc...</div>
-                                </div>
-                                <div class="debate-bubble lipsync">
-                                    <div class="debate-speaker"><span>👄 LipSync Agent:</span></div>
-                                    <div id="debateMsgLipSync">Đang đối chiếu mức độ tương quan âm vị - thị giác DF26...</div>
-                                </div>
-                                <div class="debate-bubble magistrate">
-                                    <div class="debate-speaker"><span>⚖️ Chief Magistrate:</span></div>
-                                    <div id="debateMsgMagistrate">Tổng hợp bằng chứng đa thức và hiệu chuẩn xác suất Bayesian...</div>
-                                </div>
-                            </div>
                         </div>
-
                     </div>
 
                     <!-- Video Frame-by-Frame Results Container -->
                     <div class="video-frames-section" id="videoFramesSection" style="display: none; margin-top: 15px;">
                         <h4 style="font-size: 0.95rem; color: #334155; margin-bottom: 10px;" data-i18n="video_frames_title">🎬 Frame-by-Frame Video Analysis</h4>
                         <div class="frames-grid" id="framesGrid" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;"></div>
-                    </div>
-
-                    <!-- Auditable Forensic Certificate Section (Enhanced with Gold Seal & 1-Click DOCX Download) -->
-                    <div class="forensic-cert-card genui-artifact-card gold-border" id="forensicCertCard" style="margin-top: 24px; padding: 22px; display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fed7aa; padding-bottom: 12px; margin-bottom: 14px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span class="cert-seal-badge">🛡️ VERIFIED FORENSIC SEAL</span>
-                                <h4 style="margin: 0; color: #9a3412; font-size: 1rem; font-weight: 800;" data-i18n="cert_title">📜 Auditable Digital Forensic Certificate (EU AI Act Compliant)</h4>
-                            </div>
-                            <span id="certBadge" style="font-size: 0.8rem; padding: 5px 12px; border-radius: 14px; font-weight: bold; color: #fff;">-</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.85rem;" id="certMetricsGrid">
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_id_label">Certificate ID</div>
-                                <div id="certIdVal" style="font-family: monospace; font-weight: bold; color: #1e293b; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_risk_label">Composite Risk</div>
-                                <div id="certRiskVal" style="font-weight: bold; color: #d97706; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Xác Suất Hiệu Chuẩn (Platt T*=1.6178)</div>
-                                <div id="certCalibVal" style="font-weight: bold; color: #059669; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;">Ngưỡng Phán Quyết (Youden τ*=0.8118)</div>
-                                <div id="certTauVal" style="font-weight: bold; color: #2563eb; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_spectral_label">Spectral Anomaly (FFT 2D)</div>
-                                <div id="certSpectralVal" style="font-weight: bold; color: #2563eb; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_spatial_label">Spatial Noise Inconsistency</div>
-                                <div id="certSpatialVal" style="font-weight: bold; color: #db2777; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_prnu_label">Dấu vết Cảm biến PRNU</div>
-                                <div id="certPrnuVal" style="font-weight: bold; color: #0891b2; font-size: 0.85rem;">-</div>
-                            </div>
-                            <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #fed7aa;">
-                                <div style="color: #64748b; font-size: 0.75rem;" data-i18n="cert_corneal_label">Đối xứng Quang học Giác mạc</div>
-                                <div id="certCornealVal" style="font-weight: bold; color: #7c3aed; font-size: 0.85rem;">-</div>
-                            </div>
-                        </div>
-
-                        <!-- 1-Click Advisor DOCX Download Action Button -->
-                        <div style="margin-top: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                            <a href="/api/orchestrator/download/docx/latest" class="btn-download-advisor-docx" id="btnDownloadAdvisorDocx" target="_blank" style="flex: 1; min-width: 280px;">
-                                <span>📥</span>
-                                <span>Xuất Hồ Sơ Giám Định Thầy Hướng Dẫn (.docx Chuẩn VNU-UET)</span>
-                            </a>
-                            <a href="/orchestrator" target="_blank" style="font-size: 0.82rem; color: #4338ca; text-decoration: underline; font-weight: 600; padding: 8px 12px;">
-                                ↗ Mở Dashboard Điều Phối LangGraph (/orchestrator)
-                            </a>
-                        </div>
-
-                        <div id="certXaiContainer" style="margin-top: 14px; background: #ffffff; padding: 12px 16px; border-radius: 8px; border: 1px solid #fed7aa; font-size: 0.82rem; line-height: 1.5; color: #334155; display: none;">
-                            <div style="font-weight: 700; color: #9a3412; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                                <span>⚖️ Giải trình XAI Chuẩn EU AI Act Art. 50 (Ma trận 6D):</span>
-                            </div>
-                            <div id="certXaiVal" style="white-space: pre-line; color: #475569;"></div>
-                        </div>
                     </div>
                     
                     <!-- Explanation -->
@@ -963,6 +903,6 @@
     </div>
     {% endif %}
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=5.0.2&t=20261012_1445"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=5.2.0&t=20261026_101500"></script>
 </body>
 </html>

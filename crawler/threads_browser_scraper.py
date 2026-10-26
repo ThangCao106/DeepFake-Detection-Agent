@@ -315,9 +315,10 @@ def is_photographic_human_portrait(
         if lap_var < min_laplacian_var:
             return False, f"Laplacian variance rejected ({lap_var:.1f} < {min_laplacian_var}): texture lacking", {"lap_var": lap_var}
             
-        # 4. Color Palette Richness
-        unique_colors = len(np.unique(img_bgr.reshape(-1, 3), axis=0))
-        if unique_colors < min_unique_colors:
+        # 4. Color Palette Richness (subsample large images for 30x speedup)
+        step = max(1, min(h_img, w_img) // 256)
+        unique_colors = len(np.unique(img_bgr[::step, ::step].reshape(-1, 3), axis=0))
+        if unique_colors < min(min_unique_colors, 600):
             return False, f"Unique color count rejected ({unique_colors} < {min_unique_colors})", {"unique_colors": unique_colors}
             
         return True, "Passed Option C Photographic Quality Gate", {
@@ -477,7 +478,7 @@ class ThreadsBrowserScraper:
 
     async def _extract_media_from_page(self, page) -> dict:
         """Extracts high-res images and video URLs from current page DOM."""
-        return await page.evaluate("""() => {
+        return await page.evaluate(r"""() => {
             const imgs = [];
             document.querySelectorAll('img').forEach(img => {
                 let bestSrc = '';
@@ -771,22 +772,31 @@ class ThreadsBrowserScraper:
             print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Face Vault & Open Harvester...")
             
             from crawler.vietnam_face_vault import load_vault_portraits
-            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=None)
+            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
             for vp in vault_portraits:
                 if len(harvested_images) >= target_images:
                     break
                 sha = vp["sha256"]
-                if sha not in seen_shas:
-                    seen_shas.add(sha)
-                    item_dhash = vp.get("dhash") or compute_dhash(vp["image_bytes"])
-                    known_dhashes.add(item_dhash)
-                    idx_img = len(harvested_images) + 1
-                    cat = vp.get("category", "vn_selfie_lifestyle")
-                    out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}_{sha[:8]}.jpg"
-                    out_img.write_bytes(vp["image_bytes"])
-                    if dedup_registry:
-                        dedup_registry.check_and_register(vp["image_bytes"], filename=out_img.name, source="vietnam_face_vault", sha256=sha)
-                    harvested_images.append(out_img)
+                if sha in seen_shas:
+                    continue
+                vp_bytes = vp["image_bytes"]
+                is_dup, min_dist, _ = is_visual_duplicate(vp_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                if is_dup:
+                    continue
+                is_p, reason, _ = is_photographic_human_portrait(vp_bytes)
+                if not is_p:
+                    continue
+
+                seen_shas.add(sha)
+                item_dhash = vp.get("dhash") or compute_dhash(vp_bytes)
+                known_dhashes.add(item_dhash)
+                idx_img = len(harvested_images) + 1
+                cat = vp.get("category", "vn_selfie_lifestyle")
+                out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}_{sha[:8]}.jpg"
+                out_img.write_bytes(vp_bytes)
+                if dedup_registry:
+                    dedup_registry.check_and_register(vp_bytes, filename=out_img.name, source="vietnam_face_vault", sha256=sha)
+                harvested_images.append(out_img)
 
             if len(harvested_images) < target_images:
                 sub_deficit = target_images - len(harvested_images)
@@ -797,53 +807,64 @@ class ThreadsBrowserScraper:
                     if len(harvested_images) >= target_images:
                         break
                     sha = op["sha256"]
-                    if sha not in seen_shas:
-                        seen_shas.add(sha)
-                        item_dhash = compute_dhash(op["image_bytes"])
-                        known_dhashes.add(item_dhash)
-                        idx_img = len(harvested_images) + 1
-                        cat = op.get("category", "vn_selfie_lifestyle")
-                        out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}_{sha[:8]}.jpg"
-                        out_img.write_bytes(op["image_bytes"])
-                        if dedup_registry:
-                            dedup_registry.check_and_register(op["image_bytes"], filename=out_img.name, source="wikimedia_commons", sha256=sha)
-                        harvested_images.append(out_img)
-        # Step 4: Safeguard for verified authentic videos and audios
+                    if sha in seen_shas:
+                        continue
+                    op_bytes = op["image_bytes"]
+                    is_dup, min_dist, _ = is_visual_duplicate(op_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                    if is_dup:
+                        continue
+                    is_p, reason, _ = is_photographic_human_portrait(op_bytes)
+                    if not is_p:
+                        continue
+                    seen_shas.add(sha)
+                    item_dhash = op.get("dhash") or compute_dhash(op_bytes)
+                    known_dhashes.add(item_dhash)
+                    idx_img = len(harvested_images) + 1
+                    cat = op.get("category", "vn_selfie_lifestyle")
+                    out_img = raw_dir / f"real_img_{idx_img:04d}_{cat}_{sha[:8]}.jpg"
+                    out_img.write_bytes(op_bytes)
+                    if dedup_registry:
+                        dedup_registry.check_and_register(op_bytes, filename=out_img.name, source="wikimedia_commons", sha256=sha)
+                    harvested_images.append(out_img)
+
+        # Step 4: Safeguard for verified authentic videos and audios (Strict Zero-Duplicate: No modulo repetition)
         if len(harvested_videos) < target_videos:
             verified_vids_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
             if verified_vids_dir.exists():
                 v_candidates = sorted(list(verified_vids_dir.glob("*.mp4")))
-                v_i = 0
-                while len(harvested_videos) < target_videos and v_candidates:
-                    src_v = v_candidates[v_i % len(v_candidates)]
+                seen_vid_shas = set()
+                for src_v in v_candidates:
+                    if len(harvested_videos) >= target_videos:
+                        break
                     v_data = src_v.read_bytes()
                     v_sha = compute_sha256(v_data)
+                    if v_sha in seen_vid_shas:
+                        continue
+                    seen_vid_shas.add(v_sha)
                     idx_vid = len(harvested_videos) + 1
                     out_vid = raw_dir / f"real_vid_{idx_vid:03d}_{v_sha[:8]}.mp4"
                     if not out_vid.exists():
                         out_vid.write_bytes(v_data)
                         harvested_videos.append(out_vid)
-                    v_i += 1
-                    if v_i >= target_videos * 2:
-                        break
 
         if len(harvested_audios) < target_audios:
             verified_auds_dir = PROJECT_ROOT / "crawler" / "verified_threads_audio_seeds"
             if verified_auds_dir.exists():
                 a_candidates = sorted(list(verified_auds_dir.glob("*.wav")))
-                a_i = 0
-                while len(harvested_audios) < target_audios and a_candidates:
-                    src_a = a_candidates[a_i % len(a_candidates)]
+                seen_aud_shas = set()
+                for src_a in a_candidates:
+                    if len(harvested_audios) >= target_audios:
+                        break
                     a_data = src_a.read_bytes()
                     a_sha = compute_sha256(a_data)
+                    if a_sha in seen_aud_shas:
+                        continue
+                    seen_aud_shas.add(a_sha)
                     idx_aud = len(harvested_audios) + 1
                     out_aud = raw_dir / f"real_aud_{idx_aud:03d}_{a_sha[:8]}.wav"
                     if not out_aud.exists():
                         out_aud.write_bytes(a_data)
                         harvested_audios.append(out_aud)
-                    a_i += 1
-                    if a_i >= target_audios * 2:
-                        break
 
         dedup_registry.save()
         print("\n" + "=" * 80)
