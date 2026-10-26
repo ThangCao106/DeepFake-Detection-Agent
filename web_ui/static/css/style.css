@@ -1777,6 +1777,142 @@ body {
     transform: translateY(-1px);
 }
 
+/* ===== Visual 6-Step Forensic Detection Pipeline Banner ===== */
+.forensic-pipeline-banner {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.05);
+}
+
+.pipeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+}
+
+.pipeline-pulse-icon {
+    font-size: 1.1rem;
+    color: #f59e0b;
+}
+
+.pipeline-route-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.pipeline-route-badge.dual-stream {
+    background: #fdf2f8;
+    color: #db2777;
+    border-color: #fbcfe8;
+}
+
+.pipeline-steps-grid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.pipeline-step-node {
+    flex: 1;
+    min-width: 125px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 10px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.pipeline-step-node.active {
+    background: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+
+.pipeline-step-node.bypassed {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    opacity: 0.75;
+}
+
+.pipeline-step-node .step-num {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #6366f1;
+    margin-bottom: 3px;
+}
+
+.pipeline-step-node.bypassed .step-num {
+    color: #64748b;
+}
+
+.pipeline-step-node .step-icon {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+}
+
+.pipeline-step-node .step-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+
+.pipeline-step-node .step-desc {
+    font-size: 0.68rem;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.pipeline-arrow {
+    color: #cbd5e1;
+    font-weight: bold;
+    font-size: 0.85rem;
+    user-select: none;
+}
+
+/* Chat Dispute Chips */
+.chat-dispute-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.chat-dispute-chip {
+    font-size: 0.72rem;
+    padding: 5px 10px;
+    background: #f1f5f9;
+    color: #4338ca;
+    border: 1px solid #e0e7ff;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-weight: 600;
+}
+
+.chat-dispute-chip:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
 
 
 

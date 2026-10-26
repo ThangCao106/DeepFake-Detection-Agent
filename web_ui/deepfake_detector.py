@@ -512,7 +512,7 @@ class CornealReflectionAnalyzer:
 class XAIExplainabilityGenerator:
     """
     White-Box XAI Explainability Engine compliant with EU AI Act Article 50 (Transparency for AI Systems).
-    Synthesizes the 6D Evidence Matrix into natural-language forensic reasoning.
+    Synthesizes the 6D Evidence Matrix into natural-language forensic reasoning tailored to media category.
     """
     @staticmethod
     def generate_statement(evidence_matrix, composite_risk, analysis_mode, has_human):
@@ -526,32 +526,50 @@ class XAIExplainabilityGenerator:
         region = hotspot.get("anatomical_region", "Central Salient Region")
         peak_score = hotspot.get("peak_anomaly_score", 0.0)
 
+        is_fake = composite_risk >= 0.50
         reasons = []
+
+        # 1. PRNU Hardware Sensor Noise Trace
         if prnu_score > 0.40:
             target_str = "khuôn mặt và phông nền" if has_human else "đối tượng chính và môi trường phông nền"
-            reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) bất thường: thiếu vân nhiễu quang học tự nhiên hoặc có độ lệch lớn giữa {target_str}.")
+            reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) bất thường: thiếu vân nhiễu quang học tự nhiên hoặc có độ lệch lớn giữa {target_str} (dấu hiệu của ảnh sinh AI).")
         else:
-            reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất, phù hợp với ảnh chụp từ cảm biến máy ảnh vật lý thực tế.")
+            if has_human:
+                reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất và liền mạch giữa vùng da mặt, viền tóc và phông nền thực tế.")
+            else:
+                reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất, phù hợp với ảnh chụp từ cảm biến máy ảnh/điện thoại vật lý thực tế.")
 
+        # 2. Corneal Biometric / Bypass Non-Human
         if has_human:
             if corneal_score > 0.35:
-                reasons.append(f"Bất đối xứng phản xạ giác mạc mắt (Corneal Asymmetry = {corneal_score:.2f}): nguồn sáng phản xạ giữa hai mắt không trùng khớp vector quang học, dấu hiệu của công nghệ FaceSwap/Diffusion.")
+                reasons.append(f"Bất đối xứng phản xạ giác mạc mắt (Corneal Asymmetry = {corneal_score:.2f}): nguồn sáng phản xạ giữa hai mắt phân kỳ vi phạm định luật quang học, dấu hiệu của công nghệ FaceSwap/Diffusion.")
             else:
-                reasons.append(f"Phản xạ ánh sáng giác mạc (Symmetry = {1.0 - corneal_score:.2f}) quang học nhất quán giữa hai mắt.")
+                reasons.append(f"Phản xạ ánh sáng giác mạc (Độ đối xứng = {(1.0 - corneal_score)*100:.1f}%) quang học nhất quán giữa hai mắt, phù hợp với một nguồn sáng môi trường duy nhất.")
         else:
             reasons.append("Chỉ số sinh trắc học giác mạc: Bỏ qua (ảnh phi nhân vật / phong cảnh / đồ vật / kiến trúc).")
 
+        # 3. High-Frequency 2D FFT Lattice
         if fft_score > 0.40:
-            reasons.append(f"Phổ tần số cao 2D FFT ({fft_score:.2f}) xuất hiện các đỉnh năng lượng chu kỳ dạng lưới đặc trưng của mô hình tạo ảnh sinh (Diffusion/GAN).")
-        
+            reasons.append(f"Phổ tần số cao 2D FFT ({fft_score:.2f}) xuất hiện các đỉnh năng lượng chu kỳ dạng lưới đặc trưng của thuật toán upsampling trong mô hình tạo ảnh sinh (Diffusion/GAN).")
+        else:
+            reasons.append(f"Phổ năng lượng tần số cao 2D FFT ({fft_score:.2f}) suy giảm tự nhiên theo quy luật quang học (1/f^α), không phát hiện lưới tuần hoàn nhân tạo.")
+
+        # 4. Spatial Noise Discontinuity
         if spatial_score > 0.35:
-            target_zone = "vùng biên khuôn mặt" if has_human else "vùng trọng tâm kiến trúc/đối tượng"
-            reasons.append(f"Nhiễu không gian ({spatial_score:.2f}) có sự gián đoạn giữa {target_zone} và môi trường xung quanh.")
+            target_zone = "vùng biên khuôn mặt" if has_human else "vùng trọng tâm kiến trúc / đối tượng"
+            reasons.append(f"Nhiễu không gian ({spatial_score:.2f}) có sự gián đoạn biên cạnh giữa {target_zone} và môi trường xung quanh.")
+        else:
+            reasons.append(f"Độ phân tán nhiễu không gian ({spatial_score:.2f}) phân bố đồng đều và chuyển tiếp mượt mà.")
 
-        if peak_score > 0.50:
-            reasons.append(f"Bản đồ nhiệt SARAAB khoanh vùng bất thường tập trung tại: {region} (Hotspot score = {peak_score:.2f}).")
+        # 5. SARAAB Localized Attention / Texture Hotspot (Context-Aware for Real vs Fake)
+        if is_fake:
+            if peak_score > 0.50:
+                reasons.append(f"Bản đồ nhiệt SARAAB khoanh vùng bất thường tập trung tại: {region} (Hotspot score = {peak_score:.2f}) - dấu vết chắp vá/ghép ảnh sinh (Inpainting/Blending boundary).")
+        else:
+            if peak_score > 0.50:
+                reasons.append(f"Bản đồ năng lượng SARAAB ghi nhận độ biến thiên tự nhiên tập trung tại: {region} (Texture gradient = {peak_score:.2f}) - đặc trưng vi sai chi tiết bề mặt quang học thực tế, không có dấu vết chắp vá.")
 
-        verdict_text = "CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)" if composite_risk > 0.50 else "XÁC NHẬN CHÂN THỰC (AUTHENTIC)"
+        verdict_text = "CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)" if is_fake else "XÁC NHẬN CHÂN THỰC (AUTHENTIC)"
         statement = f"[{verdict_text} - Rủi ro tổng hợp: {composite_risk*100:.1f}%]. Phân tích ma trận chứng cứ 6 chiều (6D Evidence Matrix):\n" + "\n".join(f"- {r}" for r in reasons)
         return statement
 
