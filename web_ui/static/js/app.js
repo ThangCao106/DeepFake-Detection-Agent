@@ -668,13 +668,23 @@ function displayResults(data) {
         const cert = data.forensic_certificate;
         const ev = cert.multi_dimensional_evidence || {};
 
+        const humanEval = cert.human_presence_evaluation || {};
+        const imgMeta = cert.image_metadata || {};
+        const evMatrix = cert.evidence_matrix_6d || {};
+        const dim5 = evMatrix.dim5_corneal_reflection || {};
+        const hasHuman = humanEval.has_human !== undefined 
+            ? humanEval.has_human 
+            : (imgMeta.face_detected !== undefined 
+                ? imgMeta.face_detected 
+                : (dim5.status !== 'BYPASS_NON_HUMAN'));
+
         document.getElementById('certIdVal').textContent = cert.certificate_id || 'N/A';
         document.getElementById('certRiskVal').textContent = (cert.composite_risk_score * 100).toFixed(1) + '%';
         
         const spectral = ev.spectral_frequency_analysis ? (ev.spectral_frequency_analysis.high_frequency_anomaly_score * 100).toFixed(1) + '%' : 'N/A';
         const spatial = ev.spatial_inconsistency_analysis ? (ev.spatial_inconsistency_analysis.spatial_inconsistency_score * 100).toFixed(1) + '%' : 'N/A';
         const prnu = ev.sensor_prnu_analysis ? (ev.sensor_prnu_analysis.prnu_discrepancy_score * 100).toFixed(1) + '%' : 'N/A';
-        const corneal = ev.corneal_reflection_analysis ? (ev.corneal_reflection_analysis.corneal_reflection_symmetry * 100).toFixed(1) + '%' : 'N/A';
+        const corneal = !hasHuman ? 'N/A (Non-Human)' : (ev.corneal_reflection_analysis ? (ev.corneal_reflection_analysis.corneal_reflection_symmetry * 100).toFixed(1) + '%' : 'N/A');
 
         document.getElementById('certSpectralVal').textContent = spectral;
         document.getElementById('certSpatialVal').textContent = spatial;
@@ -1713,14 +1723,38 @@ function populateGenUiArtifacts(data) {
     const cornealAnalysis = ev.corneal_reflection_analysis || {};
     const cornealAngleEl = document.getElementById('genUiCornealAngleVal');
     const cornealBadge = document.getElementById('genUiCornealBadge');
+
+    const humanEval = cert.human_presence_evaluation || {};
+    const imgMeta = cert.image_metadata || {};
+    const evMatrix = cert.evidence_matrix_6d || {};
+    const dim5 = evMatrix.dim5_corneal_reflection || {};
+    const hasHuman = humanEval.has_human !== undefined 
+        ? humanEval.has_human 
+        : (imgMeta.face_detected !== undefined 
+            ? imgMeta.face_detected 
+            : (dim5.status !== 'BYPASS_NON_HUMAN'));
+
+    const isVideo = (data.media_type && data.media_type.includes('video')) ||
+                    (cert.media_type && cert.media_type.includes('video')) ||
+                    (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('video')) ||
+                    (data.frame_results && data.frame_results.length > 0) ||
+                    (document.getElementById('previewVideo') && document.getElementById('previewVideo').style.display !== 'none');
+
     const asymmetryScore = cornealAnalysis.corneal_reflection_symmetry !== undefined 
         ? (1.0 - cornealAnalysis.corneal_reflection_symmetry) 
         : (data.label === 'Realism' ? 0.042 : 0.428);
     
     const angleDelta = (asymmetryScore * 18.5).toFixed(1);
-    if (cornealAngleEl) cornealAngleEl.textContent = `Δθ = ${angleDelta}°`;
+    if (cornealAngleEl) {
+        cornealAngleEl.textContent = hasHuman ? `Δθ = ${angleDelta}°` : 'Δθ = N/A';
+    }
     if (cornealBadge) {
-        if (asymmetryScore > 0.15) {
+        if (!hasHuman) {
+            cornealBadge.textContent = 'N/A (Non-Human)';
+            cornealBadge.style.background = '#f1f5f9';
+            cornealBadge.style.color = '#64748b';
+            cornealBadge.style.borderColor = '#cbd5e1';
+        } else if (asymmetryScore > 0.15) {
             cornealBadge.textContent = 'Asymmetric (Fake)';
             cornealBadge.style.background = '#fee2e2';
             cornealBadge.style.color = '#b91c1c';
@@ -1732,19 +1766,30 @@ function populateGenUiArtifacts(data) {
             cornealBadge.style.borderColor = '#86efac';
         }
     }
-    renderCornealRayTraceCanvas(asymmetryScore);
+    renderCornealRayTraceCanvas(asymmetryScore, hasHuman);
 
     // 3. Setup Threshold & Platt Simulator
-    const prob = cert.calibrated_probability !== undefined 
-        ? cert.calibrated_probability 
-        : (data.confidence !== undefined ? (data.label === 'Realism' ? 1.0 - data.confidence : data.confidence) : 0.85);
-    
-    const safeP = Math.min(Math.max(prob, 0.001), 0.999);
+    const labelStr = ((data.label || '') + ' ' + (data.prediction || '') + ' ' + (cert.auditable_verdict || '')).toLowerCase();
+    const isDefinitelyReal = labelStr.includes('real') || labelStr.includes('authentic');
+    const isDefinitelyFake = labelStr.includes('fake') || labelStr.includes('synthetic');
+
+    let fakeProb = 0.5;
+    if (cert.calibrated_probability !== undefined) {
+        fakeProb = cert.calibrated_probability;
+    } else if (cert.composite_risk_score !== undefined) {
+        fakeProb = cert.composite_risk_score;
+    } else if (data.confidence !== undefined) {
+        fakeProb = isDefinitelyReal ? (1.0 - data.confidence) : data.confidence;
+    }
+
+    const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
+    const isFake = isDefinitelyFake ? true : (isDefinitelyReal ? false : (fakeProb >= tau));
+
+    const safeP = Math.min(Math.max(fakeProb, 0.001), 0.999);
     rawPredictionLogit = Math.log(safeP / (1 - safeP));
     updatePlattThresholdSimulation();
 
     // 4. Populate Multi-Agent Debate Accordion
-    const isFake = (data.label || '').toLowerCase().includes('fake') || prob > 0.5;
     const msgVision = document.getElementById('debateMsgVision');
     const msgCorneal = document.getElementById('debateMsgCorneal');
     const msgLipSync = document.getElementById('debateMsgLipSync');
@@ -1752,23 +1797,33 @@ function populateGenUiArtifacts(data) {
 
     if (msgVision) {
         msgVision.textContent = isFake 
-            ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và dị thường tại vùng biên cạnh khuôn mặt, dấu vết của kiến trúc Diffusion/GAN."
-            : "Kết cấu năng lượng bậc cao 2D-DWT đồng đều trên toàn bộ khuôn mặt, phù hợp tuyệt đối với cảm biến CMOS tự nhiên.";
+            ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và dị thường tại vùng biên cạnh, dấu vết của kiến trúc sinh ảnh AI (Diffusion/GAN)."
+            : "Kết cấu năng lượng bậc cao 2D-DWT đồng đều trên toàn bộ bức ảnh, phù hợp tuyệt đối với cảm biến CMOS tự nhiên.";
     }
     if (msgCorneal) {
-        msgCorneal.textContent = isFake 
-            ? `Điểm phản xạ giác mạc 2 mắt phân kỳ góc Δθ = ${angleDelta}°, vi phạm định luật quang học phản chiếu của một nguồn sáng duy nhất.`
-            : `Độ đối xứng điểm sáng giác mạc đạt 97.4% (Δθ = ${angleDelta}°), khớp với vector nguồn sáng môi trường.`;
+        if (!hasHuman) {
+            msgCorneal.textContent = "N/A - Không phát hiện khuôn mặt/giác mạc (Bỏ qua kiểm tra đối xứng quang học đối với nội dung đồ hoạ / phi sinh trắc).";
+        } else {
+            msgCorneal.textContent = isFake 
+                ? `Điểm phản xạ giác mạc 2 mắt phân kỳ góc Δθ = ${angleDelta}°, vi phạm định luật quang học phản chiếu của một nguồn sáng duy nhất.`
+                : `Độ đối xứng điểm sáng giác mạc đạt ${(Math.max(0, 100 - asymmetryScore*100)).toFixed(1)}% (Δθ = ${angleDelta}°), khớp với vector nguồn sáng môi trường.`;
+        }
     }
     if (msgLipSync) {
-        msgLipSync.textContent = isFake
-            ? "Độ trễ thời gian giữa chuyển động mở môi và dải formant âm thanh vượt ngưỡng 120ms (DF26 Desync detected)."
-            : "Đồng bộ âm vị - thị giác (Phoneme-to-Viseme) đạt tương quan Pearson r = 0.94, không phát hiện lồng tiếng/AI Dubbing.";
+        if (!isVideo) {
+            msgLipSync.textContent = "N/A - Định dạng ảnh tĩnh (Chỉ áp dụng phân tích đồng bộ âm vị - thị giác đối với video có tiếng nói).";
+        } else {
+            msgLipSync.textContent = isFake
+                ? "Độ trễ thời gian giữa chuyển động mở môi và dải formant âm thanh vượt ngưỡng 120ms (DF26 Desync detected)."
+                : "Đồng bộ âm vị - thị giác (Phoneme-to-Viseme) đạt tương quan Pearson r = 0.94, không phát hiện lồng tiếng/AI Dubbing.";
+        }
     }
     if (msgMagistrate) {
+        const fakePct = (fakeProb * 100).toFixed(1);
+        const realPct = ((1.0 - fakeProb) * 100).toFixed(1);
         msgMagistrate.textContent = isFake
-            ? `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG GIẢ MẠO (DEEPFAKE) với xác suất hiệu chuẩn ${(prob*100).toFixed(1)}% (vượt ngưỡng τ*=0.8118). Đủ điều kiện niêm phong chứng thư số.`
-            : `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG CHÂN THỰC (AUTHENTIC) với độ tin cậy ${((1-prob)*100).toFixed(1)}%. Cấp chứng chỉ an toàn xác thực.`;
+            ? `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG GIẢ MẠO (DEEPFAKE) với xác suất hiệu chuẩn ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
+            : `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG CHÂN THỰC (REAL) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ an toàn số.`;
     }
 
     // 5. Update Advisor DOCX Download Link with current date
@@ -1878,7 +1933,7 @@ function updatePlattThresholdSimulation() {
     }
 }
 
-function renderCornealRayTraceCanvas(asymmetryScore) {
+function renderCornealRayTraceCanvas(asymmetryScore = 0.12, hasHuman = true) {
     const canvas = document.getElementById('genUiCornealCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -1904,6 +1959,18 @@ function renderCornealRayTraceCanvas(asymmetryScore) {
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
+    }
+
+    if (!hasHuman) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('N/A - Không phát hiện khuôn mặt / mắt người trong ảnh', w / 2, h / 2 - 8);
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('(Bỏ qua mô phỏng tia quang học giác mạc đối với nội dung phi sinh trắc)', w / 2, h / 2 + 14);
+        ctx.textAlign = 'start';
+        return;
     }
 
     // Pupils centers

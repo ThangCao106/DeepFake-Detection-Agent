@@ -1050,43 +1050,43 @@
           <span style="font-size: 0.6rem; color: var(--accent-cyan); font-weight: 600;">LIVE METRICS</span>
         </div>
         <ul class="nav-list">
-          <!-- NAVIGATION TO LIVE FORENSIC GENUI STUDIO -->
-          <li class="nav-item" onclick="window.location.href='/'" style="background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; margin-bottom: 8px; cursor: pointer;">
+          <!-- NAVIGATION TO LIVE AGENT METRICS & LIFECYCLE (OPTION B) -->
+          <li class="nav-item" id="nav-live-agent" onclick="switchTab('live-agent')" style="background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; margin-bottom: 8px; cursor: pointer;">
             <div class="nav-left-part">
-              <span class="nav-icon">🔬</span>
-              <span style="font-weight: 700; color: #a5b4fc;">Live Studio (GenUI)</span>
+              <span class="nav-icon">🤖</span>
+              <span style="font-weight: 700; color: #a5b4fc;">Live Agent</span>
             </div>
-            <span class="nav-badge cyan" style="background: rgba(99, 102, 241, 0.35); color: #c7d2fe;">Port :5000</span>
+            <span class="nav-badge cyan" style="background: rgba(99, 102, 241, 0.35); color: #c7d2fe;">Option B</span>
           </li>
-          <li class="nav-item active" onclick="switchTab('vault')">
+          <li class="nav-item active" id="nav-vault" onclick="switchTab('vault')">
             <div class="nav-left-part">
               <span class="nav-icon">📜</span>
               <span>Tra cứu chứng thư</span>
             </div>
             <span class="nav-badge cyan" id="badgeVaultCount">1,420 Checked</span>
           </li>
-          <li class="nav-item" onclick="switchTab('calibration')">
+          <li class="nav-item" id="nav-calibration" onclick="switchTab('calibration')">
             <div class="nav-left-part">
               <span class="nav-icon">⚖️</span>
               <span>Hiệu chỉnh (ECE/Platt)</span>
             </div>
             <span class="nav-badge emerald" id="badgeCalibEce">ECE 0.0195</span>
           </li>
-          <li class="nav-item" onclick="switchTab('lora')">
+          <li class="nav-item" id="nav-lora" onclick="switchTab('lora')">
             <div class="nav-left-part">
               <span class="nav-icon">🧠</span>
               <span>Test LoRA Adapter</span>
             </div>
             <span class="nav-badge purple" id="badgeLoraDelta">+8.4% Acc</span>
           </li>
-          <li class="nav-item" onclick="switchTab('reports')">
+          <li class="nav-item" id="nav-reports" onclick="switchTab('reports')">
             <div class="nav-left-part">
               <span class="nav-icon">📊</span>
               <span>Báo cáo Pentest/Colab</span>
             </div>
             <span class="nav-badge amber">Daily W42</span>
           </li>
-          <li class="nav-item" onclick="switchTab('settings')">
+          <li class="nav-item" id="nav-settings" onclick="switchTab('settings')">
             <div class="nav-left-part">
               <span class="nav-icon">⚙️</span>
               <span>Cài đặt kết nối</span>
@@ -1107,6 +1107,179 @@
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-workspace">
 
+      <!-- TAB 0: LIVE AGENT (MULTI-AGENT AUTONOMOUS LIFECYCLE) -->
+      <section id="tab-live-agent" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">🤖 Multi-Agent Autonomous Lifecycle (Option B Engine)</h2>
+            <p class="view-desc">Hệ thống điều phối đa Agent tự động hóa Option B: Bóc tách quang phổ 2D, Dò tìm quang học giác mạc, Đồng bộ âm vị - thị giác và Hội đồng thẩm phán tối cao.</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <a href="/" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <span>🔬</span>
+              <span>Cổng Phân Tích Media (Port :5000)</span>
+            </a>
+            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <span>🧭</span>
+              <span>Mở LangGraph Studio</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 4 KPI CARDS -->
+        <div class="grid-4" style="margin-bottom: 1.5rem;">
+          <div class="stat-pill">
+            <span class="label">Vòng đời Tự Động (Option B)</span>
+            <span class="val" style="color: var(--accent-emerald);">4 Agents Active</span>
+            <span class="sub">Autonomous Multi-Agent Loop</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Hiệu chuẩn Quyết định</span>
+            <span class="val" style="color: var(--accent-cyan);">τ* = 0.8118</span>
+            <span class="sub">Platt Scaling T* = 1.6178 (ECE 0.0195)</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Daily Threads Crawler</span>
+            <span class="val" style="color: #b388ff;">Option C Synced</span>
+            <span class="sub">SHA-256 Deduplicated</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Tiêu chuẩn Pháp lý</span>
+            <span class="val" style="color: var(--accent-amber);">EU AI Act Art. 50</span>
+            <span class="sub">Ed25519-SHA256 Digital Vault</span>
+          </div>
+        </div>
+
+        <!-- 4 AGENT ARCHITECTURE CARDS -->
+        <div class="grid-2" style="margin-bottom: 1.5rem;">
+          <!-- Agent 1 -->
+          <div class="card" style="border-left: 3px solid var(--accent-cyan);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">👁️</span>
+                <div>
+                  <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">1. Vision & Spectral Agent</h4>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">2D-DWT Haar & Sensor PRNU Fingerprint</div>
+                </div>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
+              Bóc tách 4 dải tần số 2D-DWT (LL, LH, HL, HH) và biến sai nhiễu cảm biến CMOS (Photo-Response Non-Uniformity). Phát hiện lưới tuần hoàn đặc trưng của các mô hình sinh ảnh Diffusion/GAN.
+            </p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+              <span>Ngưỡng Dị Thường Phổ (E_high): <strong>&gt; 0.40</strong></span>
+              <span>PRNU Fingerprint Discrepancy: <strong>&gt; 0.35</strong></span>
+            </div>
+          </div>
+
+          <!-- Agent 2 -->
+          <div class="card" style="border-left: 3px solid #7c3aed;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">🔬</span>
+                <div>
+                  <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">2. Ophthalmic Corneal Agent</h4>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Specular Reflection Ray-Tracing (Δθ)</div>
+                </div>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE (CONDITIONAL)</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
+              Mô phỏng vector tia sáng phản chiếu trên giác mạc 2 mắt (Left Pupil vs Right Pupil). Tự động bỏ qua an toàn (BYPASS) đối với ảnh phi sinh trắc / đồ họa không chứa khuôn mặt người.
+            </p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+              <span>Góc Phân Kỳ Tối Đa (Δθ Cutoff): <strong>2.8°</strong></span>
+              <span>Non-Human Auto-Bypass: <strong style="color: var(--accent-emerald);">Kích Hoạt (Safe)</strong></span>
+            </div>
+          </div>
+
+          <!-- Agent 3 -->
+          <div class="card" style="border-left: 3px solid #ec4899;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">👄</span>
+                <div>
+                  <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">3. LipSync Temporal Agent</h4>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Audio-Visual Phoneme-to-Viseme Sync</div>
+                </div>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.3);">VIDEO ONLY</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
+              Phân tích tương quan chuỗi thời gian giữa dạng sóng âm thanh (MFCC/Formant) và chuyển động mở môi của đối tượng nói trong video. Tự động chuyển N/A khi phân tích ảnh tĩnh.
+            </p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+              <span>Ngưỡng Lệch Pha (Desync): <strong>&gt; 120ms</strong></span>
+              <span>Chế độ Ảnh Tĩnh: <strong style="color: var(--accent-cyan);">Auto N/A (Bỏ qua)</strong></span>
+            </div>
+          </div>
+
+          <!-- Agent 4 -->
+          <div class="card" style="border-left: 3px solid #f59e0b;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.5rem;">⚖️</span>
+                <div>
+                  <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">4. Chief Magistrate Agent</h4>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Bayesian Platt Calibration & XAI Art. 50</div>
+                </div>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">AUTONOMOUS</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
+              Hội đồng thẩm phán tối cao điều phối tranh biện giữa các Agent, áp dụng hiệu chuẩn Platt Scaling với nhiệt độ T*=1.6178, đối chiếu ngưỡng Youden τ*=0.8118 và lập hồ sơ chứng thư số.
+            </p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+              <span>Ngưỡng Youden τ*: <strong>0.8118</strong></span>
+              <span>Platt Scaling T*: <strong>1.6178</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIFECYCLE PIPELINE FLOW -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-title" style="margin-bottom: 1rem;">
+            <span>🔄</span>
+            <span>Quy Trình Vòng Đời Tự Động Hóa Multi-Agent Lifecycle (Autonomous Orchestration)</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--bg-darker); padding: 0.8rem 1rem; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-cyan);">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); min-width: 80px;">STAGE 1</span>
+              <div style="flex: 1;">
+                <strong style="color: #fff; font-size: 0.82rem;">Media Ingestion & Face Detection Check</strong>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Phát hiện khuôn mặt bằng Haar/MTCNN, xác định loại media (Ảnh tĩnh vs Video đa khung hình).</p>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald);">AUTOMATED</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--bg-darker); padding: 0.8rem 1rem; border-radius: var(--radius-sm); border-left: 3px solid #7c3aed;">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: #7c3aed; min-width: 80px;">STAGE 2</span>
+              <div style="flex: 1;">
+                <strong style="color: #fff; font-size: 0.82rem;">Parallel Multi-Agent Feature Extraction</strong>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Đồng thời trích xuất DWT 2D, PRNU sensor noise, Corneal ray-tracing (nếu có mặt người), và LipSync (nếu có audio).</p>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald);">PARALLEL</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--bg-darker); padding: 0.8rem 1rem; border-radius: var(--radius-sm); border-left: 3px solid #f59e0b;">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: #f59e0b; min-width: 80px;">STAGE 3</span>
+              <div style="flex: 1;">
+                <strong style="color: #fff; font-size: 0.82rem;">Debate Resolution & Platt Calibration</strong>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Chief Magistrate đối chiếu bằng chứng đa chiều, hiệu chuẩn xác suất z -&gt; p_calib qua Platt T*, phân định nhị phân theo Youden τ*.</p>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald);">CALIBRATED</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; background: var(--bg-darker); padding: 0.8rem 1rem; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-emerald); min-width: 80px;">STAGE 4</span>
+              <div style="flex: 1;">
+                <strong style="color: #fff; font-size: 0.82rem;">Digital Vault Sealing & Audit Logging</strong>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Niêm phong chứng thư số với chữ ký Ed25519-SHA256, lưu SQLite memory, và sẵn sàng xuất báo cáo DOCX chuẩn VNU-UET.</p>
+              </div>
+              <span class="badge-sub" style="color: var(--accent-emerald);">SEALED</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- TAB 1: TRA CỨU CHỨNG THƯ (FORENSIC CERTIFICATE VAULT) -->
       <section id="tab-vault" class="tab-view active">
         <div class="view-header">
@@ -1114,10 +1287,20 @@
             <h2 class="view-title">📜 Forensic Certificate Vault</h2>
             <p class="view-desc">Tra cứu biên bản giám định hình ảnh số, bằng chứng 6 chiều (PRNU, FFT, Coherence) và ảnh gốc đã được bảo chứng mật mã.</p>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="exportModuleReport('vault')">
-            <span>📄</span>
-            <span>Xuất Biên Bản Giám Định</span>
-          </button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <a href="/api/orchestrator/download/docx/latest" class="btn btn-primary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; font-weight: 600;">
+              <span>📥</span>
+              <span>Xuất Hồ Sơ Giám Định Thầy Hướng Dẫn (.docx)</span>
+            </a>
+            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <span>🧭</span>
+              <span>Dashboard LangGraph (/orchestrator)</span>
+            </a>
+            <button class="btn btn-secondary btn-sm" onclick="exportModuleReport('vault')">
+              <span>📄</span>
+              <span>Xuất Báo Cáo Vault (.md)</span>
+            </button>
+          </div>
         </div>
 
         <div class="card" style="margin-bottom: 1.5rem;">
@@ -1830,12 +2013,10 @@
       const target = document.getElementById(`tab-${tabId}`);
       if (target) target.classList.add('active');
 
-      const navs = document.querySelectorAll('.nav-item');
-      if (tabId === 'vault' && navs[0]) navs[0].classList.add('active');
-      if (tabId === 'calibration' && navs[1]) navs[1].classList.add('active');
-      if (tabId === 'lora' && navs[2]) navs[2].classList.add('active');
-      if (tabId === 'reports' && navs[3]) navs[3].classList.add('active');
-      if (tabId === 'settings' && navs[4]) navs[4].classList.add('active');
+      const navEl = document.getElementById(`nav-${tabId}`);
+      if (navEl) {
+        navEl.classList.add('active');
+      }
 
       // Re-trigger Math render if calibration is opened
       if (tabId === 'calibration') {
