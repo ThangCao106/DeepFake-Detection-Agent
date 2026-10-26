@@ -322,9 +322,56 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(report_content)
         
-    print(f"   [Reporter] Report generated: {report_file}")
+    print(f"   [Reporter] Markdown report generated: {report_file}")
     
-    # 2. Append/Update row in paper_v2.md if exists
+    # 2. Generate Academic Formal Word (.docx) Report for Thesis Advisor
+    docx_file = report_dir / f"Bao_cao_tien_do_ngay_{date_str}.docx"
+    try:
+        from agents.report_generator import generate_academic_daily_docx, sync_report_to_gdrive, send_email_notification
+        generate_academic_daily_docx(state, str(docx_file))
+        
+        # 3. Synchronize both reports to Google Drive 5 TB
+        if not state.get("dry_run", False):
+            sync_report_to_gdrive(str(docx_file), str(report_file), date_str)
+            send_email_notification(state, str(docx_file))
+    except Exception as re:
+        print(f"   [Reporter Notice] Academic docx/sync notice: {re}")
+    
+    # 4. Save history record for Web Dashboard (Option C)
+    history_file = report_dir / "daily_history.json"
+    history_data = []
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8") as hf:
+                history_data = json.load(hf)
+        except Exception:
+            history_data = []
+            
+    # Upsert current day entry
+    current_entry = {
+        "date": date_str,
+        "run_id": state.get("run_id"),
+        "auc": auc,
+        "eer": eer,
+        "fpr": fpr,
+        "loss": loss,
+        "corneal_asymmetry": state.get("corneal_asymmetry_avg", 0.118),
+        "lipsync_correlation": state.get("lipsync_correlation_avg", 0.945),
+        "harvested_images": metrics.get("images", 1000),
+        "harvested_videos": metrics.get("videos", 100),
+        "harvested_audios": metrics.get("audios", 50),
+        "retrain_attempts": state.get("retrain_attempts", 0),
+        "docx_path": str(docx_file),
+        "md_path": str(report_file),
+        "timestamp": time.time()
+    }
+    history_data = [h for h in history_data if h.get("date") != date_str]
+    history_data.append(current_entry)
+    with open(history_file, "w", encoding="utf-8") as hf:
+        json.dump(history_data, hf, indent=2, ensure_ascii=False)
+    print(f"   [Reporter] Historical metrics updated in {history_file} ({len(history_data)} entries).")
+
+    # 5. Append/Update row in paper_v2.md if exists
     paper_path = PROJECT_ROOT / "paper_v2.md"
     paper_updated = False
     if paper_path.exists():
@@ -351,6 +398,7 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
     return {
         "current_step": "completed",
         "report_markdown_path": str(report_file),
+        "report_docx_path": str(docx_file),
         "paper_updated": paper_updated,
         "executive_summary": summary_text,
         "agent_logs": state.get("agent_logs", []) + [log_msg]
