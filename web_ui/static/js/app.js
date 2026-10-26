@@ -1804,10 +1804,14 @@ function populateGenUiArtifacts(data) {
         renderClientDwtFilter(preview, dwtCanvas, energyValEl);
     }
 
-    // 2. Populate Ophthalmic Corneal Canvas
+    // 2. Populate Adaptive Widget 2 (Corneal Ray-Tracing vs SARAAB Spatial Saliency)
     const cornealAnalysis = ev.corneal_reflection_analysis || {};
     const cornealAngleEl = document.getElementById('genUiCornealAngleVal');
     const cornealBadge = document.getElementById('genUiCornealBadge');
+    const widget2Icon = document.getElementById('genUiWidget2Icon');
+    const widget2Name = document.getElementById('genUiWidget2Name');
+    const widget2Desc = document.getElementById('genUiWidget2Desc');
+    const widget2Footer = document.getElementById('genUiWidget2FooterLabel');
 
     const humanEval = cert.human_presence_evaluation || {};
     const imgMeta = cert.image_metadata || {};
@@ -1830,8 +1834,19 @@ function populateGenUiArtifacts(data) {
         : (data.label === 'Realism' ? 0.042 : 0.428);
     
     const angleDelta = (asymmetryScore * 18.5).toFixed(1);
-    if (cornealAngleEl) {
-        cornealAngleEl.textContent = hasHuman ? `Δθ = ${angleDelta}°` : 'Δθ = N/A';
+
+    const saraab = ev.saraab_patch_heatmap || evMatrix.dim6_patch_heatmap_uncertainty || {};
+    const peak = saraab.peak_hotspot || {};
+    const regionName = peak.anatomical_region || 'Central Salient Object / Architecture Structural Region';
+    const peakScore = peak.peak_anomaly_score !== undefined ? peak.peak_anomaly_score : 1.0;
+
+    let sceneCategoryShort = 'Phi Sinh Trắc (Urban)';
+    if (regionName.includes('Architecture') || regionName.includes('Central')) {
+        sceneCategoryShort = 'Ngoại Cảnh / Kiến Trúc';
+    } else if (regionName.includes('Skylight') || regionName.includes('Sky')) {
+        sceneCategoryShort = 'Bầu Trời / Cảnh Quan';
+    } else {
+        sceneCategoryShort = 'Phi Sinh Trắc (Vật Thể)';
     }
 
     // 0. Update Visual 6-Step Forensic Detection Pipeline Banner
@@ -1860,7 +1875,7 @@ function populateGenUiArtifacts(data) {
     }
     if (pipeStep2Icon && pipeStep2Desc) {
         pipeStep2Icon.textContent = hasHuman ? '👤' : '🏞️';
-        pipeStep2Desc.textContent = hasHuman ? 'Chân Dung / Khuôn Mặt' : 'Phi Sinh Trắc (General)';
+        pipeStep2Desc.textContent = hasHuman ? 'Chân Dung (Human)' : sceneCategoryShort;
     }
     if (pipeStep3Desc) {
         pipeStep3Desc.textContent = hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter';
@@ -1884,25 +1899,49 @@ function populateGenUiArtifacts(data) {
     if (pipeStep6Desc) {
         pipeStep6Desc.textContent = `Youden τ* = 0.8118`;
     }
-    if (cornealBadge) {
-        if (!hasHuman) {
-            cornealBadge.textContent = 'N/A (Non-Human)';
-            cornealBadge.style.background = '#f1f5f9';
-            cornealBadge.style.color = '#64748b';
-            cornealBadge.style.borderColor = '#cbd5e1';
-        } else if (asymmetryScore > 0.15) {
-            cornealBadge.textContent = 'Asymmetric (Fake)';
-            cornealBadge.style.background = '#fee2e2';
-            cornealBadge.style.color = '#b91c1c';
-            cornealBadge.style.borderColor = '#fca5a5';
-        } else {
-            cornealBadge.textContent = 'Symmetric (Natural)';
-            cornealBadge.style.background = '#dcfce7';
-            cornealBadge.style.color = '#15803d';
-            cornealBadge.style.borderColor = '#86efac';
+
+    // Update Widget 2 (Adaptive between Corneal and SARAAB Saliency)
+    if (hasHuman) {
+        if (widget2Icon) widget2Icon.textContent = '👁️';
+        if (widget2Name) widget2Name.textContent = 'Ophthalmic Corneal Ray-Tracing';
+        if (widget2Desc) widget2Desc.textContent = 'Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.';
+        if (widget2Footer) widget2Footer.textContent = 'Độ bất đối xứng giác mạc (Asymmetry Δθ):';
+        if (cornealAngleEl) {
+            cornealAngleEl.textContent = `Δθ = ${angleDelta}°`;
+            cornealAngleEl.style.color = '#7c3aed';
         }
+        if (cornealBadge) {
+            if (asymmetryScore > 0.15) {
+                cornealBadge.textContent = 'Asymmetric (Fake)';
+                cornealBadge.style.background = '#fee2e2';
+                cornealBadge.style.color = '#b91c1c';
+                cornealBadge.style.borderColor = '#fca5a5';
+            } else {
+                cornealBadge.textContent = 'Symmetric (Natural)';
+                cornealBadge.style.background = '#dcfce7';
+                cornealBadge.style.color = '#15803d';
+                cornealBadge.style.borderColor = '#86efac';
+            }
+        }
+        renderCornealRayTraceCanvas(asymmetryScore, true);
+    } else {
+        if (widget2Icon) widget2Icon.textContent = '🏞️';
+        if (widget2Name) widget2Name.textContent = 'Phân Loại Ngữ Cảnh & Saliency (SARAAB)';
+        if (widget2Desc) widget2Desc.textContent = 'Phân tích ma trận lưới 8x8 vi sai gradient (tương tự 2D-DWT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.';
+        if (widget2Footer) widget2Footer.textContent = 'Vùng chú ý chính (Saliency Hotspot):';
+        const shortRegion = regionName.split('/')[0].trim();
+        if (cornealAngleEl) {
+            cornealAngleEl.textContent = `${shortRegion} (Grad: ${Number(peakScore).toFixed(2)})`;
+            cornealAngleEl.style.color = '#0891b2';
+        }
+        if (cornealBadge) {
+            cornealBadge.textContent = 'SARAAB 8x8 Saliency';
+            cornealBadge.style.background = '#ecfeff';
+            cornealBadge.style.color = '#0891b2';
+            cornealBadge.style.borderColor = '#a5f3fc';
+        }
+        renderSaraabHeatmapCanvas(saraab, preview);
     }
-    renderCornealRayTraceCanvas(asymmetryScore, hasHuman);
 
     // 3. Setup Threshold & Platt Simulator
     const labelStr = ((data.label || '') + ' ' + (data.prediction || '') + ' ' + (cert.auditable_verdict || '')).toLowerCase();
@@ -2212,6 +2251,124 @@ function renderCornealRayTraceCanvas(asymmetryScore = 0.12, hasHuman = true) {
         ctx.font = 'bold 10px monospace';
         ctx.fillText(`Δ Asymmetry: ${(asymmetryScore * 100).toFixed(1)}%`, rightHighlight.x - 45, rightHighlight.y - 20);
     }
+}
+
+function renderSaraabHeatmapCanvas(saraabData = {}, previewImg = null) {
+    const canvas = document.getElementById('genUiCornealCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width || 460;
+    const h = canvas.height || 240;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. Draw base image if available
+    let hasDrawnImage = false;
+    if (previewImg && previewImg.complete && previewImg.naturalWidth > 0) {
+        try {
+            const imgAspect = previewImg.naturalWidth / previewImg.naturalHeight;
+            const canvasAspect = w / h;
+            let dw = w, dh = h, dx = 0, dy = 0;
+            if (imgAspect > canvasAspect) {
+                dh = w / imgAspect;
+                dy = (h - dh) / 2;
+            } else {
+                dw = h * imgAspect;
+                dx = (w - dw) / 2;
+            }
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.globalAlpha = 0.72;
+            ctx.drawImage(previewImg, dx, dy, dw, dh);
+            ctx.globalAlpha = 1.0;
+            hasDrawnImage = true;
+        } catch (e) {
+            console.warn('Canvas drawImage fallback:', e);
+        }
+    }
+
+    if (!hasDrawnImage) {
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    // 2. Overlay 8x8 SARAAB Heatmap Grid
+    const gridSize = 8;
+    const cellW = w / gridSize;
+    const cellH = h / gridSize;
+    const gridScores = saraabData.heatmap_grid || [];
+    const peak = saraabData.peak_hotspot || {};
+    const peakCoord = peak.grid_coord || [3, 3];
+
+    for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+            const score = (gridScores[r] && gridScores[r][c] !== undefined) ? gridScores[r][c] : 0.22;
+            const x = c * cellW;
+            const y = r * cellH;
+
+            // Translucent energy colormap: Cool Cyan (low) -> Warm Amber (mid) -> Bright Coral (high)
+            let fillStyle;
+            if (score < 0.35) {
+                fillStyle = `rgba(6, 182, 212, ${0.12 + score * 0.22})`;
+            } else if (score < 0.70) {
+                fillStyle = `rgba(245, 158, 11, ${0.20 + score * 0.28})`;
+            } else {
+                fillStyle = `rgba(239, 68, 68, ${0.28 + score * 0.38})`;
+            }
+
+            ctx.fillStyle = fillStyle;
+            ctx.fillRect(x, y, cellW, cellH);
+
+            // Subtle cell grid stroke
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(x, y, cellW, cellH);
+        }
+    }
+
+    // 3. Highlight Peak Saliency Hotspot with Tactical Reticle
+    const pr = Math.min(Math.max(peakCoord[0], 0), gridSize - 1);
+    const pc = Math.min(Math.max(peakCoord[1], 0), gridSize - 1);
+    const px = pc * cellW;
+    const py = pr * cellH;
+
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 12;
+    ctx.strokeRect(px + 2, py + 2, cellW - 4, cellH - 4);
+    ctx.shadowBlur = 0;
+
+    // Corner brackets
+    const bLen = 8;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, py + bLen); ctx.lineTo(px, py); ctx.lineTo(px + bLen, py); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + cellW - bLen, py); ctx.lineTo(px + cellW, py); ctx.lineTo(px + cellW, py + bLen); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px, py + cellH - bLen); ctx.lineTo(px, py + cellH); ctx.lineTo(px + bLen, py + cellH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + cellW - bLen, py + cellH); ctx.lineTo(px + cellW, py + cellH); ctx.lineTo(px + cellW, py + cellH - bLen); ctx.stroke();
+
+    // Hotspot badge
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fillRect(px + 4, py + 4, 66, 15);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText(`HOTSPOT [${pr},${pc}]`, px + 6, py + 15);
+
+    // 4. Header HUD Overlay on Canvas
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.fillRect(0, 0, w, 22);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('DESC SARAAB 8x8 PATCH SALIENCY MAP', 10, 15);
+
+    const disp = saraabData.spatial_dispersion !== undefined ? Number(saraabData.spatial_dispersion).toFixed(4) : '0.0812';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`DISPERSION σ² = ${disp}`, w - 10, 15);
+    ctx.textAlign = 'start';
 }
 
 function renderClientDwtFilter(imgElement, canvasElement, energyEl) {

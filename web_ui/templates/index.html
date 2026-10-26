@@ -747,23 +747,23 @@
                             </div>
                         </div>
 
-                        <!-- WIDGET 2: Ophthalmic Corneal Ray-tracing Widget -->
+                        <!-- WIDGET 2: Adaptive Forensic Evidence Widget (Human Corneal vs SARAAB Context Saliency) -->
                         <div class="genui-artifact-card" id="genUiCornealCard">
                             <div class="genui-artifact-header">
-                                <div class="genui-artifact-title">
-                                    <span>👁️</span>
-                                    <span>Ophthalmic Corneal Ray-Tracing</span>
+                                <div class="genui-artifact-title" id="genUiWidget2Title">
+                                    <span id="genUiWidget2Icon">👁️</span>
+                                    <span id="genUiWidget2Name">Ophthalmic Corneal Ray-Tracing</span>
                                 </div>
                                 <span class="genui-artifact-badge" id="genUiCornealBadge" style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">Specular Analysis</span>
                             </div>
-                            <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
+                            <p id="genUiWidget2Desc" style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
                                 Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.
                             </p>
                             <div class="corneal-canvas-box">
                                 <canvas id="genUiCornealCanvas" width="460" height="240"></canvas>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.78rem;">
-                                <span style="color: #64748b;">Độ bất đối xứng giác mạc (Asymmetry Δθ):</span>
+                                <span id="genUiWidget2FooterLabel" style="color: #64748b;">Độ bất đối xứng giác mạc (Asymmetry Δθ):</span>
                                 <strong id="genUiCornealAngleVal" style="color: #7c3aed; font-family: monospace;">Δθ = 0.0°</strong>
                             </div>
                         </div>

@@ -1828,11 +1828,11 @@ body {
 
 .pipeline-step-node {
     flex: 1;
-    min-width: 125px;
+    min-width: 110px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 10px 10px;
+    padding: 10px 8px;
     text-align: center;
     transition: all 0.2s ease;
 }
@@ -1867,17 +1867,19 @@ body {
 }
 
 .pipeline-step-node .step-name {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 700;
     color: #1e293b;
     margin-bottom: 2px;
-    white-space: nowrap;
+    line-height: 1.25;
+    word-break: break-word;
 }
 
 .pipeline-step-node .step-desc {
     font-size: 0.68rem;
     color: #64748b;
-    white-space: nowrap;
+    line-height: 1.25;
+    word-break: break-word;
 }
 
 .pipeline-arrow {
