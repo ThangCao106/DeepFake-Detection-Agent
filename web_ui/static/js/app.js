@@ -1924,10 +1924,9 @@ function populateGenUiArtifacts(data) {
             }
         }
         renderCornealRayTraceCanvas(asymmetryScore, true);
-    } else {
         if (widget2Icon) widget2Icon.textContent = '🏞️';
-        if (widget2Name) widget2Name.textContent = 'Phân Loại Ngữ Cảnh & Saliency (SARAAB)';
-        if (widget2Desc) widget2Desc.textContent = 'Phân tích ma trận lưới 8x8 vi sai gradient (tương tự 2D-DWT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.';
+        if (widget2Name) widget2Name.textContent = 'Phân Tích Ngữ Cảnh & Bản Đồ Chú Ý Không Gian';
+        if (widget2Desc) widget2Desc.textContent = 'Phân tích ma trận lưới 8x8 vi sai gradient bậc 1 (tương thích ViT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.';
         if (widget2Footer) widget2Footer.textContent = 'Vùng chú ý chính (Saliency Hotspot):';
         const shortRegion = regionName.split('/')[0].trim();
         if (cornealAngleEl) {
@@ -1935,7 +1934,7 @@ function populateGenUiArtifacts(data) {
             cornealAngleEl.style.color = '#0891b2';
         }
         if (cornealBadge) {
-            cornealBadge.textContent = 'SARAAB 8x8 Saliency';
+            cornealBadge.textContent = 'ViT Spatial Patch Grid';
             cornealBadge.style.background = '#ecfeff';
             cornealBadge.style.color = '#0891b2';
             cornealBadge.style.borderColor = '#a5f3fc';
@@ -2361,7 +2360,7 @@ function renderSaraabHeatmapCanvas(saraabData = {}, previewImg = null) {
     ctx.fillRect(0, 0, w, 22);
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 10px monospace';
-    ctx.fillText('DESC SARAAB 8x8 PATCH SALIENCY MAP', 10, 15);
+    ctx.fillText('SPATIAL PATCH SALIENCY MAP (ViT 8x8 GRID)', 10, 15);
 
     const disp = saraabData.spatial_dispersion !== undefined ? Number(saraabData.spatial_dispersion).toFixed(4) : '0.0812';
     ctx.fillStyle = '#94a3b8';

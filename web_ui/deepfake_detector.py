@@ -561,13 +561,13 @@ class XAIExplainabilityGenerator:
         else:
             reasons.append(f"Độ phân tán nhiễu không gian ({spatial_score:.2f}) phân bố đồng đều và chuyển tiếp mượt mà.")
 
-        # 5. SARAAB Localized Attention / Texture Hotspot (Context-Aware for Real vs Fake)
+        # 5. Spatial Patch-Saliency / Localized Attention Hotspot (Context-Aware for Real vs Fake)
         if is_fake:
             if peak_score > 0.50:
-                reasons.append(f"Bản đồ nhiệt SARAAB khoanh vùng bất thường tập trung tại: {region} (Hotspot score = {peak_score:.2f}) - dấu vết chắp vá/ghép ảnh sinh (Inpainting/Blending boundary).")
+                reasons.append(f"Bản đồ năng lượng không gian (Spatial Patch Saliency) khoanh vùng bất thường tập trung tại: {region} (Hotspot score = {peak_score:.2f}) - dấu vết chắp vá/ghép ảnh sinh (Inpainting/Blending boundary).")
         else:
             if peak_score > 0.50:
-                reasons.append(f"Bản đồ năng lượng SARAAB ghi nhận độ biến thiên tự nhiên tập trung tại: {region} (Texture gradient = {peak_score:.2f}) - đặc trưng vi sai chi tiết bề mặt quang học thực tế, không có dấu vết chắp vá.")
+                reasons.append(f"Bản đồ năng lượng không gian (Spatial Patch Saliency) ghi nhận độ biến thiên tự nhiên tập trung tại: {region} (Texture gradient = {peak_score:.2f}) - đặc trưng vi sai chi tiết bề mặt quang học thực tế, không có dấu vết chắp vá.")
 
         verdict_text = "CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)" if is_fake else "XÁC NHẬN CHÂN THỰC (AUTHENTIC)"
         statement = f"[{verdict_text} - Rủi ro tổng hợp: {composite_risk*100:.1f}%]. Phân tích ma trận chứng cứ 6 chiều (6D Evidence Matrix):\n" + "\n".join(f"- {r}" for r in reasons)
@@ -897,7 +897,7 @@ class DeepfakeDetector:
                     "details": corneal_analysis
                 },
                 "dim6_patch_heatmap_uncertainty": {
-                    "dimension_name": "6. SARAAB Localized Manipulation Hotspots & Shannon Entropy",
+                    "dimension_name": "6. Spatial Patch-Saliency Grid & Shannon Entropy",
                     "peak_hotspot": spatial_patch_heatmap.get("peak_hotspot", {}),
                     "prediction_entropy": normalized_entropy,
                     "status": "LOCALIZED_TAMPERING" if heatmap_peak_val > 0.55 else "HOMOGENEOUS"

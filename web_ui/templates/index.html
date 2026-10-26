@@ -720,7 +720,28 @@
                     <!-- ========================================================= -->
                     <div class="genui-studio-grid" id="genUiInteractiveStudio">
                         
-                        <!-- WIDGET 1: 2D-DWT Wavelet High-Frequency Split-Slider -->
+                        <!-- WIDGET 1: Adaptive Forensic Evidence (Spatial Patch-Saliency vs Human Corneal Ray-Tracing) -->
+                        <div class="genui-artifact-card" id="genUiCornealCard">
+                            <div class="genui-artifact-header">
+                                <div class="genui-artifact-title" id="genUiWidget2Title">
+                                    <span id="genUiWidget2Icon">👁️</span>
+                                    <span id="genUiWidget2Name">Ophthalmic Corneal Ray-Tracing</span>
+                                </div>
+                                <span class="genui-artifact-badge" id="genUiCornealBadge" style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">Specular Analysis</span>
+                            </div>
+                            <p id="genUiWidget2Desc" style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
+                                Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.
+                            </p>
+                            <div class="corneal-canvas-box">
+                                <canvas id="genUiCornealCanvas" width="460" height="240"></canvas>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.78rem;">
+                                <span id="genUiWidget2FooterLabel" style="color: #64748b;">Độ bất đối xứng giác mạc (Asymmetry Δθ):</span>
+                                <strong id="genUiCornealAngleVal" style="color: #7c3aed; font-family: monospace;">Δθ = 0.0°</strong>
+                            </div>
+                        </div>
+
+                        <!-- WIDGET 2: 2D-DWT Wavelet High-Frequency Split-Slider -->
                         <div class="genui-artifact-card" id="genUiSpectralCard">
                             <div class="genui-artifact-header">
                                 <div class="genui-artifact-title">
@@ -747,27 +768,6 @@
                             </div>
                         </div>
 
-                        <!-- WIDGET 2: Adaptive Forensic Evidence Widget (Human Corneal vs SARAAB Context Saliency) -->
-                        <div class="genui-artifact-card" id="genUiCornealCard">
-                            <div class="genui-artifact-header">
-                                <div class="genui-artifact-title" id="genUiWidget2Title">
-                                    <span id="genUiWidget2Icon">👁️</span>
-                                    <span id="genUiWidget2Name">Ophthalmic Corneal Ray-Tracing</span>
-                                </div>
-                                <span class="genui-artifact-badge" id="genUiCornealBadge" style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">Specular Analysis</span>
-                            </div>
-                            <p id="genUiWidget2Desc" style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
-                                Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.
-                            </p>
-                            <div class="corneal-canvas-box">
-                                <canvas id="genUiCornealCanvas" width="460" height="240"></canvas>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.78rem;">
-                                <span id="genUiWidget2FooterLabel" style="color: #64748b;">Độ bất đối xứng giác mạc (Asymmetry Δθ):</span>
-                                <strong id="genUiCornealAngleVal" style="color: #7c3aed; font-family: monospace;">Δθ = 0.0°</strong>
-                            </div>
-                        </div>
-
                         <!-- WIDGET 3: Real-Time Decision Threshold (tau*) & Platt Scaling Slider -->
                         <div class="genui-artifact-card" id="genUiThresholdCard">
                             <div class="genui-artifact-header">
@@ -778,14 +778,14 @@
                                 <span class="genui-artifact-badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">EU AI Act Art. 50</span>
                             </div>
                             <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 12px;">
-                                Tương tác điều chỉnh ngưỡng Youden \(\tau^*\) và Nhiệt độ hiệu chuẩn Platt \(T^*\) để kiểm tra độ nhạy phán quyết theo thời gian thực.
+                                Tương tác điều chỉnh ngưỡng Youden (τ*) và Nhiệt độ hiệu chuẩn Platt (T*) để kiểm tra độ nhạy phán quyết theo thời gian thực.
                             </p>
                             
                             <div class="threshold-panel">
                                 <!-- Tau Slider -->
                                 <div class="threshold-slider-group">
                                     <div class="threshold-slider-header">
-                                        <span>Ngưỡng phân định tối ưu Youden (\(\tau^*\)):</span>
+                                        <span>Ngưỡng phân định tối ưu Youden (τ*):</span>
                                         <span class="val" id="tauSliderVal">0.8118</span>
                                     </div>
                                     <input type="range" class="threshold-range-input" id="tauSlider" min="0.10" max="0.95" step="0.005" value="0.8118">
@@ -799,7 +799,7 @@
                                 <!-- Temperature Slider -->
                                 <div class="threshold-slider-group" style="margin-bottom: 0;">
                                     <div class="threshold-slider-header">
-                                        <span>Nhiệt độ hiệu chuẩn Platt (\(T^*\)):</span>
+                                        <span>Nhiệt độ hiệu chuẩn Platt (T*):</span>
                                         <span class="val" id="tempSliderVal">1.6178</span>
                                     </div>
                                     <input type="range" class="threshold-range-input" id="tempSlider" min="0.5" max="3.0" step="0.05" value="1.6178">
@@ -817,7 +817,7 @@
                                 </div>
                             </div>
                         </div>
-                        </div>
+                    </div>
                     </div>
 
                     <!-- Video Frame-by-Frame Results Container -->
