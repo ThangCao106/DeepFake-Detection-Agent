@@ -76,6 +76,36 @@ class HumanPresenceDetector:
         detected_faces = []
         evidence = []
 
+        def _is_valid_face_candidate(bx, by, bw, bh):
+            """
+            Validates that a bounding box is geometrically and anatomically a real human face.
+            Filters out sea rocks, water reflections, horizon edges, clouds, and foliage.
+            """
+            if bw < 26 or bh < 26:
+                return False
+            aspect = bw / float(bh)
+            if aspect < 0.55 or aspect > 1.75:
+                return False
+            x0, y0 = max(0, bx), max(0, by)
+            x1, y1 = min(w_img, bx + bw), min(h_img, by + bh)
+            if (x1 - x0) < 22 or (y1 - y0) < 22:
+                return False
+            face_roi = img_np[y0:y1, x0:x1]
+            try:
+                face_ycbcr = cv2.cvtColor(face_roi, cv2.COLOR_RGB2YCrCb)
+                cr = face_ycbcr[:, :, 1]
+                cb = face_ycbcr[:, :, 2]
+                skin_mask = (cr >= 133) & (cr <= 173) & (cb >= 77) & (cb <= 127)
+                face_skin_pct = float(np.mean(skin_mask) * 100)
+                y_std = float(np.std(face_ycbcr[:, :, 0]))
+                # A true human face ROI contains at least 16% skin tones (forehead, cheeks, chin)
+                # and non-flat luminance variance (y_std >= 8.0)
+                if face_skin_pct < 16.0 or y_std < 8.0:
+                    return False
+                return True
+            except Exception:
+                return False
+
         # 1. Image preprocessing: Grayscale + CLAHE for local contrast normalization
         gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
         try:
@@ -92,11 +122,11 @@ class HumanPresenceDetector:
         # Pass 1: Frontal Face Alt2 & Default & Alt
         cascades_to_try = []
         if 'haarcascade_frontalface_alt2.xml' in CV2_CASCADES:
-            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt2.xml'], 1.08, 3))
+            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt2.xml'], 1.08, 4))
         if 'haarcascade_frontalface_default.xml' in CV2_CASCADES:
             cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_default.xml'], 1.1, 4))
         if 'haarcascade_frontalface_alt.xml' in CV2_CASCADES:
-            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt.xml'], 1.08, 3))
+            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt.xml'], 1.08, 4))
 
         for cascade, scale_factor, min_neighbors in cascades_to_try:
             if detected_faces:
@@ -109,9 +139,14 @@ class HumanPresenceDetector:
                         minNeighbors=min_neighbors,
                         minSize=(28, 28)
                     )
-                    if len(faces) > 0:
-                        detected_faces = [(int(x), int(y), int(w), int(h)) for (x, y, w, h) in faces]
-                        evidence.append(f"Detected {len(faces)} human face(s) via OpenCV Frontal Cascade")
+                    valid_faces = [
+                        (int(x), int(y), int(w), int(h))
+                        for (x, y, w, h) in faces
+                        if _is_valid_face_candidate(int(x), int(y), int(w), int(h))
+                    ]
+                    if len(valid_faces) > 0:
+                        detected_faces = valid_faces
+                        evidence.append(f"Detected {len(valid_faces)} human face(s) via OpenCV Frontal Cascade")
                         break
                 except Exception:
                     pass
@@ -121,37 +156,47 @@ class HumanPresenceDetector:
             p_cascade = CV2_CASCADES['haarcascade_profileface.xml']
             for g_variant in [gray, gray_clahe]:
                 try:
-                    p_faces = p_cascade.detectMultiScale(g_variant, scaleFactor=1.08, minNeighbors=3, minSize=(30, 30))
-                    if len(p_faces) > 0:
-                        detected_faces = [(int(x), int(y), int(w), int(h)) for (x, y, w, h) in p_faces]
-                        evidence.append(f"Detected {len(p_faces)} human face(s) via Profile Cascade")
+                    p_faces = p_cascade.detectMultiScale(g_variant, scaleFactor=1.08, minNeighbors=4, minSize=(30, 30))
+                    valid_p = [
+                        (int(x), int(y), int(w), int(h))
+                        for (x, y, w, h) in p_faces
+                        if _is_valid_face_candidate(int(x), int(y), int(w), int(h))
+                    ]
+                    if len(valid_p) > 0:
+                        detected_faces = valid_p
+                        evidence.append(f"Detected {len(valid_p)} human face(s) via Profile Cascade")
                         break
                 except Exception:
                     pass
             if not detected_faces:
                 try:
                     flipped_gray = cv2.flip(gray, 1)
-                    p_faces = p_cascade.detectMultiScale(flipped_gray, scaleFactor=1.08, minNeighbors=3, minSize=(30, 30))
-                    if len(p_faces) > 0:
-                        for (fx, fy, fw, fh) in p_faces:
-                            orig_x = w_img - (fx + fw)
+                    p_faces = p_cascade.detectMultiScale(flipped_gray, scaleFactor=1.08, minNeighbors=4, minSize=(30, 30))
+                    for (fx, fy, fw, fh) in p_faces:
+                        orig_x = w_img - (fx + fw)
+                        if _is_valid_face_candidate(int(orig_x), int(fy), int(fw), int(fh)):
                             detected_faces.append((int(orig_x), int(fy), int(fw), int(fh)))
+                    if detected_faces:
                         evidence.append(f"Detected {len(detected_faces)} human face(s) via Profile Cascade (Mirrored)")
                 except Exception:
                     pass
 
-        # 3. Fallback: face_recognition if available
+        # 3. Fallback: face_recognition (HOG) if available
         if not detected_faces and FACE_REC_AVAILABLE:
             try:
                 boxes = face_recognition.face_locations(img_np, model="hog")
                 if boxes:
                     for (top, right, bottom, left) in boxes:
-                        detected_faces.append((int(left), int(top), int(right - left), int(bottom - top)))
-                    evidence.append(f"Detected {len(boxes)} human face(s) via HOG detector")
+                        bw = right - left
+                        bh = bottom - top
+                        if _is_valid_face_candidate(int(left), int(top), int(bw), int(bh)):
+                            detected_faces.append((int(left), int(top), int(bw), int(bh)))
+                    if detected_faces:
+                        evidence.append(f"Detected {len(detected_faces)} human face(s) via HOG detector")
             except Exception:
                 pass
 
-        # 4. Skin Chrominance Segmentation in YCbCr
+        # 4. Skin Chrominance Segmentation in YCbCr (Auxiliary context metric only)
         skin_pct = 0.0
         try:
             small_img = pil_image.resize((160, 160)).convert("YCbCr")
@@ -160,18 +205,18 @@ class HumanPresenceDetector:
             cr = ycbcr[:, :, 2]
             skin_mask = (cb >= 77) & (cb <= 127) & (cr >= 133) & (cr <= 173)
             skin_pct = round(float(np.mean(skin_mask) * 100), 1)
-            if skin_pct >= 6.0:
+            if skin_pct >= 6.0 and detected_faces:
                 evidence.append(f"Warm/skin-tone chrominance observed ({skin_pct}% of frame)")
         except Exception:
             pass
 
         # 5. Anatomical Secondary Confirmation when direct face cascade misses (Outdoor portrait, tilted, soft light)
         if not detected_faces:
-            # 5a. Upper Body + Skin Confirmation
-            if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 4.0:
+            # 5a. Upper Body + Head Anatomy Confirmation
+            if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 6.0:
                 ub_cascade = CV2_CASCADES['haarcascade_upperbody.xml']
                 try:
-                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=3, minSize=(60, 60))
+                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(60, 60))
                     if len(ub_boxes) > 0:
                         ub_boxes = sorted(ub_boxes, key=lambda b: b[2] * b[3], reverse=True)
                         bx, by, bw, bh = ub_boxes[0]
@@ -179,17 +224,18 @@ class HumanPresenceDetector:
                         head_y = max(0, by - int(bh * 0.05))
                         head_w = min(w_img - head_x, int(bw * 0.64))
                         head_h = min(h_img - head_y, int(bh * 0.45))
-                        detected_faces.append((head_x, head_y, head_w, head_h))
-                        evidence.append(f"Detected human presence via Upper-Body Anatomy ({bw}x{bh}) & Skin Chrominance ({skin_pct}%)")
+                        if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
+                            detected_faces.append((head_x, head_y, head_w, head_h))
+                            evidence.append(f"Detected human presence via Upper-Body Anatomy ({bw}x{bh}) & Skin Chrominance ({skin_pct}%)")
                 except Exception:
                     pass
 
             # 5b. Ocular (Eye) Geometry Confirmation
-            if not detected_faces and 'haarcascade_eye.xml' in CV2_CASCADES and skin_pct >= 4.0:
+            if not detected_faces and 'haarcascade_eye.xml' in CV2_CASCADES and skin_pct >= 6.0:
                 eye_cascade = CV2_CASCADES['haarcascade_eye.xml']
                 try:
                     upper_gray = gray[:int(h_img * 0.65), :]
-                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=3, minSize=(16, 16))
+                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=4, minSize=(18, 18))
                     if len(eyes) >= 2:
                         sorted_eyes = sorted(eyes, key=lambda e: e[1])
                         for i in range(len(sorted_eyes) - 1):
@@ -204,44 +250,23 @@ class HumanPresenceDetector:
                                 fy = max(0, avg_y - int(eye_span * 0.5))
                                 fw = min(w_img - fx, int(eye_span * 1.8))
                                 fh = min(h_img - fy, int(eye_span * 2.2))
-                                detected_faces.append((fx, fy, fw, fh))
-                                evidence.append(f"Detected human face via Bilateral Ocular Geometry & Skin Tone ({skin_pct}%)")
-                                break
-                except Exception:
-                    pass
-
-            # 5c. Portrait Skin Chrominance Cluster with Central Face Geometry
-            if not detected_faces and skin_pct >= 10.0:
-                try:
-                    img_ycbcr = cv2.cvtColor(img_np, cv2.COLOR_RGB2YCrCb)
-                    mask = (img_ycbcr[:, :, 1] >= 133) & (img_ycbcr[:, :, 1] <= 173) & (img_ycbcr[:, :, 2] >= 77) & (img_ycbcr[:, :, 2] <= 127)
-                    mask_uint8 = (mask * 255).astype(np.uint8)
-                    contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    if contours:
-                        largest_c = max(contours, key=cv2.contourArea)
-                        area = cv2.contourArea(largest_c)
-                        if area >= (w_img * h_img * 0.02):
-                            cx, cy, cw, ch = cv2.boundingRect(largest_c)
-                            aspect = ch / max(1, cw)
-                            if 0.5 <= aspect <= 3.0 and cy < (h_img * 0.65):
-                                hx = max(0, cx + int(cw * 0.1))
-                                hy = max(0, cy)
-                                hw = min(w_img - hx, int(cw * 0.8))
-                                hh = min(h_img - hy, int(ch * 0.6))
-                                detected_faces.append((hx, hy, hw, hh))
-                                evidence.append(f"Detected human subject via Portrait Skin Cluster ({area:.0f}px, {skin_pct}%)")
+                                if _is_valid_face_candidate(fx, fy, fw, fh):
+                                    detected_faces.append((fx, fy, fw, fh))
+                                    evidence.append(f"Detected human face via Bilateral Ocular Geometry & Skin Tone ({skin_pct}%)")
+                                    break
                 except Exception:
                     pass
 
         face_count = len(detected_faces)
-        has_human = (face_count > 0) or (skin_pct >= 12.0)
+        # Strict Human Presence Gate: Requires validated face geometry
+        has_human = (face_count > 0)
 
         return {
             "has_human": has_human,
             "face_count": face_count,
             "detected_faces": detected_faces,
             "skin_percentage": skin_pct,
-            "presence_evidence": evidence if evidence else ["No human face geometry detected (Non-human / scenery / object media)"]
+            "presence_evidence": evidence if evidence else ["Không phát hiện cấu trúc sinh trắc người (Nội dung phong cảnh / đồ hoạ / phi nhân tạo)"]
         }
 
 
@@ -1405,7 +1430,18 @@ class DeepfakeDetector:
                 scene_context=scene_context
             )
 
-            # 7. Construct Auditable Forensic Decision Record (Digital Forensic Certificate)
+            # 7. Step 6 Post-Hoc Platt Scaling & Youden Optimal Threshold (tau* = 0.8118)
+            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+            is_synthetic = (composite_risk >= tau_star)
+            auditable_verdict = "SYNTHETIC_MEDIA_SUSPECTED" if is_synthetic else "AUTHENTIC_MEDIA_LIKELY"
+            final_label = "Deepfake" if is_synthetic else "Realism"
+            calibrated_confidence = round(float(composite_risk if is_synthetic else (1.0 - composite_risk)), 4)
+            calibrated_scores = {
+                "Deepfake": round(float(composite_risk), 4),
+                "Realism": round(float(1.0 - composite_risk), 4)
+            }
+
+            # Construct Auditable Forensic Decision Record (Digital Forensic Certificate)
             cert_id = f"CERT-DF-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -1470,7 +1506,9 @@ class DeepfakeDetector:
                     "saraab_patch_heatmap": spatial_patch_heatmap
                 },
                 "composite_risk_score": composite_risk,
-                "auditable_verdict": "SYNTHETIC_MEDIA_SUSPECTED" if composite_risk > 0.5 else "AUTHENTIC_MEDIA_LIKELY",
+                "calibrated_probability": composite_risk,
+                "decision_threshold": tau_star,
+                "auditable_verdict": auditable_verdict,
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
                     "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
@@ -1487,10 +1525,12 @@ class DeepfakeDetector:
                 print(f"[warning] Failed to save forensic certificate or notify Google indexer: {se}")
 
             return {
-                "label": label,
-                "confidence": score,
-                "all_scores": all_scores,
+                "label": final_label,
+                "confidence": calibrated_confidence,
+                "all_scores": calibrated_scores,
                 "composite_risk_score": composite_risk,
+                "calibrated_probability": composite_risk,
+                "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
                 "forensic_certificate": forensic_certificate
@@ -1680,12 +1720,15 @@ class DeepfakeDetector:
                     "stream_2_human_biometrics": None
                 }
 
-            verdict_label = "Deepfake" if composite_video_risk > 0.5 else "Realism"
-            confidence = composite_video_risk if verdict_label == "Deepfake" else 1.0 - composite_video_risk
+            # Post-hoc Platt Scaling & Youden Optimal Threshold (tau* = 0.8118)
+            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+            is_synthetic_vid = (composite_video_risk >= tau_star)
+            verdict_label = "Deepfake" if is_synthetic_vid else "Realism"
+            confidence = round(float(composite_video_risk if is_synthetic_vid else (1.0 - composite_video_risk)), 4)
 
             all_scores = {
-                "Deepfake": round(composite_video_risk, 4),
-                "Realism": round(1.0 - composite_video_risk, 4)
+                "Deepfake": round(float(composite_video_risk), 4),
+                "Realism": round(float(1.0 - composite_video_risk), 4)
             }
 
             cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
@@ -1799,7 +1842,9 @@ class DeepfakeDetector:
                     }
                 },
                 "composite_risk_score": composite_video_risk,
-                "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if composite_video_risk > 0.5 else "AUTHENTIC_VIDEO_LIKELY",
+                "calibrated_probability": composite_video_risk,
+                "decision_threshold": tau_star,
+                "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if is_synthetic_vid else "AUTHENTIC_VIDEO_LIKELY",
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
                     "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
@@ -1817,6 +1862,8 @@ class DeepfakeDetector:
                 "confidence": confidence,
                 "all_scores": all_scores,
                 "composite_risk_score": composite_video_risk,
+                "calibrated_probability": composite_video_risk,
+                "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
                 "forensic_certificate": forensic_certificate,
                 "frame_results": frame_results
@@ -1965,6 +2012,7 @@ class DeepfakeDetector:
                 },
                 "calibrated_probability": calibrated_prob,
                 "composite_risk_score": calibrated_prob,
+                "decision_threshold": tau_star,
                 "auditable_verdict": "SYNTHETIC_VOICE_DETECTED" if is_fake else "AUTHENTIC_VOICE_LIKELY",
                 "xai_explanation": xai_explanation,
                 "proof": {
@@ -1985,6 +2033,8 @@ class DeepfakeDetector:
                 "confidence": confidence,
                 "all_scores": all_scores,
                 "composite_risk_score": calibrated_prob,
+                "calibrated_probability": calibrated_prob,
+                "decision_threshold": tau_star,
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
                 "media_type": "audio",
                 "forensic_certificate": forensic_certificate

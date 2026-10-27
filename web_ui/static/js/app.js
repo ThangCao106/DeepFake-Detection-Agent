@@ -621,26 +621,43 @@ function scrollToBottom() {
 function displayResults(data) {
     resultsCard.style.display = 'block';
 
-    const predictionLabel = document.getElementById('predictionLabel');
-    predictionLabel.textContent = data.label;
-    predictionLabel.className = 'prediction-label ' + data.label.toLowerCase();
+    const cert = data.forensic_certificate || {};
+    const tau = cert.decision_threshold || 0.8118;
+    const isSynthetic = cert.auditable_verdict 
+        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
+        : (cert.composite_risk_score !== undefined 
+            ? cert.composite_risk_score >= tau 
+            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('deepfake'))));
 
-    const confidence = (data.confidence * 100).toFixed(1);
+    const finalLabel = isSynthetic ? 'Deepfake' : 'Realism';
+    const predictionLabel = document.getElementById('predictionLabel');
+    predictionLabel.textContent = finalLabel;
+    predictionLabel.className = 'prediction-label ' + (isSynthetic ? 'deepfake' : 'realism');
+
+    const displayConf = cert.composite_risk_score !== undefined
+        ? (isSynthetic ? cert.composite_risk_score : (1.0 - cert.composite_risk_score))
+        : data.confidence;
+    const confidence = (displayConf * 100).toFixed(1);
     document.getElementById('confidenceValue').textContent = confidence + '%';
 
     const meterFill = document.getElementById('meterFill');
     setTimeout(() => {
         meterFill.style.width = confidence + '%';
+        meterFill.style.background = isSynthetic ? '#ef4444' : '#10b981';
     }, 100);
 
     const detailedScores = document.getElementById('detailedScores');
     detailedScores.innerHTML = '';
 
-    for (const [label, score] of Object.entries(data.all_scores)) {
+    const scoreMap = data.all_scores || {
+        'Deepfake': cert.composite_risk_score !== undefined ? cert.composite_risk_score : (isSynthetic ? data.confidence : 1.0 - data.confidence),
+        'Realism': cert.composite_risk_score !== undefined ? (1.0 - cert.composite_risk_score) : (isSynthetic ? 1.0 - data.confidence : data.confidence)
+    };
+    for (const [lbl, score] of Object.entries(scoreMap)) {
         const scoreItem = document.createElement('div');
         scoreItem.className = 'score-item';
         scoreItem.innerHTML = `
-            <span class="score-label">${label}</span>
+            <span class="score-label">${lbl}</span>
             <span class="score-value">${(score * 100).toFixed(2)}%</span>
         `;
         detailedScores.appendChild(scoreItem);
@@ -719,8 +736,8 @@ function displayResults(data) {
         }
 
         const certBadge = document.getElementById('certBadge');
-        certBadge.textContent = cert.auditable_verdict || 'AUDITABLE';
-        certBadge.style.background = cert.composite_risk_score > 0.5 ? '#ef4444' : '#10b981';
+        certBadge.textContent = cert.auditable_verdict || (isSynthetic ? 'SYNTHETIC_MEDIA_SUSPECTED' : 'AUTHENTIC_MEDIA_LIKELY');
+        certBadge.style.background = isSynthetic ? '#ef4444' : '#10b981';
         certBadge.style.color = '#fff';
 
         forensicCertCard.style.display = 'block';
@@ -826,13 +843,20 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                     (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('audio')) ||
                     (cert.audio_metadata !== undefined);
 
-    const label = data.label || 'Unknown';
-    const isFake = label.toLowerCase().includes('fake') || label.toLowerCase().includes('synthetic') || label.toLowerCase().includes('manipulate');
+    const tau = cert.decision_threshold || 0.8118;
+    const isFake = cert.auditable_verdict
+        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
+        : (cert.composite_risk_score !== undefined
+            ? cert.composite_risk_score >= tau
+            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('synthetic') || data.label.toLowerCase().includes('manipulate'))));
     const labelBadgeText = isFake ? t.badge_fake : t.badge_real;
     const labelBadgeBg = isFake ? '#fee2e2' : '#dcfce7';
     const labelBadgeColor = isFake ? '#b91c1c' : '#15803d';
 
-    const confidence = (data.confidence * 100).toFixed(1) + '%';
+    const displayConf = cert.composite_risk_score !== undefined
+        ? (isFake ? cert.composite_risk_score : (1.0 - cert.composite_risk_score))
+        : (data.confidence !== undefined ? data.confidence : 0.95);
+    const confidence = (displayConf * 100).toFixed(1) + '%';
     const certId = cert.certificate_id || 'N/A';
     const compositeRisk = cert.composite_risk_score !== undefined ? (cert.composite_risk_score * 100).toFixed(1) + '%' : 'N/A';
 
@@ -2236,21 +2260,25 @@ function populateGenUiArtifacts(data) {
     }
 
     // 3. Setup Threshold & Platt Simulator
-    const labelStr = ((data.label || '') + ' ' + (data.prediction || '') + ' ' + (cert.auditable_verdict || '')).toLowerCase();
-    const isDefinitelyReal = labelStr.includes('real') || labelStr.includes('authentic');
-    const isDefinitelyFake = labelStr.includes('fake') || labelStr.includes('synthetic');
+    const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
+    currentOptimalTau = tau;
+
+    const isSynthetic = cert.auditable_verdict 
+        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
+        : (cert.composite_risk_score !== undefined 
+            ? cert.composite_risk_score >= tau 
+            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('deepfake'))));
 
     let fakeProb = 0.5;
-    if (cert.calibrated_probability !== undefined) {
-        fakeProb = cert.calibrated_probability;
-    } else if (cert.composite_risk_score !== undefined) {
+    if (cert.composite_risk_score !== undefined) {
         fakeProb = cert.composite_risk_score;
+    } else if (cert.calibrated_probability !== undefined) {
+        fakeProb = cert.calibrated_probability;
     } else if (data.confidence !== undefined) {
-        fakeProb = isDefinitelyReal ? (1.0 - data.confidence) : data.confidence;
+        fakeProb = isSynthetic ? data.confidence : (1.0 - data.confidence);
     }
 
-    const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
-    const isFake = isDefinitelyFake ? true : (isDefinitelyReal ? false : (fakeProb >= tau));
+    const isFake = isSynthetic;
 
     const safeP = Math.min(Math.max(fakeProb, 0.001), 0.999);
     rawPredictionLogit = Math.log(safeP / (1 - safeP));
