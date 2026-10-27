@@ -695,12 +695,14 @@ body {
     border-radius: 12px;
 }
 
-.prediction-label.realism {
+.prediction-label.realism,
+.prediction-label.real {
     background: #dcfce7;
     color: #15803d;
 }
 
-.prediction-label.deepfake {
+.prediction-label.deepfake,
+.prediction-label.fake {
     background: #fee2e2;
     color: #b91c1c;
 }
