@@ -623,11 +623,17 @@ function displayResults(data) {
 
     const cert = data.forensic_certificate || {};
     const tau = cert.decision_threshold || 0.8118;
-    const isSynthetic = cert.auditable_verdict 
-        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
-        : (cert.composite_risk_score !== undefined 
-            ? cert.composite_risk_score >= tau 
-            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('deepfake'))));
+
+    // Mathematically sound majority classification: >= 0.50 is Deepfake, < 0.50 is Realism
+    let isSynthetic = false;
+    if (cert.composite_risk_score !== undefined) {
+        isSynthetic = (cert.composite_risk_score >= 0.50);
+    } else if (data.label) {
+        const lbl = data.label.toLowerCase();
+        isSynthetic = (lbl.includes('fake') || lbl.includes('deepfake'));
+    } else if (cert.auditable_verdict) {
+        isSynthetic = cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('CONFIRMED');
+    }
 
     const finalLabel = isSynthetic ? 'Deepfake' : 'Realism';
     const predictionLabel = document.getElementById('predictionLabel');
@@ -1937,11 +1943,29 @@ window.switchCard1Evidence = function(mode) {
         if (widget2Desc) widget2Desc.textContent = 'Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.';
         if (widget2Footer) widget2Footer.textContent = 'Độ bất đối xứng giác mạc (Asymmetry Δθ):';
         if (cornealAngleEl) {
-            cornealAngleEl.textContent = `Δθ = ${currentCard1State.angleDelta}°`;
-            cornealAngleEl.style.color = '#7c3aed';
+            if (currentCard1State.cornealStatus === 'BYPASS_2D_ILLUSTRATION') {
+                cornealAngleEl.textContent = 'Δθ = 0.0° (Tranh vẽ 2D / Đồ hoạ)';
+                cornealAngleEl.style.color = '#64748b';
+            } else if (currentCard1State.cornealStatus === 'BYPASS_OCCLUDED_EYES') {
+                cornealAngleEl.textContent = 'Δθ = 0.0° (Mắt bị che khuất)';
+                cornealAngleEl.style.color = '#b45309';
+            } else {
+                cornealAngleEl.textContent = `Δθ = ${currentCard1State.angleDelta}°`;
+                cornealAngleEl.style.color = '#7c3aed';
+            }
         }
         if (cornealBadge) {
-            if (currentCard1State.asymmetryScore > 0.15) {
+            if (currentCard1State.cornealStatus === 'BYPASS_2D_ILLUSTRATION') {
+                cornealBadge.textContent = 'Bypass (2D Art / Poster)';
+                cornealBadge.style.background = '#f1f5f9';
+                cornealBadge.style.color = '#475569';
+                cornealBadge.style.borderColor = '#cbd5e1';
+            } else if (currentCard1State.cornealStatus === 'BYPASS_OCCLUDED_EYES') {
+                cornealBadge.textContent = 'Bypass (Kính râm / Che khuất)';
+                cornealBadge.style.background = '#fef3c7';
+                cornealBadge.style.color = '#b45309';
+                cornealBadge.style.borderColor = '#fde68a';
+            } else if (currentCard1State.asymmetryScore > 0.15) {
                 cornealBadge.textContent = 'Asymmetric (Fake)';
                 cornealBadge.style.background = '#fee2e2';
                 cornealBadge.style.color = '#b91c1c';
@@ -1953,7 +1977,7 @@ window.switchCard1Evidence = function(mode) {
                 cornealBadge.style.borderColor = '#86efac';
             }
         }
-        renderCornealRayTraceCanvas(currentCard1State.asymmetryScore, currentCard1State.hasHuman);
+        renderCornealRayTraceCanvas(currentCard1State.asymmetryScore, currentCard1State.hasHuman, currentCard1State.cornealStatus);
     } else {
         if (tabContext) {
             tabContext.classList.add('active');
@@ -2001,7 +2025,9 @@ function populateGenUiArtifacts(data) {
     }
 
     // 2. Populate Adaptive Widget 2 (Corneal Ray-Tracing vs SARAAB Spatial Saliency)
-    const cornealAnalysis = ev.corneal_reflection_analysis || {};
+    const cornealAnalysis = cert.corneal_reflection_analysis || ev.corneal_reflection_analysis || dim5.details || {};
+    const cornealStatus = cornealAnalysis.status || dim5.status || '';
+    const isCornealBypassed = cornealStatus.includes('BYPASS');
     const cornealAngleEl = document.getElementById('genUiCornealAngleVal');
     const cornealBadge = document.getElementById('genUiCornealBadge');
     const widget2Icon = document.getElementById('genUiWidget2Icon');
@@ -2031,9 +2057,13 @@ function populateGenUiArtifacts(data) {
                     (cert.audio_metadata !== undefined) ||
                     (document.getElementById('previewAudio') && document.getElementById('previewAudio').style.display !== 'none');
 
-    const asymmetryScore = cornealAnalysis.corneal_reflection_symmetry !== undefined 
-        ? (1.0 - cornealAnalysis.corneal_reflection_symmetry) 
-        : (data.label === 'Realism' ? 0.042 : 0.428);
+    const asymmetryScore = isCornealBypassed
+        ? 0.0
+        : (cornealAnalysis.corneal_asymmetry_score !== undefined 
+            ? cornealAnalysis.corneal_asymmetry_score 
+            : (cornealAnalysis.corneal_reflection_symmetry !== undefined 
+                ? (1.0 - cornealAnalysis.corneal_reflection_symmetry) 
+                : 0.0));
     
     const angleDelta = (asymmetryScore * 18.5).toFixed(1);
 
@@ -2197,6 +2227,7 @@ function populateGenUiArtifacts(data) {
     currentCard1State = {
         isAudio: isAudio,
         hasHuman: hasHuman,
+        cornealStatus: cornealStatus,
         asymmetryScore: asymmetryScore,
         angleDelta: angleDelta,
         saraab: saraab,
@@ -2300,10 +2331,10 @@ function populateGenUiArtifacts(data) {
     const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
     currentOptimalTau = tau;
 
-    const isSynthetic = cert.auditable_verdict 
-        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
-        : (cert.composite_risk_score !== undefined 
-            ? cert.composite_risk_score >= tau 
+    const isSynthetic = cert.composite_risk_score !== undefined 
+        ? (cert.composite_risk_score >= 0.50)
+        : (cert.auditable_verdict 
+            ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('CONFIRMED'))
             : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('deepfake'))));
 
     let fakeProb = 0.5;
@@ -2465,7 +2496,7 @@ function updatePlattThresholdSimulation() {
     }
 }
 
-function renderCornealRayTraceCanvas(asymmetryScore = 0.12, hasHuman = true) {
+function renderCornealRayTraceCanvas(asymmetryScore = 0.12, hasHuman = true, cornealStatus = '') {
     const canvas = document.getElementById('genUiCornealCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -2493,14 +2524,26 @@ function renderCornealRayTraceCanvas(asymmetryScore = 0.12, hasHuman = true) {
         ctx.stroke();
     }
 
-    if (!hasHuman) {
+    if (!hasHuman || cornealStatus === 'BYPASS_2D_ILLUSTRATION' || cornealStatus === 'BYPASS_OCCLUDED_EYES') {
         ctx.fillStyle = '#94a3b8';
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('N/A - Không phát hiện khuôn mặt / mắt người trong ảnh', w / 2, h / 2 - 8);
-        ctx.font = '11px sans-serif';
-        ctx.fillStyle = '#64748b';
-        ctx.fillText('(Bỏ qua mô phỏng tia quang học giác mạc đối với nội dung phi sinh trắc)', w / 2, h / 2 + 14);
+        if (cornealStatus === 'BYPASS_2D_ILLUSTRATION') {
+            ctx.fillText('N/A - Tranh vẽ 2D / Áp phích hội hoạ', w / 2, h / 2 - 8);
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('(Bỏ qua mô phỏng giác mạc đối với nội dung tranh vẽ phi thực tế)', w / 2, h / 2 + 14);
+        } else if (cornealStatus === 'BYPASS_OCCLUDED_EYES') {
+            ctx.fillText('N/A - Vùng mắt bị che khuất (Kính râm / Khẩu trang)', w / 2, h / 2 - 8);
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('(Bỏ qua mô phỏng giác mạc do phụ kiện che chắn)', w / 2, h / 2 + 14);
+        } else {
+            ctx.fillText('N/A - Không phát hiện khuôn mặt / mắt người trong ảnh', w / 2, h / 2 - 8);
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('(Bỏ qua mô phỏng tia quang học giác mạc đối với nội dung phi sinh trắc)', w / 2, h / 2 + 14);
+        }
         ctx.textAlign = 'start';
         return;
     }

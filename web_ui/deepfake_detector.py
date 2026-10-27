@@ -105,28 +105,45 @@ class HumanPresenceDetector:
         h_img, w_img, _ = img_np.shape
         detected_faces = []
         evidence = []
+        detected_pedestrians = []
+
+        # 0. Check whether entire image is a 2D poster / illustration / drawing
+        is_2d_illustration = False
+        try:
+            small_full = cv2.resize(img_np, (64, 64), interpolation=cv2.INTER_AREA)
+            q_full = (small_full // 8).astype(np.int32)
+            c_ids = q_full[:, :, 0] * 1024 + q_full[:, :, 1] * 32 + q_full[:, :, 2]
+            u_colors_full = len(np.unique(c_ids))
+            gray_full = cv2.cvtColor(small_full, cv2.COLOR_RGB2GRAY)
+            edges_full = cv2.Canny(gray_full, 50, 150)
+            non_edge_full = (edges_full == 0)
+            non_edge_std_full = float(np.std(gray_full[non_edge_full])) if np.any(non_edge_full) else 0.0
+            if u_colors_full < 180 and non_edge_std_full < 14.0:
+                is_2d_illustration = True
+                evidence.append(f"Nhận diện nội dung hội hoạ 2D / tranh vẽ áp phích (Màu rời rạc: {u_colors_full}, độ phẳng biên: {non_edge_std_full:.1f})")
+        except Exception:
+            pass
 
         def _is_valid_face_candidate(bx, by, bw, bh):
             """
-            Validates that a bounding box is geometrically and anatomically a real human face.
-            Filters out sea rocks, water reflections, horizon edges, sunset glares, clouds, and foliage.
+            Validates that a bounding box is geometrically and anatomically a human face.
+            Filters out sea rocks, water reflections, horizon edges, sunset glares, clouds, and foliage,
+            while robustly accommodating sunglasses, masks, caps, and outdoor poses.
             """
-            if bw < 28 or bh < 28:
+            if bw < 24 or bh < 24:
                 return False
             aspect = bw / float(bh)
-            if aspect < 0.60 or aspect > 1.60:
+            if aspect < 0.55 or aspect > 1.65:
                 return False
             x0, y0 = max(0, bx), max(0, by)
             x1, y1 = min(w_img, bx + bw), min(h_img, by + bh)
-            if (x1 - x0) < 24 or (y1 - y0) < 24:
+            if (x1 - x0) < 20 or (y1 - y0) < 20:
                 return False
             face_roi = img_np[y0:y1, x0:x1]
             try:
                 face_gray = cv2.cvtColor(face_roi, cv2.COLOR_RGB2GRAY)
                 lap_var = float(np.var(cv2.Laplacian(face_gray, cv2.CV_64F)))
-                # A true human face ROI contains internal gradient texture (eyes, mouth, clothing, hair)
-                # Pure smooth color gradients (sky, sunset, wall) have lap_var < 8.0
-                if lap_var < 10.0:
+                if lap_var < 8.0:
                     return False
 
                 face_ycbcr = cv2.cvtColor(face_roi, cv2.COLOR_RGB2YCrCb)
@@ -138,13 +155,31 @@ class HumanPresenceDetector:
                 H = face_hsv[:, :, 0]
                 S = face_hsv[:, :, 1]
                 V = face_hsv[:, :, 2]
-                skin_mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 25) & (V >= 35)
+                skin_mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 22) & (V >= 30)
 
-                # Strict Intersection: Melanin bounds in YCrCb AND natural skin hue in HSV
                 skin_mask = skin_mask_ycbcr & skin_mask_hsv
                 face_skin_pct = float(np.mean(skin_mask) * 100)
                 y_std = float(np.std(face_ycbcr[:, :, 0]))
-                if face_skin_pct < 8.0 or y_std < 6.0:
+
+                # Check sunglasses occlusion: dark eye region (V < 60 in upper 18-50% band)
+                is_sunglasses = False
+                eye_band = face_hsv[int(bh * 0.18):int(bh * 0.50), :]
+                if eye_band.size > 0:
+                    dark_eye_pct = float(np.mean(eye_band[:, :, 2] < 60) * 100)
+                    if dark_eye_pct > 14.0:
+                        is_sunglasses = True
+
+                # Check mask occlusion: low skin ratio in lower 40%
+                is_mask = False
+                lower_face = skin_mask[int(bh * 0.60):, :]
+                if lower_face.size > 0:
+                    lower_skin_pct = float(np.mean(lower_face) * 100)
+                    if lower_skin_pct < 6.0:
+                        is_mask = True
+
+                is_occluded = (is_sunglasses or is_mask)
+                min_skin_req = 2.5 if is_occluded else 5.0
+                if face_skin_pct < min_skin_req or y_std < 4.5:
                     return False
                 return True
             except Exception:
@@ -189,7 +224,7 @@ class HumanPresenceDetector:
                 pass
 
         # Gate 0b: SOTA HOG Pedestrian Detector (Catches full-body standing/sitting outdoor postures)
-        if not detected_faces and HOG_PEOPLE_DETECTOR is not None:
+        if HOG_PEOPLE_DETECTOR is not None:
             try:
                 scale = 1.0
                 if max(w_img, h_img) > 900:
@@ -200,18 +235,20 @@ class HumanPresenceDetector:
                 hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(small_bgr, winStride=(8, 8), padding=(8, 8), scale=1.05)
                 if len(hog_boxes) > 0:
                     max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
-                    if max_wt >= 0.35:
-                        for hb, hw in zip(hog_boxes, hog_weights):
-                            if hw >= 0.35:
-                                bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
-                                head_x = max(0, bx + int(bw * 0.15))
-                                head_y = max(0, by)
-                                head_w = min(w_img - head_x, int(bw * 0.70))
-                                head_h = min(h_img - head_y, int(bh * 0.35))
-                                if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
-                                    detected_faces.append((head_x, head_y, head_w, head_h))
-                        if detected_faces:
-                            evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_faces)} người, trọng số: {max_wt:.2f})")
+                    for hb, hw in zip(hog_boxes, hog_weights):
+                        if hw >= 0.25:
+                            bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
+                            detected_pedestrians.append((bx, by, bw, bh))
+                            head_x = max(0, bx + int(bw * 0.15))
+                            head_y = max(0, by)
+                            head_w = min(w_img - head_x, int(bw * 0.70))
+                            head_h = min(h_img - head_y, int(bh * 0.35))
+                            if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
+                                detected_faces.append((head_x, head_y, head_w, head_h))
+                            elif not detected_faces:
+                                detected_faces.append((head_x, head_y, head_w, head_h))
+                    if detected_pedestrians:
+                        evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
             except Exception:
                 pass
 
@@ -307,6 +344,7 @@ class HumanPresenceDetector:
 
         # 4. Skin Chrominance Segmentation in Dual YCbCr + HSV Space (Strict Intersection)
         skin_pct = 0.0
+        skin_mask = None
         try:
             small_rgb = pil_image.resize((160, 160)).convert("RGB")
             np_sm_rgb = np.array(small_rgb)
@@ -319,7 +357,7 @@ class HumanPresenceDetector:
             H = hsv[:, :, 0]
             S = hsv[:, :, 1]
             V = hsv[:, :, 2]
-            mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 25) & (V >= 35)
+            mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 22) & (V >= 30)
 
             skin_mask = mask_ycbcr & mask_hsv
             skin_pct = round(float(np.mean(skin_mask) * 100), 1)
@@ -334,7 +372,7 @@ class HumanPresenceDetector:
             if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 5.0:
                 ub_cascade = CV2_CASCADES['haarcascade_upperbody.xml']
                 try:
-                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=5, minSize=(70, 70))
+                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(50, 50))
                     if len(ub_boxes) > 0:
                         ub_boxes = sorted(ub_boxes, key=lambda b: b[2] * b[3], reverse=True)
                         bx, by, bw, bh = ub_boxes[0]
@@ -353,13 +391,13 @@ class HumanPresenceDetector:
                 eye_cascade = CV2_CASCADES['haarcascade_eye.xml']
                 try:
                     upper_gray = gray[:int(h_img * 0.65), :]
-                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=5, minSize=(20, 20))
+                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=4, minSize=(16, 16))
                     if len(eyes) >= 2:
                         sorted_eyes = sorted(eyes, key=lambda e: e[1])
                         for i in range(len(sorted_eyes) - 1):
                             e1 = sorted_eyes[i]
                             e2 = sorted_eyes[i+1]
-                            if abs(e1[1] - e2[1]) < (h_img * 0.06) and abs(e1[0] - e2[0]) > 25:
+                            if abs(e1[1] - e2[1]) < (h_img * 0.08) and abs(e1[0] - e2[0]) > 20:
                                 min_x = min(e1[0], e2[0])
                                 max_x = max(e1[0] + e1[2], e2[0] + e2[2])
                                 avg_y = (e1[1] + e2[1]) // 2
@@ -375,15 +413,44 @@ class HumanPresenceDetector:
                 except Exception:
                     pass
 
+            # 5c. Salient Skin Chrominance Cluster (Outdoor Sitting, Sunglasses, Hair/Posture Occlusion)
+            if not detected_faces and skin_pct >= 8.0 and skin_mask is not None:
+                try:
+                    skin_u8 = (skin_mask.astype(np.uint8)) * 255
+                    # Scale back to full image size
+                    skin_full = cv2.resize(skin_u8, (w_img, h_img), interpolation=cv2.INTER_NEAREST)
+                    contours, _ = cv2.findContours(skin_full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    valid_blobs = [cv2.boundingRect(c) for c in contours if cv2.contourArea(c) >= (w_img * h_img * 0.015)]
+                    if valid_blobs:
+                        valid_blobs.sort(key=lambda b: b[1])  # top-most blob
+                        for (bx, by, bw, bh) in valid_blobs:
+                            # 1. Try direct blob box
+                            head_box = (max(0, bx), max(0, by), min(w_img - bx, max(bw, 28)), min(h_img - by, max(bh, 28)))
+                            if _is_valid_face_candidate(head_box[0], head_box[1], head_box[2], head_box[3]):
+                                detected_faces.append(head_box)
+                                evidence.append(f"Xác nhận thực thể người qua cụm sắc tố da sinh học ({skin_pct}% diện tích ảnh, vùng đầu/thân bị che khuất)")
+                                break
+                            # 2. If wide torso/arms blob, try top-center head candidate
+                            head_size = max(28, min(bh, int(bw * 0.50)))
+                            head_x = max(0, bx + int(bw * 0.5) - int(head_size * 0.5))
+                            head_y = by
+                            if _is_valid_face_candidate(head_x, head_y, head_size, head_size):
+                                detected_faces.append((head_x, head_y, head_size, head_size))
+                                evidence.append(f"Xác nhận thực thể người qua cụm sắc tố da sinh học ({skin_pct}% diện tích ảnh, vùng đầu/thân bị che khuất)")
+                                break
+                except Exception:
+                    pass
+
         face_count = len(detected_faces)
-        # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette
-        has_human = (face_count > 0)
+        # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette, bypassing 2D posters
+        has_human = (face_count > 0 or len(detected_pedestrians) > 0) and not is_2d_illustration
 
         return {
             "has_human": has_human,
             "face_count": face_count,
             "detected_faces": detected_faces,
             "skin_percentage": skin_pct,
+            "is_2d_illustration": is_2d_illustration,
             "presence_evidence": evidence if evidence else ["Không phát hiện cấu trúc sinh trắc người (Nội dung phong cảnh / đồ hoạ / phi nhân tạo)"]
         }
 
@@ -403,8 +470,20 @@ class SceneContextClassifier:
       - Non-Human Objects / Graphic Art (Tĩnh Vật / Đồ Hoạ)
     """
     @staticmethod
-    def classify_scene_context(pil_image, has_human=True, detected_faces=None):
+    def classify_scene_context(pil_image, has_human=True, detected_faces=None, is_2d_illustration=False):
         try:
+            if is_2d_illustration:
+                return {
+                    "category": "Phi Sinh Trắc / Tranh Vẽ Áp Phích (2D Illustration)",
+                    "short_name": "Tranh Áp Phích 2D",
+                    "scene_type": "GRAPHIC_2D_ART",
+                    "icon": "🎨",
+                    "environment": "Tranh cổ động, hội hoạ áp phích 2D (Phi thực thể người sống)",
+                    "confidence": 0.96,
+                    "is_outdoor": False,
+                    "metrics": {"is_2d_art": True}
+                }
+
             if detected_faces is None:
                 detected_faces = []
             
@@ -1062,7 +1141,18 @@ class CornealReflectionAnalyzer:
     If media is non-human, or eye geometry is unresolvable, strictly bypasses with 0 penalty.
     """
     @staticmethod
-    def analyze_corneal_reflections(pil_image, cropped_face=None, has_human=True, face_found=False):
+    def analyze_corneal_reflections(pil_image, cropped_face=None, has_human=True, face_found=False, is_2d_art=False):
+        if is_2d_art:
+            return {
+                "corneal_asymmetry_score": 0.0,
+                "corneal_reflection_symmetry": 1.0,
+                "optical_gaze_consistent": True,
+                "specular_glints_detected": False,
+                "glints_count": 0,
+                "status": "BYPASS_2D_ILLUSTRATION",
+                "details": "Bỏ qua phân tích tia giác mạc: Tranh vẽ 2D / áp phích hội hoạ không có giác mạc người thật."
+            }
+
         if not has_human or not face_found:
             return {
                 "corneal_asymmetry_score": 0.0,
@@ -1116,12 +1206,27 @@ class CornealReflectionAnalyzer:
                     "details": "Eye regions too small or unresolvable."
                 }
 
-            # If eye cascade found 0 eyes, check if the candidate patches possess physiological pupil contrast
+            # Check sunglasses/occlusion:
+            mean_l = float(np.mean(left_eye))
+            mean_r = float(np.mean(right_eye))
+            std_l = float(np.std(left_eye))
+            std_r = float(np.std(right_eye))
+            min_l = float(np.min(left_eye))
+            min_r = float(np.min(right_eye))
+
+            if mean_l < 70.0 or mean_r < 70.0 or (min_l < 35.0 and std_l < 16.0):
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_OCCLUDED_EYES",
+                    "details": "Bỏ qua phân tích tia giác mạc: Vùng mắt bị che khuất bởi kính râm / khẩu trang / phụ kiện trang phục."
+                }
+
+            # If eye cascade found 0 eyes, check if candidate patches possess physiological pupil contrast
             if eyes_found_count == 0:
-                std_l = float(np.std(left_eye))
-                std_r = float(np.std(right_eye))
-                min_l = float(np.min(left_eye))
-                min_r = float(np.min(right_eye))
                 # Real human eyes have a dark pupil/iris (< 110) and high local contrast (std >= 12.0)
                 if std_l < 12.0 or std_r < 12.0 or min_l > 115.0 or min_r > 115.0:
                     return {
@@ -1584,8 +1689,9 @@ class DeepfakeDetector:
                 has_human = auto_has_human
 
             # Step 1b: Environmental Scene & Context Classification
+            is_2d_illustration = human_presence.get("is_2d_illustration", False)
             scene_context = SceneContextClassifier.classify_scene_context(
-                image, has_human=has_human, detected_faces=detected_faces
+                image, has_human=has_human, detected_faces=detected_faces, is_2d_illustration=is_2d_illustration
             )
             if mode in ["human", "dual", "portrait"]:
                 scene_context["scene_type"] = "portrait"
@@ -1662,8 +1768,9 @@ class DeepfakeDetector:
             prnu_score = prnu_analysis.get("prnu_discrepancy_score", 0.0)
 
             # 6. Compute Ophthalmic Corneal Specular Reflection Consistency (CVIU 2022 / Matern et al.)
+            is_2d_art = human_presence.get("is_2d_illustration", False)
             corneal_analysis = CornealReflectionAnalyzer.analyze_corneal_reflections(
-                image, cropped, has_human=has_human, face_found=face_found
+                image, cropped, has_human=has_human, face_found=face_found, is_2d_art=is_2d_art
             )
             corneal_score = corneal_analysis.get("corneal_asymmetry_score", 0.0)
 
@@ -1804,12 +1911,21 @@ class DeepfakeDetector:
                 scene_context=scene_context
             )
 
-            # 7. Step 6 Post-Hoc Platt Scaling & Youden Optimal Threshold (tau* = 0.8118)
+            # 7. Step 6 Post-Hoc Platt Scaling & Decision Calibration
             tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
-            is_synthetic = (composite_risk >= tau_star)
-            auditable_verdict = "SYNTHETIC_MEDIA_SUSPECTED" if is_synthetic else "AUTHENTIC_MEDIA_LIKELY"
+            # Majoritary binary classification at 0.50 ensures mathematical label-to-score consistency
+            is_synthetic = (composite_risk >= 0.50)
             final_label = "Deepfake" if is_synthetic else "Realism"
             calibrated_confidence = round(float(composite_risk if is_synthetic else (1.0 - composite_risk)), 4)
+
+            # Auditable Forensic Verdict (EU AI Act Article 50 & High-Specificity threshold)
+            if composite_risk >= tau_star:
+                auditable_verdict = "SYNTHETIC_MEDIA_CONFIRMED"
+            elif composite_risk >= 0.50:
+                auditable_verdict = "SYNTHETIC_MEDIA_SUSPECTED"
+            else:
+                auditable_verdict = "AUTHENTIC_MEDIA_LIKELY"
+
             calibrated_scores = {
                 "Deepfake": round(float(composite_risk), 4),
                 "Realism": round(float(1.0 - composite_risk), 4)
@@ -1838,6 +1954,7 @@ class DeepfakeDetector:
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
                 "human_presence_evaluation": human_presence,
+                "corneal_reflection_analysis": corneal_analysis,
                 "dual_stream_breakdown": dual_stream_breakdown,
                 "evidence_matrix_6d": evidence_matrix_6d,
                 "xai_explainability_statement": xai_explanation,
