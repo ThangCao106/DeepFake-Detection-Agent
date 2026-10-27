@@ -690,6 +690,39 @@ class ThreadsBrowserScraper:
                                                     print(f"    📸 [{src_platform} DOM #{idx}/{target_images}] ({len(b_data)}B) -> {out_f.name}")
                             except Exception:
                                 pass
+
+                    # Extract authentic real videos rendered in DOM
+                    for v_item in dom_media.get("vids", []):
+                        if len(harvested_videos) >= target_videos:
+                            break
+                        u_vid = v_item.get("url")
+                        if u_vid and u_vid not in seen_vid_urls:
+                            seen_vid_urls.add(u_vid)
+                            try:
+                                resp_v = await page.request.get(u_vid, timeout=15000)
+                                if resp_v.ok:
+                                    v_data = await resp_v.body()
+                                    if len(v_data) >= 30000:
+                                        v_sha = compute_sha256(v_data)
+                                        if v_sha not in seen_shas:
+                                            seen_shas.add(v_sha)
+                                            idx_v = len(harvested_videos) + 1
+                                            out_v = raw_dir / f"real_vid_{idx_v:03d}_{v_sha[:8]}.mp4"
+                                            out_v.write_bytes(v_data)
+                                            if validate_video_file(out_v):
+                                                harvested_videos.append(out_v)
+                                                print(f"    🎥 [{src_platform} DOM Video #{idx_v}/{target_videos}] ({len(v_data)}B) -> {out_v.name}")
+                                                # Extract authentic speech/audio track directly from this real video
+                                                if len(harvested_audios) < target_audios:
+                                                    idx_a = len(harvested_audios) + 1
+                                                    out_a = raw_dir / f"real_aud_{idx_a:03d}_{v_sha[:8]}.wav"
+                                                    if extract_audio_from_video(out_v, out_a):
+                                                        harvested_audios.append(out_a)
+                                                        print(f"    🎙️ [{src_platform} Real Audio #{idx_a}/{target_audios}] Extracted from {out_v.name} -> {out_a.name}")
+                                            else:
+                                                out_v.unlink(missing_ok=True)
+                            except Exception:
+                                pass
                 except Exception:
                     pass
 
@@ -827,44 +860,40 @@ class ThreadsBrowserScraper:
                         dedup_registry.check_and_register(op_bytes, filename=out_img.name, source="wikimedia_commons", sha256=sha)
                     harvested_images.append(out_img)
 
-        # Step 4: Safeguard for verified authentic videos and audios (Strict Zero-Duplicate: No modulo repetition)
+        # Step 4: Safeguard for authentic open real-world videos and audios (100% Real Origin, ZERO AI Seeds)
         if len(harvested_videos) < target_videos:
-            verified_vids_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
-            if verified_vids_dir.exists():
-                v_candidates = sorted(list(verified_vids_dir.glob("*.mp4")))
-                seen_vid_shas = set()
-                for src_v in v_candidates:
+            sub_vid_deficit = target_videos - len(harvested_videos)
+            print(f"[Harvester Safeguard] Sub-deficit of {sub_vid_deficit} videos. Querying Open Harvester for genuine Vietnamese videos...")
+            try:
+                from crawler.open_harvester import harvest_open_vietnamese_videos
+                open_vids = harvest_open_vietnamese_videos(target_count=sub_vid_deficit, output_dir=raw_dir)
+                for v_path in open_vids:
                     if len(harvested_videos) >= target_videos:
                         break
-                    v_data = src_v.read_bytes()
-                    v_sha = compute_sha256(v_data)
-                    if v_sha in seen_vid_shas:
-                        continue
-                    seen_vid_shas.add(v_sha)
-                    idx_vid = len(harvested_videos) + 1
-                    out_vid = raw_dir / f"real_vid_{idx_vid:03d}_{v_sha[:8]}.mp4"
-                    if not out_vid.exists():
-                        out_vid.write_bytes(v_data)
-                        harvested_videos.append(out_vid)
+                    harvested_videos.append(v_path)
+                    # Extract authentic audio directly from this real video
+                    if len(harvested_audios) < target_audios:
+                        idx_a = len(harvested_audios) + 1
+                        v_sha = v_path.stem.split("_")[-1]
+                        out_a = raw_dir / f"real_aud_{idx_a:03d}_{v_sha}.wav"
+                        if extract_audio_from_video(v_path, out_a):
+                            harvested_audios.append(out_a)
+                            print(f"    🎙️ [Open Real Audio #{idx_a}/{target_audios}] Extracted from {v_path.name} -> {out_a.name}")
+            except Exception as e_v_open:
+                print(f"  [Harvester Notice] Notice on Open Video harvest: {e_v_open}")
 
         if len(harvested_audios) < target_audios:
-            verified_auds_dir = PROJECT_ROOT / "crawler" / "verified_threads_audio_seeds"
-            if verified_auds_dir.exists():
-                a_candidates = sorted(list(verified_auds_dir.glob("*.wav")))
-                seen_aud_shas = set()
-                for src_a in a_candidates:
+            sub_aud_deficit = target_audios - len(harvested_audios)
+            print(f"[Harvester Safeguard] Sub-deficit of {sub_aud_deficit} audios. Querying Open Harvester for native Vietnamese speech recordings...")
+            try:
+                from crawler.open_harvester import harvest_open_vietnamese_speech_audios
+                open_auds = harvest_open_vietnamese_speech_audios(target_count=sub_aud_deficit, output_dir=raw_dir)
+                for a_path in open_auds:
                     if len(harvested_audios) >= target_audios:
                         break
-                    a_data = src_a.read_bytes()
-                    a_sha = compute_sha256(a_data)
-                    if a_sha in seen_aud_shas:
-                        continue
-                    seen_aud_shas.add(a_sha)
-                    idx_aud = len(harvested_audios) + 1
-                    out_aud = raw_dir / f"real_aud_{idx_aud:03d}_{a_sha[:8]}.wav"
-                    if not out_aud.exists():
-                        out_aud.write_bytes(a_data)
-                        harvested_audios.append(out_aud)
+                    harvested_audios.append(a_path)
+            except Exception as e_a_open:
+                print(f"  [Harvester Notice] Notice on Open Audio harvest: {e_a_open}")
 
         dedup_registry.save()
         print("\n" + "=" * 80)

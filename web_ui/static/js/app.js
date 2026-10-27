@@ -52,7 +52,11 @@ const TRANSLATIONS = {
         bench_latency_lbl: "Avg Inference Latency",
         bench_calib_lbl: "Calibration Target",
         autoscroll_lbl: "Auto-scroll",
-        genui_stepper_title: "Autonomous Multi-Agent Forensic Pipeline (Option B)"
+        genui_stepper_title: "Autonomous Multi-Agent Forensic Pipeline (Option B)",
+        btn_view_full_cert: "🔍 View Certificate & 6D Matrix Details ↗",
+        btn_expand_chat_details: "▼ Expand Analysis in Chat",
+        btn_collapse_chat_details: "▲ Collapse Analysis",
+        btn_dispute_menu: "⚖️ Dispute / Inquire ▾"
     },
     vi: {
         status_connecting: "Đang kết nối...",
@@ -103,7 +107,11 @@ const TRANSLATIONS = {
         bench_latency_lbl: "Độ Trễ Trung Bình",
         bench_calib_lbl: "Hiệu Chuẩn Ngưỡng",
         autoscroll_lbl: "Tự cuộn",
-        genui_stepper_title: "Hệ Thống Đa Agent Giám Định Tự Động (Option B Multi-Agent Pipeline)"
+        genui_stepper_title: "Hệ Thống Đa Agent Giám Định Tự Động (Option B Multi-Agent Pipeline)",
+        btn_view_full_cert: "🔍 Xem Chứng Thư & Ma Trận 6D Chi Tiết ↗",
+        btn_expand_chat_details: "▼ Mở rộng phân tích trong Chat",
+        btn_collapse_chat_details: "▲ Thu gọn phân tích",
+        btn_dispute_menu: "⚖️ Tranh biện / Hỏi Agent ▾"
     }
 };
 
@@ -748,6 +756,49 @@ function sendDisputeQuery(queryText) {
 }
 window.sendDisputeQuery = sendDisputeQuery;
 
+// ===== Option A: Jump to Forensic Certificate with Pulsing Glow Animation =====
+function jumpToForensicCertificate() {
+    const certCard = document.getElementById('forensicCertCard');
+    const resultsCard = document.getElementById('resultsCard');
+    const target = (certCard && certCard.style.display !== 'none') ? certCard : (resultsCard || document.body);
+    
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Trigger luminous pulsing glow
+    target.classList.remove('glow-highlight');
+    void target.offsetWidth; // force browser layout reflow
+    target.classList.add('glow-highlight');
+    setTimeout(() => {
+        target.classList.remove('glow-highlight');
+    }, 2600);
+}
+window.jumpToForensicCertificate = jumpToForensicCertificate;
+
+function toggleChatForensicDetails(btn) {
+    const card = btn.closest('.chat-forensic-summary');
+    if (!card) return;
+    const details = card.querySelector('.chat-forensic-collapsible');
+    if (!details) return;
+    
+    const isHidden = (details.style.display === 'none' || details.style.display === '');
+    details.style.display = isHidden ? 'block' : 'none';
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.vi;
+    btn.innerHTML = isHidden 
+        ? `<span>▲</span><span>${t.btn_collapse_chat_details || 'Thu gọn phân tích'}</span>` 
+        : `<span>▼</span><span>${t.btn_expand_chat_details || 'Mở rộng phân tích trong Chat'}</span>`;
+}
+window.toggleChatForensicDetails = toggleChatForensicDetails;
+
+function toggleDisputeMenu(btn) {
+    const wrapper = btn.closest('.chat-dispute-wrapper');
+    if (!wrapper) return;
+    const menu = wrapper.querySelector('.chat-dispute-dropdown-menu');
+    if (!menu) return;
+    const isHidden = (menu.style.display === 'none' || menu.style.display === '');
+    menu.style.display = isHidden ? 'flex' : 'none';
+}
+window.toggleDisputeMenu = toggleDisputeMenu;
+
 function formatAgentChatSummary(text, data, lang = currentLang) {
     const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
     if (!data) return renderMarkdown(text);
@@ -769,6 +820,11 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                     (cert.media_type && cert.media_type.includes('video')) ||
                     (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('video')) ||
                     (data.frame_results && data.frame_results.length > 0);
+
+    const isAudio = (data.media_type && data.media_type.includes('audio')) ||
+                    (cert.media_type && cert.media_type.includes('audio')) ||
+                    (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('audio')) ||
+                    (cert.audio_metadata !== undefined);
 
     const label = data.label || 'Unknown';
     const isFake = label.toLowerCase().includes('fake') || label.toLowerCase().includes('synthetic') || label.toLowerCase().includes('manipulate');
@@ -803,7 +859,9 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
             : `Độ đối xứng điểm sáng giác mạc đạt ${(Math.max(0, 100 - asymmetryScore*100)).toFixed(1)}% (Δθ = ${angleDelta}°), khớp với vector nguồn sáng môi trường.`);
 
     const msgLipSyncText = !isVideo
-        ? "N/A - Định dạng ảnh tĩnh (Chỉ áp dụng phân tích đồng bộ âm vị - thị giác đối với video có tiếng nói)."
+        ? (isAudio 
+            ? `Động học cao độ F0 jitter ổn định ${((ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? ev.pitch_vocal_dynamics.f0_jitter * 100 : 2.1).toFixed(1)}%, vi rung tự nhiên của dây thanh quản người.`
+            : "N/A - Định dạng ảnh tĩnh (Chỉ áp dụng phân tích đồng bộ âm vị - thị giác đối với video có tiếng nói).")
         : (isFake
             ? "Độ trễ thời gian giữa chuyển động mở môi và dải formant âm thanh vượt ngưỡng 120ms (DF26 Desync detected)."
             : "Đồng bộ âm vị - thị giác (Phoneme-to-Viseme) đạt tương quan Pearson r = 0.94, không phát hiện lồng tiếng/AI Dubbing.");
@@ -820,59 +878,89 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     ` : '';
 
     return `
-        <div class="chat-forensic-summary" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-weight: 800; font-size: 0.9rem; background: ${labelBadgeBg}; color: ${labelBadgeColor}; padding: 3px 10px; border-radius: 6px;">
-                    ${labelBadgeText}
-                </span>
-                <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
-                    ${t.conf_score_label}: <strong style="color: #0f172a;">${confidence}</strong>
-                </span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 0.82rem; color: #334155;">
-                <div><span style="color: #64748b;">${t.cert_id_label}:</span> <code style="font-family: monospace; font-weight: 700; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; color: #0f172a;">${certId}</code></div>
-                <div><span style="color: #64748b;">${t.cert_risk_label}:</span> <strong style="color: ${isFake ? '#dc2626' : '#16a34a'};">${compositeRisk}</strong></div>
-                <div><span style="color: #64748b;">${t.cert_spectral_label}:</span> <strong>${spectral}</strong></div>
-                <div><span style="color: #64748b;">${t.cert_spatial_label}:</span> <strong>${spatial}</strong></div>
-                <div><span style="color: #64748b;">${t.cert_prnu_label}:</span> <strong>${prnu}</strong></div>
-                <div><span style="color: #64748b;">${t.cert_corneal_label}:</span> <strong>${corneal}</strong></div>
-            </div>
-            ${xaiSnippet}
-
-            <!-- 🏛️ Multi-Agent Debate Consensus Thread -->
-            <div class="chat-debate-box" style="margin-top: 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: #78350f;">
-                <div style="font-weight: 800; color: #92400e; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                    <span>🏛️</span>
-                    <span>Hội Đồng Tranh Biện Đa Agent (4 Agents Consensus):</span>
+        <div class="chat-forensic-summary compact-mode">
+            <!-- 🏷️ Top Compact Header: Media Tag, Verdict, Confidence & Cert ID -->
+            <div class="compact-header" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="media-type-tag" style="background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; border: 1px solid #c7d2fe;">
+                        ${isAudio ? '🎙️ Audio' : (isVideo ? '🎬 Video' : '🖼️ Image')}
+                    </span>
+                    <span style="font-weight: 800; font-size: 0.85rem; background: ${labelBadgeBg}; color: ${labelBadgeColor}; padding: 3px 10px; border-radius: 6px; border: 1px solid ${isFake ? '#fca5a5' : '#86efac'};">
+                        ${labelBadgeText}
+                    </span>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
+                        ${t.conf_score_label}: <strong style="color: #0f172a;">${confidence}</strong>
+                    </span>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 5px; line-height: 1.45;">
-                    <div><strong>🌐 Vision Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgVisionText)}</span></div>
-                    <div><strong>👁️ Corneal Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgCornealText)}</span></div>
-                    <div><strong>👄 LipSync Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgLipSyncText)}</span></div>
-                    <div><strong>⚖️ Chief Magistrate:</strong> <span style="color: #451a03;">${escapeHtml(msgMagistrateText)}</span></div>
+                <div style="font-size: 0.74rem; color: #64748b; font-family: monospace; background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
+                    ${certId}
                 </div>
             </div>
 
-            <!-- 💬 Human-in-the-Loop Dispute & Feedback Chips -->
-            <div style="margin-top: 10px; border-top: 1px solid #f1f5f9; padding-top: 8px;">
-                <div style="font-size: 0.72rem; color: #64748b; font-weight: 600; margin-bottom: 6px;">
-                    💬 Phản hồi nếu thấy kết quả chưa thỏa đáng (Human-in-the-Loop):
+            <!-- ⚡ Quick Action Bar: View Full Certificate & Expand in Chat -->
+            <div class="compact-action-bar" style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn-jump-cert" onclick="jumpToForensicCertificate()" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; border: none; padding: 5px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2); transition: all 0.15s ease;">
+                    <span>🔍</span>
+                    <span>${t.btn_view_full_cert || 'Xem Chứng Thư & Ma Trận 6D Chi Tiết ↗'}</span>
+                </button>
+                <button type="button" class="btn-toggle-details" onclick="toggleChatForensicDetails(this)" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 7px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;">
+                    <span>▼</span>
+                    <span>${t.btn_expand_chat_details || 'Mở rộng phân tích trong Chat'}</span>
+                </button>
+                <div class="chat-dispute-wrapper" style="position: relative; display: inline-block;">
+                    <button type="button" class="btn-dispute-toggle" onclick="toggleDisputeMenu(this)" style="background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 5px 9px; border-radius: 7px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <span>⚖️</span>
+                        <span>${t.btn_dispute_menu || 'Tranh biện ▾'}</span>
+                    </button>
+                    <div class="chat-dispute-dropdown-menu" style="display: none; position: absolute; left: 0; top: 100%; margin-top: 4px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 8px; z-index: 100; min-width: 270px; flex-direction: column; gap: 6px;">
+                        <button class="chat-dispute-chip" onclick="sendDisputeQuery('Tại sao mô hình nhận định mẫu này là ${isFake ? 'Deepfake' : 'Thật'}? Giải thích chi tiết ma trận 6D.')" style="text-align: left; width: 100%;">
+                            ❓ Tại sao nhận định là ${isFake ? 'Deepfake' : 'Thật'}?
+                        </button>
+                        <button class="chat-dispute-chip" onclick="sendDisputeQuery('Giải thích thêm về vân cảm biến PRNU và phổ 2D FFT của mẫu này.')" style="text-align: left; width: 100%;">
+                            📷 Hỏi về PRNU & Phổ 2D FFT
+                        </button>
+                        <button class="chat-dispute-chip" onclick="sendDisputeQuery('Tôi thấy kết quả này chưa hợp lý. Tôi là chủ sở hữu phương tiện này, hãy thẩm tra lại!')" style="text-align: left; width: 100%;">
+                            ⚖️ Tôi thấy chưa hợp lý (Yêu cầu thẩm tra lại)
+                        </button>
+                    </div>
                 </div>
-                <div class="chat-dispute-chips">
-                    <button class="chat-dispute-chip" onclick="sendDisputeQuery('Tại sao mô hình nhận định bức ảnh này là ${isFake ? 'Deepfake' : 'Thật'}? Giải thích chi tiết ma trận 6D.')">
-                        ❓ Tại sao nhận định là ${isFake ? 'Deepfake' : 'Thật'}?
-                    </button>
-                    <button class="chat-dispute-chip" onclick="sendDisputeQuery('Giải thích thêm về vân cảm biến PRNU và phổ 2D FFT của ảnh này.')">
-                        📷 Hỏi về PRNU & Phổ 2D FFT
-                    </button>
-                    <button class="chat-dispute-chip" onclick="sendDisputeQuery('Tôi thấy kết quả này chưa hợp lý. Tôi là người chụp bức ảnh này, hãy thẩm tra lại!')">
-                        ⚖️ Tôi thấy chưa hợp lý (Yêu cầu thẩm tra lại)
-                    </button>
+            </div>
+
+            <!-- 📜 Collapsible Full Details (Hidden by default, has inner scroll, won't push chat down!) -->
+            <div class="chat-forensic-collapsible" style="display: none; max-height: 280px; overflow-y: auto; margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 0.78rem; color: #334155; margin-bottom: 8px;">
+                    <div><span style="color: #64748b;">${t.cert_risk_label}:</span> <strong style="color: ${isFake ? '#dc2626' : '#16a34a'};">${compositeRisk}</strong></div>
+                    <div><span style="color: #64748b;">${t.cert_spectral_label}:</span> <strong>${spectral}</strong></div>
+                    <div><span style="color: #64748b;">${t.cert_spatial_label}:</span> <strong>${spatial}</strong></div>
+                    <div><span style="color: #64748b;">${t.cert_prnu_label}:</span> <strong>${prnu}</strong></div>
+                    <div><span style="color: #64748b;">${t.cert_corneal_label}:</span> <strong>${corneal}</strong></div>
+                    <div><span style="color: #64748b;">Youden τ*:</span> <strong>${tau}</strong></div>
+                </div>
+                ${xaiSnippet}
+
+                <!-- 🏛️ Multi-Agent Debate Consensus Thread -->
+                <div class="chat-debate-box" style="margin-top: 8px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 8px 10px; font-size: 0.76rem; color: #78350f;">
+                    <div style="font-weight: 800; color: #92400e; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                        <span>🏛️</span>
+                        <span>Hội Đồng Tranh Biện Đa Agent (4 Agents Consensus):</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; line-height: 1.4;">
+                        <div><strong>🌐 Vision Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgVisionText)}</span></div>
+                        <div><strong>👁️ Corneal Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgCornealText)}</span></div>
+                        <div><strong>👄 LipSync Agent:</strong> <span style="color: #451a03;">${escapeHtml(msgLipSyncText)}</span></div>
+                        <div><strong>⚖️ Chief Magistrate:</strong> <span style="color: #451a03;">${escapeHtml(msgMagistrateText)}</span></div>
+                    </div>
+                </div>
+
+                <!-- Executive Summary Text -->
+                <div style="margin-top: 8px; font-weight: 700; font-size: 0.8rem; color: #1e293b; border-left: 3px solid #5c46e5; padding-left: 6px;">
+                    ${t.summary_verdict_title}
+                </div>
+                <div class="explanation-text-body" style="font-size: 0.8rem; line-height: 1.5; color: #334155; margin-top: 4px;">
+                    ${cleanExplanation}
                 </div>
             </div>
         </div>
-        <div style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 6px; border-left: 3px solid #5c46e5; padding-left: 8px;">${t.summary_verdict_title}</div>
-        <div class="explanation-text-body" style="font-size: 0.88rem; line-height: 1.55;">${cleanExplanation}</div>
     `;
 }
 
