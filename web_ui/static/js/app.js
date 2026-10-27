@@ -56,7 +56,14 @@ const TRANSLATIONS = {
         btn_view_full_cert: "🔍 View Certificate & 6D Matrix Details ↗",
         btn_expand_chat_details: "▼ Expand Analysis in Chat",
         btn_collapse_chat_details: "▲ Collapse Analysis",
-        btn_dispute_menu: "⚖️ Dispute / Inquire ▾"
+        btn_dispute_menu: "⚖️ Dispute / Inquire ▾",
+        routing_mode_title: "Model Routing Engine:",
+        mode_auto: "Auto (AI Gate)",
+        mode_human: "Portrait (Dual-Stream)",
+        mode_general: "Landscape (Single-Stream)",
+        mode_auto_hint: "Auto-detect faces & bodies using YuNet DNN + HOG",
+        mode_human_hint: "Force Dual-Stream: Face Forensics + ViT 6D + PRNU",
+        mode_general_hint: "Force Single-Stream: General Scene / Urban / Object (ViT 6D + PRNU)"
     },
     vi: {
         status_connecting: "Đang kết nối...",
@@ -111,7 +118,14 @@ const TRANSLATIONS = {
         btn_view_full_cert: "🔍 Xem Chứng Thư & Ma Trận 6D Chi Tiết ↗",
         btn_expand_chat_details: "▼ Mở rộng phân tích trong Chat",
         btn_collapse_chat_details: "▲ Thu gọn phân tích",
-        btn_dispute_menu: "⚖️ Tranh biện / Hỏi Agent ▾"
+        btn_dispute_menu: "⚖️ Tranh biện / Hỏi Agent ▾",
+        routing_mode_title: "Định tuyến Mô hình:",
+        mode_auto: "Tự Động (AI Gate)",
+        mode_human: "Chân Dung (Dual-Stream)",
+        mode_general: "Cảnh Quan (Single-Stream)",
+        mode_auto_hint: "Tự động phát hiện khuôn mặt & dáng người (YuNet DNN + HOG)",
+        mode_human_hint: "Ép buộc Luồng Kép (Giám định khuôn mặt chuyên sâu + ViT 6D + PRNU)",
+        mode_general_hint: "Ép buộc Luồng Đơn (Cảnh quan / Đồ vật / Đô thị ViT 6D + PRNU)"
     }
 };
 
@@ -143,8 +157,12 @@ function switchLanguage(lang) {
         }
     });
 
-    if (statusDot.classList.contains('connected')) {
+    if (statusDot && statusDot.classList.contains('connected')) {
         statusText.textContent = TRANSLATIONS[lang].status_connected;
+    }
+
+    if (typeof updateRoutingModeHint === 'function') {
+        updateRoutingModeHint(currentRoutingMode);
     }
 }
 
@@ -176,6 +194,35 @@ let uploadedFilePath = null;
 let analysisComplete = false;
 let hasShownInitialConnect = false;
 let analysisTimeoutTimer = null;
+let currentRoutingMode = 'auto'; // 'auto' | 'human' | 'general'
+
+const modePillGroup = document.getElementById('modePillGroup');
+const routingModeHint = document.getElementById('routingModeHint');
+
+function updateRoutingModeHint(mode) {
+    if (!routingModeHint) return;
+    const targetMode = mode || currentRoutingMode || 'auto';
+    const hintKey = `mode_${targetMode}_hint`;
+    if (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][hintKey]) {
+        routingModeHint.textContent = TRANSLATIONS[currentLang][hintKey];
+        routingModeHint.setAttribute('data-i18n', hintKey);
+    }
+}
+
+if (modePillGroup) {
+    const pills = modePillGroup.querySelectorAll('.mode-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', (e) => {
+            e.preventDefault();
+            const mode = pill.getAttribute('data-mode') || 'auto';
+            currentRoutingMode = mode;
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            updateRoutingModeHint(mode);
+            console.log(`[Model Routing Mode] Selected mode: ${currentRoutingMode}`);
+        });
+    });
+}
 
 // ===== WebSocket Events =====
 socket.on('connect', () => {
@@ -486,7 +533,8 @@ analyzeBtn.addEventListener('click', async () => {
             socket.emit('analyze_image', {
                 filepath: uploadedFilePath,
                 query: '',
-                language: currentLang
+                language: currentLang,
+                routing_mode: currentRoutingMode
             });
 
             // Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
@@ -501,7 +549,8 @@ analyzeBtn.addEventListener('click', async () => {
                             body: JSON.stringify({
                                 filepath: uploadedFilePath,
                                 query: '',
-                                language: currentLang
+                                language: currentLang,
+                                routing_mode: currentRoutingMode
                             })
                         });
                         

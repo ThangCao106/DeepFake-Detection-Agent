@@ -277,7 +277,7 @@ def get_shared_detector():
     return _shared_detector
 
 
-def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str = "en"):
+def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str = "en", routing_mode: str = "auto"):
     """
     Core detection & analysis engine supporting both WebSocket background tasks and REST API fallback.
     Returns: (detection_result_dict, explanation_str)
@@ -303,7 +303,7 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
     # Fallback to direct ML detector if orchestrator didn't produce result
     if detection_result is None:
         detector = get_shared_detector()
-        detection_result = detector.predict_media(filepath)
+        detection_result = detector.predict_media(filepath, routing_mode=routing_mode)
         if 'error' in detection_result:
             return detection_result, f"Detection error: {detection_result['error']}"
 
@@ -350,12 +350,13 @@ def api_analyze():
     filepath = data.get('filepath')
     user_query = data.get('query', '')
     language = data.get('language', 'en')
+    routing_mode = data.get('routing_mode', 'auto')
 
     if not filepath or not os.path.exists(filepath):
         return jsonify({'error': 'Media file not found on server'}), 404
 
     try:
-        detection_result, explanation = execute_analysis_pipeline(filepath, user_query=user_query, language=language)
+        detection_result, explanation = execute_analysis_pipeline(filepath, user_query=user_query, language=language, routing_mode=routing_mode)
         return jsonify({
             'success': True,
             'detection_result': detection_result,
@@ -562,6 +563,7 @@ def handle_analyze_image(data):
         filepath = data.get('filepath')
         user_query = data.get('query', '')
         language = data.get('language', 'en')
+        routing_mode = data.get('routing_mode', 'auto')
         client_sid = request.sid
         
         if not filepath or not os.path.exists(filepath):
@@ -575,9 +577,9 @@ def handle_analyze_image(data):
             'message': 'Analyzing media with Dual-Stream Vision models...'
         })
         
-        def background_analysis_task(sid, fpath, q, lang):
+        def background_analysis_task(sid, fpath, q, lang, rmode):
             try:
-                detection_result, explanation = execute_analysis_pipeline(fpath, user_query=q, language=lang)
+                detection_result, explanation = execute_analysis_pipeline(fpath, user_query=q, language=lang, routing_mode=rmode)
                 if detection_result:
                     socketio.emit('detection_result', detection_result, to=sid)
                 socketio.emit('agent_status', {
@@ -591,7 +593,7 @@ def handle_analyze_image(data):
                 logger.error(f"Background analysis error: {task_err}", exc_info=True)
                 socketio.emit('error', {'message': f'Analysis failed: {str(task_err)}'}, to=sid)
 
-        socketio.start_background_task(background_analysis_task, client_sid, filepath, user_query, language)
+        socketio.start_background_task(background_analysis_task, client_sid, filepath, user_query, language, routing_mode)
         
     except Exception as e:
         logger.error(f"Analysis trigger error: {e}", exc_info=True)

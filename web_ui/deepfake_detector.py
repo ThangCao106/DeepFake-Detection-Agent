@@ -51,6 +51,36 @@ except Exception:
     CV2_EYE_CASCADE = None
     CV2_CASCADES_AVAILABLE = False
 
+# Initialize Deep Learning Face & Person Detectors (Option B Standard)
+YUNET_MODEL_FILE = "face_detection_yunet_2023mar.onnx"
+YUNET_DETECTOR = None
+try:
+    _candidates = [
+        os.path.join(os.path.dirname(__file__), "models", YUNET_MODEL_FILE),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", YUNET_MODEL_FILE),
+        os.path.join("models", YUNET_MODEL_FILE)
+    ]
+    for _yp in _candidates:
+        if os.path.exists(_yp) and os.path.getsize(_yp) > 10000:
+            if hasattr(cv2, 'FaceDetectorYN'):
+                YUNET_DETECTOR = cv2.FaceDetectorYN.create(_yp, "", (320, 320), score_threshold=0.52, nms_threshold=0.3, top_k=5000)
+                print(f"[info] SOTA YuNet DNN Face Detector loaded from: {_yp}")
+                break
+except Exception as _ye:
+    print(f"[warning] Could not load YuNet DNN detector: {_ye}")
+    YUNET_DETECTOR = None
+
+HOG_PEOPLE_DETECTOR = None
+try:
+    if hasattr(cv2, 'HOGDescriptor'):
+        _hog = cv2.HOGDescriptor()
+        _hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        HOG_PEOPLE_DETECTOR = _hog
+        print("[info] Built-in OpenCV HOG Pedestrian/Full-Body Detector initialized.")
+except Exception as _he:
+    print(f"[warning] Could not load HOG People detector: {_he}")
+    HOG_PEOPLE_DETECTOR = None
+
 # Optional face cropping using face_recognition if available
 try:
     import face_recognition
@@ -105,6 +135,51 @@ class HumanPresenceDetector:
                 return True
             except Exception:
                 return False
+
+        img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+
+        # Gate 0: SOTA YuNet Deep Learning Face Detector (Detects small, distant, tilted, occluded faces)
+        if YUNET_DETECTOR is not None:
+            try:
+                YUNET_DETECTOR.setInputSize((w_img, h_img))
+                _, yn_faces = YUNET_DETECTOR.detect(img_bgr)
+                if yn_faces is not None and len(yn_faces) > 0:
+                    for f in yn_faces:
+                        score = float(f[-1])
+                        if score >= 0.50:
+                            fx, fy, fw, fh = int(f[0]), int(f[1]), int(f[2]), int(f[3])
+                            if fw >= 16 and fh >= 16:
+                                detected_faces.append((fx, fy, fw, fh))
+                    if detected_faces:
+                        evidence.append(f"Phát hiện {len(detected_faces)} khuôn mặt qua mạng nơ-ron YuNet DNN (Độ tin cậy: {float(yn_faces[0][-1])*100:.1f}%)")
+            except Exception:
+                pass
+
+        # Gate 0b: SOTA HOG Pedestrian Detector (Catches full-body standing/sitting outdoor postures)
+        if not detected_faces and HOG_PEOPLE_DETECTOR is not None:
+            try:
+                scale = 1.0
+                if max(w_img, h_img) > 900:
+                    scale = 900.0 / max(w_img, h_img)
+                    small_bgr = cv2.resize(img_bgr, (int(w_img * scale), int(h_img * scale)))
+                else:
+                    small_bgr = img_bgr
+                hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(small_bgr, winStride=(8, 8), padding=(8, 8), scale=1.05)
+                if len(hog_boxes) > 0:
+                    max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
+                    if max_wt >= 0.22:
+                        for hb, hw in zip(hog_boxes, hog_weights):
+                            if hw >= 0.22:
+                                bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
+                                head_x = max(0, bx + int(bw * 0.15))
+                                head_y = max(0, by)
+                                head_w = min(w_img - head_x, int(bw * 0.70))
+                                head_h = min(h_img - head_y, int(bh * 0.35))
+                                detected_faces.append((head_x, head_y, head_w, head_h))
+                        if detected_faces:
+                            evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_faces)} người, trọng số: {max_wt:.2f})")
+            except Exception:
+                pass
 
         # 1. Image preprocessing: Grayscale + CLAHE for local contrast normalization
         gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
@@ -1214,10 +1289,10 @@ class DeepfakeDetector:
         # Fallback: No verified human face detected -> return whole image and False
         return pil_image, False
 
-    def predict(self, image_path, use_face_crop=True):
+    def predict(self, image_path, use_face_crop=True, routing_mode="auto"):
         """
         Predict whether an image is Real or Fake and generate an Auditable Forensic Decision Record.
-        Applies Dual-Stream Parallel Analysis if human features (face/skin) are detected.
+        Applies Dual-Stream Parallel Analysis if human features (face/skin) are detected or requested.
         Returns dict with label, confidence, all_scores, and forensic_certificate.
         """
         if not os.path.exists(image_path):
@@ -1226,16 +1301,38 @@ class DeepfakeDetector:
         try:
             image = Image.open(image_path).convert("RGB")
 
-            # Step 1: Pre-flight Human Presence Gate (Strict Dual-Gate)
+            # Step 1: Pre-flight Human Presence Gate (Strict Dual-Gate + SOTA YuNet & HOG)
             human_presence = HumanPresenceDetector.analyze_human_presence(image)
-            has_human = human_presence.get("has_human", False)
+            auto_has_human = human_presence.get("has_human", False)
             detected_faces = human_presence.get("detected_faces", [])
+
+            # Option C: Routing Mode Dispatcher
+            mode = str(routing_mode or "auto").lower().strip()
+            if mode in ["human", "dual", "portrait"]:
+                has_human = True
+                human_presence["has_human"] = True
+                human_presence["presence_evidence"] = ["Chế độ Chân dung (Dual-Stream Human Biometrics) kích hoạt thủ công qua Mode Selector"] + human_presence.get("presence_evidence", [])
+            elif mode in ["general", "single", "scenery", "nature"]:
+                has_human = False
+                human_presence["has_human"] = False
+                detected_faces = []
+                human_presence["detected_faces"] = []
+                human_presence["presence_evidence"] = ["Chế độ Cảnh quan / Đồ hoạ (Single-Stream General) kích hoạt thủ công qua Mode Selector"]
+            else:
+                has_human = auto_has_human
 
             # Step 1b: Environmental Scene & Context Classification
             scene_context = SceneContextClassifier.classify_scene_context(
                 image, has_human=has_human, detected_faces=detected_faces
             )
+            if mode in ["human", "dual", "portrait"]:
+                scene_context["scene_type"] = "portrait"
+                scene_context["vietnamese_label"] = "Chân Dung (Chuyên Sâu Thủ Công)"
+            elif mode in ["general", "single", "scenery", "nature"]:
+                scene_context["scene_type"] = "landscape"
+                scene_context["vietnamese_label"] = "Cảnh Quan / Đồ Hoạ (Chuyên Sâu Thủ Công)"
             human_presence["scene_context"] = scene_context
+            human_presence["routing_mode"] = mode
 
             face_found = False
             if use_face_crop and has_human:
@@ -1541,7 +1638,7 @@ class DeepfakeDetector:
     # Alias for API compatibility
     predict_image = predict
 
-    def predict_video(self, video_path, window_duration_sec=7.0, max_frames=12):
+    def predict_video(self, video_path, window_duration_sec=7.0, max_frames=12, routing_mode="auto"):
         """
         SARAAB-Inspired Short-Clip Temporal Window Video Deepfake Detector.
         1. Evaluates footage using 7-second Micro-Windows (matching Dubai DESC SARAAB standard).
@@ -1608,14 +1705,19 @@ class DeepfakeDetector:
                 cv2.imwrite(temp_frame_path, frame)
 
                 try:
-                    res = self.predict(temp_frame_path, use_face_crop=True)
+                    res = self.predict(temp_frame_path, use_face_crop=True, routing_mode=routing_mode)
                     if "error" not in res:
                         timestamp_sec = round(f_idx / fps, 2)
                         cert = res.get("forensic_certificate", {})
                         ev = cert.get("multi_dimensional_evidence", {})
                         fake_p = ev.get("passive_model_score", {}).get("fake_probability", 0.5)
 
-                        if cert.get("human_presence_evaluation", {}).get("has_human", False):
+                        mode = str(routing_mode or "auto").lower().strip()
+                        if mode in ["human", "dual", "portrait"]:
+                            has_human_video = True
+                        elif mode in ["general", "single", "scenery", "nature"]:
+                            has_human_video = False
+                        elif cert.get("human_presence_evaluation", {}).get("has_human", False):
                             has_human_video = True
 
                         frame_results.append({
@@ -1871,7 +1973,7 @@ class DeepfakeDetector:
         except Exception as e:
             return {"error": f"Video processing error: {str(e)}"}
 
-    def predict_audio(self, audio_path):
+    def predict_audio(self, audio_path, routing_mode="auto"):
         """
         Acoustic & Spectral Voice Deepfake Detector (Tri-Stream Engine).
         Detects AI-generated voices (VITS, HiFi-GAN, ElevenLabs, XTTS) via:
@@ -2042,17 +2144,17 @@ class DeepfakeDetector:
         except Exception as e:
             return {"error": f"Audio processing error: {str(e)}"}
 
-    def predict_media(self, file_path):
+    def predict_media(self, file_path, routing_mode="auto"):
         """Predict for image, video, or audio based on file extension (Tri-Stream Dispatcher)."""
         ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else ''
         video_exts = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'}
         audio_exts = {'mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a', 'wma'}
         if ext in video_exts:
-            return self.predict_video(file_path)
+            return self.predict_video(file_path, routing_mode=routing_mode)
         elif ext in audio_exts:
-            return self.predict_audio(file_path)
+            return self.predict_audio(file_path, routing_mode=routing_mode)
         else:
-            return self.predict(file_path)
+            return self.predict(file_path, routing_mode=routing_mode)
 
 
 
