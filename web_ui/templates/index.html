@@ -727,7 +727,19 @@
                                     <span id="genUiWidget2Icon">👁️</span>
                                     <span id="genUiWidget2Name">Ophthalmic Corneal Ray-Tracing</span>
                                 </div>
-                                <span class="genui-artifact-badge" id="genUiCornealBadge" style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">Specular Analysis</span>
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <span class="genui-artifact-badge" id="genUiSceneBadge" style="display: none; background: #ecfeff; color: #0891b2; border: 1px solid #a5f3fc;">Ngữ Cảnh</span>
+                                    <span class="genui-artifact-badge" id="genUiCornealBadge" style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;">Specular Analysis</span>
+                                </div>
+                            </div>
+                            <!-- GenUI Evidence Tab Switcher (Dual-Stream: Corneal Biometrics vs Context ViT 8x8 Grid) -->
+                            <div class="genui-tab-bar" id="genUiCard1TabBar">
+                                <button type="button" class="genui-tab-btn active" id="tabBtnCorneal" onclick="switchCard1Evidence('corneal')">
+                                    <span>👁️</span> Sinh Trắc Giác Mạc (Corneal)
+                                </button>
+                                <button type="button" class="genui-tab-btn" id="tabBtnContext" onclick="switchCard1Evidence('context')">
+                                    <span>🗺️</span> Phân Loại Ngữ Cảnh & ViT 8x8
+                                </button>
                             </div>
                             <p id="genUiWidget2Desc" style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
                                 Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.

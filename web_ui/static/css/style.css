@@ -1629,6 +1629,52 @@ body {
 .split-slider-label.left { left: 8px; }
 .split-slider-label.right { right: 8px; }
 
+/* GenUI Artifact Tab Switcher */
+.genui-tab-bar {
+    display: flex;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+}
+
+.genui-tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.genui-tab-btn:hover {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.genui-tab-btn.active {
+    background: #ffffff;
+    color: #4338ca;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.genui-tab-btn.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* Corneal Ray-Tracing Canvas */
 .corneal-canvas-box {
     position: relative;

@@ -1875,6 +1875,91 @@ function completeAllGenUiSteps() {
     }
 }
 
+let currentCard1State = {
+    isAudio: false,
+    hasHuman: true,
+    asymmetryScore: 0.12,
+    angleDelta: '0.0',
+    saraab: {},
+    preview: null,
+    peakScore: 1.0,
+    regionName: '',
+    shortRegion: '',
+    sceneCategoryShort: '',
+    sceneCategoryFull: '',
+    sceneIcon: '👤',
+    currentTab: 'corneal'
+};
+
+window.switchCard1Evidence = function(mode) {
+    currentCard1State.currentTab = mode;
+    const tabCorneal = document.getElementById('tabBtnCorneal');
+    const tabContext = document.getElementById('tabBtnContext');
+    const widget2Icon = document.getElementById('genUiWidget2Icon');
+    const widget2Name = document.getElementById('genUiWidget2Name');
+    const widget2Desc = document.getElementById('genUiWidget2Desc');
+    const widget2Footer = document.getElementById('genUiWidget2FooterLabel');
+    const cornealAngleEl = document.getElementById('genUiCornealAngleVal');
+    const cornealBadge = document.getElementById('genUiCornealBadge');
+
+    if (mode === 'corneal') {
+        if (tabCorneal) {
+            tabCorneal.classList.add('active');
+        }
+        if (tabContext) {
+            tabContext.classList.remove('active');
+        }
+        if (widget2Icon) widget2Icon.textContent = '👁️';
+        if (widget2Name) widget2Name.textContent = 'Ophthalmic Corneal Ray-Tracing';
+        if (widget2Desc) widget2Desc.textContent = 'Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.';
+        if (widget2Footer) widget2Footer.textContent = 'Độ bất đối xứng giác mạc (Asymmetry Δθ):';
+        if (cornealAngleEl) {
+            cornealAngleEl.textContent = `Δθ = ${currentCard1State.angleDelta}°`;
+            cornealAngleEl.style.color = '#7c3aed';
+        }
+        if (cornealBadge) {
+            if (currentCard1State.asymmetryScore > 0.15) {
+                cornealBadge.textContent = 'Asymmetric (Fake)';
+                cornealBadge.style.background = '#fee2e2';
+                cornealBadge.style.color = '#b91c1c';
+                cornealBadge.style.borderColor = '#fca5a5';
+            } else {
+                cornealBadge.textContent = 'Symmetric (Natural)';
+                cornealBadge.style.background = '#dcfce7';
+                cornealBadge.style.color = '#15803d';
+                cornealBadge.style.borderColor = '#86efac';
+            }
+        }
+        renderCornealRayTraceCanvas(currentCard1State.asymmetryScore, currentCard1State.hasHuman);
+    } else {
+        if (tabContext) {
+            tabContext.classList.add('active');
+        }
+        if (tabCorneal) {
+            tabCorneal.classList.remove('active');
+        }
+        if (widget2Icon) widget2Icon.textContent = '🗺️';
+        if (widget2Name) widget2Name.textContent = 'Phân Tích Ngữ Cảnh & Bản Đồ Chú Ý Không Gian (ViT 8x8 Grid)';
+        if (widget2Desc) {
+            const envStr = currentCard1State.sceneCategoryFull ? ` (${currentCard1State.sceneCategoryFull})` : '';
+            widget2Desc.textContent = `Phân loại ngữ cảnh môi trường${envStr}, phân tích ma trận lưới 8x8 vi sai gradient bậc 1 (tương thích ViT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.`;
+        }
+        if (widget2Footer) widget2Footer.textContent = 'Ngữ cảnh & Vùng chú ý chính (Saliency Hotspot):';
+        if (cornealAngleEl) {
+            const shortReg = currentCard1State.shortRegion || 'Toàn cảnh';
+            cornealAngleEl.textContent = `${currentCard1State.sceneCategoryShort} • ${shortReg} (Grad: ${Number(currentCard1State.peakScore).toFixed(2)})`;
+            cornealAngleEl.style.color = '#0891b2';
+        }
+        if (cornealBadge) {
+            cornealBadge.textContent = 'ViT Spatial Patch Grid';
+            cornealBadge.style.background = '#ecfeff';
+            cornealBadge.style.color = '#0891b2';
+            cornealBadge.style.borderColor = '#a5f3fc';
+        }
+        renderSaraabHeatmapCanvas(currentCard1State.saraab, currentCard1State.preview);
+    }
+};
+
 function populateGenUiArtifacts(data) {
     completeAllGenUiSteps();
 
@@ -1934,13 +2019,29 @@ function populateGenUiArtifacts(data) {
     const regionName = peak.anatomical_region || 'Central Salient Object / Architecture Structural Region';
     const peakScore = peak.peak_anomaly_score !== undefined ? peak.peak_anomaly_score : 1.0;
 
-    let sceneCategoryShort = 'Phi Sinh Trắc (Urban)';
-    if (regionName.includes('Architecture') || regionName.includes('Central')) {
-        sceneCategoryShort = 'Ngoại Cảnh / Kiến Trúc';
-    } else if (regionName.includes('Skylight') || regionName.includes('Sky')) {
-        sceneCategoryShort = 'Bầu Trời / Cảnh Quan';
-    } else {
-        sceneCategoryShort = 'Phi Sinh Trắc (Vật Thể)';
+    const sceneCtx = cert.scene_context || humanEval.scene_context || (evMatrix.dim6_patch_heatmap_uncertainty && evMatrix.dim6_patch_heatmap_uncertainty.scene_context) || data.scene_context || {};
+    const sceneCategoryFull = sceneCtx.category || (hasHuman ? 'Chân Dung Đời Thường' : 'Phi Sinh Trắc / Tổng Hợp');
+    let sceneCategoryShort = sceneCtx.short_name || '';
+    const sceneIcon = sceneCtx.icon || (hasHuman ? '👤' : '🏞️');
+
+    if (!sceneCategoryShort) {
+        if (hasHuman) {
+            if (regionName.includes('Periorbital') || regionName.includes('Eyes')) {
+                sceneCategoryShort = 'Chân Dung Cận Cảnh';
+            } else if (regionName.includes('Perioral') || regionName.includes('Mouth')) {
+                sceneCategoryShort = 'Chân Dung Khuôn Mặt';
+            } else {
+                sceneCategoryShort = 'Chân Dung Đời Thường';
+            }
+        } else {
+            if (regionName.includes('Architecture') || regionName.includes('Central')) {
+                sceneCategoryShort = 'Ngoại Cảnh / Kiến Trúc';
+            } else if (regionName.includes('Skylight') || regionName.includes('Sky')) {
+                sceneCategoryShort = 'Bầu Trời / Cảnh Quan';
+            } else {
+                sceneCategoryShort = 'Phi Sinh Trắc (Vật Thể)';
+            }
+        }
     }
 
     // 0. Update Visual 6-Step Forensic Detection Pipeline Banner
@@ -1986,8 +2087,8 @@ function populateGenUiArtifacts(data) {
             pipeStep2Icon.textContent = '🎙️';
             pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (Voice)';
         } else {
-            pipeStep2Icon.textContent = hasHuman ? '👤' : '🏞️';
-            pipeStep2Desc.textContent = hasHuman ? 'Chân Dung (Human)' : sceneCategoryShort;
+            pipeStep2Icon.textContent = sceneIcon;
+            pipeStep2Desc.textContent = hasHuman ? `Chân Dung (${sceneCategoryShort})` : sceneCategoryShort;
         }
     }
     if (pipeStep3Desc) {
@@ -2032,7 +2133,39 @@ function populateGenUiArtifacts(data) {
     }
 
     // Update Widget 1 & Widget 2 (Adaptive for Audio vs Human Corneal vs General Spatial)
+    currentCard1State = {
+        isAudio: isAudio,
+        hasHuman: hasHuman,
+        asymmetryScore: asymmetryScore,
+        angleDelta: angleDelta,
+        saraab: saraab,
+        preview: preview,
+        peakScore: peakScore,
+        regionName: regionName,
+        shortRegion: regionName.split('/')[0].trim(),
+        sceneCategoryShort: sceneCategoryShort,
+        sceneCategoryFull: sceneCategoryFull,
+        sceneIcon: sceneIcon,
+        currentTab: hasHuman ? 'corneal' : 'context'
+    };
+
+    const sceneBadge = document.getElementById('genUiSceneBadge');
+    const card1TabBar = document.getElementById('genUiCard1TabBar');
+    const tabCorneal = document.getElementById('tabBtnCorneal');
+    const tabContext = document.getElementById('tabBtnContext');
+
+    if (sceneBadge) {
+        if (sceneCategoryShort) {
+            sceneBadge.style.display = 'inline-block';
+            sceneBadge.textContent = `${sceneIcon} ${sceneCategoryShort}`;
+        } else {
+            sceneBadge.style.display = 'none';
+        }
+    }
+
     if (isAudio) {
+        if (card1TabBar) card1TabBar.style.display = 'none';
+
         // Widget 1: Audio Log-Mel Spectrogram
         if (widget2Icon) widget2Icon.textContent = '🎙️';
         if (widget2Name) widget2Name.textContent = 'Phân Tích Phổ Âm Thanh (Log-Mel Spectrogram)';
@@ -2070,46 +2203,36 @@ function populateGenUiArtifacts(data) {
             energyValEl.textContent = `F0_jitter = ${Number(f0Jitter).toFixed(4)}`;
             energyValEl.style.color = '#b45309';
         }
-    } else if (hasHuman) {
-        if (widget2Icon) widget2Icon.textContent = '👁️';
-        if (widget2Name) widget2Name.textContent = 'Ophthalmic Corneal Ray-Tracing';
-        if (widget2Desc) widget2Desc.textContent = 'Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.';
-        if (widget2Footer) widget2Footer.textContent = 'Độ bất đối xứng giác mạc (Asymmetry Δθ):';
-        if (cornealAngleEl) {
-            cornealAngleEl.textContent = `Δθ = ${angleDelta}°`;
-            cornealAngleEl.style.color = '#7c3aed';
-        }
-        if (cornealBadge) {
-            if (asymmetryScore > 0.15) {
-                cornealBadge.textContent = 'Asymmetric (Fake)';
-                cornealBadge.style.background = '#fee2e2';
-                cornealBadge.style.color = '#b91c1c';
-                cornealBadge.style.borderColor = '#fca5a5';
+    } else {
+        if (card1TabBar) {
+            card1TabBar.style.display = 'flex';
+            if (!hasHuman) {
+                if (tabCorneal) {
+                    tabCorneal.classList.add('disabled');
+                    tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Bypass)';
+                }
+                if (tabContext) {
+                    tabContext.classList.remove('disabled');
+                    tabContext.classList.add('active');
+                }
+                switchCard1Evidence('context');
             } else {
-                cornealBadge.textContent = 'Symmetric (Natural)';
-                cornealBadge.style.background = '#dcfce7';
-                cornealBadge.style.color = '#15803d';
-                cornealBadge.style.borderColor = '#86efac';
+                if (tabCorneal) {
+                    tabCorneal.classList.remove('disabled');
+                    tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Corneal)';
+                }
+                if (tabContext) {
+                    tabContext.classList.remove('disabled');
+                }
+                switchCard1Evidence(currentCard1State.currentTab || 'corneal');
+            }
+        } else {
+            if (hasHuman) {
+                switchCard1Evidence('corneal');
+            } else {
+                switchCard1Evidence('context');
             }
         }
-        renderCornealRayTraceCanvas(asymmetryScore, true);
-    } else {
-        if (widget2Icon) widget2Icon.textContent = '🏞️';
-        if (widget2Name) widget2Name.textContent = 'Phân Tích Ngữ Cảnh & Bản Đồ Chú Ý Không Gian';
-        if (widget2Desc) widget2Desc.textContent = 'Phân tích ma trận lưới 8x8 vi sai gradient bậc 1 (tương thích ViT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.';
-        if (widget2Footer) widget2Footer.textContent = 'Vùng chú ý chính (Saliency Hotspot):';
-        const shortRegion = regionName.split('/')[0].trim();
-        if (cornealAngleEl) {
-            cornealAngleEl.textContent = `${shortRegion} (Grad: ${Number(peakScore).toFixed(2)})`;
-            cornealAngleEl.style.color = '#0891b2';
-        }
-        if (cornealBadge) {
-            cornealBadge.textContent = 'ViT Spatial Patch Grid';
-            cornealBadge.style.background = '#ecfeff';
-            cornealBadge.style.color = '#0891b2';
-            cornealBadge.style.borderColor = '#a5f3fc';
-        }
-        renderSaraabHeatmapCanvas(saraab, preview);
     }
 
     // 3. Setup Threshold & Platt Simulator

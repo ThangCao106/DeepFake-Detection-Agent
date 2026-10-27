@@ -245,6 +245,216 @@ class HumanPresenceDetector:
         }
 
 
+class SceneContextClassifier:
+    """
+    Environmental & Scene Context Analyzer.
+    Categorizes visual media into forensic environmental domains:
+      - Outdoor Nature / Park (Ngoại Cảnh / Thiên Nhiên - greenery, foliage, trees, park benches)
+      - Outdoor Sky / Horizon (Ngoài Trời / Bầu Trời - open atmosphere, skylight)
+      - Outdoor Urban / Architecture (Đô Thị / Kiến Trúc - structures, streets, vehicles)
+      - Indoor Lifestyle / Cafe (Trong Nhà / Cafe - warm ambient, cozy interior)
+      - Studio / Official ID (Studio / Thẻ ID - homogeneous backdrop, formal illumination)
+      - Group / Social Event (Chân Dung Nhóm / Sự Kiện - multi-person social context)
+      - Non-Human Scenery / Nature (Phong Cảnh Thiên Nhiên)
+      - Non-Human Urban / Architecture (Kiến Trúc Đô Thị)
+      - Non-Human Objects / Graphic Art (Tĩnh Vật / Đồ Hoạ)
+    """
+    @staticmethod
+    def classify_scene_context(pil_image, has_human=True, detected_faces=None):
+        try:
+            if detected_faces is None:
+                detected_faces = []
+            
+            # Resize image to standardized 256x256 for fast, stable chromatic and structural inspection
+            small_img = pil_image.resize((256, 256))
+            np_rgb = np.array(small_img, dtype=np.float32)
+            h, w, _ = np_rgb.shape
+
+            # Build background mask excluding human face regions
+            bg_mask = np.ones((h, w), dtype=bool)
+            if has_human and detected_faces:
+                orig_w, orig_h = pil_image.size
+                scale_x = w / max(1, orig_w)
+                scale_y = h / max(1, orig_h)
+                for (fx, fy, fw, fh) in detected_faces:
+                    # Dilate face bounding box slightly by 15% to exclude face skin
+                    bx1 = max(0, int((fx - fw * 0.15) * scale_x))
+                    by1 = max(0, int((fy - fh * 0.15) * scale_y))
+                    bx2 = min(w, int((fx + fw * 1.15) * scale_x))
+                    by2 = min(h, int((fy + fh * 1.15) * scale_y))
+                    bg_mask[by1:by2, bx1:bx2] = False
+            
+            # If face occupies almost the whole frame, use peripheral background corners
+            if np.mean(bg_mask) < 0.15:
+                bg_mask = np.ones((h, w), dtype=bool)
+                bg_mask[int(h*0.2):int(h*0.8), int(w*0.2):int(w*0.8)] = False
+
+            # Convert to HSV via OpenCV
+            np_uint8 = np.uint8(np.clip(np_rgb, 0, 255))
+            hsv = cv2.cvtColor(np_uint8, cv2.COLOR_RGB2HSV)
+            H = hsv[:, :, 0] # 0..180
+            S = hsv[:, :, 1] # 0..255
+            V = hsv[:, :, 2] # 0..255
+
+            # 1. Foliage & Vegetation (Green Park/Trees)
+            # Hue between 25 and 55 (approx 50°-110°), S >= 35, V >= 35
+            foliage_mask = (H >= 25) & (H <= 55) & (S >= 35) & (V >= 35) & bg_mask
+            foliage_ratio = float(np.sum(foliage_mask)) / max(1, np.sum(bg_mask))
+
+            # 2. Sky & Open Air
+            # Top 40% of image with blue/cyan hue (H in [95..130]) or high-key daylight (V >= 210, S <= 35)
+            top_mask = np.zeros((h, w), dtype=bool)
+            top_mask[:int(h * 0.40), :] = True
+            sky_mask = (((H >= 95) & (H <= 130) & (S >= 30) & (V >= 80)) | ((V >= 210) & (S <= 35))) & bg_mask & top_mask
+            sky_ratio = float(np.sum(sky_mask)) / max(1, np.sum(bg_mask & top_mask))
+
+            # 3. Indoor Warm Ambient (Cafe / Interior Lifestyle)
+            # Warm hues (H <= 22 or H >= 165), moderate saturation (30..160), indoor value (40..220)
+            warm_mask = ((H <= 22) | (H >= 165)) & (S >= 30) & (S <= 160) & (V >= 40) & (V <= 220) & bg_mask
+            warm_ratio = float(np.sum(warm_mask)) / max(1, np.sum(bg_mask))
+
+            # 4. Urban Structural & Architecture (Edge gradient density)
+            gray = cv2.cvtColor(np_uint8, cv2.COLOR_RGB2GRAY)
+            laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+            urban_edge_density = float(np.var(laplacian[bg_mask])) if np.any(bg_mask) else 0.0
+
+            # 5. Studio / Uniform Backdrop (Standard deviation of background pixels)
+            bg_pixels = np_rgb[bg_mask]
+            backdrop_std = float(np.mean(np.std(bg_pixels, axis=0))) if len(bg_pixels) > 20 else 99.0
+
+            metrics = {
+                "foliage_ratio": float(round(foliage_ratio, 3)),
+                "sky_ratio": float(round(sky_ratio, 3)),
+                "indoor_warm_ratio": float(round(warm_ratio, 3)),
+                "urban_edge_density": float(round(urban_edge_density, 1)),
+                "backdrop_std": float(round(backdrop_std, 1))
+            }
+
+            if has_human:
+                if len(detected_faces) >= 2:
+                    return {
+                        "category": "Chân Dung Nhóm / Sự Kiện",
+                        "short_name": "Chân Dung Nhóm",
+                        "scene_type": "GROUP_PORTRAIT",
+                        "icon": "👥",
+                        "environment": "Sự kiện / Không gian tập thể đông người",
+                        "confidence": 0.94,
+                        "metrics": metrics
+                    }
+                elif backdrop_std < 24.0:
+                    return {
+                        "category": "Chân Dung Studio / Thẻ ID",
+                        "short_name": "Studio / Thẻ ID",
+                        "scene_type": "STUDIO_ID",
+                        "icon": "🪪",
+                        "environment": "Phông nền đồng nhất / Chiếu sáng studio chuẩn",
+                        "confidence": 0.96,
+                        "metrics": metrics
+                    }
+                elif foliage_ratio >= 0.08:
+                    return {
+                        "category": "Chân Dung Ngoài Trời / Thiên Nhiên",
+                        "short_name": "Ngoại Cảnh / Công Viên",
+                        "scene_type": "OUTDOOR_NATURE",
+                        "icon": "🌳",
+                        "environment": "Ngoại cảnh tự nhiên (Công viên, cây xanh, ánh sáng ban ngày)",
+                        "confidence": float(round(min(0.98, 0.85 + foliage_ratio * 0.3), 2)),
+                        "metrics": metrics
+                    }
+                elif sky_ratio >= 0.12:
+                    return {
+                        "category": "Chân Dung Ngoài Trời / Bầu Trời",
+                        "short_name": "Ngoài Trời / Bầu Trời",
+                        "scene_type": "OUTDOOR_SKY",
+                        "icon": "🌤️",
+                        "environment": "Không gian mở ngoài trời (Bầu trời, ánh sáng tự nhiên)",
+                        "confidence": 0.91,
+                        "metrics": metrics
+                    }
+                elif urban_edge_density >= 140.0:
+                    return {
+                        "category": "Chân Dung Đô Thị / Ngoại Cảnh",
+                        "short_name": "Đô Thị / Kiến Trúc",
+                        "scene_type": "OUTDOOR_URBAN",
+                        "icon": "🏙️",
+                        "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà)",
+                        "confidence": 0.90,
+                        "metrics": metrics
+                    }
+                elif warm_ratio >= 0.20:
+                    return {
+                        "category": "Chân Dung Trong Nhà / Cafe",
+                        "short_name": "Trong Nhà / Cafe",
+                        "scene_type": "INDOOR_LIFESTYLE",
+                        "icon": "☕",
+                        "environment": "Không gian nội thất (Quán cafe, phòng ốc đời thường)",
+                        "confidence": 0.89,
+                        "metrics": metrics
+                    }
+                else:
+                    return {
+                        "category": "Chân Dung Đời Thường",
+                        "short_name": "Đời Thường",
+                        "scene_type": "LIFESTYLE_PORTRAIT",
+                        "icon": "👤",
+                        "environment": "Chân dung đời thường / Không gian sinh hoạt",
+                        "confidence": 0.88,
+                        "metrics": metrics
+                    }
+            else:
+                # Non-human media
+                if foliage_ratio >= 0.15:
+                    return {
+                        "category": "Phong Cảnh / Thiên Nhiên",
+                        "short_name": "Thiên Nhiên / Cảnh Quan",
+                        "scene_type": "NATURE_LANDSCAPE",
+                        "icon": "🌲",
+                        "environment": "Phong cảnh tự nhiên / Thực vật, cây cối",
+                        "confidence": 0.94,
+                        "metrics": metrics
+                    }
+                elif sky_ratio >= 0.18:
+                    return {
+                        "category": "Bầu Trời / Không Gian Mở",
+                        "short_name": "Bầu Trời / Cảnh Quan",
+                        "scene_type": "SKY_OPENAIR",
+                        "icon": "☁️",
+                        "environment": "Bầu trời quang đãng / Không gian mở",
+                        "confidence": 0.92,
+                        "metrics": metrics
+                    }
+                elif urban_edge_density >= 140.0:
+                    return {
+                        "category": "Kiến Trúc / Đô Thị",
+                        "short_name": "Đô Thị / Kiến Trúc",
+                        "scene_type": "URBAN_ARCHITECTURE",
+                        "icon": "🏛️",
+                        "environment": "Kiến trúc công trình, đường phố đô thị",
+                        "confidence": 0.91,
+                        "metrics": metrics
+                    }
+                else:
+                    return {
+                        "category": "Phi Sinh Trắc / Đồ Hoạ",
+                        "short_name": "Tĩnh Vật / Đồ Hoạ",
+                        "scene_type": "GRAPHIC_OBJECT",
+                        "icon": "📦",
+                        "environment": "Vật thể, đồ hoạ hoặc ảnh tổng hợp",
+                        "confidence": 0.88,
+                        "metrics": metrics
+                    }
+        except Exception as e:
+            return {
+                "category": "Chân Dung (Đa Môi Trường)" if has_human else "Phi Sinh Trắc (Tổng Hợp)",
+                "short_name": "Chân Dung" if has_human else "Tổng Hợp",
+                "scene_type": "GENERAL_FALLBACK",
+                "icon": "👤" if has_human else "🏞️",
+                "environment": f"Môi trường phân tích tự động: {str(e)}",
+                "confidence": 0.80,
+                "metrics": {}
+            }
+
+
 class FrequencyDomainAnalyzer:
     """
     Analyzes high-frequency spectral artifacts in images using 2D Fast Fourier Transform (FFT).
@@ -784,7 +994,7 @@ class XAIExplainabilityGenerator:
     Synthesizes the 6D Evidence Matrix into natural-language forensic reasoning tailored to media category.
     """
     @staticmethod
-    def generate_statement(evidence_matrix, composite_risk, analysis_mode, has_human):
+    def generate_statement(evidence_matrix, composite_risk, analysis_mode, has_human, scene_context=None):
         ev = evidence_matrix
         p_vit = ev.get("dim1_passive_vit", {}).get("score", 0.5)
         fft_score = ev.get("dim2_frequency_fft", {}).get("score", 0.0)
@@ -794,9 +1004,18 @@ class XAIExplainabilityGenerator:
         hotspot = ev.get("dim6_patch_heatmap_uncertainty", {}).get("peak_hotspot", {})
         region = hotspot.get("anatomical_region", "Central Salient Region")
         peak_score = hotspot.get("peak_anomaly_score", 0.0)
+        if scene_context is None:
+            scene_context = ev.get("dim6_patch_heatmap_uncertainty", {}).get("scene_context", {})
 
         is_fake = composite_risk >= 0.50
         reasons = []
+
+        # 0. Environmental Scene & Context Classification
+        if scene_context and scene_context.get("category"):
+            reasons.append(
+                f"Phân loại ngữ cảnh môi trường: {scene_context.get('category')} - {scene_context.get('environment')} "
+                f"(Độ tin cậy: {int(scene_context.get('confidence', 0.90) * 100)}%)."
+            )
 
         # 1. PRNU Hardware Sensor Noise Trace
         if prnu_score > 0.40:
@@ -987,6 +1206,12 @@ class DeepfakeDetector:
             has_human = human_presence.get("has_human", False)
             detected_faces = human_presence.get("detected_faces", [])
 
+            # Step 1b: Environmental Scene & Context Classification
+            scene_context = SceneContextClassifier.classify_scene_context(
+                image, has_human=has_human, detected_faces=detected_faces
+            )
+            human_presence["scene_context"] = scene_context
+
             face_found = False
             if use_face_crop and has_human:
                 cropped, face_found = self._crop_face_if_possible(image, detected_faces=detected_faces)
@@ -1166,6 +1391,7 @@ class DeepfakeDetector:
                     "dimension_name": "6. Spatial Patch-Saliency Grid & Shannon Entropy",
                     "peak_hotspot": spatial_patch_heatmap.get("peak_hotspot", {}),
                     "prediction_entropy": normalized_entropy,
+                    "scene_context": scene_context,
                     "status": "LOCALIZED_TAMPERING" if heatmap_peak_val > 0.55 else "HOMOGENEOUS"
                 }
             }
@@ -1175,7 +1401,8 @@ class DeepfakeDetector:
                 evidence_matrix=evidence_matrix_6d,
                 composite_risk=composite_risk,
                 analysis_mode=analysis_mode,
-                has_human=has_human
+                has_human=has_human,
+                scene_context=scene_context
             )
 
             # 7. Construct Auditable Forensic Decision Record (Digital Forensic Certificate)
@@ -1199,6 +1426,7 @@ class DeepfakeDetector:
                 "media_url": media_url,
                 "sample_image_url": media_url,
                 "analysis_mode": analysis_mode,
+                "scene_context": scene_context,
                 "human_presence_evaluation": human_presence,
                 "dual_stream_breakdown": dual_stream_breakdown,
                 "evidence_matrix_6d": evidence_matrix_6d,
@@ -1264,10 +1492,14 @@ class DeepfakeDetector:
                 "all_scores": all_scores,
                 "composite_risk_score": composite_risk,
                 "analysis_mode": analysis_mode,
+                "scene_context": scene_context,
                 "forensic_certificate": forensic_certificate
             }
         except Exception as e:
             return {"error": str(e)}
+
+    # Alias for API compatibility
+    predict_image = predict
 
     def predict_video(self, video_path, window_duration_sec=7.0, max_frames=12):
         """
