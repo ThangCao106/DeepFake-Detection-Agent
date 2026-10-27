@@ -2067,6 +2067,8 @@ function populateGenUiArtifacts(data) {
         }
     }
 
+    const isOutdoor = Boolean(sceneCtx.is_outdoor || (sceneCtx.scene_type && sceneCtx.scene_type.includes('OUTDOOR')));
+
     // 0. Update Visual 6-Step Forensic Detection Pipeline Banner
     const pipelineRouteBadge = document.getElementById('pipelineRouteBadge');
     const pipeStep1Desc = document.getElementById('pipeStep1Desc');
@@ -2090,6 +2092,11 @@ function populateGenUiArtifacts(data) {
             pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
             pipelineRouteBadge.style.background = '#e0e7ff';
             pipelineRouteBadge.style.color = '#3730a3';
+        } else if (hasHuman && isOutdoor) {
+            pipelineRouteBadge.textContent = 'Dual-Stream (Decoupled ROI: Human + Outdoor)';
+            pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+            pipelineRouteBadge.style.background = '#ede9fe';
+            pipelineRouteBadge.style.color = '#5b21b6';
         } else if (hasHuman) {
             pipelineRouteBadge.textContent = 'Dual-Stream (Human Biometrics)';
             pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
@@ -2109,16 +2116,42 @@ function populateGenUiArtifacts(data) {
         if (isAudio) {
             pipeStep2Icon.textContent = '🎙️';
             pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (Voice)';
+        } else if (!hasHuman) {
+            pipeStep2Icon.textContent = sceneIcon;
+            pipeStep2Desc.textContent = sceneCategoryShort ? sceneCategoryShort : 'Phong Cảnh / Phi Sinh Trắc';
+        } else if (isOutdoor) {
+            pipeStep2Icon.textContent = sceneIcon;
+            pipeStep2Desc.textContent = `Ngoại Cảnh Có Người (${sceneCategoryShort})`;
         } else {
             pipeStep2Icon.textContent = sceneIcon;
-            pipeStep2Desc.textContent = hasHuman ? `Chân Dung (${sceneCategoryShort})` : sceneCategoryShort;
+            pipeStep2Desc.textContent = `Chân Dung (${sceneCategoryShort})`;
         }
     }
     if (pipeStep3Desc) {
-        pipeStep3Desc.textContent = isAudio ? 'Spectral Vocoder Analyzer' : (isVideo ? 'SARAAB 7s Micro-Windowing' : (hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter'));
+        if (isAudio) {
+            pipeStep3Desc.textContent = 'Spectral Vocoder Analyzer';
+        } else if (isVideo) {
+            pipeStep3Desc.textContent = 'SARAAB 7s Micro-Windowing';
+        } else if (!hasHuman) {
+            pipeStep3Desc.textContent = 'ViT 6D + PRNU Sensor';
+        } else if (isOutdoor) {
+            pipeStep3Desc.textContent = 'Dual-ROI (ViT Nền Cảnh + WAVIE Mặt)';
+        } else {
+            pipeStep3Desc.textContent = 'ViT + WAVIE + Corneal';
+        }
     }
     if (pipeStep4Desc) {
-        pipeStep4Desc.textContent = isAudio ? 'Log-Mel + Phase + Formant' : (isVideo ? 'Motion Jitter + PRNU Inter-frame' : 'PRNU + 2D FFT + Spatial');
+        if (isAudio) {
+            pipeStep4Desc.textContent = 'Log-Mel + Phase + Formant';
+        } else if (isVideo) {
+            pipeStep4Desc.textContent = 'Motion Jitter + PRNU Inter-frame';
+        } else if (!hasHuman) {
+            pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial Wavelet';
+        } else if (isOutdoor) {
+            pipeStep4Desc.textContent = 'PRNU Cảm Biến Cảnh + RoI Khuôn Mặt';
+        } else {
+            pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial RoI';
+        }
     }
     if (pipeStep5 && pipeStep5Icon && pipeStep5Desc) {
         if (isAudio) {
@@ -2140,10 +2173,15 @@ function populateGenUiArtifacts(data) {
                 pipeStep5Desc.textContent = 'Bypass Non-Human Video';
             }
         } else if (hasHuman) {
+            const hasGlints = Boolean(cornealAnalysis.glints_count && cornealAnalysis.glints_count > 0);
             pipeStep5.classList.remove('bypassed');
             pipeStep5.classList.add('active');
             pipeStep5Icon.textContent = '👁️';
-            pipeStep5Desc.textContent = `Δθ = ${angleDelta}° (Đã Đo)`;
+            if (hasGlints && parseFloat(angleDelta) > 0.0) {
+                pipeStep5Desc.textContent = isOutdoor ? `Δθ = ${angleDelta}° (Ngoại Cảnh)` : `Δθ = ${angleDelta}° (Đã Đo)`;
+            } else {
+                pipeStep5Desc.textContent = 'Quang Học Nhất Quán (0.0°)';
+            }
         } else {
             pipeStep5.classList.remove('active');
             pipeStep5.classList.add('bypassed');

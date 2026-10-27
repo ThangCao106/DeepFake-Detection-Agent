@@ -109,43 +109,42 @@ class HumanPresenceDetector:
         def _is_valid_face_candidate(bx, by, bw, bh):
             """
             Validates that a bounding box is geometrically and anatomically a real human face.
-            Filters out sea rocks, water reflections, horizon edges, clouds, and foliage.
+            Filters out sea rocks, water reflections, horizon edges, sunset glares, clouds, and foliage.
             """
-            if bw < 26 or bh < 26:
+            if bw < 28 or bh < 28:
                 return False
             aspect = bw / float(bh)
-            if aspect < 0.55 or aspect > 1.75:
+            if aspect < 0.60 or aspect > 1.60:
                 return False
             x0, y0 = max(0, bx), max(0, by)
             x1, y1 = min(w_img, bx + bw), min(h_img, by + bh)
-            if (x1 - x0) < 22 or (y1 - y0) < 22:
+            if (x1 - x0) < 24 or (y1 - y0) < 24:
                 return False
             face_roi = img_np[y0:y1, x0:x1]
             try:
                 face_gray = cv2.cvtColor(face_roi, cv2.COLOR_RGB2GRAY)
                 lap_var = float(np.var(cv2.Laplacian(face_gray, cv2.CV_64F)))
-                # A true human face or body ROI contains internal gradient texture (eyes, mouth, clothing, hair)
-                # Pure smooth color gradients (sky, sunset, wall) have lap_var < 5.0
-                if lap_var < 8.0:
+                # A true human face ROI contains internal gradient texture (eyes, mouth, clothing, hair)
+                # Pure smooth color gradients (sky, sunset, wall) have lap_var < 8.0
+                if lap_var < 10.0:
                     return False
 
                 face_ycbcr = cv2.cvtColor(face_roi, cv2.COLOR_RGB2YCrCb)
                 cr = face_ycbcr[:, :, 1]
                 cb = face_ycbcr[:, :, 2]
-                skin_mask_ycbcr = (cr >= 122) & (cr <= 186) & (cb >= 65) & (cb <= 138)
+                skin_mask_ycbcr = (cr >= 130) & (cr <= 175) & (cb >= 75) & (cb <= 130)
 
                 face_hsv = cv2.cvtColor(face_roi, cv2.COLOR_RGB2HSV)
                 H = face_hsv[:, :, 0]
                 S = face_hsv[:, :, 1]
                 V = face_hsv[:, :, 2]
-                skin_mask_hsv = ((H <= 25) | (H >= 165)) & (S >= 15) & (V >= 35)
+                skin_mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 25) & (V >= 35)
 
-                skin_mask = skin_mask_ycbcr | skin_mask_hsv
+                # Strict Intersection: Melanin bounds in YCrCb AND natural skin hue in HSV
+                skin_mask = skin_mask_ycbcr & skin_mask_hsv
                 face_skin_pct = float(np.mean(skin_mask) * 100)
                 y_std = float(np.std(face_ycbcr[:, :, 0]))
-                # A true human face candidate contains skin tones (accounting for outdoor exposure/filters)
-                # and non-flat luminance variance (y_std >= 5.0)
-                if face_skin_pct < 6.5 or y_std < 5.0:
+                if face_skin_pct < 8.0 or y_std < 6.0:
                     return False
                 return True
             except Exception:
@@ -177,12 +176,12 @@ class HumanPresenceDetector:
                 if yn_faces is not None and len(yn_faces) > 0:
                     for f in yn_faces:
                         score = float(f[-1])
-                        if score >= 0.35:
+                        if score >= 0.50:
                             fx = max(0, int(f[0] / scale_yn))
                             fy = max(0, int(f[1] / scale_yn))
                             fw = min(w_img - fx, int(f[2] / scale_yn))
                             fh = min(h_img - fy, int(f[3] / scale_yn))
-                            if fw >= 16 and fh >= 16:
+                            if _is_valid_face_candidate(fx, fy, fw, fh):
                                 detected_faces.append((fx, fy, fw, fh))
                     if detected_faces:
                         evidence.append(f"Phát hiện {len(detected_faces)} khuôn mặt qua mạng nơ-ron YuNet DNN (Độ tin cậy: {float(yn_faces[0][-1])*100:.1f}%)")
@@ -201,15 +200,16 @@ class HumanPresenceDetector:
                 hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(small_bgr, winStride=(8, 8), padding=(8, 8), scale=1.05)
                 if len(hog_boxes) > 0:
                     max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
-                    if max_wt >= 0.22:
+                    if max_wt >= 0.35:
                         for hb, hw in zip(hog_boxes, hog_weights):
-                            if hw >= 0.22:
+                            if hw >= 0.35:
                                 bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
                                 head_x = max(0, bx + int(bw * 0.15))
                                 head_y = max(0, by)
                                 head_w = min(w_img - head_x, int(bw * 0.70))
                                 head_h = min(h_img - head_y, int(bh * 0.35))
-                                detected_faces.append((head_x, head_y, head_w, head_h))
+                                if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
+                                    detected_faces.append((head_x, head_y, head_w, head_h))
                         if detected_faces:
                             evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_faces)} người, trọng số: {max_wt:.2f})")
             except Exception:
@@ -231,11 +231,11 @@ class HumanPresenceDetector:
         # Pass 1: Frontal Face Alt2 & Default & Alt
         cascades_to_try = []
         if 'haarcascade_frontalface_alt2.xml' in CV2_CASCADES:
-            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt2.xml'], 1.08, 4))
+            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt2.xml'], 1.08, 5))
         if 'haarcascade_frontalface_default.xml' in CV2_CASCADES:
-            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_default.xml'], 1.1, 4))
+            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_default.xml'], 1.1, 5))
         if 'haarcascade_frontalface_alt.xml' in CV2_CASCADES:
-            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt.xml'], 1.08, 4))
+            cascades_to_try.append((CV2_CASCADES['haarcascade_frontalface_alt.xml'], 1.08, 5))
 
         for cascade, scale_factor, min_neighbors in cascades_to_try:
             if detected_faces:
@@ -246,7 +246,7 @@ class HumanPresenceDetector:
                         g_variant,
                         scaleFactor=scale_factor,
                         minNeighbors=min_neighbors,
-                        minSize=(28, 28)
+                        minSize=(32, 32)
                     )
                     valid_faces = [
                         (int(x), int(y), int(w), int(h))
@@ -265,7 +265,7 @@ class HumanPresenceDetector:
             p_cascade = CV2_CASCADES['haarcascade_profileface.xml']
             for g_variant in [gray, gray_clahe]:
                 try:
-                    p_faces = p_cascade.detectMultiScale(g_variant, scaleFactor=1.08, minNeighbors=4, minSize=(30, 30))
+                    p_faces = p_cascade.detectMultiScale(g_variant, scaleFactor=1.08, minNeighbors=5, minSize=(32, 32))
                     valid_p = [
                         (int(x), int(y), int(w), int(h))
                         for (x, y, w, h) in p_faces
@@ -280,7 +280,7 @@ class HumanPresenceDetector:
             if not detected_faces:
                 try:
                     flipped_gray = cv2.flip(gray, 1)
-                    p_faces = p_cascade.detectMultiScale(flipped_gray, scaleFactor=1.08, minNeighbors=4, minSize=(30, 30))
+                    p_faces = p_cascade.detectMultiScale(flipped_gray, scaleFactor=1.08, minNeighbors=5, minSize=(32, 32))
                     for (fx, fy, fw, fh) in p_faces:
                         orig_x = w_img - (fx + fw)
                         if _is_valid_face_candidate(int(orig_x), int(fy), int(fw), int(fh)):
@@ -305,24 +305,23 @@ class HumanPresenceDetector:
             except Exception:
                 pass
 
-        # 4. Skin Chrominance Segmentation in Dual YCbCr + HSV Space
+        # 4. Skin Chrominance Segmentation in Dual YCbCr + HSV Space (Strict Intersection)
         skin_pct = 0.0
-        skin_mask = None
         try:
             small_rgb = pil_image.resize((160, 160)).convert("RGB")
             np_sm_rgb = np.array(small_rgb)
             ycbcr = cv2.cvtColor(np_sm_rgb, cv2.COLOR_RGB2YCrCb)
             cr = ycbcr[:, :, 1]
             cb = ycbcr[:, :, 2]
-            mask_ycbcr = (cr >= 122) & (cr <= 186) & (cb >= 65) & (cb <= 138)
+            mask_ycbcr = (cr >= 130) & (cr <= 175) & (cb >= 75) & (cb <= 130)
 
             hsv = cv2.cvtColor(np_sm_rgb, cv2.COLOR_RGB2HSV)
             H = hsv[:, :, 0]
             S = hsv[:, :, 1]
             V = hsv[:, :, 2]
-            mask_hsv = ((H <= 25) | (H >= 165)) & (S >= 15) & (V >= 35)
+            mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 25) & (V >= 35)
 
-            skin_mask = mask_ycbcr | mask_hsv
+            skin_mask = mask_ycbcr & mask_hsv
             skin_pct = round(float(np.mean(skin_mask) * 100), 1)
             if skin_pct >= 6.0 and detected_faces:
                 evidence.append(f"Quan sát thấy sắc tố da người ({skin_pct}% khung hình)")
@@ -335,7 +334,7 @@ class HumanPresenceDetector:
             if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 5.0:
                 ub_cascade = CV2_CASCADES['haarcascade_upperbody.xml']
                 try:
-                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(60, 60))
+                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=5, minSize=(70, 70))
                     if len(ub_boxes) > 0:
                         ub_boxes = sorted(ub_boxes, key=lambda b: b[2] * b[3], reverse=True)
                         bx, by, bw, bh = ub_boxes[0]
@@ -354,13 +353,13 @@ class HumanPresenceDetector:
                 eye_cascade = CV2_CASCADES['haarcascade_eye.xml']
                 try:
                     upper_gray = gray[:int(h_img * 0.65), :]
-                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=4, minSize=(18, 18))
+                    eyes = eye_cascade.detectMultiScale(upper_gray, scaleFactor=1.1, minNeighbors=5, minSize=(20, 20))
                     if len(eyes) >= 2:
                         sorted_eyes = sorted(eyes, key=lambda e: e[1])
                         for i in range(len(sorted_eyes) - 1):
                             e1 = sorted_eyes[i]
                             e2 = sorted_eyes[i+1]
-                            if abs(e1[1] - e2[1]) < (h_img * 0.10) and abs(e1[0] - e2[0]) > 20:
+                            if abs(e1[1] - e2[1]) < (h_img * 0.06) and abs(e1[0] - e2[0]) > 25:
                                 min_x = min(e1[0], e2[0])
                                 max_x = max(e1[0] + e1[2], e2[0] + e2[2])
                                 avg_y = (e1[1] + e2[1]) // 2
@@ -375,21 +374,6 @@ class HumanPresenceDetector:
                                     break
                 except Exception:
                     pass
-
-            # 5c. Central Torso & Silhouette Cluster Fallback (Sitting / Lifestyle Portraits)
-            if not detected_faces and skin_mask is not None and skin_pct >= 7.0:
-                sm_h, sm_w = skin_mask.shape
-                center_roi = skin_mask[int(sm_h * 0.12):int(sm_h * 0.85), int(sm_w * 0.18):int(sm_w * 0.82)]
-                center_skin_pct = float(np.mean(center_roi) * 100) if center_roi.size > 0 else 0.0
-                center_gray = gray[int(h_img * 0.12):int(h_img * 0.85), int(w_img * 0.18):int(w_img * 0.82)]
-                center_lap = float(np.var(cv2.Laplacian(center_gray, cv2.CV_64F))) if center_gray.size > 0 else 0.0
-                if center_skin_pct >= 14.0 and center_lap >= 20.0:
-                    fx = int(w_img * 0.20)
-                    fy = max(0, int(h_img * 0.08))
-                    fw = int(w_img * 0.60)
-                    fh = int(h_img * 0.50)
-                    detected_faces.append((fx, fy, fw, fh))
-                    evidence.append(f"Xác nhận chủ thể người qua cụm sắc tố da trung tâm ({center_skin_pct:.1f}% vùng trọng tâm, kết cấu vi mô: {center_lap:.1f})")
 
         face_count = len(detected_faces)
         # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette
@@ -456,16 +440,21 @@ class SceneContextClassifier:
             V = hsv[:, :, 2] # 0..255
 
             # 1. Foliage & Vegetation (Green Park/Trees)
-            # Hue between 25 and 55 (approx 50°-110°), S >= 35, V >= 35
-            foliage_mask = (H >= 25) & (H <= 55) & (S >= 35) & (V >= 35) & bg_mask
+            # Hue between 25 and 85 (approx 50°-170° botanical spectrum), S >= 30, V >= 30
+            foliage_mask = (H >= 25) & (H <= 85) & (S >= 30) & (V >= 30) & bg_mask
             foliage_ratio = float(np.sum(foliage_mask)) / max(1, np.sum(bg_mask))
 
             # 2. Sky & Open Air
-            # Top 40% of image with blue/cyan hue (H in [95..130]) or high-key daylight (V >= 210, S <= 35)
+            # Top 45% of image with blue/cyan hue (H in [95..130]) or high-key daylight (V >= 210, S <= 35)
             top_mask = np.zeros((h, w), dtype=bool)
-            top_mask[:int(h * 0.40), :] = True
-            sky_mask = (((H >= 95) & (H <= 130) & (S >= 30) & (V >= 80)) | ((V >= 210) & (S <= 35))) & bg_mask & top_mask
+            top_mask[:int(h * 0.45), :] = True
+            sky_mask = (((H >= 95) & (H <= 130) & (S >= 25) & (V >= 70)) | ((V >= 210) & (S <= 35))) & bg_mask & top_mask
             sky_ratio = float(np.sum(sky_mask)) / max(1, np.sum(bg_mask & top_mask))
+
+            # 2b. Sunset / Sunrise / Golden Hour Sky & Sea Horizon
+            # Top 50% of image: warm golden/orange/red sunset tones (H <= 22 or H >= 160, S >= 35, V >= 70)
+            sunset_mask = (((H <= 22) | (H >= 160)) & (S >= 35) & (V >= 70)) & bg_mask & top_mask
+            sunset_ratio = float(np.sum(sunset_mask)) / max(1, np.sum(bg_mask & top_mask))
 
             # 3. Indoor Warm Ambient (Cafe / Interior Lifestyle)
             # Warm hues (H <= 22 or H >= 165), moderate saturation (30..160), indoor value (40..220)
@@ -481,12 +470,16 @@ class SceneContextClassifier:
             bg_pixels = np_rgb[bg_mask]
             backdrop_std = float(np.mean(np.std(bg_pixels, axis=0))) if len(bg_pixels) > 20 else 99.0
 
+            is_outdoor = bool(foliage_ratio >= 0.08 or sky_ratio >= 0.12 or sunset_ratio >= 0.12 or urban_edge_density >= 140.0)
+
             metrics = {
                 "foliage_ratio": float(round(foliage_ratio, 3)),
                 "sky_ratio": float(round(sky_ratio, 3)),
+                "sunset_ratio": float(round(sunset_ratio, 3)),
                 "indoor_warm_ratio": float(round(warm_ratio, 3)),
                 "urban_edge_density": float(round(urban_edge_density, 1)),
-                "backdrop_std": float(round(backdrop_std, 1))
+                "backdrop_std": float(round(backdrop_std, 1)),
+                "is_outdoor": is_outdoor
             }
 
             if has_human:
@@ -498,71 +491,104 @@ class SceneContextClassifier:
                         "icon": "👥",
                         "environment": "Sự kiện / Không gian tập thể đông người",
                         "confidence": 0.94,
+                        "is_outdoor": is_outdoor,
                         "metrics": metrics
                     }
-                elif backdrop_std < 24.0:
-                    return {
-                        "category": "Chân Dung Studio / Thẻ ID",
-                        "short_name": "Studio / Thẻ ID",
-                        "scene_type": "STUDIO_ID",
-                        "icon": "🪪",
-                        "environment": "Phông nền đồng nhất / Chiếu sáng studio chuẩn",
-                        "confidence": 0.96,
-                        "metrics": metrics
-                    }
-                elif foliage_ratio >= 0.08:
-                    return {
-                        "category": "Chân Dung Ngoài Trời / Thiên Nhiên",
-                        "short_name": "Ngoại Cảnh / Công Viên",
-                        "scene_type": "OUTDOOR_NATURE",
-                        "icon": "🌳",
-                        "environment": "Ngoại cảnh tự nhiên (Công viên, cây xanh, ánh sáng ban ngày)",
-                        "confidence": float(round(min(0.98, 0.85 + foliage_ratio * 0.3), 2)),
-                        "metrics": metrics
-                    }
-                elif sky_ratio >= 0.12:
-                    return {
-                        "category": "Chân Dung Ngoài Trời / Bầu Trời",
-                        "short_name": "Ngoài Trời / Bầu Trời",
-                        "scene_type": "OUTDOOR_SKY",
-                        "icon": "🌤️",
-                        "environment": "Không gian mở ngoài trời (Bầu trời, ánh sáng tự nhiên)",
-                        "confidence": 0.91,
-                        "metrics": metrics
-                    }
-                elif urban_edge_density >= 140.0:
-                    return {
-                        "category": "Chân Dung Đô Thị / Ngoại Cảnh",
-                        "short_name": "Đô Thị / Kiến Trúc",
-                        "scene_type": "OUTDOOR_URBAN",
-                        "icon": "🏙️",
-                        "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà)",
-                        "confidence": 0.90,
-                        "metrics": metrics
-                    }
-                elif warm_ratio >= 0.20:
-                    return {
-                        "category": "Chân Dung Trong Nhà / Cafe",
-                        "short_name": "Trong Nhà / Cafe",
-                        "scene_type": "INDOOR_LIFESTYLE",
-                        "icon": "☕",
-                        "environment": "Không gian nội thất (Quán cafe, phòng ốc đời thường)",
-                        "confidence": 0.89,
-                        "metrics": metrics
-                    }
+                elif is_outdoor:
+                    # BRANCH 3: Hybrid (Human in Outdoor Environment / Decoupled Dual-ROI)
+                    if sunset_ratio >= 0.12:
+                        return {
+                            "category": "Chân Dung Ngoại Cảnh / Hoàng Hôn",
+                            "short_name": "Ngoại Cảnh / Hoàng Hôn",
+                            "scene_type": "OUTDOOR_SUNSET_PORTRAIT",
+                            "icon": "🌅",
+                            "environment": "Chân dung ngoại cảnh chiều tà (Hoàng hôn, biển trời, ánh sáng tự nhiên)",
+                            "confidence": 0.93,
+                            "is_outdoor": True,
+                            "metrics": metrics
+                        }
+                    elif foliage_ratio >= 0.08:
+                        return {
+                            "category": "Chân Dung Ngoại Cảnh / Thiên Nhiên",
+                            "short_name": "Ngoại Cảnh / Công Viên",
+                            "scene_type": "OUTDOOR_NATURE_PORTRAIT",
+                            "icon": "🌳",
+                            "environment": "Ngoại cảnh tự nhiên (Công viên, cây xanh, ánh sáng ban ngày)",
+                            "confidence": float(round(min(0.98, 0.85 + foliage_ratio * 0.3), 2)),
+                            "is_outdoor": True,
+                            "metrics": metrics
+                        }
+                    elif sky_ratio >= 0.12:
+                        return {
+                            "category": "Chân Dung Ngoại Cảnh / Bầu Trời",
+                            "short_name": "Ngoại Cảnh / Bầu Trời",
+                            "scene_type": "OUTDOOR_SKY_PORTRAIT",
+                            "icon": "🌤️",
+                            "environment": "Không gian mở ngoài trời (Bầu trời, ánh sáng tự nhiên)",
+                            "confidence": 0.92,
+                            "is_outdoor": True,
+                            "metrics": metrics
+                        }
+                    else:
+                        return {
+                            "category": "Chân Dung Ngoại Cảnh / Đô Thị",
+                            "short_name": "Đô Thị / Kiến Trúc",
+                            "scene_type": "OUTDOOR_URBAN_PORTRAIT",
+                            "icon": "🏙️",
+                            "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà)",
+                            "confidence": 0.90,
+                            "is_outdoor": True,
+                            "metrics": metrics
+                        }
                 else:
+                    # BRANCH 2: Pure Indoor / Studio Human
+                    if backdrop_std < 24.0:
+                        return {
+                            "category": "Chân Dung Studio / Thẻ ID",
+                            "short_name": "Studio / Thẻ ID",
+                            "scene_type": "STUDIO_ID",
+                            "icon": "🪪",
+                            "environment": "Phông nền đồng nhất / Chiếu sáng studio chuẩn",
+                            "confidence": 0.96,
+                            "is_outdoor": False,
+                            "metrics": metrics
+                        }
+                    elif warm_ratio >= 0.20:
+                        return {
+                            "category": "Chân Dung Trong Nhà / Cafe",
+                            "short_name": "Trong Nhà / Cafe",
+                            "scene_type": "INDOOR_LIFESTYLE",
+                            "icon": "☕",
+                            "environment": "Không gian nội thất (Quán cafe, phòng ốc đời thường)",
+                            "confidence": 0.89,
+                            "is_outdoor": False,
+                            "metrics": metrics
+                        }
+                    else:
+                        return {
+                            "category": "Chân Dung Đời Thường",
+                            "short_name": "Đời Thường",
+                            "scene_type": "LIFESTYLE_PORTRAIT",
+                            "icon": "👤",
+                            "environment": "Chân dung đời thường / Không gian sinh hoạt",
+                            "confidence": 0.88,
+                            "is_outdoor": False,
+                            "metrics": metrics
+                        }
+            else:
+                # BRANCH 1: Pure Non-Human Nature / Scenery / Objects
+                if sunset_ratio >= 0.12:
                     return {
-                        "category": "Chân Dung Đời Thường",
-                        "short_name": "Đời Thường",
-                        "scene_type": "LIFESTYLE_PORTRAIT",
-                        "icon": "👤",
-                        "environment": "Chân dung đời thường / Không gian sinh hoạt",
-                        "confidence": 0.88,
+                        "category": "Hoàng Hôn / Biển Trời (Không Người)",
+                        "short_name": "Hoàng Hôn / Biển Trời",
+                        "scene_type": "SUNSET_LANDSCAPE",
+                        "icon": "🌅",
+                        "environment": "Phong cảnh hoàng hôn biển trời / Ánh sáng chiều tà tự nhiên",
+                        "confidence": 0.95,
+                        "is_outdoor": True,
                         "metrics": metrics
                     }
-            else:
-                # Non-human media
-                if foliage_ratio >= 0.15:
+                elif foliage_ratio >= 0.12:
                     return {
                         "category": "Phong Cảnh / Thiên Nhiên",
                         "short_name": "Thiên Nhiên / Cảnh Quan",
@@ -570,16 +596,18 @@ class SceneContextClassifier:
                         "icon": "🌲",
                         "environment": "Phong cảnh tự nhiên / Thực vật, cây cối",
                         "confidence": 0.94,
+                        "is_outdoor": True,
                         "metrics": metrics
                     }
-                elif sky_ratio >= 0.18:
+                elif sky_ratio >= 0.15:
                     return {
                         "category": "Bầu Trời / Không Gian Mở",
                         "short_name": "Bầu Trời / Cảnh Quan",
                         "scene_type": "SKY_OPENAIR",
                         "icon": "☁️",
-                        "environment": "Bầu trời quang đãng / Không gian mở",
+                        "environment": "Bầu trời quang đãng / Không gian mở ngoài trời",
                         "confidence": 0.92,
+                        "is_outdoor": True,
                         "metrics": metrics
                     }
                 elif urban_edge_density >= 140.0:
@@ -590,6 +618,7 @@ class SceneContextClassifier:
                         "icon": "🏛️",
                         "environment": "Kiến trúc công trình, đường phố đô thị",
                         "confidence": 0.91,
+                        "is_outdoor": True,
                         "metrics": metrics
                     }
                 else:
@@ -598,8 +627,9 @@ class SceneContextClassifier:
                         "short_name": "Tĩnh Vật / Đồ Hoạ",
                         "scene_type": "GRAPHIC_OBJECT",
                         "icon": "📦",
-                        "environment": "Vật thể, đồ hoạ hoặc ảnh tổng hợp",
-                        "confidence": 0.88,
+                        "environment": "Vật thể, đồ hoạ hoặc phong cảnh phi sinh trắc",
+                        "confidence": 0.89,
+                        "is_outdoor": False,
                         "metrics": metrics
                     }
         except Exception as e:
@@ -901,7 +931,7 @@ class CornealReflectionAnalyzer:
                     gray_face = cv2.cvtColor(face_np, cv2.COLOR_RGB2GRAY)
                     upper_face = gray_face[:int(fh * 0.65), :]
                     eyes = CV2_EYE_CASCADE.detectMultiScale(
-                        upper_face, scaleFactor=1.1, minNeighbors=3, minSize=(12, 12)
+                        upper_face, scaleFactor=1.1, minNeighbors=4, minSize=(16, 16)
                     )
                     eyes_found_count = len(eyes)
                 except Exception:
@@ -931,11 +961,29 @@ class CornealReflectionAnalyzer:
                     "details": "Eye regions too small or unresolvable."
                 }
 
+            # If eye cascade found 0 eyes, check if the candidate patches possess physiological pupil contrast
+            if eyes_found_count == 0:
+                std_l = float(np.std(left_eye))
+                std_r = float(np.std(right_eye))
+                min_l = float(np.min(left_eye))
+                min_r = float(np.min(right_eye))
+                # Real human eyes have a dark pupil/iris (< 110) and high local contrast (std >= 12.0)
+                if std_l < 12.0 or std_r < 12.0 or min_l > 115.0 or min_r > 115.0:
+                    return {
+                        "corneal_asymmetry_score": 0.0,
+                        "corneal_reflection_symmetry": 1.0,
+                        "optical_gaze_consistent": True,
+                        "specular_glints_detected": False,
+                        "glints_count": 0,
+                        "status": "BYPASS_NO_EYES",
+                        "details": "Corneal reflection analysis bypassed: no verified ocular pupils detected in candidate region."
+                    }
+
             thresh_l = np.percentile(left_eye, 98)
             thresh_r = np.percentile(right_eye, 98)
 
-            glint_l_mask = (left_eye >= max(190.0, thresh_l - 5.0))
-            glint_r_mask = (right_eye >= max(190.0, thresh_r - 5.0))
+            glint_l_mask = (left_eye >= max(195.0, thresh_l - 5.0))
+            glint_r_mask = (right_eye >= max(195.0, thresh_r - 5.0))
 
             has_glint_l = np.any(glint_l_mask)
             has_glint_r = np.any(glint_r_mask)
@@ -957,20 +1005,20 @@ class CornealReflectionAnalyzer:
                 asymmetry_score = 0.35 # Mild unilateral light source
                 glints_count = 1
             else:
-                var_l = np.var(left_eye)
-                var_r = np.var(right_eye) + 1e-6
-                diff_var = abs(var_l - var_r) / max(var_l, var_r)
-                asymmetry_score = float(np.clip(diff_var * 0.25, 0.0, 0.30))
+                asymmetry_score = 0.0
                 glints_count = 0
 
             symmetry_score = round(1.0 - asymmetry_score, 4)
             is_consistent = asymmetry_score < 0.35
 
-            details = (
-                f"Symmetric corneal specular reflections ({glints_count} glints detected; consistent light vector)."
-                if is_consistent
-                else f"Ophthalmic corneal asymmetry detected ({glints_count} glints; discrepant light vector or unilateral reflection)."
-            )
+            if glints_count > 0:
+                details = (
+                    f"Symmetric corneal specular reflections ({glints_count} glints detected; consistent light vector)."
+                    if is_consistent
+                    else f"Ophthalmic corneal asymmetry detected ({glints_count} glints; discrepant light vector or unilateral reflection)."
+                )
+            else:
+                details = "Corneal reflections diffuse/matte: không phát hiện phản xạ điểm chói (glint) bất thường giữa hai mắt."
 
             return {
                 "corneal_asymmetry_score": round(asymmetry_score, 4),
