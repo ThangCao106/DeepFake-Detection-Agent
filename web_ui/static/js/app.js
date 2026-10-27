@@ -870,7 +870,6 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
         ? (1.0 - ev.corneal_reflection_analysis.corneal_reflection_symmetry) 
         : (isFake ? 0.38 : 0.04);
     const angleDelta = (asymmetryScore * 18.5).toFixed(1);
-    const tau = cert.decision_threshold || 0.8118;
 
     const msgVisionText = isFake 
         ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và dị thường tại vùng biên cạnh, dấu vết của kiến trúc sinh ảnh AI (Diffusion/GAN)."
