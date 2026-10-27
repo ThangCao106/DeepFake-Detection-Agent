@@ -64,7 +64,9 @@ debug_imports.py
 # Web app uploads
 uploads/
 *.db
+*.sqlite
 report_colab/*.db
+report_colab/*.sqlite
 
 # Heavy model binaries (>100MB)
 *.safetensors

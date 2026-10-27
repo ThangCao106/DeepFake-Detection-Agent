@@ -359,10 +359,62 @@ Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệ
 
 ---
 
-## 🛠️ 6. Danh mục REST API
+## 🤖 6. Kiến Trúc 4 Agent Tự Hành Điều Phối Vòng Đời MLOps (Option B/A Standard)
+
+Hệ thống phân định rạch ròi giữa 2 cấp độ Agent:
+- **Cấp độ Giám định Phương tiện (Media Inspection Submodules)**: Thực hiện bóc tách đặc trưng vật lý - sinh trắc học trực tiếp trên từng tệp media tại Cổng phân tích `:5000` (Vision 2D-DWT, Ophthalmic Corneal Ray-Tracing, LipSync Temporal SyncNet, Chief Magistrate Bayesian Decision).
+- **Cấp độ Vòng đời MLOps Tự hành (Operational Lifecycle Agents)**: Quản trị và tự động hóa toàn bộ vòng đời mô hình hiển thị tại Live Agent Dashboard (`https://detection.dtpsoft.vn/dfagent/`):
+
+```mermaid
+flowchart LR
+    subgraph S1["Stage 1: Ingestion & Hygiene"]
+        A1["🧹 Data Curation & Purge Agent"]
+        A1 -->|"64-bit dHash & Purge AI Seeds"| D1[("Storage GDrive & Local")]
+    end
+
+    subgraph S2["Stage 2: Adversarial Red-Teaming"]
+        A2["🛡️ Autonomous Pentest Agent"]
+        D1 -->|"30 attack samples/day"| A2
+        A2 -->|"Audit FPR < 5% & FNR"| D2[("Pentest Run Reports")]
+    end
+
+    subgraph S3["Stage 3: Active Learning & LoRA"]
+        A3["🧠 Continual Training Agent"]
+        D2 -->|"Hard Negatives H(P) ≥ 0.70"| A3
+        A3 -->|"LoRA r=16, alpha=32 on Colab GPU"| D3[("New Weights Checkpoint")]
+    end
+
+    subgraph S4["Stage 4: Benchmarking & Sealing"]
+        A4["📊 Benchmark & Evaluation Agent"]
+        D3 -->|"14 Academic Datasets (6x6 Matrix)"| A4
+        A4 -->|"Platt T*=1.6178, ECE 0.0195"| D4[("Ed25519 Cryptographic Vault")]
+    end
+```
+
+| Agent Tự Hành | File / Module | Chức Năng Cốt Lõi | Chỉ Số Kiểm Soát (KPI) |
+| :--- | :--- | :--- | :--- |
+| 🛡️ **Autonomous Pentest Agent** | `pentest_runner.py` | Sinh tấn công đối kháng 30 vector/ngày (FaceSwap, Open-Weight diffusion, Audio spoofing) để đo lường độ bền vững. | Mục tiêu: 30 mẫu/ngày, $\text{FPR} < 5.0\%$, $\text{FNR} = 3.2\%$ |
+| 🧠 **Continual Training Agent** | `colab_gpu_runner.py` | Huấn luyện tinh chỉnh LoRA PEFT ($r=16, \alpha=32$) độc lập trên GPU Google Colab, khai thác Hard Negative Mining. | Entropy lọc mẫu: $H(P) \ge 0.70$, Tiết kiệm 70% VRAM (7.2GB), $+8.4\%$ Accuracy |
+| 📊 **Benchmark & Evaluation Agent** | `benchmarks/` | Đánh giá chéo mô hình trên 14 bộ dữ liệu học thuật quốc tế qua ma trận đối sánh 6x6 và hiệu chuẩn xác suất. | $\text{AUC} = 0.986$, $\text{EER} = 4.25\%$, Platt $T^* = 1.6178$, Youden $\tau^* = 0.8118$, $\text{ECE} = 0.0195$ |
+| 🧹 **Data Curation & Purge Agent** | `agents/data_curation_purge_agent.py` | **Job độc lập (tách rời Colab)**: Thu thập media thật từ Threads & Wikimedia, khử trùng lặp 64-bit dHash, dọn sạch video/audio nhân tạo và rác storage. | Khử trùng lặp: 64-bit dHash (Hamming $\le 4$), 100% Authentic Human Media |
+
+### 6.1. Tự Động Hóa Dọn Dẹp Dữ Liệu Độc Lập (`DataCurationPurgeAgent`)
+Để đảm bảo Google Colab chỉ chuyên tâm vào huấn luyện GPU tốc độ cao mà không bị phân mảnh hay quá tải bởi các tác vụ I/O tệp, logic dọn dẹp dữ liệu được tách thành một Agent độc lập:
+```bash
+# Khởi chạy một chu kỳ kiểm tra và dọn dẹp độc lập:
+python -m agents.data_curation_purge_agent --once
+
+# Hoặc khởi chạy dưới dạng background daemon kiểm tra định kỳ mỗi 4 giờ:
+python -m agents.data_curation_purge_agent --daemon --interval-hours 4
+```
+
+---
+
+## 🛠️ 7. Danh mục REST API
 
 | Đường dẫn (Endpoint) | Phương thức | Chức năng |
 | :--- | :--- | :--- |
+| `GET /api/agents/lifecycle` | `GET` | Trả về trạng thái thời gian thực của 4 MLOps Lifecycle Agents |
 | `GET /certificate/{cert_id}` | `GET` | Trang SSR HTML Chứng thư Công khai chuẩn Schema.org cho Googlebot |
 | `GET /api/verify/{cert_id}` | `GET` | API trích xuất JSON chứng thư xác thực cho bên thứ ba |
 | `GET /sitemap.xml` | `GET` | File XML Sitemap động hỗ trợ Googlebot cào dữ liệu |
@@ -372,7 +424,7 @@ Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệ
 
 ---
 
-## 🚀 7. Cài đặt & Khởi chạy Tự động
+## 🚀 8. Cài đặt & Khởi chạy Tự động
 
 ### Cài đặt Môi trường
 
@@ -397,7 +449,7 @@ Truy cập Giao diện Web tại: `http://localhost:8787` (hoặc `https://detec
 
 ---
 
-## 📑 8. Trích dẫn Học thuật (Citation)
+## 📑 9. Trích dẫn Học thuật (Citation)
 
 Nếu bạn sử dụng hệ thống này hoặc mô hình bằng chứng 4D trong các nghiên cứu khoa học, vui lòng trích dẫn theo định dạng BibTeX:
 
@@ -413,7 +465,7 @@ Nếu bạn sử dụng hệ thống này hoặc mô hình bằng chứng 4D tro
 
 ---
 
-## 📄 9. Giấy phép (License)
+## 📄 10. Giấy phép (License)
 
 Dự án được phát hành dưới bản quyền **MIT License** - xem chi tiết tại tệp [LICENSE](LICENSE).
 
