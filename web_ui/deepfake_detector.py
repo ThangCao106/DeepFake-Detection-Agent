@@ -461,23 +461,36 @@ class SceneContextClassifier:
             warm_mask = ((H <= 22) | (H >= 165)) & (S >= 30) & (S <= 160) & (V >= 40) & (V <= 220) & bg_mask
             warm_ratio = float(np.sum(warm_mask)) / max(1, np.sum(bg_mask))
 
-            # 4. Urban Structural & Architecture (Edge gradient density)
+            # 4. Urban Structural & Architecture (Canny & Laplacian edge density)
             gray = cv2.cvtColor(np_uint8, cv2.COLOR_RGB2GRAY)
             laplacian = cv2.Laplacian(gray, cv2.CV_64F)
             urban_edge_density = float(np.var(laplacian[bg_mask])) if np.any(bg_mask) else 0.0
+
+            canny = cv2.Canny(gray, 60, 150)
+            urban_canny_density = float(np.mean(canny[bg_mask] > 0) * 100) if np.any(bg_mask) else 0.0
+
+            # 4b. Atmospheric Smoothness vs High-Frequency Man-Made Surface:
+            # A natural sunset sky has very smooth internal gradient variance (sunset_lap_var < 35.0).
+            # A red bus, vehicle, banner, or red roof contains windows, text, rivets, sharp edges (sunset_lap_var >= 40.0).
+            sunset_pixels = laplacian[sunset_mask]
+            sunset_lap_var = float(np.var(sunset_pixels)) if len(sunset_pixels) > 50 else 999.0
+
+            is_true_sunset = bool(sunset_ratio >= 0.16 and sunset_lap_var < 35.0)
+            is_urban = bool(urban_canny_density >= 1.6 or (urban_edge_density >= 180.0 and not is_true_sunset and foliage_ratio < 0.20))
+            is_outdoor = bool(foliage_ratio >= 0.08 or sky_ratio >= 0.12 or is_true_sunset or is_urban)
 
             # 5. Studio / Uniform Backdrop (Standard deviation of background pixels)
             bg_pixels = np_rgb[bg_mask]
             backdrop_std = float(np.mean(np.std(bg_pixels, axis=0))) if len(bg_pixels) > 20 else 99.0
 
-            is_outdoor = bool(foliage_ratio >= 0.08 or sky_ratio >= 0.12 or sunset_ratio >= 0.12 or urban_edge_density >= 140.0)
-
             metrics = {
                 "foliage_ratio": float(round(foliage_ratio, 3)),
                 "sky_ratio": float(round(sky_ratio, 3)),
                 "sunset_ratio": float(round(sunset_ratio, 3)),
-                "indoor_warm_ratio": float(round(warm_ratio, 3)),
+                "sunset_lap_var": float(round(sunset_lap_var, 1)),
+                "urban_canny_density": float(round(urban_canny_density, 2)),
                 "urban_edge_density": float(round(urban_edge_density, 1)),
+                "indoor_warm_ratio": float(round(warm_ratio, 3)),
                 "backdrop_std": float(round(backdrop_std, 1)),
                 "is_outdoor": is_outdoor
             }
@@ -496,7 +509,7 @@ class SceneContextClassifier:
                     }
                 elif is_outdoor:
                     # BRANCH 3: Hybrid (Human in Outdoor Environment / Decoupled Dual-ROI)
-                    if sunset_ratio >= 0.12:
+                    if is_true_sunset:
                         return {
                             "category": "Chân Dung Ngoại Cảnh / Hoàng Hôn",
                             "short_name": "Ngoại Cảnh / Hoàng Hôn",
@@ -504,6 +517,17 @@ class SceneContextClassifier:
                             "icon": "🌅",
                             "environment": "Chân dung ngoại cảnh chiều tà (Hoàng hôn, biển trời, ánh sáng tự nhiên)",
                             "confidence": 0.93,
+                            "is_outdoor": True,
+                            "metrics": metrics
+                        }
+                    elif is_urban:
+                        return {
+                            "category": "Chân Dung Ngoại Cảnh / Đô Thị",
+                            "short_name": "Ngoại Cảnh / Đô Thị",
+                            "scene_type": "OUTDOOR_URBAN_PORTRAIT",
+                            "icon": "🏙️",
+                            "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà, phương tiện)",
+                            "confidence": 0.92,
                             "is_outdoor": True,
                             "metrics": metrics
                         }
@@ -576,8 +600,8 @@ class SceneContextClassifier:
                             "metrics": metrics
                         }
             else:
-                # BRANCH 1: Pure Non-Human Nature / Scenery / Objects
-                if sunset_ratio >= 0.12:
+                # BRANCH 1: Pure Non-Human Nature / Scenery / Architecture / Vehicles
+                if is_true_sunset:
                     return {
                         "category": "Hoàng Hôn / Biển Trời (Không Người)",
                         "short_name": "Hoàng Hôn / Biển Trời",
@@ -585,6 +609,17 @@ class SceneContextClassifier:
                         "icon": "🌅",
                         "environment": "Phong cảnh hoàng hôn biển trời / Ánh sáng chiều tà tự nhiên",
                         "confidence": 0.95,
+                        "is_outdoor": True,
+                        "metrics": metrics
+                    }
+                elif is_urban:
+                    return {
+                        "category": "Kiến Trúc & Đô Thị (Đường Phố, Phương Tiện)",
+                        "short_name": "Đô Thị / Phương Tiện",
+                        "scene_type": "URBAN_ARCHITECTURE",
+                        "icon": "🏙️",
+                        "environment": "Kiến trúc công trình, đường phố đô thị, phương tiện giao thông",
+                        "confidence": 0.94,
                         "is_outdoor": True,
                         "metrics": metrics
                     }
@@ -607,17 +642,6 @@ class SceneContextClassifier:
                         "icon": "☁️",
                         "environment": "Bầu trời quang đãng / Không gian mở ngoài trời",
                         "confidence": 0.92,
-                        "is_outdoor": True,
-                        "metrics": metrics
-                    }
-                elif urban_edge_density >= 140.0:
-                    return {
-                        "category": "Kiến Trúc / Đô Thị",
-                        "short_name": "Đô Thị / Kiến Trúc",
-                        "scene_type": "URBAN_ARCHITECTURE",
-                        "icon": "🏛️",
-                        "environment": "Kiến trúc công trình, đường phố đô thị",
-                        "confidence": 0.91,
                         "is_outdoor": True,
                         "metrics": metrics
                     }

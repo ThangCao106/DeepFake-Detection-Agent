@@ -1965,12 +1965,12 @@ window.switchCard1Evidence = function(mode) {
         if (widget2Name) widget2Name.textContent = 'Phân Tích Ngữ Cảnh & Bản Đồ Chú Ý Không Gian (ViT 8x8 Grid)';
         if (widget2Desc) {
             const envStr = currentCard1State.sceneCategoryFull ? ` (${currentCard1State.sceneCategoryFull})` : '';
-            widget2Desc.textContent = `Phân loại ngữ cảnh môi trường${envStr}, phân tích ma trận lưới 8x8 vi sai gradient bậc 1 (tương thích ViT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.`;
+            widget2Desc.textContent = `Nhận diện ngữ cảnh môi trường${envStr}. Sử dụng ma trận độ chú ý không gian 8x8 (ViT Patch Saliency) đo mật độ vi sai gradient và phương sai nội bộ để phát hiện ranh giới chắp vá (blending seams) của công nghệ tạo sinh AI.`;
         }
         if (widget2Footer) widget2Footer.textContent = 'Ngữ cảnh & Vùng chú ý chính (Saliency Hotspot):';
         if (cornealAngleEl) {
             const shortReg = currentCard1State.shortRegion || 'Toàn cảnh';
-            cornealAngleEl.textContent = `${currentCard1State.sceneCategoryShort} • ${shortReg} (Grad: ${Number(currentCard1State.peakScore).toFixed(2)})`;
+            cornealAngleEl.textContent = `${currentCard1State.sceneCategoryShort} • ${shortReg} (Hotspot: ${Number(currentCard1State.peakScore).toFixed(2)})`;
             cornealAngleEl.style.color = '#0891b2';
         }
         if (cornealBadge) {
