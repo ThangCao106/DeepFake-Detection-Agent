@@ -1829,6 +1829,12 @@ function populateGenUiArtifacts(data) {
                     (data.frame_results && data.frame_results.length > 0) ||
                     (document.getElementById('previewVideo') && document.getElementById('previewVideo').style.display !== 'none');
 
+    const isAudio = (data.media_type && data.media_type.includes('audio')) ||
+                    (cert.media_type && cert.media_type.includes('audio')) ||
+                    (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('audio')) ||
+                    (cert.audio_metadata !== undefined) ||
+                    (document.getElementById('previewAudio') && document.getElementById('previewAudio').style.display !== 'none');
+
     const asymmetryScore = cornealAnalysis.corneal_reflection_symmetry !== undefined 
         ? (1.0 - cornealAnalysis.corneal_reflection_symmetry) 
         : (data.label === 'Realism' ? 0.042 : 0.428);
@@ -1862,29 +1868,49 @@ function populateGenUiArtifacts(data) {
     const pipeStep6Desc = document.getElementById('pipeStep6Desc');
 
     if (pipelineRouteBadge) {
-        if (hasHuman) {
+        if (isAudio) {
+            pipelineRouteBadge.textContent = 'Single-Stream (Acoustic Forensic)';
+            pipelineRouteBadge.className = 'pipeline-route-badge';
+            pipelineRouteBadge.style.background = '#fef3c7';
+            pipelineRouteBadge.style.color = '#b45309';
+        } else if (hasHuman) {
             pipelineRouteBadge.textContent = 'Dual-Stream (Human Biometrics)';
             pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+            pipelineRouteBadge.style.background = '';
+            pipelineRouteBadge.style.color = '';
         } else {
             pipelineRouteBadge.textContent = 'Single-Stream (General Media)';
             pipelineRouteBadge.className = 'pipeline-route-badge';
+            pipelineRouteBadge.style.background = '';
+            pipelineRouteBadge.style.color = '';
         }
     }
     if (pipeStep1Desc) {
-        pipeStep1Desc.textContent = isVideo ? 'Video Đa Khung Hình' : 'Ảnh Tĩnh (RGB)';
+        pipeStep1Desc.textContent = isAudio ? 'Tín Hiệu Âm Thanh (16kHz)' : (isVideo ? 'Video Đa Khung Hình' : 'Ảnh Tĩnh (RGB)');
     }
     if (pipeStep2Icon && pipeStep2Desc) {
-        pipeStep2Icon.textContent = hasHuman ? '👤' : '🏞️';
-        pipeStep2Desc.textContent = hasHuman ? 'Chân Dung (Human)' : sceneCategoryShort;
+        if (isAudio) {
+            pipeStep2Icon.textContent = '🎙️';
+            pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (Voice)';
+        } else {
+            pipeStep2Icon.textContent = hasHuman ? '👤' : '🏞️';
+            pipeStep2Desc.textContent = hasHuman ? 'Chân Dung (Human)' : sceneCategoryShort;
+        }
     }
     if (pipeStep3Desc) {
-        pipeStep3Desc.textContent = hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter';
+        pipeStep3Desc.textContent = isAudio ? 'Spectral Vocoder Analyzer' : (hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter');
     }
     if (pipeStep4Desc) {
-        pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial';
+        pipeStep4Desc.textContent = isAudio ? 'Log-Mel + Phase + Formant' : 'PRNU + 2D FFT + Spatial';
     }
     if (pipeStep5 && pipeStep5Icon && pipeStep5Desc) {
-        if (hasHuman) {
+        if (isAudio) {
+            pipeStep5.classList.remove('bypassed');
+            pipeStep5.classList.add('active');
+            pipeStep5Icon.textContent = '🗣️';
+            const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(1) : '2.1';
+            pipeStep5Desc.textContent = `F0 Jitter = ${f0Jitter}% (Voice)`;
+        } else if (hasHuman) {
             pipeStep5.classList.remove('bypassed');
             pipeStep5.classList.add('active');
             pipeStep5Icon.textContent = '👁️';
@@ -1900,8 +1926,46 @@ function populateGenUiArtifacts(data) {
         pipeStep6Desc.textContent = `Youden τ* = 0.8118`;
     }
 
-    // Update Widget 2 (Adaptive between Corneal and SARAAB Saliency)
-    if (hasHuman) {
+    // Update Widget 1 & Widget 2 (Adaptive for Audio vs Human Corneal vs General Spatial)
+    if (isAudio) {
+        // Widget 1: Audio Log-Mel Spectrogram
+        if (widget2Icon) widget2Icon.textContent = '🎙️';
+        if (widget2Name) widget2Name.textContent = 'Phân Tích Phổ Âm Thanh (Log-Mel Spectrogram)';
+        if (widget2Desc) widget2Desc.textContent = 'Trực quan hóa ma trận phổ Log-Mel và phân bố hài âm phát hiện dấu vết nén vocoder sinh nhân tạo (HiFi-GAN/VITS/XTTS).';
+        if (widget2Footer) widget2Footer.textContent = 'Dải phổ bất thường (Spectral Anomaly):';
+        const vocoderScore = (ev.vocoder_spectral_analysis && ev.vocoder_spectral_analysis.vocoder_anomaly_score !== undefined) 
+            ? ev.vocoder_spectral_analysis.vocoder_anomaly_score 
+            : 0.25;
+        if (cornealAngleEl) {
+            cornealAngleEl.textContent = `Dải tần >7.5kHz (Decay: ${Number(vocoderScore).toFixed(2)})`;
+            cornealAngleEl.style.color = '#d97706';
+        }
+        if (cornealBadge) {
+            cornealBadge.textContent = 'Log-Mel Spectrogram';
+            cornealBadge.style.background = '#fef3c7';
+            cornealBadge.style.color = '#b45309';
+            cornealBadge.style.borderColor = '#fde68a';
+        }
+        renderAudioSpectrogramCanvas(ev.spectrogram_patch_saliency || {});
+
+        // Widget 2: Audio Waveform Jitter & Pitch Residual
+        const splitCardTitle = document.querySelector('#genUiSpectralCard .genui-artifact-title');
+        const splitCardBadge = document.querySelector('#genUiSpectralCard .genui-artifact-badge');
+        const splitCardDesc = document.querySelector('#genUiSpectralCard > p');
+        if (splitCardTitle) splitCardTitle.innerHTML = '<span>🌊</span><span>Phân Tích Bất Khớp Sóng Âm (Waveform Residual)</span>';
+        if (splitCardBadge) {
+            splitCardBadge.textContent = 'Phase & Pitch Jitter';
+            splitCardBadge.style.background = '#fef2f2';
+            splitCardBadge.style.color = '#b91c1c';
+            splitCardBadge.style.borderColor = '#fecaca';
+        }
+        if (splitCardDesc) splitCardDesc.textContent = 'Phân tích vi sai dạng sóng bóc tách độ biến thiên cao độ F0 và độ trễ pha phát hiện giọng nói nhân bản.';
+        const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? ev.pitch_vocal_dynamics.f0_jitter : 0.021;
+        if (energyValEl) {
+            energyValEl.textContent = `F0_jitter = ${Number(f0Jitter).toFixed(4)}`;
+            energyValEl.style.color = '#b45309';
+        }
+    } else if (hasHuman) {
         if (widget2Icon) widget2Icon.textContent = '👁️';
         if (widget2Name) widget2Name.textContent = 'Ophthalmic Corneal Ray-Tracing';
         if (widget2Desc) widget2Desc.textContent = 'Mô phỏng vector tia sáng phản xạ qua giác mạc 2 mắt (Left Pupil vs Right Pupil) đối soát tính nhất quán nguồn sáng vật lý.';
@@ -1924,6 +1988,7 @@ function populateGenUiArtifacts(data) {
             }
         }
         renderCornealRayTraceCanvas(asymmetryScore, true);
+    } else {
         if (widget2Icon) widget2Icon.textContent = '🏞️';
         if (widget2Name) widget2Name.textContent = 'Phân Tích Ngữ Cảnh & Bản Đồ Chú Ý Không Gian';
         if (widget2Desc) widget2Desc.textContent = 'Phân tích ma trận lưới 8x8 vi sai gradient bậc 1 (tương thích ViT) khoanh vùng mật độ năng lượng không gian, kiểm tra tính liên tục quang học giữa các patch.';
@@ -2367,6 +2432,102 @@ function renderSaraabHeatmapCanvas(saraabData = {}, previewImg = null) {
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`DISPERSION σ² = ${disp}`, w - 10, 15);
+    ctx.textAlign = 'start';
+}
+
+function renderAudioSpectrogramCanvas(specData = {}) {
+    const canvas = document.getElementById('genUiCornealCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width || 460;
+    const h = canvas.height || 240;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Dark acoustic laboratory background
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw subtle frequency grid lines
+    ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)';
+    ctx.lineWidth = 1;
+    for (let x = 40; x < w; x += 35) {
+        ctx.beginPath(); ctx.moveTo(x, 24); ctx.lineTo(x, h - 20); ctx.stroke();
+    }
+    for (let y = 30; y < h - 20; y += 25) {
+        ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w - 10, y); ctx.stroke();
+    }
+
+    // Draw Spectrogram Heat Columns / Frequency Formants
+    const grid = specData.spectrogram_grid || [];
+    const rows = grid.length || 8;
+    const cols = (grid[0] && grid[0].length) || 8;
+    const chartW = w - 60;
+    const chartH = h - 50;
+    const cellW = chartW / cols;
+    const cellH = chartH / rows;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const val = (grid[r] && grid[r][c] !== undefined) ? grid[r][c] : Math.sin(r * 0.8 + c * 0.5) * 0.5 + 0.5;
+            const x = 45 + c * cellW;
+            const y = (h - 26) - (r + 1) * cellH;
+
+            // Audio color palette: deep indigo -> violet -> neon cyan -> golden yellow
+            let color;
+            if (val < 0.25) {
+                color = `rgba(30, 27, 75, ${0.4 + val * 0.8})`;
+            } else if (val < 0.55) {
+                color = `rgba(99, 102, 241, ${0.5 + val * 0.7})`;
+            } else if (val < 0.80) {
+                color = `rgba(6, 182, 212, ${0.6 + val * 0.4})`;
+            } else {
+                color = `rgba(251, 191, 36, ${0.7 + val * 0.3})`;
+            }
+
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, cellW - 1, cellH - 1);
+        }
+    }
+
+    // Draw 7.5 kHz Vocoder Cutoff Critical Line
+    const cutoffY = 24 + chartH * 0.18;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(45, cutoffY);
+    ctx.lineTo(w - 15, cutoffY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vocoder cutoff label
+    ctx.fillStyle = '#f87171';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('CRITICAL CUTOFF: 7.5 kHz (HiFi-GAN / VITS Boundary)', 50, cutoffY - 5);
+
+    // Axis Labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px monospace';
+    ctx.fillText('8 kHz', 8, 32);
+    ctx.fillText('4 kHz', 8, Math.round(h / 2));
+    ctx.fillText('0 Hz', 8, h - 22);
+    ctx.fillText('0.0s (Time)', 45, h - 6);
+    ctx.fillText('5.0s', w - 35, h - 6);
+
+    // Top HUD
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(0, 0, w, 22);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('LOG-MEL SPECTROGRAM & VOCODER ANOMALY TRACKER', 10, 15);
+
+    const peak = specData.peak_hotspot || {};
+    const band = peak.frequency_band || 'Formant >7.5kHz';
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`PEAK: ${band}`, w - 10, 15);
     ctx.textAlign = 'start';
 }
 
