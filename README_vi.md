@@ -63,15 +63,21 @@ flowchart TD
 
 ---
 
-### 1.2. Ma Trận Bằng Chứng 6 Chiều Thích Ứng (Adaptive 6D Evidence Matrix)
+### 1.2. Ma Trận Bằng Chứng 6 Chiều Thích Ứng (Modality-Native 6D Evidence Matrix)
 
-Tùy theo loại tệp đầu vào, hệ thống ánh xạ dữ liệu vào ma trận chứng cứ 6 chiều minh bạch:
-1. **Chiều 1 (Deep Classifier Logits)**: Điểm phân loại học sâu thô từ Vision Transformer hoặc Audio Classifier.
-2. **Chiều 2 (Frequency Anomaly)**: Bất thường miền tần số (2D-FFT Lattice / 2D-DWT HH / Vocoder Formant Cutoff).
-3. **Chiều 3 (Spatial / Phase Inconsistency)**: Tính nhất quán không gian hoặc pha sóng âm (Spatial Noise Discrepancy / ZCR Phase Regularity).
-4. **Chiều 4 (Hardware Sensor Signature)**: Dấu vân cảm biến phần cứng (Camera Sensor PRNU / Microphone Channel Uniformity).
-5. **Chiều 5 (Deep Biometrics)**: Bất biến sinh học chuyên sâu (Góc lệch giác mạc $\Delta\theta$ / Đồng bộ LipSync / Độ ổn định cao độ thanh quản $F_0$).
-6. **Chiều 6 (Attention & Uncertainty)**: Bản đồ chú ý không gian/phổ (Spatial Patch Saliency Grid / Log-Mel Heatmap) & Độ bất định Entropy $H(P)$.
+Nhằm đảm bảo tính minh bạch giải trình (Explainable AI - XAI) theo tiêu chuẩn **EU AI Act Điều 50**, mọi kết luận giám định đều được bóc tách và đối chiếu qua **Ma trận Bằng chứng Giám định 6 Chiều Thích ứng (Modality-Native 6D Evidence Matrix)**. Mỗi phương thức truyền thông (Hình ảnh, Video, Âm thanh) được ánh xạ vào một tập hợp 6 chiều vật lý và sinh trắc học chuyên biệt:
+
+| Chiều Giám Định | Phân Hệ Ảnh Tĩnh (Static Image) | Phân Hệ Video Đa Khung Hình (Temporal Video) | Phân Hệ Âm Thanh (Acoustic Audio) | Cơ Chế Phân Định & Ý Nghĩa Pháp Lý |
+| :--- | :--- | :--- | :--- | :--- |
+| **Dim 1: Backbone Logits** | ViT Patch Classification Logits ($z_{\text{img}}$) | Temporal Aggregated Frame Logits ($z_{\text{vid}}$) | Passive Spectral Acoustic Logits ($z_{\text{aud}}$) | Điểm phân loại học sâu thô từ mạng nơ-ron nền tảng |
+| **Dim 2: Frequency Anomaly** | 2D-FFT Lattice Spikes & 2D-DWT Haar $HH$ Subband | Độ rung lắc chuyển động liên khung ($J_{\text{motion}}$) | Suy giảm tần số cao Vocoder ($>7.5\text{ kHz}$) | Dấu vết nội suy tần số cao / giật cục quang học |
+| **Dim 3: Spatial / Waveform Discontinuity** | Đứt gãy nhiễu không gian ($\sigma_{\text{noise}}^2$) | Biến sai vi cửa sổ SARAAB 7 giây (Micro-Window Variance) | Bất thường pha sóng âm & Tần suất bước qua điểm 0 ($ZCR$) | Đo đạc tính liên tục cấu trúc / vi phân đoạn / pha âm học |
+| **Dim 4: Sensor Hardware Residual** | Sai biệt vân cảm biến máy ảnh ($\Delta_{\text{PRNU}}$) | Độ ổn định vân PRNU trôi dạt giữa các khung hình | Tính đồng nhất sàn nhiễu kênh thu Microphone | Xác thực phần cứng thiết bị vật lý ghi hình / ghi âm |
+| **Dim 5: Domain Biometrics (Adaptive)** | Vector phản xạ giác mạc 2 mắt ($\Delta\theta$) *(Bypass nếu phi sinh trắc)* | Đồng bộ âm hình DF26 LipSync & rPPG *(Bypass nếu video tổng quát)* | Vi rung sinh lý dây thanh quản ($F_0$ Jitter: $1.0\%\text{--}3.0\%$) | Bất biến sinh học người: Mắt / Khẩu hình / Dây thanh quản |
+| **Dim 6: Attention & Saliency Grid** | Lưới điểm nóng không gian 8x8 & Entropy $H(P)$ | Lưới điểm nóng không - thời gian khung hình chính & Entropy $H(P)$ | Ma trận điểm nóng Log-Mel 64 băng tần & Entropy $H(P)$ | Bản đồ giải trình hộp trắng (White-box XAI) & độ bất định |
+
+> [!TIP]
+> **Cơ chế Miễn trừ Sinh trắc Thích ứng (Bypass Mechanism)**: Khi đầu vào là ảnh phong cảnh / kiến trúc không chứa khuôn mặt hoặc video phi sinh trắc, **Chiều 5** được tự động kích hoạt trạng thái `BYPASS_NON_HUMAN` an toàn, chuyển trọng số $\alpha$ từ $0.60$ sang dồn $1.00$ vào các đặc trưng vật lý chung ($R_{\text{general}}$), tránh hiện tượng báo động giả (False Positive). Đối với âm thanh giọng nói, Chiều 5 luôn kích hoạt phân tích vi rung cao độ thanh quản ($F_0$ Jitter).
 
 ---
 

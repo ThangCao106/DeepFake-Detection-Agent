@@ -758,7 +758,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     const humanEval = cert.human_presence_evaluation || {};
     const imgMeta = cert.image_metadata || {};
     const evMatrix = cert.evidence_matrix_6d || {};
-    const dim5 = evMatrix.dim5_corneal_reflection || {};
+    const dim5 = evMatrix.dim5_corneal_reflection || evMatrix.dim5_lip_sync_rppg || evMatrix.dim5_vocal_cord_physiology || {};
     const hasHuman = humanEval.has_human !== undefined 
         ? humanEval.has_human 
         : (imgMeta.face_detected !== undefined 
@@ -1816,7 +1816,7 @@ function populateGenUiArtifacts(data) {
     const humanEval = cert.human_presence_evaluation || {};
     const imgMeta = cert.image_metadata || {};
     const evMatrix = cert.evidence_matrix_6d || {};
-    const dim5 = evMatrix.dim5_corneal_reflection || {};
+    const dim5 = evMatrix.dim5_corneal_reflection || evMatrix.dim5_lip_sync_rppg || evMatrix.dim5_vocal_cord_physiology || {};
     const hasHuman = humanEval.has_human !== undefined 
         ? humanEval.has_human 
         : (imgMeta.face_detected !== undefined 
@@ -1873,6 +1873,11 @@ function populateGenUiArtifacts(data) {
             pipelineRouteBadge.className = 'pipeline-route-badge';
             pipelineRouteBadge.style.background = '#fef3c7';
             pipelineRouteBadge.style.color = '#b45309';
+        } else if (isVideo) {
+            pipelineRouteBadge.textContent = hasHuman ? 'Temporal + LipSync/rPPG' : 'Temporal Micro-Window (Video)';
+            pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+            pipelineRouteBadge.style.background = '#e0e7ff';
+            pipelineRouteBadge.style.color = '#3730a3';
         } else if (hasHuman) {
             pipelineRouteBadge.textContent = 'Dual-Stream (Human Biometrics)';
             pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
@@ -1898,10 +1903,10 @@ function populateGenUiArtifacts(data) {
         }
     }
     if (pipeStep3Desc) {
-        pipeStep3Desc.textContent = isAudio ? 'Spectral Vocoder Analyzer' : (hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter');
+        pipeStep3Desc.textContent = isAudio ? 'Spectral Vocoder Analyzer' : (isVideo ? 'SARAAB 7s Micro-Windowing' : (hasHuman ? 'ViT + WAVIE + Corneal' : 'ViT 6D + PRNU Filter'));
     }
     if (pipeStep4Desc) {
-        pipeStep4Desc.textContent = isAudio ? 'Log-Mel + Phase + Formant' : 'PRNU + 2D FFT + Spatial';
+        pipeStep4Desc.textContent = isAudio ? 'Log-Mel + Phase + Formant' : (isVideo ? 'Motion Jitter + PRNU Inter-frame' : 'PRNU + 2D FFT + Spatial');
     }
     if (pipeStep5 && pipeStep5Icon && pipeStep5Desc) {
         if (isAudio) {
@@ -1910,6 +1915,18 @@ function populateGenUiArtifacts(data) {
             pipeStep5Icon.textContent = '🗣️';
             const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(1) : '2.1';
             pipeStep5Desc.textContent = `F0 Jitter = ${f0Jitter}% (Voice)`;
+        } else if (isVideo) {
+            if (hasHuman) {
+                pipeStep5.classList.remove('bypassed');
+                pipeStep5.classList.add('active');
+                pipeStep5Icon.textContent = '👄';
+                pipeStep5Desc.textContent = 'DF26 LipSync + rPPG (Video)';
+            } else {
+                pipeStep5.classList.remove('active');
+                pipeStep5.classList.add('bypassed');
+                pipeStep5Icon.textContent = '⏭️';
+                pipeStep5Desc.textContent = 'Bypass Non-Human Video';
+            }
         } else if (hasHuman) {
             pipeStep5.classList.remove('bypassed');
             pipeStep5.classList.add('active');

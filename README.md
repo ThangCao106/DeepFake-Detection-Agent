@@ -132,15 +132,21 @@ flowchart TD
 
 ---
 
-### 1.2. Adaptive 6D Evidence Matrix & Mathematical Formulations
+### 1.2. Modality-Native 6D Evidence Matrix & Mathematical Formulations
 
-Evidence across modalities is mapped into an auditable **Adaptive 6D Evidence Matrix**:
-1. *Dimension 1*: Deep Classifier Logits (ViT / Audio Backbone).
-2. *Dimension 2*: Frequency Domain Anomalies (2D-FFT Lattice / 2D-DWT HH / Vocoder Cutoff).
-3. *Dimension 3*: Spatial / Phase Consistency (Spatial Noise Discrepancy / ZCR Phase Regularity).
-4. *Dimension 4*: Hardware Sensor Signature (Camera Sensor PRNU / Microphone Channel Uniformity).
-5. *Dimension 5*: Deep Biometrics (Corneal Reflection $\Delta\theta$ / LipSync / Glottal $F_0$ Jitter).
-6. *Dimension 6*: Attention & Uncertainty (Spatial Saliency / Log-Mel Heatmap & Entropy $H(P)$).
+To ensure auditable Explainable AI (XAI) under **EU AI Act Article 50**, all forensic assessments are projected onto a **Modality-Native 6D Evidence Matrix**. Each media modality (Static Image, Temporal Video, Acoustic Voice) maps to six dedicated physical and biometric dimensions:
+
+| Dimension | Static Image Stream | Temporal Video Stream | Acoustic Voice Stream | Metric & Decision Logic |
+| :--- | :--- | :--- | :--- | :--- |
+| **Dim 1: Backbone Logits** | ViT Patch Classification Logits ($z_{\text{img}}$) | Temporal Aggregated Frame Logits ($z_{\text{vid}}$) | Passive Spectral Acoustic Logits ($z_{\text{aud}}$) | Raw deep neural classifier logits |
+| **Dim 2: Frequency Anomaly** | 2D-FFT Lattice Spikes & 2D-DWT Haar $HH$ Subband | Temporal Motion Jitter ($J_{\text{motion}}$) | High-Frequency Vocoder Roll-off ($>7.5\text{ kHz}$) | High-frequency / optical inter-frame fluctuation |
+| **Dim 3: Spatial / Temporal Continuity** | Spatial Noise Discrepancy ($\sigma_{\text{noise}}^2$) | SARAAB 7-second Micro-Window Anomaly Variance | Waveform Phase & Zero-Crossing Irregularity ($ZCR$) | Spatial patch / temporal micro-window / phase continuity |
+| **Dim 4: Hardware Sensor Residual** | Camera Sensor PRNU Discrepancy ($\Delta_{\text{PRNU}}$) | Inter-Frame Camera PRNU Stability & Drift | Microphone Acoustic Channel Noise Floor | Physical recording sensor device consistency |
+| **Dim 5: Domain Biometrics (Adaptive)** | Ophthalmic Corneal Ray-tracing ($\Delta\theta$) *(Bypass if Non-Human)* | DF26 Audio-Visual LipSync & rPPG *(Bypass if General Video)* | Vocal Cord Glottal Dynamics ($F_0$ Jitter: $1.0\%\text{--}3.0\%$) | Deep physiological invariants: Eyes / Lips / Vocal cords |
+| **Dim 6: Saliency & Uncertainty** | 8x8 Spatial ViT Saliency Grid & Entropy $H(P)$ | Spatio-Temporal Keyframe Saliency Grid & Entropy $H(P)$ | 64-Band Log-Mel Spectrogram Patch Saliency & Entropy $H(P)$ | White-box attribution hotspot map & prediction entropy |
+
+> [!TIP]
+> **Adaptive Biometric Bypass**: When processing non-human or landscape scenes, **Dimension 5** is safely marked `BYPASS_NON_HUMAN`, gracefully falling back to general spatial-frequency evidence ($R_{\text{general}}$) without spurious false positives. In speech audio streams, Dimension 5 dynamically targets vocal fold micro-tremor ($F_0$ jitter).
 
 #### Post-Hoc Probability Calibration
 Predictions undergo two-tier statistical calibration:
