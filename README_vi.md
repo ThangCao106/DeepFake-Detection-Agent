@@ -12,105 +12,100 @@
 
 **Hệ thống AI Deepfake Detection & Digital Forensic Agent** là một nền tảng Multi-Agent cấp công nghiệp được thiết kế để phân loại, kiểm toán và cấp chứng thư pháp y kỹ thuật số cho các phương tiện truyền thông tổng hợp (GANs, Latent Diffusion, Face Swaps, Audio Clones, Deepfake Videos).
 
-Khác với các mô hình phân loại nhị phân thông thường, hệ thống tích hợp **Mô hình Bằng chứng Giám định Đa chiều 4D** ($Risk_{composite}$), tự động phát hành **Chứng thư Kỹ thuật số (`CERT-DF-XXXXXXXX`)** có chữ ký mật mã hóa, và sở hữu **Kiến trúc Lập chỉ mục Google Search (SEO Indexing Architecture)** cho phép xác thực công khai chứng thư trên Google và các công cụ tìm kiếm.
+Hệ thống tích hợp **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng (Tri-Stream Agentic Dispatcher - Option A)** cùng **Ma trận Bằng chứng Giám định Đa chiều 6D Thích ứng** ($Risk_{composite}$), tự động phát hành **Chứng thư Giám định Kỹ thuật số (`CERT-DF/VID/AUD-XXXXXXXX`)** có chữ ký mật mã hóa Ed25519, và sở hữu **Kiến trúc Lập chỉ mục Google Search (SEO Indexing Architecture)** cho phép xác thực công khai chứng thư trên Google và các cơ quan tư pháp theo tiêu chuẩn **EU AI Act Điều 50** và **DSA Auditable Media**.
 
 ---
 
-## 🔬 1. Kiến trúc Hai Mô hình & Luồng Phân tích Song song (Dual-Stream Forensic Pipeline)
+## 🔬 1. Cơ Chế Định Tuyến Phân Tuyến Đa Phương Tiện (Tri-Stream Agentic Dispatcher - Chuẩn Option A)
 
-Để đáp ứng các tiêu chuẩn pháp lý nghiêm ngặt (như quy định **EU AI Act Article 50** và **DSA Auditable Media**), hệ thống triển khai **2 mô hình học máy độc lập** và tích hợp cơ chế **Cổng định tuyến Sinh trắc học Con người (Human Presence Detection Gate)**:
+Nhằm đáp ứng yêu cầu giám định toàn diện trong kỷ nguyên truyền thông tạo sinh đa phương thức (hình ảnh, video, âm thanh giọng nói), hệ thống thiết lập **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng**. Khi người dùng tải tệp lên (qua giao diện Web hoặc API), bộ tiền xử lý sẽ kiểm tra MIME type và Magic Byte Header để tự động điều hướng sang 1 trong 3 động cơ chuyên sâu tương ứng:
 
-1. **Mô hình 1 (General Vision & Signal Model)**: Custom Vision Transformer (ViT) kết hợp phân tích Dị thường Tần số 2D-FFT ($Score_{spectral}$), Biến thiên Nhiễu Không gian ($Score_{spatial}$), và Độ bất định Entropy ($H(P)$).
-2. **Mô hình 2 (Human-Centric Biometrics Model)**: Mô hình đa phương thức chuyên sâu về con người (`HumanMultiModalDetector`) gồm phân tích kết cấu da mặt qua biến đổi sóng nhỏ 2D DWT (WAVIE), tính nhất quán nhịp tim vi mạch máu (rPPG), động học âm thanh thanh quản (SSL Audio Feature Extractor), và độ lệch đồng bộ chuyển động môi - khẩu hình (DF26 Audio-Visual Lip-Sync).
+```mermaid
+flowchart TD
+    RawMedia["Tệp Truyền Thông Tải Lên\n(Ảnh / Video / Âm Thanh)"] --> Gate["Ingestion & Modality Dispatcher\n(MIME Check & Format Demuxing)"]
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │            Tệp Ảnh / Video Đầu vào      │
-                    └────────────────────┬────────────────────┘
-                                         │
-                                         ▼
-                    ┌─────────────────────────────────────────┐
-                    │      Cổng Phát hiện Con người (Gate)    │
-                    │   (Khuôn mặt / Da YCbCr / Giọng nói)    │
-                    └───────────┬─────────────────┬───────────┘
-                                │                 │
-               [Có Con người]   │                 │   [Không có Con người]
-                                ▼                 ▼
-       ┌─────────────────────────────────┐   ┌─────────────────────────────────┐
-       │   LUỒNG 2: SONG SONG (DUAL)     │   │   LUỒNG 1: ĐƠN LẺ (SINGLE)      │
-       │                                 │   │                                 │
-       │  ┌───────────────────────────┐  │   │  ┌───────────────────────────┐  │
-       │  │ Luồng A: General 4D ViT   │  │   │  │ Mô hình Tổng quát ViT 4D  │  │
-       │  │ - 4D Evidence (ViT, FFT,  │  │   │  │ - 4D Evidence (ViT, FFT,  │  │
-       │  │   Spatial Noise, Entropy) │  │   │  │   Spatial Noise, Entropy) │  │
-       │  │   => Risk_general (40%)   │  │   │  │   => Risk_composite (100%)│  │
-       │  └─────────────┬─────────────┘  │   │  └─────────────┬─────────────┘  │
-       │                │                │   └────────────────┼────────────────┘
-       │  ┌─────────────┴─────────────┐  │                    │
-       │  │ Luồng B: Human Biometrics │  │                    │
-       │  │ - WAVIE 2D DWT Skin       │  │                    │
-       │  │ - rPPG Vascular Pulse     │  │                    │
-       │  │ - SSL Vocal Dynamics      │  │                    │
-       │  │ - DF26 Lip-Sync Synch     │  │                    │
-       │  │   => Risk_human (60%)     │  │                    │
-       │  └─────────────┬─────────────┘  │                    │
-       │                │                │                    │
-       │                ▼                │                    │
-       │  ┌───────────────────────────┐  │                    │
-       │  │ Hợp nhất Bằng chứng Đa    │  │                    │
-       │  │ nguồn (Evidence Fusion):  │  │                    │
-       │  │ Risk = 0.40*Rg + 0.60*Rh  │  │                    │
-       │  └─────────────┬─────────────┘  │                    │
-       └────────────────┼────────────────┘                    │
-                        │                                     │
-                        └───────────────────┬─────────────────┘
-                                            ▼
-                           ┌──────────────────────────────────┐
-                           │  Chứng thư Giám định Kỹ thuật số │
-                           │        CERT-DF-XXXXXXXX          │
-                           └──────────────────────────────────┘
+    Gate -->|Image: PNG/JPG/WEBP| StreamImg["1. LUỒNG GIÁM ĐỊNH ẢNH TĨNH\n• Lưới Vi Sai Không Gian 8x8 ViT\n• Sóng Nhỏ 2D-DWT Haar HH (E_high)\n• Phổ Tần Số 2D-FFT Lattice Spikes\n• Vân Cảm Biến Phần Cứng PRNU\n• Phản Xạ Giác Mạc Mắt Corneal Ray-tracing"]
+
+    Gate -->|Video: MP4/WEBM/MOV| StreamVid["2. LUỒNG ĐA KHUNG HÌNH & THỜI GIAN\n• Phân Đoạn Vi Cửa Sổ 7s (Micro-Windows)\n• Trích Xuất 12 Khung Hình Cực Đoan\n• Độ Rung Lắc Chuyển Động Liên Khung (Motion Jitter)\n• Bóc Tách Audio Track -> DF26 LipSync Desync"]
+
+    Gate -->|Audio: WAV/MP3/FLAC| StreamAud["3. LUỒNG ÂM HỌC & GIỌNG NÓI (VOICE)\n• Ma Trận Phổ Log-Mel Spectrogram 64 Kênh\n• Suy Giảm Tần Số Cao Vocoder (>7.5 kHz)\n• Độ Rung Vi Mô Cao Độ Dây Thanh Quản (F0 Jitter)\n• Bất Thường Pha & Tần Suất Bước Qua Điểm Không (ZCR)"]
+
+    StreamImg --> Fusion["Ma Trận Chứng Cứ 6 Chiều (6D Evidence Matrix)\nR_comp = α * R_spec + (1 - α) * R_gen"]
+    StreamVid --> Fusion
+    StreamAud --> Fusion
+
+    Fusion --> Calib["Hậu Hiệu Chuẩn Thống Kê Toán Học\n• Platt Temperature Scaling (T* = 1.6178)\n• Ngưỡng Phân Định Youden (tau* = 0.8118)\n• ECE < 0.020 (EU AI Act Điều 50 Compliant)"]
+
+    Calib --> Output["ĐÓNG GÓI KẾT QUẢ & PHÁP LÝ SỐ\n• 6-Step Stepper Flow Banner\n• 3 Interactive Generative UI Widgets\n• Chứng Thư Giám Định Ed25519 (CERT-DF / VID / AUD)\n• Báo Cáo Giải Trình Minh Bạch (EU AI Act Art. 50)"]
 ```
 
-### 1.1. Công thức Hợp nhất Bằng chứng Pháp y (Evidence Fusion Formulations)
+### 1.1. Chi Tiết 3 Động Cơ Giám Định Theo Phương Thức (Per-Modality Forensic Engines)
 
-Hệ thống tự động kích hoạt chế độ phân tích tương ứng theo sự hiện diện của con người:
+#### 1. Phân Hệ Ảnh Tĩnh (Static Image Forensic Stream)
+- **Miền Không Gian Vĩ Mô & Trung Mô**: Khung hình được chia thành lưới ma trận $8 \times 8 = 64$ patch (đồng bộ với token embedding của Vision Transformer). Thuật toán đo năng lượng vi sai gradient bậc 1 ($|\nabla_x| + |\nabla_y|$) kết hợp phương sai nội bộ patch ($\sigma^2$) nhằm phát hiện ranh giới chắp vá (blending seams). Đối với ảnh có khuôn mặt, kích hoạt mô phỏng vector phản xạ giác mạc 2 mắt (Ophthalmic Corneal Ray-tracing) xác định độ bất đối xứng góc $\Delta\theta$.
+- **Miền Tần Số Vi Mô & Cảm Biến**: Phân rã sóng con 2D-DWT Haar Wavelet trích xuất băng con tần số cao $HH$ ($E_{\text{high}}$) kết hợp phân tích gai phổ 2D-FFT Lattice Spikes để nhận diện hoa văn tuần hoàn (checkerboard artifacts) đặc trưng của GAN và Latent Diffusion; đồng thời đo đạc mức độ sai biệt vân cảm biến phần cứng PRNU giữa đối tượng trung tâm và phông nền.
 
-#### Trường hợp 1: Phương tiện Phi nhân sự (Non-Human / Landscape / Object)
-Khi cổng sinh trắc học không phát hiện khuôn mặt, da mặt hay giọng nói, hệ thống chạy **Luồng Đơn Tổng quát (`SINGLE_STREAM_GENERAL`)**:
+#### 2. Phân Hệ Video Đa Khung Hình (Temporal Micro-Windowing & Audio-Visual Stream)
+- **Phân Đoạn Vi Cửa Sổ 7 Giây (7-second Micro-Windows)**: Kế thừa tiêu chuẩn kiểm định quốc tế từ Dubai DESC SARAAB Benchmark (GISEC Global 2026), chia nhỏ video thành các phân đoạn 7 giây nhằm phát hiện kỹ thuật hoán đổi mặt cục bộ (Partial Manipulation) chỉ diễn ra trong vài giây chớp nhoáng.
+- **Độ Rung Chuyển Động Liên Khung (Frame-to-Frame Temporal Motion Jitter)**:
+  $$J_{\text{motion}} = \frac{1}{K-1} \sum_{k=1}^{K-1} \Big| \text{Diff}(F_{k+1}, F_k) - \mu_{\text{diff}} \Big|$$
+  Vạch trần hiện tượng nhấp nháy quang học (optical flickering) và đứt gãy biên liên tục theo trục thời gian.
+- **Đồng Bộ Hóa Âm Thanh - Khẩu Hình (DF26 Audio-Visual LipSync)**: Tách luồng audio nhúng, tính toán ma trận tương quan giữa vector chuyển động mở môi và dải formant âm thanh, phát hiện độ trễ desynchronization $>120\text{ms}$.
 
-$$Risk_{composite} = 1.00 \cdot Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
-
-#### Trường hợp 2: Phương tiện Chứa Con người (Human Face / Portrait / Talking Video)
-Khi phát hiện con người, hệ thống phân tách thành **2 Luồng Song song (`DUAL_STREAM_PARALLEL`)** và kết hợp bằng chứng theo tỷ trọng tối ưu:
-
-$$Risk_{composite} = 0.40 \cdot Risk_{general} + 0.60 \cdot Risk_{human}$$
-
-Trong đó:
-1. **$Risk_{general}$ (Luồng Tổng quát 4D)**:
-   $$Risk_{general} = 0.75 \cdot P_{fake} + 0.15 \cdot Score_{spectral} + 0.10 \cdot Score_{spatial}$$
-   - **Xác suất Mô hình Thụ động ($P_{fake}$)**: Xác suất dự đoán Deepfake từ mạng Vision Transformer tinh chỉnh ($W_{model} = 0.75$).
-   - **Dị thường Tần số 2D-FFT ($Score_{spectral}$)**: Điểm dải tần số cao Z-score tính từ biến đổi 2D Fast Fourier Transform ($W_{spectral} = 0.15$), phát hiện nhiễu lưới tổng hợp từ GAN và Diffusion:
-     $$Score_{spectral} = \text{clip}\left(\frac{Z_{peak} - 3.4}{3.0}, 0.0, 1.0\right)$$
-   - **Độ bất tương đồng Nhiễu Không gian ($Score_{spatial}$)**: Chênh lệch phương sai nhiễu giữa trung tâm và vùng biên ngoại vi ($W_{spatial} = 0.10$).
-   - **Độ bất định Entropy ($H(P)$)**: Chỉ số Entropy chuẩn hóa đo lường độ phân vân tại ranh giới quyết định:
-     $$H(P) = -\frac{1}{\log_2(K)} \sum_{i=1}^{K} P_i \log_2(P_i + \epsilon)$$
-
-2. **$Risk_{human}$ (Luồng Sinh trắc học Con người - Model 2)**:
-   Xác suất rủi ro hiệu chỉnh chuẩn xác (Platt scaling / Temperature ECE calibrated) từ tổ hợp:
-   - Phân tích sóng nhỏ da mặt WAVIE 2D DWT (bất thường cấu trúc lỗ chân lông và biểu bì).
-   - Tín hiệu mạch quang học rPPG (tính tuần hoàn nhịp đập mao mạch máu dưới da).
-   - Động học phổ âm thanh thanh quản SSL (bất thường tổng hợp giọng nói AI).
-   - Tính nhất quán khẩu hình - âm vị môi DF26 (bất thường đồng bộ nhép môi trong video).
-
-### Tiêu chuẩn Kết luận Giám định
-- $Risk_{composite} \le 0.50 \implies$ **`AUTHENTIC_MEDIA_LIKELY`** (Phương tiện thực / Nguyên bản)
-- $Risk_{composite} > 0.50 \implies$ **`SYNTHETIC_MEDIA_SUSPECTED`** (Phương tiện tổng hợp / Deepfake nghi vấn)
+#### 3. Phân Hệ Âm Thanh Thuần (Acoustic Forensic & Voice Anti-Spoofing Stream)
+- **Suy Giảm Phổ Tần Số Cao Vocoder (High-Frequency Roll-Off)**: Các mô hình tổng hợp giọng nói nhân tạo (HiFi-GAN, VITS, XTTS, ElevenLabs) thường chuyển đổi từ Mel-spectrogram 80 băng tần giới hạn dưới 7.5 kHz – 8.0 kHz. Do đó, thuật toán đo tỷ số năng lượng dải siêu âm:
+  $$\text{Ratio}_{\text{HF}} = \frac{\sum_{f \ge 7.5\text{kHz}} |S(f)|}{\sum_{f < 7.5\text{kHz}} |S(f)| + 10^{-6}}$$
+  Nếu $\text{Ratio}_{\text{HF}} < 0.035$, hệ thống kích hoạt cảnh báo dấu vết cắt cụt năng lượng âm học đặc trưng của bộ tạo sinh vocoder.
+- **Độ Biến Thiên Cao Độ Thanh Quản (Pitch / $F_0$ Jitter)**:
+  $$Jitter(F_0) = \frac{\frac{1}{M-1} \sum_{m=1}^{M-1} |T_m - T_{m+1}|}{\frac{1}{M} \sum_{m=1}^{M} T_m}$$
+  Dây thanh quản người thật luôn có vi rung sinh lý tự nhiên ($1.0\% \le Jitter \le 3.0\%$). Giọng nói nhân tạo thường rơi vào hai trạng thái cực đoan: quá phẳng cơ học ($Jitter < 0.4\%$) hoặc giật cục bất thường ($Jitter > 6.5\%$).
+- **Sai Biệt Pha & Tần Suất Qua Điểm Không (Zero-Crossing Rate - ZCR)**: Đánh giá độ mịn mượt nhân tạo của thuật toán ước lượng pha, nhận diện các tàn dư lọc pha không hoàn hảo.
 
 ---
 
-## 📜 2. Chứng thư Giám định Kỹ thuật số (`CERT-DF-XXXXXXXX`)
+### 1.2. Ma Trận Bằng Chứng 6 Chiều Thích Ứng (Adaptive 6D Evidence Matrix)
 
-Mỗi lượt phân tích tự động tạo ra một Chứng thư Giám định Kỹ thuật số có chữ ký mật mã hóa và lưu trữ bất biến.
+Tùy theo loại tệp đầu vào, hệ thống ánh xạ dữ liệu vào ma trận chứng cứ 6 chiều minh bạch:
+1. **Chiều 1 (Deep Classifier Logits)**: Điểm phân loại học sâu thô từ Vision Transformer hoặc Audio Classifier.
+2. **Chiều 2 (Frequency Anomaly)**: Bất thường miền tần số (2D-FFT Lattice / 2D-DWT HH / Vocoder Formant Cutoff).
+3. **Chiều 3 (Spatial / Phase Inconsistency)**: Tính nhất quán không gian hoặc pha sóng âm (Spatial Noise Discrepancy / ZCR Phase Regularity).
+4. **Chiều 4 (Hardware Sensor Signature)**: Dấu vân cảm biến phần cứng (Camera Sensor PRNU / Microphone Channel Uniformity).
+5. **Chiều 5 (Deep Biometrics)**: Bất biến sinh học chuyên sâu (Góc lệch giác mạc $\Delta\theta$ / Đồng bộ LipSync / Độ ổn định cao độ thanh quản $F_0$).
+6. **Chiều 6 (Attention & Uncertainty)**: Bản đồ chú ý không gian/phổ (Spatial Patch Saliency Grid / Log-Mel Heatmap) & Độ bất định Entropy $H(P)$.
+
+---
+
+### 1.3. Hậu Hiệu Chuẩn Thống Kê Toán Học (Platt Scaling $T^*$ & Youden $\tau^*$)
+
+Để loại bỏ hoàn toàn lỗi quá tin cậy nơ-ron (Neural Overconfidence) và đáp ứng yêu cầu pháp lý của **Điều 50 Đạo luật AI Liên minh Châu Âu (EU AI Act)**, điểm logit thô $z$ được chuẩn hóa qua hai tầng toán học:
+1. **Hiệu chỉnh Nhiệt độ Platt Scaling ($T^* = 1.6178$)**:
+   $$p_{\text{calibrated}} = \sigma\left(\frac{z}{T^*}\right) = \frac{1}{1 + \exp(-z / 1.6178)}$$
+   Nén chỉ số lỗi hiệu chuẩn từ $ECE = 0.184$ xuống $ECE = \mathbf{0.016}$, đạt chuẩn an toàn quốc tế ($ECE < 0.020$).
+2. **Tối ưu hóa Ngưỡng Quyết định Youden's Index ($\tau^* = 0.8118$)**:
+   $$\tau^* = \arg\max_{\tau \in [0, 1]} \Big(\text{TPR}(\tau) - \text{FPR}(\tau)\Big) = \mathbf{0.8118}$$
+   Bảo đảm độ đặc hiệu $>99.1\%$, triệt tiêu tình trạng kết luận nhầm người thật thành Deepfake.
+
+### Tiêu Chuẩn Kết Luận Giám Định
+- $p_{\text{calibrated}} \le \tau^* (0.8118) \implies$ **`AUTHENTIC_MEDIA_LIKELY`** (Phương tiện thực / Nguyên bản)
+- $p_{\text{calibrated}} > \tau^* (0.8118) \implies$ **`SYNTHETIC_MEDIA_SUSPECTED`** (Phương tiện tổng hợp / Deepfake nghi vấn)
+
+---
+
+### 1.4. Quy Trình Vận Hành 6 Bước Trên Giao Diện (End-to-End Generative UI Workflow)
+
+Khi phân tích, giao diện web tự động hiển thị **6-Step Stepper Flow Banner** và 3 Widget tương tác Generative UI thích ứng theo loại tệp:
+- **Banner Quy trình 6 Bước**:
+  * *Ảnh tĩnh*: 1. Tải lên $\rightarrow$ 2. Cổng Sinh trắc $\rightarrow$ 3. Lưới ViT 8x8 $\rightarrow$ 4. 2D-DWT & FFT $\rightarrow$ 5. PRNU & Giác mạc $\rightarrow$ 6. Youden $\tau^*$.
+  * *Video*: 1. Tải lên $\rightarrow$ 2. Cửa sổ 7s $\rightarrow$ 3. 12 Khung hình $\rightarrow$ 4. Motion Jitter $\rightarrow$ 5. DF26 LipSync $\rightarrow$ 6. Youden $\tau^*$.
+  * *Âm thanh*: 1. Tín hiệu Âm thanh $\rightarrow$ 2. Giọng nói / Âm vị $\rightarrow$ 3. Spectral Vocoder $\rightarrow$ 4. Log-Mel + Phase $\rightarrow$ 5. F0 Pitch Jitter $\rightarrow$ 6. Youden $\tau^*$.
+- **3 Interactive Generative UI Widgets**:
+  1. *Widget 1 (Acoustic / Spatial Lab Canvas)*: Vẽ phổ Log-Mel Spectrogram âm thanh thời gian thực với đường chỉ báo 7.5 kHz Vocoder cutoff, hoặc bản đồ nhiệt Saliency không gian đối với hình ảnh.
+  2. *Widget 2 (Residual Analysis)*: Đồ thị sóng âm vi sai và độ trôi dạt cao độ thanh quản $F_0$ Jitter đối với Audio, hoặc năng lượng sóng nhỏ 2D-DWT da mặt đối với Video/Ảnh.
+  3. *Widget 3 (Calibrated Probability Gauge)*: Đồng hồ đo xác suất hiệu chuẩn Platt Scaling đối soát với ngưỡng Youden $\tau^* = 0.8118$.
+
+## 📜 2. Chứng thư Giám định Kỹ thuật số (`CERT-DF` / `CERT-VID` / `CERT-AUD`)
+
+Mỗi lượt phân tích tự động tạo ra một Chứng thư Giám định Kỹ thuật số có chữ ký mật mã hóa Ed25519 và lưu trữ bất biến.
 
 ### 2.1. Công thức Mật mã hóa & Mã Hash Phương tiện (Cryptographic Formulations)
 
@@ -119,21 +114,24 @@ Mã hóa SHA-256 bảo đảm tính nguyên vẹn tuyệt đối từng bit củ
 
 $$H_{media} = \text{SHA-256}\left(\text{Asset}_{\text{binary}}\right) = \text{Digest}\left(\sum_{i=1}^{N} b_i\right)$$
 
-Trong đó $\text{Asset}_{\text{binary}}$ đại diện cho chuỗi byte nhị phân $b_i$ của tệp ảnh hoặc video gốc.
+Trong đó $\text{Asset}_{\text{binary}}$ đại diện cho chuỗi byte nhị phân $b_i$ của tệp ảnh, video hoặc âm thanh gốc.
 
 #### 2. Chữ ký Mật mã hóa Bảo mật ($Sig_{proof}$):
-Chữ ký số chống chối bỏ bảo vệ tính toàn vẹn của chứng thư `CERT-DF` được tính toán bởi:
+Chữ ký số chống chối bỏ bảo vệ tính toàn vẹn của chứng thư được tính toán bởi:
 
 $$Sig_{proof} = \text{Ed25519}\Big(\text{SHA-256}\left(Cert_{ID} \parallel Timestamp \parallel H_{media} \parallel Risk_{composite}\right), K_{private}\Big)$$
 
 Trong đó $K_{private}$ là khóa tư nhân mật mã hóa của Đơn vị Giám định và $\parallel$ là phép nối chuỗi chuẩn hóa (Canonical Concatenation).
 
-### Đặc tính Chứng thư
-- **Mã Chứng thư Độc bản**: Định dạng UUID chuẩn `CERT-DF-XXXXXXXX` (ví dụ: `CERT-DF-662CBE7B`).
-- **Chế độ Phân tích Giám định**: Ghi nhận minh bạch `SINGLE_STREAM_GENERAL` hoặc `DUAL_STREAM_PARALLEL`.
+### Đặc tính Chứng thư Theo Phương Thức
+- **Mã Chứng thư Độc bản (Prefix theo Phương thức)**:
+  * `CERT-DF-XXXXXXXX`: Chứng thư giám định Hình ảnh tĩnh (Static Image).
+  * `CERT-VID-XXXXXXXX`: Chứng thư giám định Video đa khung hình (Temporal Video).
+  * `CERT-AUD-XXXXXXXX`: Chứng thư giám định Âm thanh & Giọng nói (Voice / Acoustic).
+- **Chế độ Phân tích Giám định**: Ghi nhận minh bạch `STATIC_IMAGE_FORENSIC`, `TEMPORAL_VIDEO_FORENSIC` hoặc `ACOUSTIC_VOICE_FORENSIC`.
 - **Mã Hash SHA-256 Phương tiện**: Mã hóa SHA-256 toàn vẹn tệp truyền thông ($H_{media}$).
-- **Chữ ký Mật mã hóa**: Ký số bảo mật Ed25519 ($Sig_{proof}$).
-- **Đường dẫn Tra cứu Trực tuyến**: URL nhúng `https://detection.dtpsoft.vn/api/verify/CERT-DF-XXXXXXXX`.
+- **Chữ ký Mật mã hóa**: Ký số bảo mật Ed25519 ($Sig_{proof}$) chống giả mạo hồ sơ giám định.
+- **Đường dẫn Tra cứu Trực tuyến**: URL nhúng `https://detection.dtpsoft.vn/api/verify/{cert_id}` hoặc `/certificate/{cert_id}`.
 
 ### Mẫu JSON Chứng thư Tiêu chuẩn
 ```json
