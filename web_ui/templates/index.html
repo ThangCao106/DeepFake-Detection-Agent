@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deepfake Detection AI - Multi-Agent Forensic System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.2.4&t=20261027_153500">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.3.0&t=20261027_155000">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -531,28 +531,6 @@
                         <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL..." data-i18n-ph="url_placeholder">
                     </div>
 
-                    <!-- Model Routing Mode Selector (Option B + C) -->
-                    <div class="routing-mode-selector-container">
-                        <div class="routing-mode-header">
-                            <span class="routing-mode-label" data-i18n="routing_mode_title">Định tuyến Mô hình (Routing Engine):</span>
-                            <span class="routing-mode-hint" id="routingModeHint" data-i18n="mode_auto_hint">Tự động phát hiện khuôn mặt & dáng người (YuNet DNN + HOG)</span>
-                        </div>
-                        <div class="mode-pill-group" id="modePillGroup">
-                            <button type="button" class="mode-pill active" data-mode="auto" id="pillModeAuto" title="AI tự động phân tích: YuNet DNN + HOG Pedestrian Detector">
-                                <span class="pill-icon">🤖</span>
-                                <span class="pill-title" data-i18n="mode_auto">Tự Động (AI Gate)</span>
-                            </button>
-                            <button type="button" class="mode-pill" data-mode="human" id="pillModeHuman" title="Ép buộc kích hoạt Luồng Kép (Dual-Stream): XceptionNet + EfficientNet V2 + Mesonet + ViT 6D + PRNU">
-                                <span class="pill-icon">👤</span>
-                                <span class="pill-title" data-i18n="mode_human">Chân Dung (Dual-Stream)</span>
-                            </button>
-                            <button type="button" class="mode-pill" data-mode="general" id="pillModeGeneral" title="Ép buộc kích hoạt Luồng Đơn (Single-Stream): Cảnh quan / Đồ vật / Đô thị (ViT 6D + PRNU)">
-                                <span class="pill-icon">🌲</span>
-                                <span class="pill-title" data-i18n="mode_general">Cảnh Quan (Single-Stream)</span>
-                            </button>
-                        </div>
-                    </div>
-
                     <!-- Analyze Button -->
                     <button class="btn btn-primary" id="analyzeBtn" disabled>
                         <span class="btn-icon">🔍</span>
@@ -937,6 +915,6 @@
     </div>
     {% endif %}
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=5.2.4&t=20261027_153500"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=5.3.0&t=20261027_155000"></script>
 </body>
 </html>

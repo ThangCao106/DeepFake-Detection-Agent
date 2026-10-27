@@ -46,7 +46,9 @@ session_*.json
 
 # Model cache
 .cache/
-models/
+/models/*
+!/models/face_detection_yunet_2023mar.onnx
+!web_ui/models/face_detection_yunet_2023mar.onnx
 
 # Benchmark temporary images
 benchmark/judge_samples/
@@ -76,6 +78,9 @@ report_colab/*.sqlite
 *.pth
 *.h5
 *.zip
+# Whitelist lightweight SOTA YuNet face detector model (232KB)
+!web_ui/models/face_detection_yunet_2023mar.onnx
+!models/face_detection_yunet_2023mar.onnx
 
 # Dataset images & temporary benchmark data
 dataset_pipeline/raw_sources/
