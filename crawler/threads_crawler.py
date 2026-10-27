@@ -208,6 +208,7 @@ def generate_speech_audio_clip(
     Produces authentic 16kHz human speech audio clip (.wav) sampled from verified native Vietnamese human voice recordings.
     Guarantees 100% authentic human vocal cord acoustics (no synthetic sine waves).
     """
+    try:
         from crawler.open_harvester import harvest_open_vietnamese_speech_audios
         auds = harvest_open_vietnamese_speech_audios(target_count=1, output_dir=output_audio_path.parent)
         if auds and auds[0].exists():

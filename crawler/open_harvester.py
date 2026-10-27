@@ -52,7 +52,7 @@ from crawler.dedup_engine import (
     DEFAULT_HAMMING_THRESHOLD
 )
 
-USER_AGENT = "ThreadsDFBench/2.0 (https://github.com/ThangCao106/DeepFake-Detection-Agent; thangcao106@gmail.com) python-urllib/3.10"
+USER_AGENT = "DeepFakeForensicResearchBot/2.1 (https://detection.dtpsoft.vn/; research@dtpsoft.vn) python-urllib/3.10"
 
 # 40+ Rich Vietnamese Categories on Wikimedia Commons
 WIKIMEDIA_VIETNAMESE_CATEGORIES = [
@@ -140,7 +140,7 @@ def infer_vietnamese_category(title: str, category_name: str, caption: str = "")
 
 
 def query_wikimedia_category_items(cat_name: str, limit: int = 50) -> List[Dict]:
-    """Queries Wikimedia API for members of a specific category."""
+    """Queries Wikimedia API for members of a specific category with backoff retry."""
     clean_cat = cat_name if cat_name.startswith("Category:") else f"Category:{cat_name}"
     api_url = (
         f"https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers"
@@ -148,62 +148,84 @@ def query_wikimedia_category_items(cat_name: str, limit: int = 50) -> List[Dict]
         f"&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=800&format=json"
     )
     req = urllib.request.Request(api_url, headers={"User-Agent": USER_AGENT})
-    try:
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        pages = data.get("query", {}).get("pages", {})
-        items = []
-        for pid, info in pages.items():
-            ii = info.get("imageinfo", [{}])[0]
-            thumb_url = ii.get("thumburl") or ii.get("url")
-            mime = ii.get("mime", "").lower()
-            if not thumb_url or not any(ext in mime for ext in ["jpeg", "jpg", "png"]):
-                continue
-            items.append({
-                "title": info.get("title", ""),
-                "thumb_url": thumb_url,
-                "orig_url": ii.get("url", thumb_url),
-                "width": ii.get("width", 800),
-                "height": ii.get("height", 800),
-                "source_cat": cat_name
-            })
-        return items
-    except Exception as e:
-        print(f"  [Wikimedia Query Notice] Category {clean_cat}: {e}")
-        return []
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            pages = data.get("query", {}).get("pages", {})
+            items = []
+            for pid, info in pages.items():
+                ii = info.get("imageinfo", [{}])[0]
+                thumb_url = ii.get("thumburl") or ii.get("url")
+                mime = ii.get("mime", "").lower()
+                if not thumb_url or not any(ext in mime for ext in ["jpeg", "jpg", "png"]):
+                    continue
+                items.append({
+                    "title": info.get("title", ""),
+                    "thumb_url": thumb_url,
+                    "orig_url": ii.get("url", thumb_url),
+                    "width": ii.get("width", 800),
+                    "height": ii.get("height", 800),
+                    "source_cat": cat_name
+                })
+            return items
+        except urllib.error.HTTPError as he:
+            if he.code == 429:
+                if attempt < 2:
+                    time.sleep(2.0 * (attempt + 1))
+                    continue
+                print(f"  [Wikimedia Query Notice] Category {clean_cat}: Rate limited (HTTP 429). Backing off.")
+                return []
+            print(f"  [Wikimedia Query Notice] Category {clean_cat}: {he}")
+            return []
+        except Exception as e:
+            print(f"  [Wikimedia Query Notice] Category {clean_cat}: {e}")
+            return []
+    return []
 
 
 def query_wikimedia_search_items(query: str, limit: int = 40) -> List[Dict]:
-    """Queries Wikimedia Search API for free-text search of media files."""
+    """Queries Wikimedia Search API for free-text search of media files with backoff retry."""
     api_url = (
         f"https://commons.wikimedia.org/w/api.php?action=query&generator=search"
         f"&gsrsearch={urllib.parse.quote(query)}&gsrnamespace=6&gsrlimit={limit}"
         f"&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=800&format=json"
     )
     req = urllib.request.Request(api_url, headers={"User-Agent": USER_AGENT})
-    try:
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        pages = data.get("query", {}).get("pages", {})
-        items = []
-        for pid, info in pages.items():
-            ii = info.get("imageinfo", [{}])[0]
-            thumb_url = ii.get("thumburl") or ii.get("url")
-            mime = ii.get("mime", "").lower()
-            if not thumb_url or not any(ext in mime for ext in ["jpeg", "jpg", "png"]):
-                continue
-            items.append({
-                "title": info.get("title", ""),
-                "thumb_url": thumb_url,
-                "orig_url": ii.get("url", thumb_url),
-                "width": ii.get("width", 800),
-                "height": ii.get("height", 800),
-                "source_cat": f"search:{query}"
-            })
-        return items
-    except Exception as e:
-        print(f"  [Wikimedia Search Notice] Query '{query}': {e}")
-        return []
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            pages = data.get("query", {}).get("pages", {})
+            items = []
+            for pid, info in pages.items():
+                ii = info.get("imageinfo", [{}])[0]
+                thumb_url = ii.get("thumburl") or ii.get("url")
+                mime = ii.get("mime", "").lower()
+                if not thumb_url or not any(ext in mime for ext in ["jpeg", "jpg", "png"]):
+                    continue
+                items.append({
+                    "title": info.get("title", ""),
+                    "thumb_url": thumb_url,
+                    "orig_url": ii.get("url", thumb_url),
+                    "width": ii.get("width", 800),
+                    "height": ii.get("height", 800),
+                    "source_cat": f"search:{query}"
+                })
+            return items
+        except urllib.error.HTTPError as he:
+            if he.code == 429:
+                if attempt < 2:
+                    time.sleep(2.0 * (attempt + 1))
+                    continue
+                print(f"  [Wikimedia Search Notice] Query '{query}': Rate limited (HTTP 429). Backing off.")
+                return []
+            print(f"  [Wikimedia Search Notice] Query '{query}': {he}")
+            return []
+        except Exception as e:
+            print(f"  [Wikimedia Search Notice] Query '{query}': {e}")
+            return []
+    return []
 
 
 def download_and_validate_portrait(item: Dict, known_dhashes: Set[str]) -> Optional[Dict]:
@@ -302,10 +324,12 @@ def harvest_open_vietnamese_portraits(
     pending_download_futures = []
 
     try:
+        consecutive_429s = 0
         for s_type, s_val in all_sources:
             if len(harvested) >= target_count or (time.time() - start_time) > max_time_sec:
                 break
 
+            time.sleep(0.4)  # Politeness interval to prevent Wikimedia burst 429
             # Fetch candidates from this source
             try:
                 if s_type == "category":
@@ -316,7 +340,13 @@ def harvest_open_vietnamese_portraits(
                 items = []
 
             if not items:
+                consecutive_429s += 1
+                if consecutive_429s >= 4:
+                    time.sleep(2.0)
+                    consecutive_429s = 0
                 continue
+            else:
+                consecutive_429s = 0
 
             # Submit downloads to pool
             for it in items:

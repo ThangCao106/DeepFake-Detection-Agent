@@ -63,9 +63,36 @@ def count_existing_vault_items() -> int:
     return len(all_imgs)
 
 
+import shutil
+
+def seed_vault_from_local_verified_seeds():
+    """Pre-seeds the vault from verified_threads_seeds to ensure non-empty inventory even if offline."""
+    if not VERIFIED_SEEDS_DIR.exists():
+        return
+    seed_files = list(VERIFIED_SEEDS_DIR.glob("*.jpg")) + list(VERIFIED_SEEDS_DIR.glob("*.png"))
+    if not seed_files:
+        return
+    for sf in seed_files:
+        name_lower = sf.stem.lower()
+        matched_cat = "vn_selfie_lifestyle"
+        for cat in CATEGORIES:
+            if cat in name_lower:
+                matched_cat = cat
+                break
+        dest_dir = VAULT_DIR / matched_cat
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_file = dest_dir / sf.name
+        if not dest_file.exists():
+            try:
+                shutil.copy2(str(sf), str(dest_file))
+            except Exception:
+                pass
+
+
 def populate_vault(target_count: int = 300, max_workers: int = 8):
     """Populates the vault with authentic Vietnamese portraits."""
     ensure_vault_directories()
+    seed_vault_from_local_verified_seeds()
     existing_count = count_existing_vault_items()
     print(f"\n🏛️ [Vietnamese Real Face Vault] Current inventory: {existing_count} images.")
     

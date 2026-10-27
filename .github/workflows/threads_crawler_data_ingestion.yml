@@ -1,4 +1,4 @@
-name: Daily Threads Crawler & Data Ingestion (Option C Drive-First)
+name: Daily Threads Crawler & Data Ingestion (Drive-First)
 
 on:
   schedule:
@@ -62,7 +62,7 @@ jobs:
           pip install -r requirements.txt || true
           python -m playwright install chromium --with-deps || true
 
-      - name: 4. Execute Crawler & Option C Data Pipeline
+      - name: 4. Execute Crawler & Pentest Data Pipeline
         env:
           GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
           GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
