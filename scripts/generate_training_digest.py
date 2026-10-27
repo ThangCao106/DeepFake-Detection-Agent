@@ -1,5 +1,5 @@
 """
-Dual-Tier Training Digest Generator (Option B Standard).
+Dual-Tier Training Digest Generator (Production Standard).
 Generates structured academic Markdown reports for Deepfake Detection Dual-Stream Engine:
   1. Daily Training Report (--daily / --date YYYY-MM-DD):
      - Aggregates 4h batches, 5-category Vietnamese face distribution, Hard Negatives (H(P) >= 0.70).
@@ -161,7 +161,7 @@ def generate_daily_report(date_str: str, drive_root: Path = None) -> Path:
     total_tax = sum(m["taxonomy_counts"].values()) or 1
     
     md_content = f"""# 📅 BÁO CÁO TỔNG HỢP HUẤN LUYỆN HÀNG NGÀY (DAILY TRAINING DIGEST)
-**Ngày báo cáo**: `{date_str}` | **Môi trường**: `Google Colab Pro GPU` | **Kiến trúc**: `Option B (Dual-Stream + Parquet Cache)`
+**Ngày báo cáo**: `{date_str}` | **Môi trường**: `Google Colab Pro GPU` | **Kiến trúc**: `Dual-Stream + Parquet Cache`
 
 ---
 
@@ -206,7 +206,7 @@ Trong chu kỳ 24h ngày `{date_str}`, hệ thống đã hoàn thành 6 lượt 
 ## 3. 💾 Tình Trạng Lưu Trữ & Đồng Bộ Google Drive
 
 * 📁 **Dữ liệu thô & Biến thể**: `Thread_Data/{date_str}/`
-* ⚡ **Bộ đệm Parquet siêu tốc (Option B)**: `Thread_Data/features/biometric_features_M2.parquet`
+* ⚡ **Bộ đệm Parquet siêu tốc**: `Thread_Data/features/biometric_features_M2.parquet`
 * 🎯 **Mẫu khó biên giới**: `Thread_Data/{date_str}/hard_samples_manifest.jsonl`
 * 💾 **Trọng số Checkpoints**: `Thread_Data/checkpoints/weights_human.pt` & `model_continual_latest.pt`
 
@@ -334,7 +334,7 @@ So sánh hiệu năng phát hiện đa phương thức giữa mô hình NCS Tri-
 ## 5. 🔬 Kế Hoạch & Định Hướng Tối Ưu Cho Tuần Tới (Next Sprint Directives)
 
 1. **Gia tăng tỷ trọng Hard Negatives**: Nâng tỷ lệ khai phá mẫu $H(P) \\ge 0.70$ lên 25% tổng mẫu để siết chặt biên quyết định của Model 1.
-2. **Tối ưu hóa Vector Parquet (Option B)**: Tự động trích xuất trước toàn bộ các batch tuần vào file `biometric_features_M2.parquet` để duy trì tốc độ huấn luyện dưới 15 phút.
+2. **Tối ưu hóa Vector Parquet**: Tự động trích xuất trước toàn bộ các batch tuần vào file `biometric_features_M2.parquet` để duy trì tốc độ huấn luyện dưới 15 phút.
 3. **Hiệu chuẩn phân phối ECE**: Tiếp tục duy trì nhiệt độ Platt Scaling $T^* = 1.6178$ và ngưỡng Youden $\\tau^* = 0.8118$ nhằm đảm bảo tỷ lệ báo động sai (FPR) đối với người Việt Nam luôn dưới 1.5%.
 
 ---

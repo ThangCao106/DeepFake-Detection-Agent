@@ -102,7 +102,7 @@ flowchart TD
 > **Takeaway on Architecture**: *Decoupling discrete semantic forensic diagnostic plugins (WAVIE DWT, rPPG, Glottal SSL, Lip-Sync) from the underlying neural backbones allows foundation vision-language models to reason over micro-scale biological invariants without requiring costly pretraining from scratch. Each diagnostic step closes the loop through continuous hard-sample adaptation.*
 
 
-### 1.1. Tri-Stream Agentic Dispatcher (Option B Standard)
+### 1.1. Tri-Stream Agentic Dispatcher
 
 To deliver holistic forensic verification across modern generative modalities (images, talking-head videos, and synthetic speech), the pipeline integrates an automated **Tri-Stream Agentic Dispatcher**. Upon asset submission, the system inspects MIME metadata and magic byte headers to route files to specialized forensic engines:
 
@@ -367,7 +367,7 @@ To ensure high generalizability and prevent feature entanglement, the framework 
 | **Mô Hình 1**<br>*(General Vision & Signal)* | • `NTIRE-RobustAIGenDetection` (MSU 2024)<br>• `CIFAKE` (CIFAR-10 vs Stable Diffusion)<br>• `DF40` (40 SOTA Forgery Suite)<br>• `DFFD` (Diverse Fake Face Dataset)<br>• Hard Negatives từ Threads ($H(P) \ge 0.70$) | **>578,000+** | Vết tích mô hình sinh AI, phổ tần số 2D FFT ($Z_{peak}$), nhiễu không gian, entropy biên | `model_continual_latest.pt`<br>*(ViT Backbone)* |
 | **Mô Hình 2**<br>*(Human Biometric & Physiology)* | • **`MultiFakeVerse`** (VLM Person-Centric Manipulation)<br>• **`HiDF`** (Human-Indistinguishable Deepfakes)<br>• **`140k Real and Fake Faces`** (70k Flickr / 70k StyleGAN)<br>• **`DeepDetect-2025 / 2026`** (Unsplash vs MJ/SD3/Flux)<br>• **Meta Threads Vietnamese In-The-Wild** (10,000 img, 500 vid, 500 aud / 4h qua 5 phân lớp người Việt) | **>1,105,000+** | WAVIE 2D Haar DWT pore energy ($E_{high}$), rPPG vascular pulse, HuBERT/WavLM Layer 12 vocal trajectory, DF26 lip-sync | `weights_human.pt`<br>*(Biometric Fusion)* |
 
-### 5.6. Google Colab Pro Scheduled Runner (Automated Headless & Interactive Form UI - Option B Standard)
+### 5.6. Google Colab Pro Scheduled Runner (Automated Headless & Interactive Form UI)
 
 The unified runner notebook [`colab_training/Colab_Pro_Scheduled_Runner.ipynb`](colab_training/Colab_Pro_Scheduled_Runner.ipynb) provides seamless dual-mode execution:
 1. **Headless Scheduled Run**: Executes automatically every 4 hours in the background on Google Colab Pro without manual intervention, crawls 10,000 images, 500 videos, 500 audios, and fine-tunes both models.

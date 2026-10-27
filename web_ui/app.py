@@ -119,7 +119,7 @@ def status():
 
 
 # ==============================================================================
-# Multi-Agent LangGraph Orchestrator Routes (Option B & C Cockpit)
+# Multi-Agent LangGraph Orchestrator Routes
 # ==============================================================================
 
 @app.route('/orchestrator')
@@ -343,7 +343,7 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
 @app.route('/api/analyze', methods=['POST'])
 def api_analyze():
     """
-    REST API endpoint for media analysis (Option B Fail-safe / Fallback).
+    REST API endpoint for media analysis (Fail-safe / Fallback).
     Accepts JSON: { "filepath": "...", "query": "...", "language": "vi"|"en" }
     """
     data = request.get_json(silent=True) or {}
@@ -864,7 +864,7 @@ def get_latest_benchmark_report():
         logger.error(f"Failed to fetch latest report: {e}")
 
 # =========================================================================
-# 🔬 ABLATION STUDY & PARAMETER CALIBRATION API (OPTION C SUITE)
+# 🔬 ABLATION STUDY & PARAMETER CALIBRATION API
 # =========================================================================
 
 @app.route('/api/benchmark/ablation_data', methods=['GET'])

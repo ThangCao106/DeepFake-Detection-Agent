@@ -1056,7 +1056,7 @@
               <span class="nav-icon">🤖</span>
               <span style="font-weight: 700; color: #a5b4fc;">Live Agent</span>
             </div>
-            <span class="nav-badge cyan" style="background: rgba(99, 102, 241, 0.35); color: #c7d2fe;">Option B</span>
+            <span class="nav-badge cyan" style="background: rgba(99, 102, 241, 0.35); color: #c7d2fe;">Active</span>
           </li>
           <li class="nav-item active" id="nav-vault" onclick="switchTab('vault')">
             <div class="nav-left-part">
@@ -1111,7 +1111,7 @@
       <section id="tab-live-agent" class="tab-view">
         <div class="view-header">
           <div>
-            <h2 class="view-title">🤖 Multi-Agent Autonomous MLOps Lifecycle (Chuẩn Option B)</h2>
+            <h2 class="view-title">🤖 Multi-Agent Autonomous MLOps Lifecycle</h2>
             <p class="view-desc">Hệ thống 4 Agent Tự Hành Điều Phối Vòng Đời MLOps Toàn Diện: Giám định Thâm nhập Đối kháng (Pentest), Huấn luyện Tự hành (Continual LoRA PEFT), Đánh giá Đối chuẩn (Benchmark 14 Datasets &amp; Platt ECE) và Quản trị Vệ sinh Dữ liệu (Data Curation &amp; 64-bit dHash Hygiene).</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -1119,7 +1119,7 @@
               <span>🔬</span>
               <span>Cổng Phân Tích Media (Port :5000)</span>
             </a>
-            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff;">
               <span>🧭</span>
               <span>Mở LangGraph Studio</span>
             </a>
@@ -1186,7 +1186,7 @@
               <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE (GPU WORKER)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Khai thác tự động các mẫu dự đoán khó (Hard Negative Mining với Entropy \(H(P) \ge 0.70\)). Tự động tinh chỉnh adapter LoRA (Rank=16, Alpha=32) trên GPU Google Colab, hoàn toàn tách biệt khỏi tác vụ dọn dẹp dữ liệu, ngăn ngừa Catastrophic Forgetting.
+              Khai thác tự động các mẫu dự đoán khó (Hard Negative Mining với Entropy H(P) ≥ 0.70). Tự động tinh chỉnh adapter LoRA (Rank=16, Alpha=32) trên GPU Google Colab, hoàn toàn tách biệt khỏi tác vụ dọn dẹp dữ liệu, ngăn ngừa Catastrophic Forgetting.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Entropy Lọc Mẫu H(P): <strong>&ge; 0.70</strong></span>
@@ -1207,7 +1207,7 @@
               <span class="badge-sub" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.3);">CALIBRATED (DAILY AUDIT)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Đánh giá mô hình trên 14 bộ dữ liệu học thuật quốc tế qua ma trận đối sánh 6x6. Tính toán ROC-AUC (0.986), tỷ lệ lỗi cân bằng EER (4.25%) và tối ưu nhiệt độ Platt Scaling (\(T^* = 1.6178\)) để duy trì sai số hiệu chỉnh ECE ở mức 0.0195.
+              Đánh giá mô hình trên 14 bộ dữ liệu học thuật quốc tế qua ma trận đối sánh 6x6. Tính toán ROC-AUC (0.986), tỷ lệ lỗi cân bằng EER (4.25%) và tối ưu nhiệt độ Platt Scaling (T* = 1.6178) để duy trì sai số hiệu chỉnh ECE ở mức 0.0195.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Ngưỡng Youden τ*: <strong>0.8118</strong></span>
@@ -1228,7 +1228,7 @@
               <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">AUTONOMOUS (STANDALONE JOB)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Job độc lập chuyên trách thu thập media thật từ Threads và Wikimedia. Khử trùng lặp ảnh triệt để bằng 64-bit dHash (Hamming \(\le 4\)). Định kỳ quét và triệt tiêu toàn bộ video/audio nhân tạo, file hỏng rác trên Google Drive và local storage mà không can dự vào Colab.
+              Job độc lập chuyên trách thu thập media thật từ Threads và Wikimedia. Khử trùng lặp ảnh triệt để bằng 64-bit dHash (Hamming ≤ 4). Định kỳ quét và triệt tiêu toàn bộ video/audio nhân tạo, file hỏng rác trên Google Drive và local storage mà không can dự vào Colab.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Khử Trùng Lặp: <strong>64-bit dHash (Hamming &le; 4)</strong></span>
@@ -1264,7 +1264,7 @@
               <span style="font-family: var(--font-mono); font-weight: 700; color: #ec4899; min-width: 80px;">STAGE 3</span>
               <div style="flex: 1;">
                 <strong style="color: #fff; font-size: 0.82rem;">Active Learning &amp; Continual LoRA Training</strong>
-                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Continual Training Agent khai thác hard negatives (\(H(P) \ge 0.70\)), huấn luyện LoRA PEFT trên GPU Google Colab hoàn toàn độc lập, lưu checkpoint định kỳ.</p>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Continual Training Agent khai thác hard negatives (H(P) ≥ 0.70), huấn luyện LoRA PEFT trên GPU Google Colab hoàn toàn độc lập, lưu checkpoint định kỳ.</p>
               </div>
               <span class="badge-sub" style="color: var(--accent-emerald);">LORA ADAPTED</span>
             </div>
@@ -1272,7 +1272,7 @@
               <span style="font-family: var(--font-mono); font-weight: 700; color: #f59e0b; min-width: 80px;">STAGE 4</span>
               <div style="flex: 1;">
                 <strong style="color: #fff; font-size: 0.82rem;">Multi-Dataset Benchmarking &amp; Audit Sealing</strong>
-                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Benchmark Agent đánh giá ma trận 6x6 trên 14 dataset, hiệu chuẩn nhiệt độ Platt \(T^* = 1.6178\), niêm phong chứng thư số Ed25519-SHA256 theo tiêu chuẩn EU AI Act Art. 50.</p>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Benchmark Agent đánh giá ma trận 6x6 trên 14 dataset, hiệu chuẩn nhiệt độ Platt T* = 1.6178, niêm phong chứng thư số Ed25519-SHA256 theo tiêu chuẩn EU AI Act Art. 50.</p>
               </div>
               <span class="badge-sub" style="color: var(--accent-emerald);">AUDIT SEALED</span>
             </div>

@@ -75,7 +75,7 @@ So sánh hiệu năng phát hiện đa phương thức giữa mô hình NCS Tri-
 ## 5. 🔬 Kế Hoạch & Định Hướng Tối Ưu Cho Tuần Tới (Next Sprint Directives)
 
 1. **Gia tăng tỷ trọng Hard Negatives**: Nâng tỷ lệ khai phá mẫu $H(P) \ge 0.70$ lên 25% tổng mẫu để siết chặt biên quyết định của Model 1.
-2. **Tối ưu hóa Vector Parquet (Option B)**: Tự động trích xuất trước toàn bộ các batch tuần vào file `biometric_features_M2.parquet` để duy trì tốc độ huấn luyện dưới 15 phút.
+2. **Tối ưu hóa Vector Parquet**: Tự động trích xuất trước toàn bộ các batch tuần vào file `biometric_features_M2.parquet` để duy trì tốc độ huấn luyện dưới 15 phút.
 3. **Hiệu chuẩn phân phối ECE**: Tiếp tục duy trì nhiệt độ Platt Scaling $T^* = 1.6178$ và ngưỡng Youden $\tau^* = 0.8118$ nhằm đảm bảo tỷ lệ báo động sai (FPR) đối với người Việt Nam luôn dưới 1.5%.
 
 ---

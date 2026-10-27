@@ -52,7 +52,7 @@ const TRANSLATIONS = {
         bench_latency_lbl: "Avg Inference Latency",
         bench_calib_lbl: "Calibration Target",
         autoscroll_lbl: "Auto-scroll",
-        genui_stepper_title: "Autonomous Multi-Agent Forensic Pipeline (Option B)",
+        genui_stepper_title: "Autonomous Multi-Agent Forensic Pipeline",
         btn_view_full_cert: "🔍 View Certificate & 6D Matrix Details ↗",
         btn_expand_chat_details: "▼ Expand Analysis in Chat",
         btn_collapse_chat_details: "▲ Collapse Analysis",
@@ -107,7 +107,7 @@ const TRANSLATIONS = {
         bench_latency_lbl: "Độ Trễ Trung Bình",
         bench_calib_lbl: "Hiệu Chuẩn Ngưỡng",
         autoscroll_lbl: "Tự cuộn",
-        genui_stepper_title: "Hệ Thống Đa Agent Giám Định Tự Động (Option B Multi-Agent Pipeline)",
+        genui_stepper_title: "Hệ Thống Đa Agent Giám Định Tự Động",
         btn_view_full_cert: "🔍 Xem Chứng Thư & Ma Trận 6D Chi Tiết ↗",
         btn_expand_chat_details: "▼ Mở rộng phân tích trong Chat",
         btn_collapse_chat_details: "▲ Thu gọn phân tích",
@@ -489,7 +489,7 @@ analyzeBtn.addEventListener('click', async () => {
                 language: currentLang
             });
 
-            // Option C: Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
+            // Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
             analysisTimeoutTimer = setTimeout(async () => {
                 if (!analysisComplete && uploadedFilePath) {
                     console.warn('[Resilience Guard] WebSocket took longer than 12s. Initiating secure REST fallback...');
@@ -756,7 +756,7 @@ function sendDisputeQuery(queryText) {
 }
 window.sendDisputeQuery = sendDisputeQuery;
 
-// ===== Option A: Jump to Forensic Certificate with Pulsing Glow Animation =====
+// ===== Jump to Forensic Certificate with Pulsing Glow Animation =====
 function jumpToForensicCertificate() {
     const certCard = document.getElementById('forensicCertCard');
     const resultsCard = document.getElementById('resultsCard');
@@ -1147,7 +1147,7 @@ function logoutBenchmarkGate() {
 }
 
 // =========================================================================
-// ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER (OPTION A)
+// ⚡ LIVE BENCHMARK & RUNNING LOG VIEWER
 // =========================================================================
 
 window.benchmarkIsRunning = false;
@@ -1290,7 +1290,7 @@ function startBenchmark() {
         updateBenchmarkStatusUI({ is_running: true });
 
         // =========================================================================
-        // ⚡ OPTION A: KÍCH HOẠT REST-FIRST TUYỆT ĐỐI (KHÔNG PHỤ THUỘC WEBSOCKET)
+        // ⚡ KÍCH HOẠT REST-FIRST TUYỆT ĐỐI (KHÔNG PHỤ THUỘC WEBSOCKET)
         // =========================================================================
         const startEndpoint = `${apiBase}/api/benchmark/start`;
         appendTerminalLogLine('INFO', `📡 [REST Trigger] Đang gửi yêu cầu POST tới: ${startEndpoint}...`);
@@ -1534,7 +1534,7 @@ socket.on('benchmark_completed', (data) => {
 });
 
 // =========================================================================
-// 🔬 ABLATION STUDY & PARAMETER CALIBRATION CONTROLLERS (OPTION C)
+// 🔬 ABLATION STUDY & PARAMETER CALIBRATION CONTROLLERS
 // =========================================================================
 
 function switchBenchmarkSubtab(tab) {
