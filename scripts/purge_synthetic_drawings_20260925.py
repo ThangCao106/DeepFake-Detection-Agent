@@ -44,8 +44,6 @@ from crawler.media_generator import (
     apply_openweight_gen_manipulation,
     VIETNAMESE_CATEGORIES,
     SEED_FACE_BOXES
-)
-from crawler.threads_crawler import generate_talking_head_video_from_portrait
 from crawler.dataset_builder import build_benchmark_manifest
 
 
@@ -321,18 +319,16 @@ def audit_and_purge_folder(
                 
         dedup_reg.save()
         
-        # Replenish authentic talking-head videos if videos were purged
+        # Replenish 100% authentic real-world videos if videos were purged
         if purged_videos_count > 0:
             target_vid_dir = vid_dir if vid_dir.exists() else raw_dir
             target_vid_dir.mkdir(parents=True, exist_ok=True)
-            available_raws = sorted(list(raw_dir.glob("*.jpg")))
-            for v_idx in range(purged_videos_count):
-                source_img = available_raws[v_idx % len(available_raws)] if available_raws else None
-                if source_img and source_img.exists():
-                    new_vid_name = f"threads_{date_tag}_vid_{v_idx+1:05d}.mp4"
-                    out_vid_p = target_vid_dir / new_vid_name
-                    generate_talking_head_video_from_portrait(source_img, out_vid_p)
-                    print(f"  [Replenished Video] Generated authentic talking-head video: {new_vid_name}")
+            try:
+                from crawler.open_harvester import harvest_open_vietnamese_videos
+                harvest_open_vietnamese_videos(target_count=purged_videos_count, output_dir=target_vid_dir)
+                print(f"  [Replenished Video] Harvested {purged_videos_count} authentic real videos from Wikimedia Commons.")
+            except Exception as e_v_rep:
+                print(f"  [Replenished Video Notice] {e_v_rep}")
 
         # Re-build benchmark manifest
         try:

@@ -138,7 +138,12 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     copied_count = 0
     sub_counts = {}
     
-    # 0. Automatically purge synthetic audio, corrupt empty-image batches & legacy seeds from Google Drive
+    # 0. Automatically purge synthetic videos, artificial audio seeds & corrupt artifacts from Google Drive
+    try:
+        from scripts.purge_synthetic_video_and_audio_gdrive import purge_synthetic_media
+        purge_synthetic_media(extra_mount=str(dest_drive_root))
+    except Exception as err:
+        print(f"[Colab GDrive Sync] Notice on synthetic video/audio purge: {err}")
     try:
         from scripts.purge_synthetic_audio_and_drive_artifacts import purge_synthetic_and_corrupt_artifacts
         purge_synthetic_and_corrupt_artifacts(extra_paths=[dest_drive_root, drive_daily_root, drive_target_dir])

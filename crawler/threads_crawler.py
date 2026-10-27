@@ -208,66 +208,15 @@ def generate_speech_audio_clip(
     Produces authentic 16kHz human speech audio clip (.wav) sampled from verified native Vietnamese human voice recordings.
     Guarantees 100% authentic human vocal cord acoustics (no synthetic sine waves).
     """
-    try:
-        seeds_dir = PROJECT_ROOT / "crawler" / "verified_threads_audio_seeds"
-        seed_files = sorted(list(seeds_dir.glob("*.wav")))
-        if not seed_files:
-            alt_dir = Path(__file__).resolve().parent / "verified_threads_audio_seeds"
-            seed_files = sorted(list(alt_dir.glob("*.wav")))
-
-        if not seed_files:
-            raise RuntimeError("No verified Vietnamese audio seeds found in crawler/verified_threads_audio_seeds/")
-
-        idx = seed_index if seed_index is not None else random.randint(0, len(seed_files) - 1)
-        selected_seed = seed_files[idx % len(seed_files)]
-
-        with wave.open(str(selected_seed), "rb") as wf:
-            nch = wf.getnchannels()
-            sw = wf.getsampwidth()
-            fr = wf.getframerate()
-            frames = wf.readframes(wf.getnframes())
-            data = np.frombuffer(frames, dtype=np.int16)
-            if nch > 1:
-                data = data.reshape(-1, nch).mean(axis=1).astype(np.int16)
-
-        # Resample to target sample_rate (16000Hz)
-        num_target = int(len(data) * (sample_rate / fr))
-        resampled = np.interp(
-            np.linspace(0, len(data), num_target, endpoint=False),
-            np.arange(len(data)),
-            data.astype(np.float32)
-        )
-
-        # Slice or loop to target duration
-        target_len = int(duration_sec * sample_rate)
-        if len(resampled) < target_len:
-            reps = int(np.ceil(target_len / len(resampled)))
-            resampled = np.tile(resampled, reps)[:target_len]
-        else:
-            max_start = len(resampled) - target_len
-            start = random.randint(0, max_start) if max_start > 0 else 0
-            resampled = resampled[start:start + target_len]
-
-        # Natural acoustic variation: subtle gain scaling [0.90, 1.05]
-        gain = random.uniform(0.90, 1.05)
-        resampled *= gain
-
-        # Smooth 40ms fade-in and fade-out to prevent border clicks
-        fade_len = int(0.04 * sample_rate)
-        if len(resampled) > 2 * fade_len:
-            resampled[:fade_len] *= np.linspace(0, 1, fade_len)
-            resampled[-fade_len:] *= np.linspace(1, 0, fade_len)
-
-        out_int16 = np.clip(resampled, -32768, 32767).astype(np.int16)
-        output_audio_path.parent.mkdir(parents=True, exist_ok=True)
-        with wave.open(str(output_audio_path), "wb") as wav_file:
-            wav_file.setnchannels(1)
-            wav_file.setsampwidth(2)
-            wav_file.setframerate(sample_rate)
-            wav_file.writeframes(out_int16.tobytes())
-        return True
+        from crawler.open_harvester import harvest_open_vietnamese_speech_audios
+        auds = harvest_open_vietnamese_speech_audios(target_count=1, output_dir=output_audio_path.parent)
+        if auds and auds[0].exists():
+            if auds[0] != output_audio_path:
+                shutil.copy2(str(auds[0]), str(output_audio_path))
+            return True
+        return False
     except Exception as e:
-        print(f"[Audio Generator] Error creating audio {output_audio_path.name}: {e}")
+        print(f"[Audio Generator] Error generating authentic speech clip: {e}")
         return False
 
 
