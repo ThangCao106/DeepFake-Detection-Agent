@@ -321,7 +321,7 @@ def is_photographic_human_portrait(
         if unique_colors < min(min_unique_colors, 600):
             return False, f"Unique color count rejected ({unique_colors} < {min_unique_colors})", {"unique_colors": unique_colors}
             
-        return True, "Passed Option C Photographic Quality Gate", {
+        return True, "Passed Option B Photographic Quality Gate", {
             "face_count": face_count,
             "primary_bbox": bboxes[0] if bboxes else [int(w_img * 0.2), int(h_img * 0.15), int(w_img * 0.8), int(h_img * 0.75)],
             "bboxes": bboxes,

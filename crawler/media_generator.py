@@ -41,7 +41,7 @@ from crawler.dedup_engine import (
 )
 
 # Curated High-Resolution Real Human Photographic Portraits (Unsplash Public CDN)
-# 5 Vietnamese & East Asian Facial Categories (Option C Taxonomy)
+# 5 Vietnamese & East Asian Facial Categories (Option B Taxonomy)
 VIETNAMESE_PORTRAIT_POOLS = {
     "vn_id_official": [
         "1544005313-94ddf0286df2",  # Frontal East Asian portrait woman
@@ -112,7 +112,7 @@ def fetch_authentic_human_portrait(
       - vn_street_outdoor: Outdoor street environment, natural ambient lighting
       - vn_occlusion_glasses_mask: Eyeglasses, sunglasses, or partial mask
       - vn_mature_aging: Middle-aged and elderly Vietnamese individuals
-    Enforces Option C 64-bit dHash perceptual deduplication (Hamming distance > 6).
+    Enforces Option B 64-bit dHash perceptual deduplication (Hamming distance > 6).
     Returns: (Image.Image, category_str)
     """
     if seed is not None:
@@ -395,7 +395,7 @@ def create_manipulated_video(
     max_frames: int = 90
 ) -> bool:
     """
-    Applies frame-by-frame FaceSwap or OpenWeight generative manipulation on a video clip (Option C).
+    Applies frame-by-frame FaceSwap or OpenWeight generative manipulation on a video clip (Option B).
     - Initializes frame_idx and caps length at max_frames (benchmark standard ~3s at 30fps).
     - Preserves temporal consistency via frame-linked seed modulation.
     - Validates video container and handles resource release inside finally block.
@@ -454,7 +454,7 @@ def create_manipulated_video(
 
 def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdrive_agent=None, pentest_dir="report_colab/pentest"):
     """
-    Option C Pipeline: Reads real full-frame downloaded images from '01_raw_originals',
+    Option B Pipeline: Reads real full-frame downloaded images from '01_raw_originals',
     applies paired FaceSwap and Open-Weight Generative manipulations, and outputs to:
       - 01_raw_originals: Original full-frame downloaded human portraits (with post metadata & BBox)
       - 02_manipulated_faceswap: Paired FaceSwap RoI manipulated samples
@@ -483,7 +483,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         "03_manipulated_openweight": []
     }
     
-    # Initialize Option C Perceptual Deduplication Registry
+    # Initialize Option B Perceptual Deduplication Registry
     dedup_registry = PerceptualDeduplicationRegistry(pentest_path / "perceptual_dhash_registry.json")
     
     # Sync with Google Drive if mounted
@@ -517,12 +517,12 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
         except Exception:
             pass
 
-    print(f"\n[Media Generator] Option C Pipeline: {len(valid_raw_files)} verified authentic images in 01_raw_originals...")
+    print(f"\n[Media Generator] Option B Pipeline: {len(valid_raw_files)} verified authentic images in 01_raw_originals...")
     
     # If 01_raw_originals has fewer images than num_samples, backfill immediately from Offline Vietnam Face Vault
     if len(valid_raw_files) < num_samples:
         deficit = num_samples - len(valid_raw_files)
-        print(f"[Media Generator] Option C: Backfilling {deficit} portraits directly from Vietnam Face Vault...")
+        print(f"[Media Generator] Option B: Backfilling {deficit} portraits directly from Vietnam Face Vault...")
         from crawler.vietnam_face_vault import load_vault_portraits
         vault_harvested = load_vault_portraits(min_images=deficit, dedup_registry=dedup_registry)
         for vp in vault_harvested:
@@ -535,7 +535,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
                     wf.write(vp["image_bytes"])
             valid_raw_files.append(new_path)
             local_batch_dhashes.add(vp["dhash"])
-            print(f"  [Option C Vault Ingested] Added real human portrait: {new_path.name}")
+            print(f"  [Option B Vault Ingested] Added real human portrait: {new_path.name}")
 
     sample_count = min(len(valid_raw_files), num_samples) if num_samples else len(valid_raw_files)
     
@@ -551,7 +551,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
             print(f"[Media Generator] Error reading {raw_path}: {e}")
             continue
 
-        # Register unique image in Option C Dedup Registry
+        # Register unique image in Option B Dedup Registry
         dedup_registry.check_and_register(raw_img, filename=raw_name, category=vn_cat, source="01_raw_originals")
 
         # 1. Real Full-Frame Image Metadata
@@ -589,7 +589,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
             "vietnamese_category": vn_cat
         })
 
-    # Save Option C Dedup Registry back to local & Google Drive
+    # Save Option B Dedup Registry back to local & Google Drive
     dedup_registry.save(pentest_path / "perceptual_dhash_registry.json")
     for dr in colab_gdrive_candidates:
         if dr.exists():
@@ -645,7 +645,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
                 print(f"  [Video Triplet Notice] Video #{v_idx} sync: {raw_vid.name} (FaceSwap: {ok_fs}, OpenWeight: {ok_ow}).")
         
     # Build and upload dataset_manifest.jsonl, hard_samples_manifest.jsonl, and dataset_summary.md
-    print("[Dataset Builder] Packaging Threads-DFBench Option C manifest...")
+    print("[Dataset Builder] Packaging Threads-DFBench Option B manifest...")
     manifest_file, hard_manifest_file = build_benchmark_manifest(uploaded_records, pentest_path, date_str=date_str)
     summary_file = pentest_path / "dataset_summary.md"
     
@@ -656,7 +656,7 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
     if summary_file.exists():
         gdrive_agent.upload_file(str(summary_file), date_str=date_str, target_subfolder="")
         
-    print(f"[Media Generator] [SUCCESS] Completed Option C processing for {sample_count} real image triples & manifest.")
+    print(f"[Media Generator] [SUCCESS] Completed Option B processing for {sample_count} real image triples & manifest.")
     return uploaded_records
 
 # Backward compatibility alias

@@ -13,7 +13,7 @@ Hệ thống điều hành & giám định **Deepfake Forensic Agent** phục v�
 
 ---
 
-## 🏗️ Sơ đồ Kiến trúc Hệ thống (Option C - Tiered SRE Pipeline)
+## 🏗️ Sơ đồ Kiến trúc Hệ thống (Option B - Tiered SRE Pipeline)
 
 ```mermaid
 graph TD

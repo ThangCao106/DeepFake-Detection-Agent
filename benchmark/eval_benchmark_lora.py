@@ -70,7 +70,7 @@ def run_lora_benchmark(
     Executes comparative evaluation of Baseline ViT vs LoRA-adapted ViT.
     """
     print("\n" + "=" * 75)
-    print("🔬 [LoRA PEFT Benchmark] Vision Transformer Evaluation (Option A)")
+    print("🔬 [LoRA PEFT Benchmark] Vision Transformer Evaluation (Option B)")
     print(f"   Backbone: {base_model_name} | Rank: {lora_r} | Alpha: {lora_alpha}")
     print("=" * 75)
 

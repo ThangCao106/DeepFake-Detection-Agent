@@ -343,7 +343,7 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
 @app.route('/api/analyze', methods=['POST'])
 def api_analyze():
     """
-    REST API endpoint for media analysis (Option C Fail-safe / Fallback).
+    REST API endpoint for media analysis (Option B Fail-safe / Fallback).
     Accepts JSON: { "filepath": "...", "query": "...", "language": "vi"|"en" }
     """
     data = request.get_json(silent=True) or {}

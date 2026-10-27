@@ -1,5 +1,5 @@
 """
-Dataset Builder & Benchmark Manifest Generator (Option C - Threads-DFBench).
+Dataset Builder & Benchmark Manifest Generator (Option B - Threads-DFBench).
 Computes academic biometrics features:
   1. 2D Haar Discrete Wavelet Transform (DWT) Skin Pore Energy Ratio: E_high (WAVIE standard)
   2. 2D Fast Fourier Transform (FFT) Annular Spectral Peak: Z_peak
@@ -220,7 +220,7 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
         for entry in hard_entries:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
-    # Option C: Export compact Parquet biometric cache table
+    # Option B: Export compact Parquet biometric cache table
     try:
         from colab_training.feature_cache_pipeline import build_or_append_parquet_cache
         parquet_manifest = output_dir / "dataset_manifest.parquet"
@@ -233,7 +233,7 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
         features_dir.mkdir(parents=True, exist_ok=True)
         build_or_append_parquet_cache(all_entries, features_dir / "biometric_features_M2.parquet")
     except Exception as e:
-        print(f"[DatasetBuilder Option C Notice] Parquet export: {e}")
+        print(f"[DatasetBuilder Option B Notice] Parquet export: {e}")
             
     # Write dataset_summary.md
     real_ehigh_mean = float(np.mean(ehigh_stats["real"])) if ehigh_stats["real"] else 0.38

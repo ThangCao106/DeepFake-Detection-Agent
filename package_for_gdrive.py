@@ -1,6 +1,6 @@
 """
 Utility script to package the DeepFake-Detection-Agent codebase into a clean, lightweight zip file
-specifically for Option C deployment on Google Drive (/content/drive/MyDrive/Thread_Data/).
+specifically for Option B deployment on Google Drive (/content/drive/MyDrive/Thread_Data/).
 Excludes large binaries, virtual environments, and git cache.
 """
 import os
@@ -61,7 +61,7 @@ def package_codebase(output_zip_path=None):
     uncomp_mb = round(total_uncompressed_bytes / (1024 * 1024), 2)
     
     print("=" * 65)
-    print(f"🎉 Codebase successfully packaged for Option C (Google Drive)!")
+    print(f"🎉 Codebase successfully packaged for Option B (Google Drive)!")
     print(f"  📄 Total Files: {file_count}")
     print(f"  📊 Uncompressed Size: {uncomp_mb} MB")
     print(f"  🗜️ Compressed Zip Size: {zip_size_mb} MB")

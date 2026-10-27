@@ -1,11 +1,11 @@
 """
-Option C: Autonomous Offline Vietnamese Face Vault Engine.
+Option B: Autonomous Offline Vietnamese Face Vault Engine.
 Guarantees 100% uptime for Vietnamese human portrait generation on Google Colab & Local environments.
 Eliminates dependency on external scrapers and ensures 0-risk execution:
   - 100% verified real human photographs across 5 taxonomic categories
   - Zero cartoon, anime, or synthetic artifacts
   - Sub-second generation of up to 10,000 unique human portrait assets
-  - Strict compliance with Option C biometric integrity & perceptual deduplication
+  - Strict compliance with Option B biometric integrity & perceptual deduplication
 """
 
 import os
@@ -151,7 +151,7 @@ def load_vault_portraits(
     count=None
 ) -> List[Dict]:
     """
-    Offline Vietnamese Face Vault Engine (Option C & Option B Decoupled Sampler):
+    Offline Vietnamese Face Vault Engine (Option B & Option B Decoupled Sampler):
     Loads authentic, high-resolution Vietnamese human portraits from the persistent vault
     and open multi-source archives.
     Guarantees:

@@ -1,7 +1,7 @@
 """
 Gemini SDK & Google GenAI Backend for Observability Agent (Tier 1 Engine).
 
-Implements Option C Tiered Hybrid Architecture:
+Implements Option B Tiered Hybrid Architecture:
   - Tier 1 (Gemini 2.5 Flash / Pro): Fast telemetry triaging, real-time log scanning,
     and high-throughput query synthesis using Google GenAI API.
   - Streaming support for OpenAI-compatible completions.

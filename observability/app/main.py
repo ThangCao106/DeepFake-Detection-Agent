@@ -1760,7 +1760,7 @@ async def get_reports_digest_api() -> dict:
 
 @app.get("/api/agents/lifecycle")
 async def get_agents_lifecycle_api() -> dict:
-    """Return operational status and real-time metrics for the 4 MLOps Lifecycle Agents (Option A Standard)."""
+    """Return operational status and real-time metrics for the 4 MLOps Lifecycle Agents (Option B Standard)."""
     import sqlite3
     db_path = get_deepfake_db_path()
     

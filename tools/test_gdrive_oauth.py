@@ -1,5 +1,5 @@
 """
-Fast Diagnostic & Verification Script for Google Drive OAuth2 Sync (Option A).
+Fast Diagnostic & Verification Script for Google Drive OAuth2 Sync (Option B).
 Tests OAuth2 token exchange and uploads a test file to the target Google Drive folder.
 """
 
@@ -18,7 +18,7 @@ def run_test():
     refresh_token = os.environ.get("GDRIVE_REFRESH_TOKEN")
 
     print("=" * 75)
-    print("🔍 [TEST] Google Drive OAuth2 Verification (Option A)")
+    print("🔍 [TEST] Google Drive OAuth2 Verification (Option B)")
     print(f"   Target Folder ID: {target_folder_id}")
     print(f"   URL: https://drive.google.com/drive/folders/{target_folder_id}")
     print("=" * 75)
@@ -58,7 +58,7 @@ def run_test():
         f"🎉 Google Drive OAuth2 Sync Verification Successful!\n"
         f"Timestamp: {now_str}\n"
         f"Target Folder: {target_folder_id}\n"
-        f"Method: Option A (Personal Quota - Google OAuth2 Playground)\n"
+        f"Method: Option B (Personal Quota - Google OAuth2 Playground)\n"
     )
     test_file = PROJECT_ROOT / "test_oauth_sync_success.txt"
     with open(test_file, "w", encoding="utf-8") as f:

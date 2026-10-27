@@ -1,5 +1,5 @@
 """
-Option C Purge Engine: Eliminate Synthetic AI Talking-Head Videos & Artificial Audio Seeds
+Option B Purge Engine: Eliminate Synthetic AI Talking-Head Videos & Artificial Audio Seeds
 from Google Drive and Local Storage across all past dates (2026-09 to 2026-10).
 
 Target Media Eliminated:
@@ -218,7 +218,7 @@ def purge_synthetic_media(extra_mount: str = None, dry_run: bool = False, target
     videos and audio seeds, and updating manifest files.
     """
     print("\n" + "=" * 80)
-    print("🧹 [Option C Drive Purge Engine] Purging Synthetic Videos & Audio Seeds from Google Drive")
+    print("🧹 [Option B Drive Purge Engine] Purging Synthetic Videos & Audio Seeds from Google Drive")
     print(f"   Mode: {'[DRY RUN - INSPECT ONLY]' if dry_run else '[PERMANENT DELETE & FLUSH]'}")
     if target_date:
         print(f"   Target Date Filter: {target_date}")

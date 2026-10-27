@@ -1,7 +1,7 @@
 """
 Hugging Face Open-Source Dataset Exporter for Threads-DFBench.
 Packages dataset manifests, SHA256 unique media samples, and Hugging Face Dataset Card README.md
-for public release on Hugging Face Hub (Option C Alignment).
+for public release on Hugging Face Hub (Option B Alignment).
 """
 import os
 import json

@@ -1,5 +1,5 @@
 """
-Colab Free Auto-Scheduler & Heartbeat Runner (Option C).
+Colab Free Auto-Scheduler & Heartbeat Runner (Option B).
 
 Designed specifically for Google Colab Free accounts to synchronize training with the
 GitHub Actions 4h Pentest cycle:
@@ -147,7 +147,7 @@ def start_scheduler_loop(training_args: list, run_now_first: bool = False):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Colab Free Auto-Scheduler (Option C)")
+    parser = argparse.ArgumentParser(description="Colab Free Auto-Scheduler (Option B)")
     parser.add_argument("--run-now", action="store_true", help="Chạy ngay 1 lượt đầu tiên trước khi vào lịch chờ")
     parser.add_argument("--images", type=int, default=1000, help="Số lượng ảnh crawl")
     parser.add_argument("--videos", type=int, default=500, help="Số lượng video crawl")
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.0001, help="Tốc độ học")
     parser.add_argument("--train-both-models", action="store_true", default=True, help="Huấn luyện cả Model 1 và Model 2")
 
-    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h batch subfolder (default: 'auto')")
+    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option B 4h batch subfolder (default: 'auto')")
 
     args = parser.parse_args()
 

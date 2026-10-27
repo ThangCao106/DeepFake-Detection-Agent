@@ -1,5 +1,5 @@
 """
-Populate & Maintain Vietnamese Real Face Vault (Option C Vault Priming).
+Populate & Maintain Vietnamese Real Face Vault (Option B Vault Priming).
 Harvests 300 - 500+ authentic Vietnamese human portraits across the 5 project categories:
   - vn_id_official
   - vn_selfie_lifestyle

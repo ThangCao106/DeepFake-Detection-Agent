@@ -229,7 +229,7 @@
       text-align: center;
     }
 
-    /* SIDEBAR REPORT BADGES (OPTION C) */
+    /* SIDEBAR REPORT BADGES */
     .nav-badge {
       font-size: 0.65rem;
       font-family: var(--font-mono);
@@ -365,7 +365,7 @@
       margin-bottom: 0.9rem;
     }
 
-    /* REPORT EXECUTIVE CARD (OPTION C) */
+    /* REPORT EXECUTIVE CARD */
     .report-exec-card {
       background: linear-gradient(135deg, rgba(19, 25, 38, 0.9), rgba(13, 17, 26, 0.95));
       border: 1px solid var(--border-accent);
@@ -864,7 +864,7 @@
       color: #07090e;
     }
 
-    /* OPTION C REPORT HUB STYLES */
+    /* REPORT HUB STYLES */
     .report-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1042,7 +1042,7 @@
   <!-- APP BODY LAYOUT -->
   <div class="app-body">
 
-    <!-- LEFT SIDEBAR WITH OPTION C REPORT STATUS BADGES -->
+    <!-- LEFT SIDEBAR WITH REPORT STATUS BADGES -->
     <aside class="sidebar">
       <div>
         <div class="nav-group-title">
@@ -1050,7 +1050,7 @@
           <span style="font-size: 0.6rem; color: var(--accent-cyan); font-weight: 600;">LIVE METRICS</span>
         </div>
         <ul class="nav-list">
-          <!-- NAVIGATION TO LIVE AGENT METRICS & LIFECYCLE (OPTION B) -->
+          <!-- NAVIGATION TO LIVE AGENT METRICS & LIFECYCLE -->
           <li class="nav-item" id="nav-live-agent" onclick="switchTab('live-agent')" style="background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; margin-bottom: 8px; cursor: pointer;">
             <div class="nav-left-part">
               <span class="nav-icon">🤖</span>
@@ -1111,7 +1111,7 @@
       <section id="tab-live-agent" class="tab-view">
         <div class="view-header">
           <div>
-            <h2 class="view-title">🤖 Multi-Agent Autonomous MLOps Lifecycle (Option B Standard)</h2>
+            <h2 class="view-title">🤖 Multi-Agent Autonomous MLOps Lifecycle (Chuẩn Option B)</h2>
             <p class="view-desc">Hệ thống 4 Agent Tự Hành Điều Phối Vòng Đời MLOps Toàn Diện: Giám định Thâm nhập Đối kháng (Pentest), Huấn luyện Tự hành (Continual LoRA PEFT), Đánh giá Đối chuẩn (Benchmark 14 Datasets &amp; Platt ECE) và Quản trị Vệ sinh Dữ liệu (Data Curation &amp; 64-bit dHash Hygiene).</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -1129,7 +1129,7 @@
         <!-- 4 KPI CARDS -->
         <div class="grid-4" style="margin-bottom: 1.5rem;">
           <div class="stat-pill">
-            <span class="label">Vòng đời Tự Động (Option B)</span>
+            <span class="label">Vòng Đời MLOps Tự Động</span>
             <span class="val" style="color: var(--accent-emerald);">4 Operational Agents</span>
             <span class="sub">Autonomous MLOps Closed-Loop</span>
           </div>
@@ -1399,7 +1399,7 @@
           </div>
         </div>
 
-        <!-- OPTION C: DEDICATED REPORT & AUDIT SUMMARY FOR VAULT -->
+        <!-- DEDICATED REPORT & AUDIT SUMMARY FOR VAULT -->
 
         <div class="report-exec-card">
           <div class="report-exec-head">
@@ -1508,7 +1508,7 @@
           </p>
         </div>
 
-        <!-- OPTION C: CALIBRATION DRIFT REPORT -->
+        <!-- CALIBRATION DRIFT REPORT -->
         <div class="report-exec-card emerald">
           <div class="report-exec-head">
             <h4>
@@ -1609,7 +1609,7 @@
           </div>
         </div>
 
-        <!-- OPTION C: DOMAIN ADAPTATION REPORT -->
+        <!-- DOMAIN ADAPTATION REPORT -->
         <div class="report-exec-card purple">
           <div class="report-exec-head">
             <h4>
@@ -2374,7 +2374,7 @@
       }, 1050);
     }
 
-    // TAB 4: REPORTS DIGEST & HYBRID FORENSIC CENTER (OPTION C)
+    // TAB 4: REPORTS DIGEST & HYBRID FORENSIC CENTER
     let reportsCalendarCache = null;
     let currentReportDetail = null;
     let isMarkdownView = false;
@@ -2725,7 +2725,7 @@
       }
     }
 
-    // EXPORT REPORT FUNCTIONALITY (OPTION C)
+    // EXPORT REPORT FUNCTIONALITY
     function exportModuleReport(moduleType) {
       const now = new Date().toISOString();
       let title = "";

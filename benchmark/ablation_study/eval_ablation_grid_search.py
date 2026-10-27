@@ -416,7 +416,7 @@ def save_outputs(samples: List[Dict], results: List[Dict], optimum: Dict):
 
 def main():
     print("=" * 80)
-    print("🚀 Khởi chạy Hệ thống Đánh giá Thực nghiệm Ablation Grid Search (Option C)")
+    print("🚀 Khởi chạy Hệ thống Đánh giá Thực nghiệm Ablation Grid Search (Option B)")
     print("=" * 80)
     
     samples = generate_stratified_manifest(total_samples=1000)

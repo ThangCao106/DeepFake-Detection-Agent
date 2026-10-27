@@ -337,7 +337,7 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
     except Exception as re:
         print(f"   [Reporter Notice] Academic docx/sync notice: {re}")
     
-    # 4. Save history record for Web Dashboard (Option C)
+    # 4. Save history record for Web Dashboard (Option B)
     history_file = report_dir / "daily_history.json"
     history_data = []
     if history_file.exists():

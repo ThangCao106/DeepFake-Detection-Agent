@@ -2,7 +2,7 @@
 Automated Purge & Cleanup Utility.
 Removes legacy cloned / augmented face images, AI-generated duplicates,
 and resets deduplication registries both locally and on Google Drive.
-Prepares a 100% clean environment for Option A + C unique human identities.
+Prepares a 100% clean environment for Option B unique human identities.
 """
 
 import os
@@ -167,7 +167,7 @@ def purge_cloned_media(include_drive: bool = True, date_str: str = None):
     mb_freed = purged_bytes / (1024 * 1024)
     print("=" * 75)
     print(f"🎉 [PURGE COMPLETE] Cleared {purged_files} legacy cloned/duplicate files ({mb_freed:.2f} MB freed).")
-    print("   Ready for Option A + C unique human identity harvesting!")
+    print("   Ready for Option B unique human identity harvesting!")
     print("=" * 75)
 
 

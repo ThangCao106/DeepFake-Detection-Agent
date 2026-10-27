@@ -1,5 +1,5 @@
 """
-Option A Google Colab Direct Mount & GDrive Synchronizer with Dual-Stream Model Training & Reporting
+Google Colab Direct Mount & GDrive Synchronizer (Option B Standard)
 Synchronizes sample media & pentest data directly to Google Drive WITHOUT requiring GCP Service Account or API keys.
 
 Dual-Stream Training Engine:
@@ -87,7 +87,7 @@ def find_or_create_colab_drive_path(folder_id=None, base_folder_name="Thread_Dat
 
 def resolve_job_batch_tag(job_batch: str = "auto"):
     """
-    Computes standard 4h batch subfolder name under the daily date directory (Option C).
+    Computes standard 4h batch subfolder name under the daily date directory (Option B).
     - If job_batch is 'none', 'false', 'disable', returns None (saves directly in YYYY-MM-DD/).
     - If job_batch is 'auto':
         Maps current UTC time to 6 scheduled 4h windows (UTC: 0, 4, 8, 12, 16, 20).
@@ -120,7 +120,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     """
     Copies all local generated & crawled media from report_colab/pentest & report_colab/gdrive_storage
     to mounted Google Drive.
-    Supports Option C 4-hour batch subfolders: Thread_Data/YYYY-MM-DD/batch_0X_HHhMM/
+    Supports Option B 4-hour batch subfolders: Thread_Data/YYYY-MM-DD/batch_0X_HHhMM/
     Maintains daily master manifest and sessions summary at the root date folder.
     """
     if not date_str:
@@ -138,11 +138,11 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     copied_count = 0
     sub_counts = {}
     
-    # Data hygiene & purge are decoupled to agents/data_curation_purge_agent.py (Option A Standard)
+    # Data hygiene & purge are decoupled to agents/data_curation_purge_agent.py (Option B Standard)
     # Check both pentest_dir and local_daily_dir for source media
     source_dirs = [pentest_dir, local_daily_dir]
     
-    # Initialize Option C Perceptual Deduplication Registry from Google Drive
+    # Initialize Option B Perceptual Deduplication Registry from Google Drive
     from crawler.dedup_engine import PerceptualDeduplicationRegistry, compute_dhash
     dedup_registry = PerceptualDeduplicationRegistry()
     dedup_registry.sync_with_gdrive(dest_drive_root)
@@ -165,7 +165,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
                     if f.is_file() and f.suffix.lower() in [".jpg", ".jpeg", ".png", ".mp4", ".wav"]:
                         dest_file = drive_sub / f.name
                         
-                        # Register unique images into Option C Dedup Registry
+                        # Register unique images into Option B Dedup Registry
                         if f.suffix.lower() in [".jpg", ".jpeg", ".png"]:
                             try:
                                 with Image.open(f) as im:
@@ -181,7 +181,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
         sub_counts[sub] = sub_copied
         print(f"  [Colab GDrive Sync] Successfully synchronized {sub_copied} media assets to {drive_sub}")
 
-    # Persist updated Option C registry to Google Drive
+    # Persist updated Option B registry to Google Drive
     dedup_registry.save(dest_drive_root / "registry" / "perceptual_dhash_registry.json")
                         
     # Sync benchmark manifest and summary files to target batch directory
@@ -198,7 +198,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
                         batch_manifest_files.append(dest_meta)
                     print(f"  📄 Synced benchmark metadata: {meta_name} -> {drive_target_dir}")
 
-    # Option C: Maintain daily master manifest & sessions summary table
+    # Option B: Maintain daily master manifest & sessions summary table
     if job_batch_tag:
         try:
             daily_master_manifest = drive_daily_root / f"master_manifest_{date_str}.jsonl"
@@ -252,7 +252,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
                 header = (
                     f"# 📊 Tiến Độ Các Ca Chạy 4h (Scheduled Batches) - Ngày {date_str}\n\n"
                     f"- **Thư mục ngày**: `{drive_daily_root}`\n"
-                    f"- **Cơ chế**: Option C Dual-Stream Synchronizer (Chu kỳ 4h / 6 ca mỗi ngày)\n\n"
+                    f"- **Cơ chế**: Option B Dual-Stream Synchronizer (Chu kỳ 4h / 6 ca mỗi ngày)\n\n"
                     f"| Ca Chạy (Batch ID) | Giờ Chạy (VN) | 01_raw_originals | 02_faceswap | 03_openweight | Tổng Tệp | Trạng Thái |\n"
                     f"| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
                 )
@@ -265,7 +265,7 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
         except Exception as agg_err:
             print(f"  ⚠️ [Daily Aggregation Notice] {agg_err}")
 
-    # 4. Option C: Force Linux kernel & Google Drive FUSE writeback buffer flush
+    # 4. Option B: Force Linux kernel & Google Drive FUSE writeback buffer flush
     try:
         if hasattr(os, "sync"):
             print("  ⏳ [FUSE Flush] Flushing Linux I/O buffer to Google Drive FUSE driver...")
@@ -439,12 +439,12 @@ Toàn bộ dữ liệu huấn luyện, siêu dữ liệu và trọng số mô h�
 
 
 def ensure_browser_environment():
-    """Ensures Playwright, OpenCV, and Chromium browser are ready for Option A Threads harvesting."""
+    """Ensures Playwright, OpenCV, and Chromium browser are ready for Threads harvesting."""
     import subprocess
     try:
         import cv2
     except ImportError:
-        print("[Browser Env] Auto-installing opencv-python-headless for Option A...")
+        print("[Browser Env] Auto-installing opencv-python-headless...")
         subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless", "-q"], check=False)
         
     try:
@@ -462,7 +462,7 @@ def ensure_browser_environment():
 def check_drive_media_availability(drive_root, date_str):
     """
     Checks if Google Drive already has authentic images, audios, and videos for today.
-    Supports Option C Drive-First architecture:
+    Supports Option B Drive-First architecture:
       - If Drive already has sufficient data from external crawler, Colab skips crawling and feeds directly to GPU.
       - If Drive is empty or deficient, Colab triggers autonomous Vietnam Face Vault.
     """
@@ -511,7 +511,7 @@ def check_drive_media_availability(drive_root, date_str):
     }
 
 
-def run_option_a_pipeline(
+def run_option_b_pipeline(
     num_images=10000, 
     num_videos=500, 
     num_audios=500, 
@@ -527,10 +527,10 @@ def run_option_a_pipeline(
     force_crawl=False
 ):
     """
-    Executes end-to-end Option A / C scheduled pipeline:
-      1. Option C Drive-First: If Drive already has crawled data, skips crawler & feeds directly to GPU
+    Executes end-to-end Option B scheduled pipeline:
+      1. Drive-First: If Drive already has crawled data, skips crawler & feeds directly to GPU
       2. If Drive is empty/insufficient: Generates authentic samples via Vietnam Face Vault
-      3. Direct-syncs to mounted Google Drive (supports Option C 4h batch subfolders)
+      3. Direct-syncs to mounted Google Drive (supports 4h batch subfolders)
       4. Trains Model 1 (ViT General Vision Continual with Focal Loss)
       5. Trains Model 2 (Human Biometric Multi-Modal with 4 Human Datasets + Threads Media)
       6. Generates and synchronizes master training report (training_report_dual_stream.md)
@@ -539,7 +539,7 @@ def run_option_a_pipeline(
     timestamp_tag = time.strftime("%Y-%m-%d_%Hh")
     
     print("=" * 75)
-    print(f"🚀 Option A/C: Google Colab Dual-Stream Training & GDrive Direct Sync ({timestamp_tag})")
+    print(f"🚀 Option B: Google Colab Dual-Stream Training & GDrive Direct Sync ({timestamp_tag})")
     print(f"⚙️ Quota: Images={num_images:,}, Videos={num_videos:,}, Audios={num_audios:,} | Visual Samples={num_samples}")
     print(f"⏱️ 4h Job Batch: {job_batch}")
     print(f"🧠 Model 1 (General Vision): {'ENABLED' if do_train_model1 else 'DISABLED'}")
@@ -550,7 +550,7 @@ def run_option_a_pipeline(
     # 1. Locate Google Drive
     drive_root = find_or_create_colab_drive_path()
     
-    # 2. Option C Drive-First Architecture:
+    # 2. Option B Drive-First Architecture:
     # Check if Google Drive has already been populated by external crawler job (Local/VPS/Jenkins)
     drive_status = check_drive_media_availability(drive_root, date_str) if drive_root else {"images": 0, "audios": 0, "videos": 0}
     threshold = min(num_samples, 25)
@@ -558,14 +558,14 @@ def run_option_a_pipeline(
 
     if skip_crawl or (drive_has_data and not force_crawl):
         print("\n" + "=" * 75)
-        print(f"🎯 [Option C: Drive-First MLOps Active]")
+        print(f"🎯 [Option B: Drive-First MLOps Active]")
         print(f"   Google Drive already has {drive_status['images']} authentic images & {drive_status['videos']} videos ready for {date_str}!")
         print(f"   ⚡ External Crawler Job has already populated Google Drive.")
         print(f"   ⏩ SKIPPING crawler & media generation on Colab -> feeding directly to GPU Training.")
         print("=" * 75)
     else:
         # Sourcing Meta Threads media & generating paired counterfactual manipulations
-        source_label = "Autonomous Vietnam Face Vault (Option C)" if vault_only else "Meta Threads Live Scraper + Vault Fallback"
+        source_label = "Autonomous Vietnam Face Vault (Option B)" if vault_only else "Meta Threads Live Scraper + Vault Fallback"
         print(f"\n[Step 1] Sourcing authentic media ({source_label}) ({num_samples} samples) & generating paired manipulations...")
         if not vault_only:
             ensure_browser_environment()
@@ -576,7 +576,7 @@ def run_option_a_pipeline(
         raw_orig_dir = pentest_dir / "01_raw_originals"
         raw_orig_dir.mkdir(parents=True, exist_ok=True)
         
-        # Initialize Option C Dedup Registry & sync with mounted GDrive
+        # Initialize Option B Dedup Registry & sync with mounted GDrive
         dedup_registry = PerceptualDeduplicationRegistry(pentest_dir / "perceptual_dhash_registry.json")
         if drive_root:
             dedup_registry.sync_with_gdrive(drive_root)
@@ -666,7 +666,7 @@ def run_option_a_pipeline(
     )
     print(f"🎉 Master report saved: {report_file}")
 
-    # 6.1 Auto-trigger Option A + C Daily & Weekly Synthesis Digests
+    # 6.1 Auto-trigger Option B Daily & Weekly Synthesis Digests
     try:
         from scripts.generate_training_digest import generate_daily_report, generate_weekly_report
         print("\n📊 [Training Digest] Generating rolling Daily & Weekly Synthesis reports...")
@@ -726,7 +726,7 @@ def run_continuous_loop(args):
         print(f"▶️ [Loop #{loop_idx}] Running Sync & Dual-Stream Training at {time.strftime('%Y-%m-%d %H:%M:%SZ')}...")
         print(f"{'#' * 75}")
         
-        run_option_a_pipeline(
+        run_option_b_pipeline(
             num_images=args.images,
             num_videos=args.videos,
             num_audios=args.audios,
@@ -759,7 +759,7 @@ def run_continuous_loop(args):
         loop_idx += 1
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Option A Google Colab Dual-Stream Synchronizer & Trainer")
+    parser = argparse.ArgumentParser(description="Option B Google Colab Dual-Stream Synchronizer & Trainer")
     parser.add_argument("--images", type=int, default=10000, help="Number of human images to crawl")
     parser.add_argument("--videos", type=int, default=500, help="Number of human videos to crawl")
     parser.add_argument("--audios", type=int, default=500, help="Number of human audio clips to crawl")
@@ -774,9 +774,9 @@ if __name__ == "__main__":
     parser.add_argument("--loop", type=str, default=None, help="Run recurring loop interval (e.g. 4h, 1h, 30m)")
     parser.add_argument("--max-loops", type=int, default=None, help="Maximum number of loop cycles before stopping")
     parser.add_argument("--keep-alive", action="store_true", default=True, help="Emit anti-idle heartbeat pings")
-    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option C 4h job batch subfolder name (default: 'auto', or 'none' to disable)")
-    parser.add_argument("--vault-only", "--offline", dest="vault_only", action="store_true", help="Option C: Use 100% autonomous Vietnam Face Vault (zero network dependency)")
-    parser.add_argument("--skip-crawl", "--train-only", dest="skip_crawl", action="store_true", help="Option C: Skip crawling/generation and train only from mounted Google Drive")
+    parser.add_argument("--job-batch", "--job-time", dest="job_batch", type=str, default="auto", help="Option B 4h job batch subfolder name (default: 'auto', or 'none' to disable)")
+    parser.add_argument("--vault-only", "--offline", dest="vault_only", action="store_true", help="Option B: Use 100% autonomous Vietnam Face Vault (zero network dependency)")
+    parser.add_argument("--skip-crawl", "--train-only", dest="skip_crawl", action="store_true", help="Option B: Skip crawling/generation and train only from mounted Google Drive")
     parser.add_argument("--force-crawl", "--force-harvest", dest="force_crawl", action="store_true", help="Force crawling or regenerating media even if Google Drive already has data")
     args = parser.parse_args()
 
@@ -800,7 +800,7 @@ if __name__ == "__main__":
         args.samples = effective_samples
         run_continuous_loop(args)
     else:
-        run_option_a_pipeline(
+        run_option_b_pipeline(
             num_images=effective_images,
             num_videos=effective_videos,
             num_audios=effective_audios,

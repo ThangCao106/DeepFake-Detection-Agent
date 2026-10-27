@@ -5,7 +5,7 @@ Scans local pentest outputs and Google Drive storage structures, purging legacy 
   - faceswap_sample_*
   - openweight_sample_*
   - Legacy Western face hashes from 2026-09-21
-Preserves all Option C unique Vietnamese Threads samples (threads_*).
+Preserves all Option B unique Vietnamese Threads samples (threads_*).
 """
 import os
 import re
@@ -72,7 +72,7 @@ def purge_legacy_samples(extra_paths=None):
                         
     print("=" * 70)
     print(f"[Purge Script] Purge Complete! Removed {purged_count} legacy duplicate files ({round(purged_bytes / (1024**2), 2)} MB freed).")
-    print("[Purge Script] Only unique Option C Vietnamese Threads samples remain in storage.")
+    print("[Purge Script] Only unique Option B Vietnamese Threads samples remain in storage.")
     print("=" * 70)
 
 if __name__ == "__main__":

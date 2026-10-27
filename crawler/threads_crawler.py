@@ -442,11 +442,11 @@ def fetch_authentic_human_image_unique(
     dedup_registry: Optional[PerceptualDeduplicationRegistry] = None
 ) -> dict:
     """
-    Option A + Option B + Option C Integration:
+    Option B Unified Pipeline:
     Acquires a guaranteed unique real photographic Vietnamese/East Asian human portrait image.
-    1. If live_candidate (Option B) provided, attempts to download and validate face.
+    1. If live_candidate provided, attempts to download and validate face.
     2. Otherwise, samples distinct Vietnamese identities or synthesizes high-entropy facial morphology.
-    Enforces Option C 64-bit dHash perceptual deduplication (Hamming distance > 6).
+    Enforces Option B 64-bit dHash perceptual deduplication (Hamming distance > 6).
     Saves full-frame image and computes facial bounding box (BBox) metadata.
     """
     from crawler.media_generator import fetch_authentic_human_portrait, VIETNAMESE_CATEGORIES
@@ -483,7 +483,7 @@ def fetch_authentic_human_image_unique(
         except Exception:
             pass
 
-    # 2. Option A Fallback: Sample distinct Vietnamese identities with dHash gate
+    # 2. Identity Fallback: Sample distinct Vietnamese identities with dHash gate
     if not img_bytes:
         seed_base = int(time.time()) + sample_idx * 1337
         attempt = 0
@@ -585,7 +585,7 @@ async def crawl_threads_media(
     vault_only: bool = False
 ):
     """
-    Option C Pipeline: Crawls and validates public Threads Human Media.
+    Option B Pipeline: Crawls and validates public Threads Human Media.
     Preserves original full-frame images, post metadata, and computes SHA256 digests.
     Enforces 0% duplicate image data leakage across Train/Val/Test OOD splits.
     """
@@ -636,14 +636,14 @@ async def crawl_threads_media(
     timestamp_str = time.strftime("%Y-%m-%d_%Hh")
     date_str = time.strftime("%Y-%m-%d")
     
-    print(f"[Option C Threads Crawler] Initializing fetch: Images={batch_size_images}, Audios={batch_size_audios}, Videos={batch_size_videos}...")
+    print(f"[Option B Threads Crawler] Initializing fetch: Images={batch_size_images}, Audios={batch_size_audios}, Videos={batch_size_videos}...")
     
     crawled_images = []
     crawled_audios = []
     crawled_videos = []
     seen_hashes = set()
     
-    # Initialize Option C Perceptual Deduplication Registry
+    # Initialize Option B Perceptual Deduplication Registry
     dedup_registry = PerceptualDeduplicationRegistry(output_dir / "perceptual_dhash_registry.json")
     
     # Sync with Google Drive if mounted
@@ -666,16 +666,16 @@ async def crawl_threads_media(
                 dedup_registry.check_and_register(b, filename=existing_f.name, source="local_originals")
         except Exception:
             pass
-    print(f"[Option C Threads Crawler] Preserving {len(seen_hashes)} existing media in 01_raw_originals ({len(dedup_registry.get_known_dhashes())} unique dHashes).")
+    print(f"[Option B Threads Crawler] Preserving {len(seen_hashes)} existing media in 01_raw_originals ({len(dedup_registry.get_known_dhashes())} unique dHashes).")
     
-    # 1. Harvest 100% Genuine Media from Meta Threads or Option C Offline Vietnam Face Vault
+    # 1. Harvest 100% Genuine Media from Meta Threads or Option B Offline Vietnam Face Vault
     harvested_img_paths = []
     harvested_vid_paths = []
     harvested_aud_paths = []
     is_vault_mode = vault_only or os.environ.get("THREADS_VAULT_ONLY", "").lower() in ["true", "1", "yes"]
 
     if is_vault_mode:
-        print(f"[Option C Crawler] Vault-Only mode active. Instantly loading {batch_size_images} verified portraits from Vietnam Face Vault...")
+        print(f"[Option B Crawler] Vault-Only mode active. Instantly loading {batch_size_images} verified portraits from Vietnam Face Vault...")
         from crawler.vietnam_face_vault import load_vault_portraits
         vault_photos = load_vault_portraits(min_images=batch_size_images, dedup_registry=dedup_registry)
         for idx, item in enumerate(vault_photos, 1):
@@ -689,7 +689,7 @@ async def crawl_threads_media(
         try:
             from crawler.threads_browser_scraper import ThreadsBrowserScraper
             scraper = ThreadsBrowserScraper(session_cookie_str=cookie_str, headless=True)
-            print(f"[Option A+C Crawler] Launching live Threads browser stream harvester (Images={batch_size_images}, Videos={batch_size_videos}, Audios={batch_size_audios})...")
+            print(f"[Option B Crawler] Launching live Threads browser stream harvester (Images={batch_size_images}, Videos={batch_size_videos}, Audios={batch_size_audios})...")
             harvested_img_paths, harvested_vid_paths, harvested_aud_paths = await scraper.harvest_live_threads_media_async(
                 target_images=batch_size_images,
                 target_videos=batch_size_videos,
@@ -698,13 +698,13 @@ async def crawl_threads_media(
                 dedup_registry=dedup_registry
             )
         except Exception as e_live:
-            print(f"[Option C Crawler] Notice on live scraper ({e_live}). Instantly activating Vietnam Face Vault for images...")
+            print(f"[Option B Crawler] Notice on live scraper ({e_live}). Instantly activating Vietnam Face Vault for images...")
 
-        # Option C Fallback Guard: If live Threads returns fewer images, backfill directly from Vault
+        # Option B Fallback Guard: If live Threads returns fewer images, backfill directly from Vault
         if len(harvested_img_paths) < batch_size_images:
             from crawler.vietnam_face_vault import load_vault_portraits
             deficit = batch_size_images - len(harvested_img_paths)
-            print(f"[Option C Crawler] Backfilling {deficit} portraits directly from Option C Offline Vietnam Face Vault...")
+            print(f"[Option B Crawler] Backfilling {deficit} portraits directly from Option B Offline Vietnam Face Vault...")
             vault_photos = load_vault_portraits(min_images=deficit, dedup_registry=dedup_registry)
             for idx, item in enumerate(vault_photos, 1):
                 sha = item["sha256"]
@@ -733,7 +733,7 @@ async def crawl_threads_media(
             "validation": "PASSED_OPENCV_HAAR_FACE_CHECK",
             "is_synthetic_suspect": False
         })
-    print(f"[Option A+C Threads Crawler] Acquired {len(crawled_images)} 100% verified real human photos from Threads.")
+    print(f"[Option B Threads Crawler] Acquired {len(crawled_images)} 100% verified real human photos from Threads.")
 
     # Register 100% genuine in-the-wild audio tracks (extracted directly from real Threads videos)
     for idx, aud_p in enumerate(harvested_aud_paths, 1):
@@ -754,7 +754,7 @@ async def crawl_threads_media(
             "is_synthetic_suspect": False
         })
     if crawled_audios:
-        print(f"[Option A+C Crawler] Harvested {len(crawled_audios)} authentic human speech audios (.wav) in 01_raw_originals.")
+        print(f"[Option B Crawler] Harvested {len(crawled_audios)} authentic human speech audios (.wav) in 01_raw_originals.")
 
     # Register 100% genuine in-the-wild video clips (downloaded directly from Threads video streams)
     for idx, vid_p in enumerate(harvested_vid_paths, 1):
@@ -775,7 +775,7 @@ async def crawl_threads_media(
             "is_synthetic_suspect": False
         })
     if crawled_videos:
-        print(f"[Option A+C Crawler] Harvested {len(crawled_videos)} authentic human videos (.mp4) in 01_raw_originals.")
+        print(f"[Option B Crawler] Harvested {len(crawled_videos)} authentic human videos (.mp4) in 01_raw_originals.")
         
     registry_data = {
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -797,7 +797,7 @@ async def crawl_threads_media(
     with open(registry_file, "w", encoding="utf-8") as f:
         json.dump(registry_data, f, indent=2, ensure_ascii=False)
         
-    # Save persistent cross-run hash history and Option C Perceptual Registry back to local & Google Drive
+    # Save persistent cross-run hash history and Option B Perceptual Registry back to local & Google Drive
     dedup_registry.save(output_dir / "perceptual_dhash_registry.json")
     for dr in colab_gdrive_candidates:
         if dr.exists():
@@ -815,15 +815,15 @@ async def crawl_threads_media(
         except Exception:
             pass
 
-    print(f"[Option C Threads Crawler] Batch complete. Registry saved to {registry_file} (Total dHashes: {len(dedup_registry.get_known_dhashes())})")
+    print(f"[Option B Threads Crawler] Batch complete. Registry saved to {registry_file} (Total dHashes: {len(dedup_registry.get_known_dhashes())})")
     
     # Sync raw batch to Google Drive (01_raw_originals)
     try:
         gdrive_agent = GDriveSyncAgent()
         gdrive_res = gdrive_agent.sync_batch_registry(registry_data, date_str=date_str, target_subfolder="01_raw_originals")
-        print(f"[Option C Threads Crawler] Synced Option C raw batch to GDrive '01_raw_originals': {gdrive_res}")
+        print(f"[Option B Threads Crawler] Synced Option B raw batch to GDrive '01_raw_originals': {gdrive_res}")
     except Exception as e:
-        print(f"[Option C Threads Crawler] Notice on GDrive sync: {e}")
+        print(f"[Option B Threads Crawler] Notice on GDrive sync: {e}")
 
     return registry_file, len(crawled_images), len(crawled_audios), len(crawled_videos)
 

@@ -1,5 +1,5 @@
 """
-Hugging Face Dataset Hub Synchronizer (Option A Hub Separation + Option C Cloud-to-Cloud Stream).
+Hugging Face Dataset Hub Synchronizer (Option B Cloud-to-Cloud Stream).
 Synchronizes In-The-Wild Meta Threads human benchmark datasets directly to Hugging Face Datasets Hub:
   - Primary Novel Hub: ThangCao106/Threads-DFBench-Vietnamese (In-The-Wild 5-Taxonomy Vietnamese Face Dataset)
   - Foundational Manifest Hub: ThangCao106/DualStream-Foundational-Manifests (Baseline dataset connectors & metadata)
@@ -174,7 +174,7 @@ def sync_threads_dataset_to_hf(
     private: bool = False
 ) -> bool:
     """
-    Option C Cloud-to-Cloud Upload:
+    Option B Cloud-to-Cloud Upload:
     Streams Threads-DFBench media and parquet metadata directly to Hugging Face Datasets Hub.
     """
     if not date_str:
@@ -218,17 +218,17 @@ def sync_threads_dataset_to_hf(
 
     api = HfApi(token=token)
 
-    # Option C: Smart Username Auto-Resolution
+    # Option B: Smart Username Auto-Resolution
     try:
         who = api.whoami()
         authed_user = who.get("name") or who.get("username")
         if authed_user and "/" in repo_id:
             curr_namespace, repo_name = repo_id.split("/", 1)
             if curr_namespace.lower() != authed_user.lower():
-                print(f"🔄 [Option C: Smart Namespace Resolution] Remapping '{curr_namespace}' -> '{authed_user}'")
+                print(f"🔄 [Option B: Smart Namespace Resolution] Remapping '{curr_namespace}' -> '{authed_user}'")
                 repo_id = f"{authed_user}/{repo_name}"
     except Exception as e:
-        print(f"⚠️ [Option C: Auth Check Notice] {e}")
+        print(f"⚠️ [Option B: Auth Check Notice] {e}")
 
     # 1. Ensure Dataset Repository exists
     try:
@@ -346,7 +346,7 @@ def sync_baselines_manifest_to_hf(
 
     api = HfApi(token=token)
 
-    # Option C: Smart Username Auto-Resolution
+    # Option B: Smart Username Auto-Resolution
     try:
         who = api.whoami()
         authed_user = who.get("name") or who.get("username")
@@ -355,7 +355,7 @@ def sync_baselines_manifest_to_hf(
             if curr_namespace.lower() != authed_user.lower():
                 repo_id = f"{authed_user}/{repo_name}"
     except Exception as e:
-        print(f"⚠️ [Option C: Auth Check Notice] {e}")
+        print(f"⚠️ [Option B: Auth Check Notice] {e}")
 
     try:
         create_repo(repo_id=repo_id, repo_type="dataset", token=token, private=private, exist_ok=True)

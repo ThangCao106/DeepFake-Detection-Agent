@@ -207,7 +207,7 @@ def query_wikimedia_search_items(query: str, limit: int = 40) -> List[Dict]:
 
 
 def download_and_validate_portrait(item: Dict, known_dhashes: Set[str]) -> Optional[Dict]:
-    """Downloads an image from Wikimedia and validates via Option C photographic quality gate."""
+    """Downloads an image from Wikimedia and validates via Option B photographic quality gate."""
     from crawler.threads_browser_scraper import is_photographic_human_portrait
     
     url = item.get("thumb_url") or item.get("orig_url")

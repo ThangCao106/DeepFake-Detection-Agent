@@ -1,8 +1,8 @@
 """
 Centralized Configuration Module for Threads Human Media Crawler.
 Supports:
-  - Option A Core: Flat comma-separated THREADS_KEYWORDS in .env
-  - Option C Hybrid: Automated Profiles (quick_inspection, standard_daily, full_pentest, custom)
+  - Core Keywords: Flat comma-separated THREADS_KEYWORDS in .env
+  - Automated Profiles: (quick_inspection, standard_daily, full_pentest, custom) (Option B)
   - Hierarchical Cascading: CLI Arguments > .env Overrides > Profile Defaults > Safe Fallbacks
 """
 import os

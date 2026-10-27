@@ -12,11 +12,11 @@
 
 **Hệ thống AI Deepfake Detection & Digital Forensic Agent** là một nền tảng Multi-Agent cấp công nghiệp được thiết kế để phân loại, kiểm toán và cấp chứng thư pháp y kỹ thuật số cho các phương tiện truyền thông tổng hợp (GANs, Latent Diffusion, Face Swaps, Audio Clones, Deepfake Videos).
 
-Hệ thống tích hợp **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng (Tri-Stream Agentic Dispatcher - Option A)** cùng **Ma trận Bằng chứng Giám định Đa chiều 6D Thích ứng** ($Risk_{composite}$), tự động phát hành **Chứng thư Giám định Kỹ thuật số (`CERT-DF/VID/AUD-XXXXXXXX`)** có chữ ký mật mã hóa Ed25519, và sở hữu **Kiến trúc Lập chỉ mục Google Search (SEO Indexing Architecture)** cho phép xác thực công khai chứng thư trên Google và các cơ quan tư pháp theo tiêu chuẩn **EU AI Act Điều 50** và **DSA Auditable Media**.
+Hệ thống tích hợp **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng (Tri-Stream Agentic Dispatcher - Chuẩn Option B)** cùng **Ma trận Bằng chứng Giám định Đa chiều 6D Thích ứng** ($Risk_{composite}$), tự động phát hành **Chứng thư Giám định Kỹ thuật số (`CERT-DF/VID/AUD-XXXXXXXX`)** có chữ ký mật mã hóa Ed25519, và sở hữu **Kiến trúc Lập chỉ mục Google Search (SEO Indexing Architecture)** cho phép xác thực công khai chứng thư trên Google và các cơ quan tư pháp theo tiêu chuẩn **EU AI Act Điều 50** và **DSA Auditable Media**.
 
 ---
 
-## 🔬 1. Cơ Chế Định Tuyến Phân Tuyến Đa Phương Tiện (Tri-Stream Agentic Dispatcher - Chuẩn Option A)
+## 🔬 1. Cơ Chế Định Tuyến Phân Tuyến Đa Phương Tiện (Tri-Stream Agentic Dispatcher - Chuẩn Option B)
 
 Nhằm đáp ứng yêu cầu giám định toàn diện trong kỷ nguyên truyền thông tạo sinh đa phương thức (hình ảnh, video, âm thanh giọng nói), hệ thống thiết lập **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng**. Khi người dùng tải tệp lên (qua giao diện Web hoặc API), bộ tiền xử lý sẽ kiểm tra MIME type và Magic Byte Header để tự động điều hướng sang 1 trong 3 động cơ chuyên sâu tương ứng:
 
@@ -316,11 +316,11 @@ Nhằm giải quyết triệt để các ca âm tính giả tinh vi (như mẫu 
 | **Mô Hình 1**<br>*(General Vision & Signal)* | • `NTIRE-RobustAIGenDetection` (MSU 2024)<br>• `CIFAKE` (CIFAR-10 vs Stable Diffusion)<br>• `DF40` (40 SOTA Forgery Suite)<br>• `DFFD` (Diverse Fake Face Dataset)<br>• Khai phá Mẫu Biên Khó từ Threads ($H(P) \ge 0.70$) | **>578,000+** | Vết tích thuật toán sinh AI, phổ tần số 2D FFT ($Z_{peak}$), nhiễu không gian, entropy ranh giới | `model_continual_latest.pt`<br>*(ViT Backbone)* |
 | **Mô Hình 2**<br>*(Human Biometric & Physiology)* | • **`MultiFakeVerse`** (Person-Centric VLM Manipulation)<br>• **`HiDF`** (Human-Indistinguishable Deepfakes)<br>• **`140k Real and Fake Faces`** (70k Flickr / 70k StyleGAN)<br>• **`DeepDetect-2025 / 2026`** (Unsplash vs MJ/SD3/Flux)<br>• **Meta Threads Vietnamese In-The-Wild** (10,000 ảnh, 500 video, 500 audio / 4h qua 5 phân lớp người Việt) | **>1,105,000+** | WAVIE 2D Haar DWT năng lượng lỗ chân lông ($E_{high}$), rPPG nhịp mạch mao mạch, HuBERT/WavLM Layer 12 đường thanh quản, DF26 đồng bộ môi | `weights_human.pt`<br>*(Biometric Fusion)* |
 
-### 5.6. Google Colab Pro Scheduled Runner (Kết Hợp Option 1 + Form Option B)
+### 5.6. Google Colab Pro Scheduled Runner (Vận Hành Song Song Tự Động & Form Tương Tác - Chuẩn Option B)
 
 File Notebook [`colab_training/Colab_Pro_Scheduled_Runner.ipynb`](colab_training/Colab_Pro_Scheduled_Runner.ipynb) hỗ trợ song song 2 phương thức vận hành:
-1. **Option 1 (Scheduled Run ngầm)**: Tự động kích hoạt định kỳ 4 giờ/lần trong môi trường headless của Google Colab Pro, cào 10,000 ảnh, 500 video, 500 audio và huấn luyện cả 2 mô hình mà không cần con người can thiệp.
-2. **Option B (Form Tương Tác #@param)**: Cung cấp giao diện form trực quan để nghiên cứu viên thử nghiệm thủ công, bật/tắt từng mô hình (`TRAIN_MODEL_1_GENERAL`, `TRAIN_MODEL_2_HUMAN`, `TRAIN_BOTH_MODELS`), điều chỉnh hạn mức cào và xem trực tiếp báo cáo.
+1. **Chế độ Chạy Tự Động (Headless Scheduled Run)**: Tự động kích hoạt định kỳ 4 giờ/lần trong môi trường headless của Google Colab Pro, cào 10,000 ảnh, 500 video, 500 audio và huấn luyện cả 2 mô hình mà không cần con người can thiệp.
+2. **Chế độ Tương Tác Trực Quan (Interactive Form UI #@param)**: Cung cấp giao diện form trực quan để nghiên cứu viên thử nghiệm thủ công, bật/tắt từng mô hình (`TRAIN_MODEL_1_GENERAL`, `TRAIN_MODEL_2_HUMAN`, `TRAIN_BOTH_MODELS`), điều chỉnh hạn mức cào và xem trực tiếp báo cáo.
 
 ```python
 # 1. Gắn kết Google Drive
@@ -359,7 +359,7 @@ Khi đợt huấn luyện Colab hoàn tất, Colab tự động phát dữ liệ
 
 ---
 
-## 🤖 6. Kiến Trúc 4 Agent Tự Hành Điều Phối Vòng Đời MLOps (Option B/A Standard)
+## 🤖 6. Kiến Trúc 4 Agent Tự Hành Điều Phối Vòng Đời MLOps (Chuẩn Option B)
 
 Hệ thống phân định rạch ròi giữa 2 cấp độ Agent:
 - **Cấp độ Giám định Phương tiện (Media Inspection Submodules)**: Thực hiện bóc tách đặc trưng vật lý - sinh trắc học trực tiếp trên từng tệp media tại Cổng phân tích `:5000` (Vision 2D-DWT, Ophthalmic Corneal Ray-Tracing, LipSync Temporal SyncNet, Chief Magistrate Bayesian Decision).

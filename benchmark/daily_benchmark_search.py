@@ -277,8 +277,8 @@ def run_daily_benchmark():
     with open(json_output_path, "w", encoding="utf-8") as f:
         json.dump(report_data, f, indent=2, ensure_ascii=False)
 
-    # Generate Option C Hybrid Dynamic Dashboard Markdown report
-    md_content = build_option_c_markdown(report_data, output_dir)
+    # Generate Option B Hybrid Dynamic Dashboard Markdown report
+    md_content = build_option_b_markdown(report_data, output_dir)
 
     with open(md_output_path, "w", encoding="utf-8") as f:
         f.write(md_content)
@@ -296,8 +296,8 @@ def run_daily_benchmark():
     print("=" * 70)
 
 
-def build_option_c_markdown(report_data: dict, output_dir: str) -> str:
-    """Construct a full Option C Hybrid Dynamic Dashboard academic benchmark report with Mermaid charts."""
+def build_option_b_markdown(report_data: dict, output_dir: str) -> str:
+    """Construct a full Option B Hybrid Dynamic Dashboard academic benchmark report with Mermaid charts."""
     today_str = report_data.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     results = report_data.get("detailed_sample_results", [])
     our_metrics = report_data.get("our_model_metrics", {})

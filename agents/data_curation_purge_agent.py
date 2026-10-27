@@ -1,5 +1,5 @@
 """
-Data Curation & Storage Hygiene Agent (Option A Standalone Agent)
+Data Curation & Storage Hygiene Agent (Option B Standalone Agent)
 
 Decoupled from Google Colab GPU training loops.
 Dedicated to:

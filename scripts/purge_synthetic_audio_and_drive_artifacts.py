@@ -1,5 +1,5 @@
 """
-Option C Purge Agent: Synthetic Audio & Corrupt Drive Artifact Purger
+Option B Purge Agent: Synthetic Audio & Corrupt Drive Artifact Purger
 Identifies and purges:
   1. Synthetic sine-wave audio files (0.5*sin(140) + 0.3*sin(520) + 0.15*sin(1600))
   2. Corrupted batch directories (e.g., batch_01_10h03 where 01_raw_originals has 0 real images)
@@ -84,7 +84,7 @@ def purge_synthetic_and_corrupt_artifacts(extra_paths=None, dry_run=False):
     legacy AI avatar duplicates, and corrupted batch directories.
     """
     print("=" * 75)
-    print("🧹 [Option C Purge Agent] Purging Synthetic Data & Corrupted Batches...")
+    print("🧹 [Option B Purge Agent] Purging Synthetic Data & Corrupted Batches...")
     print(f"   Target Action: {'[DRY RUN]' if dry_run else '[PERMANENT DELETE]'}")
     print("=" * 75)
 

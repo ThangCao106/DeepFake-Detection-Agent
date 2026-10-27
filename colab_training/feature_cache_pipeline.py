@@ -1,5 +1,5 @@
 """
-Feature Cache Pipeline Module (Option A + Option C Integration).
+Feature Cache Pipeline Module (Option B Standard).
 Extracts and manages compact biometric & spectral feature embeddings stored in Parquet format:
   1. Model 1 (Vision & Frequency): Azimuthal Fourier Spectrum (Z_peak) + 2D Haar DWT high-frequency sub-band energy.
   2. Model 2 (Human Biometric): WAVIE pore energy (E_high) + rPPG vascular pulse + WavLM SSL Layer 12 + DF26 Lip-Sync.

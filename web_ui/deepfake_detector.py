@@ -512,7 +512,7 @@ class CornealReflectionAnalyzer:
 
 class AudioForensicAnalyzer:
     """
-    Acoustic & Voice Deepfake Analyzer (Option A - Tri-Stream Dispatcher).
+    Acoustic & Voice Deepfake Analyzer (Option B - Tri-Stream Dispatcher).
     Evaluates:
       1. High-frequency formant roll-off (>7.5 kHz) characteristic of TTS/Vocoder synthesis.
       2. Pitch (F0) micro-tremor stability and vocal cord jitter.
@@ -1348,7 +1348,7 @@ class DeepfakeDetector:
             cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
-            # Construct Modality-Native 6D Evidence Matrix for Video (Option A Standard)
+            # Construct Modality-Native 6D Evidence Matrix for Video (Option B Standard)
             motion_jitter_norm = float(np.clip(motion_jitter * 2.5, 0.0, 1.0))
             saraab_score = 0.85 if len(flagged_partial_segments) > 0 else float(np.clip(max_fake_prob, 0.0, 1.0))
             prnu_video_score = round(float(np.clip(avg_fake_prob * 0.4 + motion_jitter_norm * 0.6, 0.0, 1.0)), 4)
@@ -1483,7 +1483,7 @@ class DeepfakeDetector:
 
     def predict_audio(self, audio_path):
         """
-        Acoustic & Spectral Voice Deepfake Detector (Option A Tri-Stream).
+        Acoustic & Spectral Voice Deepfake Detector (Option B Tri-Stream).
         Detects AI-generated voices (VITS, HiFi-GAN, ElevenLabs, XTTS) via:
         1. High-frequency formant cut-off (>7.5 kHz).
         2. Pitch (F0) micro-tremor stability.
@@ -1650,7 +1650,7 @@ class DeepfakeDetector:
             return {"error": f"Audio processing error: {str(e)}"}
 
     def predict_media(self, file_path):
-        """Predict for image, video, or audio based on file extension (Option A Tri-Stream)."""
+        """Predict for image, video, or audio based on file extension (Option B Tri-Stream)."""
         ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else ''
         video_exts = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'}
         audio_exts = {'mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a', 'wma'}

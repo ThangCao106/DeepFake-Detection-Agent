@@ -164,7 +164,7 @@ def train_human_model(
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     criterion = nn.CrossEntropyLoss()
     
-    # Check for Option C Parquet feature cache
+    # Check for Option B Parquet feature cache
     parquet_candidates = []
     if drive_root:
         parquet_candidates.extend([
@@ -183,17 +183,17 @@ def train_human_model(
         for pq_p in parquet_candidates:
             if pq_p.exists():
                 parquet_dataset = ParquetBiometricDataset(pq_p)
-                print(f"⚡ [Option C Parquet Match] Training directly from compact biometric cache: {pq_p}")
+                print(f"⚡ [Option B Parquet Match] Training directly from compact biometric cache: {pq_p}")
                 break
     except Exception as e:
-        print(f"[Option C Notice] Parquet loader check: {e}")
+        print(f"[Option B Notice] Parquet loader check: {e}")
 
     loader = None
     if parquet_dataset and len(parquet_dataset) > 0:
         loader = torch.utils.data.DataLoader(parquet_dataset, batch_size=batch_size, shuffle=True)
 
     history = []
-    print("\n--- Training Progress across Human Biometric Streams (Option A + C) ---")
+    print("\n--- Training Progress across Human Biometric Streams (Option B) ---")
     for epoch in range(1, epochs + 1):
         if loader:
             model.train()
