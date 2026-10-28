@@ -624,15 +624,16 @@ function displayResults(data) {
     const cert = data.forensic_certificate || {};
     const tau = cert.decision_threshold || 0.8118;
 
-    // Mathematically sound majority classification: >= 0.50 is Deepfake, < 0.50 is Realism
+    // Mathematically sound calibrated classification according to Youden tau* (Option D)
+    const tau = cert.decision_threshold || 0.8118;
     let isSynthetic = false;
     if (cert.composite_risk_score !== undefined) {
-        isSynthetic = (cert.composite_risk_score >= 0.50);
+        isSynthetic = (cert.composite_risk_score >= tau);
+    } else if (cert.auditable_verdict) {
+        isSynthetic = cert.auditable_verdict.includes('CONFIRMED');
     } else if (data.label) {
         const lbl = data.label.toLowerCase();
         isSynthetic = (lbl.includes('fake') || lbl.includes('deepfake'));
-    } else if (cert.auditable_verdict) {
-        isSynthetic = cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('CONFIRMED');
     }
 
     const finalLabel = isSynthetic ? 'Deepfake' : 'Realism';
