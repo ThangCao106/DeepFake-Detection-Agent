@@ -192,6 +192,21 @@ class HumanPresenceDetector:
             except Exception:
                 return False
 
+        def _is_box_overlapping(new_box, existing_boxes, threshold=0.15):
+            for eb in existing_boxes:
+                xA = max(new_box[0], eb[0])
+                yA = max(new_box[1], eb[1])
+                xB = min(new_box[0] + new_box[2], eb[0] + eb[2])
+                yB = min(new_box[1] + new_box[3], eb[1] + eb[3])
+                interArea = max(0, xB - xA) * max(0, yB - yA)
+                minArea = min(new_box[2] * new_box[3], eb[2] * eb[3])
+                if minArea > 0 and (interArea / float(minArea)) > 0.30:
+                    return True
+                totalArea = new_box[2] * new_box[3] + eb[2] * eb[3] - interArea
+                if totalArea > 0 and (interArea / float(totalArea)) >= threshold:
+                    return True
+            return False
+
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
         # Gate 0: SOTA YuNet Deep Learning Face Detector (Multi-Scale: 640p anchor space + Native)
@@ -219,7 +234,8 @@ class HumanPresenceDetector:
                                 fw = min(w_img - fx, int(f[2] / sc))
                                 fh = min(h_img - fy, int(f[3] / sc))
                                 if _is_valid_face_candidate(fx, fy, fw, fh, is_deep_model=True, model_confidence=score):
-                                    detected_faces.append((fx, fy, fw, fh))
+                                    if not _is_box_overlapping((fx, fy, fw, fh), detected_faces):
+                                        detected_faces.append((fx, fy, fw, fh))
                         if detected_faces:
                             evidence.append(f"Phát hiện {len(detected_faces)} khuôn mặt qua mạng nơ-ron YuNet DNN (Độ tin cậy: {float(yn_faces[0][-1])*100:.1f}%)")
                             break
@@ -252,7 +268,8 @@ class HumanPresenceDetector:
                                 head_w = min(w_img - head_x, int(bw * 0.70))
                                 head_h = min(h_img - head_y, int(bh * 0.35))
                                 if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
-                                    detected_faces.append((head_x, head_y, head_w, head_h))
+                                    if not _is_box_overlapping((head_x, head_y, head_w, head_h), detected_faces):
+                                        detected_faces.append((head_x, head_y, head_w, head_h))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
             except Exception:
