@@ -124,6 +124,31 @@ class HumanPresenceDetector:
         except Exception:
             pass
 
+        # Option D - Phase 1: Environmental Color & Scene Bias Detection (Sunset Sky / Artificial Red Objects)
+        is_environmental_color_bias = False
+        try:
+            top_h = int(h_img * 0.45)
+            top_np = img_np[:top_h, :]
+            top_hsv = cv2.cvtColor(top_np, cv2.COLOR_RGB2HSV)
+            t_H = top_hsv[:, :, 0]
+            t_S = top_hsv[:, :, 1]
+            t_V = top_hsv[:, :, 2]
+            
+            # Sunset sky warm orange/red hues: H in [0, 25] or [162, 180] with moderate S & V
+            sunset_mask = ((t_H <= 25) | (t_H >= 162)) & (t_S >= 28) & (t_V >= 40)
+            sunset_sky_ratio = float(np.mean(sunset_mask))
+            
+            # Check full image for large artificial saturated red objects (e.g. Red City Tour bus, red banners, signs)
+            full_hsv = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
+            pure_red_mask = ((full_hsv[:, :, 0] <= 14) | (full_hsv[:, :, 0] >= 168)) & (full_hsv[:, :, 1] >= 90) & (full_hsv[:, :, 2] >= 45)
+            pure_red_ratio = float(np.mean(pure_red_mask))
+            
+            if sunset_sky_ratio >= 0.12 or pure_red_ratio >= 0.08:
+                is_environmental_color_bias = True
+                evidence.append(f"Nhận diện thiên lệch màu sắc môi trường / bề mặt nhân tạo (Bầu trời hoàng hôn: {sunset_sky_ratio*100:.1f}%, Sắc đỏ xe cộ/đồ vật: {pure_red_ratio*100:.1f}%) - Kích hoạt Option D Phase 2")
+        except Exception:
+            pass
+
         def _is_valid_face_candidate(bx, by, bw, bh):
             """
             Validates that a bounding box is geometrically and anatomically a human face.
@@ -134,6 +159,8 @@ class HumanPresenceDetector:
                 return False
             aspect = bw / float(bh)
             if aspect < 0.55 or aspect > 1.65:
+                return False
+            if is_environmental_color_bias and by < int(h_img * 0.25):
                 return False
             x0, y0 = max(0, bx), max(0, by)
             x1, y1 = min(w_img, bx + bw), min(h_img, by + bh)
@@ -235,8 +262,9 @@ class HumanPresenceDetector:
                 hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(small_bgr, winStride=(8, 8), padding=(8, 8), scale=1.05)
                 if len(hog_boxes) > 0:
                     max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
+                    min_hog_threshold = 0.70 if is_environmental_color_bias else 0.45
                     for hb, hw in zip(hog_boxes, hog_weights):
-                        if hw >= 0.25:
+                        if hw >= min_hog_threshold:
                             bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
                             detected_pedestrians.append((bx, by, bw, bh))
                             head_x = max(0, bx + int(bw * 0.15))
@@ -244,8 +272,6 @@ class HumanPresenceDetector:
                             head_w = min(w_img - head_x, int(bw * 0.70))
                             head_h = min(h_img - head_y, int(bh * 0.35))
                             if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
-                                detected_faces.append((head_x, head_y, head_w, head_h))
-                            elif not detected_faces:
                                 detected_faces.append((head_x, head_y, head_w, head_h))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
@@ -367,7 +393,8 @@ class HumanPresenceDetector:
             pass
 
         # 5. Anatomical Secondary Confirmation when direct face cascade misses (Outdoor portrait, tilted, soft light)
-        if not detected_faces:
+        # Option D Phase 2: In environmental color bias (sunset sky / red vehicles), strictly bypass heuristic skin blobs!
+        if not detected_faces and not is_environmental_color_bias:
             # 5a. Upper Body + Head Anatomy Confirmation
             if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 5.0:
                 ub_cascade = CV2_CASCADES['haarcascade_upperbody.xml']
@@ -1913,8 +1940,8 @@ class DeepfakeDetector:
 
             # 7. Step 6 Post-Hoc Platt Scaling & Decision Calibration
             tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
-            # Majoritary binary classification at 0.50 ensures mathematical label-to-score consistency
-            is_synthetic = (composite_risk >= 0.50)
+            # Calibrated classification aligned with Youden optimal threshold tau*
+            is_synthetic = (composite_risk >= tau_star)
             final_label = "Deepfake" if is_synthetic else "Realism"
             calibrated_confidence = round(float(composite_risk if is_synthetic else (1.0 - composite_risk)), 4)
 
