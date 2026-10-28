@@ -124,65 +124,45 @@ class HumanPresenceDetector:
         except Exception:
             pass
 
-        # Option D - Phase 1: Environmental Color & Scene Bias Detection (Sunset Sky / Artificial Red Objects)
-        is_environmental_color_bias = False
-        try:
-            top_h = int(h_img * 0.45)
-            top_np = img_np[:top_h, :]
-            top_hsv = cv2.cvtColor(top_np, cv2.COLOR_RGB2HSV)
-            t_H = top_hsv[:, :, 0]
-            t_S = top_hsv[:, :, 1]
-            t_V = top_hsv[:, :, 2]
-            
-            # Sunset sky warm orange/red hues: H in [0, 25] or [162, 180] with moderate S & V
-            sunset_mask = ((t_H <= 25) | (t_H >= 162)) & (t_S >= 28) & (t_V >= 40)
-            sunset_sky_ratio = float(np.mean(sunset_mask))
-            
-            # Check full image for large artificial saturated red objects (e.g. Red City Tour bus, red banners, signs)
-            full_hsv = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
-            pure_red_mask = ((full_hsv[:, :, 0] <= 14) | (full_hsv[:, :, 0] >= 168)) & (full_hsv[:, :, 1] >= 90) & (full_hsv[:, :, 2] >= 45)
-            pure_red_ratio = float(np.mean(pure_red_mask))
-            
-            if sunset_sky_ratio >= 0.12 or pure_red_ratio >= 0.08:
-                is_environmental_color_bias = True
-                evidence.append(f"Nhận diện thiên lệch màu sắc môi trường / bề mặt nhân tạo (Bầu trời hoàng hôn: {sunset_sky_ratio*100:.1f}%, Sắc đỏ xe cộ/đồ vật: {pure_red_ratio*100:.1f}%) - Kích hoạt Option D Phase 2")
-        except Exception:
-            pass
-
-        def _is_valid_face_candidate(bx, by, bw, bh):
+        # Option D - Structural & Multi-Domain Human Presence Gating (Option D v2)
+        # Removes brittle global color kill-switches and applies multi-scale deep learning & texture variance guardrails.
+        def _is_valid_face_candidate(bx, by, bw, bh, is_deep_model=False, model_confidence=0.0):
             """
             Validates that a bounding box is geometrically and anatomically a human face.
             Filters out sea rocks, water reflections, horizon edges, sunset glares, clouds, and foliage,
             while robustly accommodating sunglasses, masks, caps, and outdoor poses.
             """
-            if bw < 24 or bh < 24:
+            min_dim = max(4, int(min(w_img, h_img) * 0.015)) if is_deep_model else max(14, int(min(w_img, h_img) * 0.025))
+            if bw < min_dim or bh < min_dim:
                 return False
             aspect = bw / float(bh)
-            if aspect < 0.55 or aspect > 1.65:
-                return False
-            if is_environmental_color_bias and by < int(h_img * 0.25):
+            if aspect < 0.45 or aspect > 1.85:
                 return False
             x0, y0 = max(0, bx), max(0, by)
             x1, y1 = min(w_img, bx + bw), min(h_img, by + bh)
-            if (x1 - x0) < 20 or (y1 - y0) < 20:
+            if (x1 - x0) < min_dim or (y1 - y0) < min_dim:
                 return False
             face_roi = img_np[y0:y1, x0:x1]
             try:
                 face_gray = cv2.cvtColor(face_roi, cv2.COLOR_RGB2GRAY)
                 lap_var = float(np.var(cv2.Laplacian(face_gray, cv2.CV_64F)))
-                if lap_var < 8.0:
+                if lap_var < 4.0:
                     return False
+
+                # SOTA Deep Learning detection (YuNet) with high confidence is directly confirmed
+                if is_deep_model and model_confidence >= 0.40:
+                    return True
 
                 face_ycbcr = cv2.cvtColor(face_roi, cv2.COLOR_RGB2YCrCb)
                 cr = face_ycbcr[:, :, 1]
                 cb = face_ycbcr[:, :, 2]
-                skin_mask_ycbcr = (cr >= 130) & (cr <= 175) & (cb >= 75) & (cb <= 130)
+                skin_mask_ycbcr = (cr >= 125) & (cr <= 180) & (cb >= 70) & (cb <= 135)
 
                 face_hsv = cv2.cvtColor(face_roi, cv2.COLOR_RGB2HSV)
                 H = face_hsv[:, :, 0]
                 S = face_hsv[:, :, 1]
                 V = face_hsv[:, :, 2]
-                skin_mask_hsv = ((H <= 22) | (H >= 165)) & (S >= 22) & (V >= 30)
+                skin_mask_hsv = ((H <= 25) | (H >= 160)) & (S >= 20) & (V >= 25)
 
                 skin_mask = skin_mask_ycbcr & skin_mask_hsv
                 face_skin_pct = float(np.mean(skin_mask) * 100)
@@ -204,9 +184,9 @@ class HumanPresenceDetector:
                     if lower_skin_pct < 6.0:
                         is_mask = True
 
-                is_occluded = (is_sunglasses or is_mask)
-                min_skin_req = 2.5 if is_occluded else 5.0
-                if face_skin_pct < min_skin_req or y_std < 4.5:
+                is_occluded = (is_sunglasses or is_mask or (is_deep_model and model_confidence >= 0.35))
+                min_skin_req = 1.2 if is_occluded else 3.5
+                if face_skin_pct < min_skin_req or y_std < 4.0:
                     return False
                 return True
             except Exception:
@@ -214,39 +194,35 @@ class HumanPresenceDetector:
 
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
-        # Gate 0: SOTA YuNet Deep Learning Face Detector (Multi-Scale: 640p anchor resolution + Native)
+        # Gate 0: SOTA YuNet Deep Learning Face Detector (Multi-Scale: 640p anchor space + Native)
         if YUNET_DETECTOR is not None:
             try:
-                # Pass 1: Scaled anchor space (YuNet anchors are calibrated for ~640px)
-                scale_yn = 1.0
-                if max(w_img, h_img) > 640:
-                    scale_yn = 640.0 / max(w_img, h_img)
-                    small_yn_bgr = cv2.resize(img_bgr, (int(w_img * scale_yn), int(h_img * scale_yn)))
-                else:
-                    small_yn_bgr = img_bgr
+                scales_to_try = [640.0 / max(w_img, h_img)]
+                if scales_to_try[0] != 1.0:
+                    scales_to_try.append(1.0)
 
-                sh, sw = small_yn_bgr.shape[:2]
-                YUNET_DETECTOR.setInputSize((sw, sh))
-                _, yn_faces = YUNET_DETECTOR.detect(small_yn_bgr)
-
-                # Pass 2: If missed and scale was applied, fallback to native resolution
-                if (yn_faces is None or len(yn_faces) == 0) and scale_yn < 1.0:
-                    YUNET_DETECTOR.setInputSize((w_img, h_img))
-                    _, yn_faces = YUNET_DETECTOR.detect(img_bgr)
-                    scale_yn = 1.0
-
-                if yn_faces is not None and len(yn_faces) > 0:
-                    for f in yn_faces:
-                        score = float(f[-1])
-                        if score >= 0.50:
-                            fx = max(0, int(f[0] / scale_yn))
-                            fy = max(0, int(f[1] / scale_yn))
-                            fw = min(w_img - fx, int(f[2] / scale_yn))
-                            fh = min(h_img - fy, int(f[3] / scale_yn))
-                            if _is_valid_face_candidate(fx, fy, fw, fh):
-                                detected_faces.append((fx, fy, fw, fh))
+                for sc in scales_to_try:
                     if detected_faces:
-                        evidence.append(f"Phát hiện {len(detected_faces)} khuôn mặt qua mạng nơ-ron YuNet DNN (Độ tin cậy: {float(yn_faces[0][-1])*100:.1f}%)")
+                        break
+                    sw = max(32, int(w_img * sc))
+                    sh = max(32, int(h_img * sc))
+                    small_yn_bgr = cv2.resize(img_bgr, (sw, sh))
+                    YUNET_DETECTOR.setInputSize((sw, sh))
+                    _, yn_faces = YUNET_DETECTOR.detect(small_yn_bgr)
+
+                    if yn_faces is not None and len(yn_faces) > 0:
+                        for f in yn_faces:
+                            score = float(f[-1])
+                            if score >= 0.35:  # Standard calibrated YuNet threshold
+                                fx = max(0, int(f[0] / sc))
+                                fy = max(0, int(f[1] / sc))
+                                fw = min(w_img - fx, int(f[2] / sc))
+                                fh = min(h_img - fy, int(f[3] / sc))
+                                if _is_valid_face_candidate(fx, fy, fw, fh, is_deep_model=True, model_confidence=score):
+                                    detected_faces.append((fx, fy, fw, fh))
+                        if detected_faces:
+                            evidence.append(f"Phát hiện {len(detected_faces)} khuôn mặt qua mạng nơ-ron YuNet DNN (Độ tin cậy: {float(yn_faces[0][-1])*100:.1f}%)")
+                            break
             except Exception:
                 pass
 
@@ -259,20 +235,24 @@ class HumanPresenceDetector:
                     small_bgr = cv2.resize(img_bgr, (int(w_img * scale), int(h_img * scale)))
                 else:
                     small_bgr = img_bgr
-                hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(small_bgr, winStride=(8, 8), padding=(8, 8), scale=1.05)
+                hog_boxes, hog_weights = HOG_PEOPLE_DETECTOR.detectMultiScale(
+                    small_bgr, winStride=(4, 4), padding=(8, 8), scale=1.05
+                )
                 if len(hog_boxes) > 0:
                     max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
-                    min_hog_threshold = 0.70 if is_environmental_color_bias else 0.45
+                    min_hog_threshold = 0.35
                     for hb, hw in zip(hog_boxes, hog_weights):
                         if hw >= min_hog_threshold:
                             bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
-                            detected_pedestrians.append((bx, by, bw, bh))
-                            head_x = max(0, bx + int(bw * 0.15))
-                            head_y = max(0, by)
-                            head_w = min(w_img - head_x, int(bw * 0.70))
-                            head_h = min(h_img - head_y, int(bh * 0.35))
-                            if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
-                                detected_faces.append((head_x, head_y, head_w, head_h))
+                            # Human body vertical aspect ratio validation
+                            if bh > int(bw * 1.1) and bh >= 40:
+                                detected_pedestrians.append((bx, by, bw, bh))
+                                head_x = max(0, bx + int(bw * 0.15))
+                                head_y = max(0, by)
+                                head_w = min(w_img - head_x, int(bw * 0.70))
+                                head_h = min(h_img - head_y, int(bh * 0.35))
+                                if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
+                                    detected_faces.append((head_x, head_y, head_w, head_h))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
             except Exception:
@@ -393,13 +373,12 @@ class HumanPresenceDetector:
             pass
 
         # 5. Anatomical Secondary Confirmation when direct face cascade misses (Outdoor portrait, tilted, soft light)
-        # Option D Phase 2: In environmental color bias (sunset sky / red vehicles), strictly bypass heuristic skin blobs!
-        if not detected_faces and not is_environmental_color_bias:
+        if not detected_faces and not detected_pedestrians:
             # 5a. Upper Body + Head Anatomy Confirmation
-            if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 5.0:
+            if 'haarcascade_upperbody.xml' in CV2_CASCADES and skin_pct >= 2.0:
                 ub_cascade = CV2_CASCADES['haarcascade_upperbody.xml']
                 try:
-                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(50, 50))
+                    ub_boxes = ub_cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=4, minSize=(40, 40))
                     if len(ub_boxes) > 0:
                         ub_boxes = sorted(ub_boxes, key=lambda b: b[2] * b[3], reverse=True)
                         bx, by, bw, bh = ub_boxes[0]
@@ -414,7 +393,7 @@ class HumanPresenceDetector:
                     pass
 
             # 5b. Ocular (Eye) Geometry Confirmation
-            if not detected_faces and 'haarcascade_eye.xml' in CV2_CASCADES and skin_pct >= 5.0:
+            if not detected_faces and 'haarcascade_eye.xml' in CV2_CASCADES and skin_pct >= 2.0:
                 eye_cascade = CV2_CASCADES['haarcascade_eye.xml']
                 try:
                     upper_gray = gray[:int(h_img * 0.65), :]
@@ -440,33 +419,10 @@ class HumanPresenceDetector:
                 except Exception:
                     pass
 
-            # 5c. Salient Skin Chrominance Cluster (Outdoor Sitting, Sunglasses, Hair/Posture Occlusion)
-            if not detected_faces and skin_pct >= 8.0 and skin_mask is not None:
-                try:
-                    skin_u8 = (skin_mask.astype(np.uint8)) * 255
-                    # Scale back to full image size
-                    skin_full = cv2.resize(skin_u8, (w_img, h_img), interpolation=cv2.INTER_NEAREST)
-                    contours, _ = cv2.findContours(skin_full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    valid_blobs = [cv2.boundingRect(c) for c in contours if cv2.contourArea(c) >= (w_img * h_img * 0.015)]
-                    if valid_blobs:
-                        valid_blobs.sort(key=lambda b: b[1])  # top-most blob
-                        for (bx, by, bw, bh) in valid_blobs:
-                            # 1. Try direct blob box
-                            head_box = (max(0, bx), max(0, by), min(w_img - bx, max(bw, 28)), min(h_img - by, max(bh, 28)))
-                            if _is_valid_face_candidate(head_box[0], head_box[1], head_box[2], head_box[3]):
-                                detected_faces.append(head_box)
-                                evidence.append(f"Xác nhận thực thể người qua cụm sắc tố da sinh học ({skin_pct}% diện tích ảnh, vùng đầu/thân bị che khuất)")
-                                break
-                            # 2. If wide torso/arms blob, try top-center head candidate
-                            head_size = max(28, min(bh, int(bw * 0.50)))
-                            head_x = max(0, bx + int(bw * 0.5) - int(head_size * 0.5))
-                            head_y = by
-                            if _is_valid_face_candidate(head_x, head_y, head_size, head_size):
-                                detected_faces.append((head_x, head_y, head_size, head_size))
-                                evidence.append(f"Xác nhận thực thể người qua cụm sắc tố da sinh học ({skin_pct}% diện tích ảnh, vùng đầu/thân bị che khuất)")
-                                break
-                except Exception:
-                    pass
+            # 5c. Salient Skin Chrominance Verification (Corroborative only - NEVER fabricates unverified face boxes)
+            # Prevents smooth sunset sky gradients or vehicle paint from inventing false faces for corneal analysis.
+            if not detected_faces and skin_pct >= 15.0 and skin_mask is not None:
+                evidence.append(f"Quan sát thấy diện tích sắc tố tương thích ({skin_pct}%), không có cấu trúc khuôn mặt rõ ràng")
 
         face_count = len(detected_faces)
         # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette, bypassing 2D posters
