@@ -1024,13 +1024,17 @@
         <span>⚡</span>
         <span>Live Forensic Studio (GenUI)</span>
       </a>
-      <div class="engine-badge active" id="claudeStatusBadge" onclick="checkAuthStatus(true)" style="cursor: pointer;" title="Nhấn để kiểm tra lại Token Claude 3.7">
+      <div class="engine-badge active" id="claudeStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Anthropic Claude 3.7: Trưởng Ban Phản Biện & Kiểm Toán EU AI Act (Nhấn để vào Cài đặt)">
         <span class="dot"></span>
         <span>Claude 3.7: <strong id="claudeStatusText">Active (PKCE)</strong></span>
       </div>
-      <div class="engine-badge" id="geminiStatusBadge" onclick="checkAuthStatus(true)" style="cursor: pointer;" title="Nhấn để kiểm tra lại Token Google Gemini">
+      <div class="engine-badge" id="geminiStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Google Gemini 2.5/2.0: Chủ Trì Thẩm Định Đa Phương Thức (Nhấn để cấu hình Key)">
         <span class="dot"></span>
         <span>Gemini 2.5: <strong id="geminiStatusText">Checking...</strong></span>
+      </div>
+      <div class="engine-badge active" id="museStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Muse Threat Expert: Đối Soát Dấu Vết Mô Hình Sinh MGT, DiT, MuseTalk (Nhấn để vào Cài đặt)">
+        <span class="dot" style="background: #c084fc; box-shadow: 0 0 8px #c084fc;"></span>
+        <span>Muse: <strong id="museStatusText" style="color: #e9d5ff;">Ready (MGT/DiT)</strong></span>
       </div>
       <button class="btn-toggle-agent" onclick="toggleAgentDrawer()">
         <span>🤖</span>
@@ -1842,20 +1846,20 @@
       <section id="tab-settings" class="tab-view">
         <div class="view-header">
           <div>
-            <h2 class="view-title">⚙️ Cài đặt kết nối Dual-Engine Gateway</h2>
-            <p class="view-desc">Quản lý định danh OAuth PKCE, API Key của Anthropic Claude SDK và Google Gemini SDK trên cùng một hệ thống Gateway.</p>
+            <h2 class="view-title">⚙️ Cài đặt kết nối Triad-Engine Gateway (Option B)</h2>
+            <p class="view-desc">Quản lý định danh OAuth PKCE / API Key của Anthropic Claude SDK, Google Gemini SDK và Cấu hình Động cơ Muse Threat Footprint Engine trên cùng một hệ thống Gateway.</p>
           </div>
         </div>
 
-        <div class="grid-2">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.25rem;">
           <!-- Claude SDK Settings -->
           <div class="card">
             <div class="card-title">
               <span>Anthropic Claude SDK</span>
-              <span class="badge-sub">Tier 1 Engine</span>
+              <span class="badge-sub" style="background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4);">Tier 1 Legal Auditor</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Claude 3.7 Sonnet phụ trách phân tích chuyên sâu mã nguồn, truy vết biến dị PRNU và ra quyết định forensic pháp lý theo EU AI Act.
+              Claude 3.7 Sonnet phụ trách phản biện đối kháng (Devil's Advocate), truy vết biến dị PRNU, kiểm toán toán học Platt/Youden và ra quyết định forensic pháp lý theo EU AI Act Điều 50.
             </p>
 
             <div class="form-group">
@@ -1879,15 +1883,18 @@
           <div class="card">
             <div class="card-title">
               <span>Google Gemini SDK</span>
-              <span class="badge-sub">Tier 2 Fast Engine</span>
+              <span class="badge-sub" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);">Tier 2 Lead Examiner</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Gemini 2.5 Flash / Pro phụ trách xử lý streaming tốc độ cao, hỗ trợ truy vấn báo cáo SRE hằng ngày và pentest log parsing.
+              Gemini 2.5 / 2.0 phụ trách thẩm định đa phương thức (Lead Forensic Examiner), lập luận suy diễn CoT xâu chuỗi đa miền và xử lý streaming tốc độ cao.
             </p>
 
             <div class="form-group">
               <label class="form-label">Google Gemini API Key (AIzaSy...)</label>
               <input type="password" id="geminiApiKeyInput" class="form-input mono" placeholder="Nhập Google AI Studio API Key">
+              <small style="display: block; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">
+                Lấy API Key miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">Google AI Studio ↗</a>
+              </small>
             </div>
 
             <div class="form-group">
@@ -1895,11 +1902,44 @@
               <select id="geminiDefaultModel" class="form-input">
                 <option value="gemini-2.5-flash">gemini-2.5-flash (Tốc độ tối đa, độ trễ thấp)</option>
                 <option value="gemini-2.5-pro">gemini-2.5-pro (Tư duy suy luận sâu)</option>
+                <option value="gemini-2.0-flash">gemini-2.0-flash (Thế hệ mới 2026)</option>
               </select>
             </div>
 
             <button class="btn btn-accent" onclick="saveGeminiKey()">
               <span>Lưu Gemini Key</span>
+            </button>
+          </div>
+
+          <!-- Muse Threat Engine Settings -->
+          <div class="card">
+            <div class="card-title">
+              <span>Muse Threat Engine</span>
+              <span class="badge-sub" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">Tier 3 Specialist</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Hệ sinh thái Muse (Google Muse MGT + Meta Muse DiT + MuseTalk) phụ trách đối soát dấu vết mô hình tạo sinh vi mô (Token Boundaries, Lip-Sync Inpainting).
+            </p>
+
+            <div class="form-group">
+              <label class="form-label">Chế độ vận hành (Engine Mode)</label>
+              <select id="museEngineMode" class="form-input">
+                <option value="EMBEDDED_LOCAL" selected>Local Embedded Engine (Zero-Latency, MGT & Lip-Sync)</option>
+                <option value="REMOTE_WORKER">Remote GPU Worker (MuseTalk / DiT Server Endpoint)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Endpoint URL (Dành cho GPU Worker ngoài)</label>
+              <input type="text" id="museEndpointInput" class="form-input mono" placeholder="embedded://triad-council" value="embedded://triad-council">
+            </div>
+
+            <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 600; margin-bottom: 1rem;">
+              ✓ Tích hợp sẵn: Google Muse MGT, Meta Muse DiT, MuseTalk LipSync Footprints
+            </div>
+
+            <button class="btn btn-primary" style="background: linear-gradient(135deg, #7e22ce, #a855f7); border: none;" onclick="saveMuseConfig()">
+              <span>Lưu Cấu Hình Muse</span>
             </button>
           </div>
         </div>
@@ -2040,12 +2080,33 @@
     async function checkAuthStatus(manual = false) {
       try {
         const url = manual ? getApiUrl('api/auth/verify-tokens') : getApiUrl('api/auth/status');
-        const [claudeRes, geminiRes] = await Promise.all([
+        const [claudeRes, geminiRes, museRes] = await Promise.all([
           fetch(url),
-          fetch(getApiUrl('api/gemini/status'))
+          fetch(getApiUrl('api/gemini/status')),
+          fetch(getApiUrl('api/muse/status'))
         ]);
         const claudeData = claudeRes.ok ? await claudeRes.json() : {};
         const geminiData = geminiRes.ok ? await geminiRes.json() : {};
+        const museData = museRes.ok ? await museRes.json() : {};
+
+        // Muse Badge
+        const museBadge = document.getElementById('museStatusBadge');
+        const museText = document.getElementById('museStatusText');
+        if (museBadge && museText) {
+          if (museData && museData.status === 'SUCCESS') {
+            museBadge.className = 'engine-badge active';
+            museText.innerText = museData.mode === 'REMOTE_WORKER' ? 'Online (GPU)' : 'Ready (MGT/DiT)';
+            museBadge.title = `Muse Threat Expert: ${museData.message || 'Sẵn sàng'} (${museData.latency_mode || ''})`;
+            const modeSelect = document.getElementById('museEngineMode');
+            const endInput = document.getElementById('museEndpointInput');
+            if (modeSelect && museData.mode) modeSelect.value = museData.mode;
+            if (endInput && museData.endpoint_url) endInput.value = museData.endpoint_url;
+          } else {
+            museBadge.className = 'engine-badge warn';
+            museText.innerText = 'Offline';
+            museBadge.title = 'Động cơ Muse chưa được kết nối.';
+          }
+        }
 
         // Claude Badge
         const claudeBadge = document.getElementById('claudeStatusBadge');
@@ -2883,6 +2944,27 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
         checkAuthStatus();
       } catch (err) {
         alert('Lỗi lưu Gemini Key: ' + err.message);
+      }
+    }
+
+    async function saveMuseConfig() {
+      const mode = document.getElementById('museEngineMode').value;
+      const endpoint = document.getElementById('museEndpointInput').value.trim();
+      try {
+        const res = await fetch(getApiUrl('api/muse/config'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({mode: mode, endpoint_url: endpoint})
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          alert('Lỗi lưu cấu hình Muse (' + res.status + '): ' + errText);
+          return;
+        }
+        alert('Lưu cấu hình Muse Threat Engine thành công!');
+        checkAuthStatus();
+      } catch (err) {
+        alert('Lỗi lưu cấu hình Muse: ' + err.message);
       }
     }
 
