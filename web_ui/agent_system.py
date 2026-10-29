@@ -321,8 +321,8 @@ class AnalysisAgent:
         """
         logger.info(f"AnalysisAgent processing request (language: {language})")
         
-        # Check if user query specifies a Certificate ID to check
-        cert_id_match = re.search(r'(CERT-\d{8}-[A-Z0-9]+)', user_query or '', re.IGNORECASE)
+        # Check if user query specifies a Certificate ID to check (CERT-DF, CERT-AUD, CERT-VID, or CERT-YYYYMMDD)
+        cert_id_match = re.search(r'(CERT-(?:DF|AUD|VID|\d{8})-[A-Z0-9]+)', user_query or '', re.IGNORECASE)
         if cert_id_match:
             target_cert_id = cert_id_match.group(1).upper()
             logger.info(f"Certificate ID query detected: {target_cert_id}")
@@ -463,14 +463,22 @@ class DeepfakeDetectionOrchestrator:
         """
         logger.info(f"Processing image: {image_path} (language: {language})")
         
-        # Add user message to memory
-        user_msg = f"Analyze image: {image_path}"
+        # Add user message to memory with appropriate media modality
+        ext = os.path.splitext(image_path)[1].lower() if image_path else ""
+        if ext in ['.wav', '.mp3', '.flac', '.ogg', '.aac', '.m4a', '.wma']:
+            media_modality_name = "audio"
+        elif ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv']:
+            media_modality_name = "video"
+        else:
+            media_modality_name = "image"
+        
+        user_msg = f"Analyze {media_modality_name}: {image_path}"
         if user_query:
             user_msg += f" | Question: {user_query}"
         self.memory.add_message("user", user_msg)
         
         # Step 1: Detection Agent - Run ML model
-        safe_print(f"{Fore.YELLOW}Detection Agent: Analyzing image...{Style.RESET_ALL}")
+        safe_print(f"{Fore.YELLOW}Detection Agent: Analyzing {media_modality_name}...{Style.RESET_ALL}")
         detection_result = self.detection_tool.detect(image_path)
         
         if "error" in detection_result:

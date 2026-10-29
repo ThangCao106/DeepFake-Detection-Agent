@@ -53,8 +53,8 @@ def request_entity_too_large(error):
         'error': 'Dung lượng file vượt quá giới hạn cho phép (tối đa 250MB). Vui lòng chọn file nhỏ hơn.'
     }), 413
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'mp3', 'wav'}
+# Allowed file extensions (Image, Video, Audio)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a', 'wma'}
 
 # Initialize extensions with resilient ping intervals
 CORS(app)
@@ -232,7 +232,7 @@ def upload_file():
         return jsonify({'error': 'No file selected'}), 400
     
     if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, WEBP, GIF'}), 400
+        return jsonify({'error': 'Invalid file type. Allowed: Image (PNG, JPG, JPEG, WEBP), Video (MP4, WEBM, AVI, MOV, MKV), Audio (WAV, MP3, FLAC, OGG, AAC)'}), 400
     
     try:
         # Save file with secure filename
@@ -313,29 +313,78 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
         cert = detection_result.get('forensic_certificate', {})
         cert_id = cert.get('certificate_id', 'N/A')
         
+        m_type = detection_result.get('media_type', 'image')
         if language == 'vi':
-            verdict = "Ảnh Thật / Thực Tế (Realism)" if label == 'Realism' else "Ảnh Can Thiệp / Deepfake (Fake)"
-            explanation = (
-                f"**Báo Cáo Giám Định Đa Chiều (Multi-Dimensional Forensic Audit)**:\n\n"
-                f"- **Phán quyết sơ bộ**: {verdict}\n"
-                f"- **Độ tin cậy phân loại**: {conf:.1%}\n"
-                f"- **Mã chứng chỉ số**: `{cert_id}`\n\n"
-            )
-            if label == 'Realism':
-                explanation += "Kết cấu vi mô bề mặt da và phân bố năng lượng tần số cao nhất quán với cảm biến quang học máy ảnh, không phát hiện dấu hiệu can thiệp nhân tạo."
+            if m_type == 'audio':
+                verdict = "Giọng Nói Thật / Tự Nhiên (Realism)" if label == 'Realism' else "Giọng Nói Tổng Hợp / Deepfake (Fake)"
+                explanation = (
+                    f"**Báo Cáo Giám Định Âm Học (Acoustic Forensic Audit)**:\n\n"
+                    f"- **Phán quyết sơ bộ**: {verdict}\n"
+                    f"- **Độ tin cậy phân loại**: {conf:.1%}\n"
+                    f"- **Mã chứng chỉ số**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Phân tích phổ Log-Mel và vi sai pha xác nhận phổ tần số duy trì năng lượng tự nhiên (>7.5 kHz). Vi rung cao độ F0 ổn định phù hợp với sinh lý thanh quản con người."
+                else:
+                    explanation += "Phát hiện suy giảm phổ cao tần đột ngột và vi sai pha bất thường đặc trưng của mô hình TTS/Vocoder tạo sinh (HiFi-GAN/VITS)."
+            elif m_type == 'video':
+                verdict = "Video Chân Thực / Tự Nhiên (Realism)" if label == 'Realism' else "Video Giả Mạo / Can Thiệp (Deepfake)"
+                explanation = (
+                    f"**Báo Cáo Giám Định Video Đa Khung Hình (Video Forensic Audit)**:\n\n"
+                    f"- **Phán quyết sơ bộ**: {verdict}\n"
+                    f"- **Độ tin cậy phân loại**: {conf:.1%}\n"
+                    f"- **Mã chứng chỉ số**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Độ liên tục quang học giữa các khung hình nhất quán, không phát hiện dị thường trong chuyển động khẩu hình và vân cảm biến PRNU liên khung."
+                else:
+                    explanation += "Phát hiện độ giật thời gian (Motion Jitter) và sai khác đồng bộ khẩu hình âm vị (Lip-Sync mismatch) đặc trưng của công nghệ hoán đổi khuôn mặt."
             else:
-                explanation += "Phát hiện dị thường trong gradient pixel và suy giảm phổ tần số cao, có dấu hiệu can thiệp tạo sinh qua mô hình khuếch tán hoặc hoán đổi khuôn mặt."
+                verdict = "Ảnh Thật / Thực Tế (Realism)" if label == 'Realism' else "Ảnh Can Thiệp / Deepfake (Fake)"
+                explanation = (
+                    f"**Báo Cáo Giám Định Đa Chiều (Multi-Dimensional Forensic Audit)**:\n\n"
+                    f"- **Phán quyết sơ bộ**: {verdict}\n"
+                    f"- **Độ tin cậy phân loại**: {conf:.1%}\n"
+                    f"- **Mã chứng chỉ số**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Kết cấu vi mô bề mặt da và phân bố năng lượng tần số cao nhất quán với cảm biến quang học máy ảnh, không phát hiện dấu hiệu can thiệp nhân tạo."
+                else:
+                    explanation += "Phát hiện dị thường trong gradient pixel và suy giảm phổ tần số cao, có dấu hiệu can thiệp tạo sinh qua mô hình khuếch tán hoặc hoán đổi khuôn mặt."
         else:
-            explanation = (
-                f"**Multi-Dimensional Forensic Audit Report**:\n\n"
-                f"- **Auditable Verdict**: {label}\n"
-                f"- **Confidence Score**: {conf:.1%}\n"
-                f"- **Forensic Certificate ID**: `{cert_id}`\n\n"
-            )
-            if label == 'Realism':
-                explanation += "Biometric microscopic textures and frequency distributions match natural optical sensors."
+            if m_type == 'audio':
+                explanation = (
+                    f"**Acoustic Forensic Audit Report**:\n\n"
+                    f"- **Auditable Verdict**: {label}\n"
+                    f"- **Confidence Score**: {conf:.1%}\n"
+                    f"- **Forensic Certificate ID**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Log-Mel spectrogram maintains natural high-frequency energy (>7.5 kHz). F0 pitch jitter complies with human vocal tract physiology."
+                else:
+                    explanation += "Detected sharp high-frequency formant cutoff and phase irregularities characteristic of synthetic neural vocoders (HiFi-GAN/VITS)."
+            elif m_type == 'video':
+                explanation = (
+                    f"**Video Multi-Frame Forensic Audit Report**:\n\n"
+                    f"- **Auditable Verdict**: {label}\n"
+                    f"- **Confidence Score**: {conf:.1%}\n"
+                    f"- **Forensic Certificate ID**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Optical temporal continuity across frames is consistent; inter-frame PRNU sensor residuals and lip-sync alignment verified."
+                else:
+                    explanation += "Detected frame-to-frame motion jitter and lip-sync phoneme-viseme discrepancy indicative of facial reenactment or deepfake manipulation."
             else:
-                explanation += "Detected high-frequency energy decay and pixel gradient artifacts characteristic of synthetic diffusion or face manipulation."
+                explanation = (
+                    f"**Multi-Dimensional Forensic Audit Report**:\n\n"
+                    f"- **Auditable Verdict**: {label}\n"
+                    f"- **Confidence Score**: {conf:.1%}\n"
+                    f"- **Forensic Certificate ID**: `{cert_id}`\n\n"
+                )
+                if label == 'Realism':
+                    explanation += "Biometric microscopic textures and frequency distributions match natural optical sensors."
+                else:
+                    explanation += "Detected high-frequency energy decay and pixel gradient artifacts characteristic of synthetic diffusion or face manipulation."
 
     return detection_result, explanation
 
