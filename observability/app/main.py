@@ -902,13 +902,13 @@ async def trigger_login(force: bool = False, req: TriggerLoginRequest = None) ->
     is_force = force or (req and req.force)
 
     if shutil.which("claude"):
-        base_cmd = "claude login"
+        base_cmd = "claude auth login --claudeai"
     elif shutil.which("npx"):
-        base_cmd = "npx -y @anthropic-ai/claude-code login"
+        base_cmd = "npx -y @anthropic-ai/claude-code auth login --claudeai"
     elif shutil.which("docker"):
         base_cmd = "docker compose run --rm login"
     else:
-        base_cmd = "npx -y @anthropic-ai/claude-code login"
+        base_cmd = "npx -y @anthropic-ai/claude-code auth login --claudeai"
 
     if shutil.which("script") and not base_cmd.startswith("docker"):
         cmd = f'script -q -c "{base_cmd}" /dev/null'
@@ -937,6 +937,13 @@ async def trigger_login(force: bool = False, req: TriggerLoginRequest = None) ->
         except Exception as e_kill:
             _LOGIN_LOGS.append(f"⚠️ Warning killing process: {e_kill}")
         _ACTIVE_LOGIN_PROC = None
+
+    if shutil.which("pkill"):
+        try:
+            p_kill = await asyncio.create_subprocess_shell("pkill -9 -f 'claude' 2>/dev/null || true")
+            await p_kill.wait()
+        except Exception:
+            pass
 
     _LAST_OAUTH_URL = None
     _LOGIN_LOGS = []
