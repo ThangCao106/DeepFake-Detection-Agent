@@ -624,25 +624,24 @@ function displayResults(data) {
     const cert = data.forensic_certificate || {};
     const tau = cert.decision_threshold || 0.8118;
 
-    // Mathematically sound calibrated classification according to Youden tau* (Option D)
-    let isSynthetic = false;
+    let fakeProb = 0.5;
     if (cert.composite_risk_score !== undefined) {
-        isSynthetic = (cert.composite_risk_score >= tau);
-    } else if (cert.auditable_verdict) {
-        isSynthetic = cert.auditable_verdict.includes('CONFIRMED');
-    } else if (data.label) {
-        const lbl = data.label.toLowerCase();
-        isSynthetic = (lbl.includes('fake') || lbl.includes('deepfake'));
+        fakeProb = cert.composite_risk_score;
+    } else if (cert.calibrated_probability !== undefined) {
+        fakeProb = cert.calibrated_probability;
+    } else if (data.confidence !== undefined) {
+        const lbl = (data.label || '').toLowerCase();
+        fakeProb = (lbl.includes('fake') || lbl.includes('deepfake')) ? data.confidence : (1.0 - data.confidence);
     }
 
+    // Mathematically sound calibrated classification strictly according to Youden optimal threshold tau* (0.8118)
+    const isSynthetic = (fakeProb >= tau);
     const finalLabel = isSynthetic ? 'Deepfake' : 'Realism';
     const predictionLabel = document.getElementById('predictionLabel');
     predictionLabel.textContent = finalLabel;
     predictionLabel.className = 'prediction-label ' + (isSynthetic ? 'deepfake' : 'realism');
 
-    const displayConf = cert.composite_risk_score !== undefined
-        ? (isSynthetic ? cert.composite_risk_score : (1.0 - cert.composite_risk_score))
-        : data.confidence;
+    const displayConf = isSynthetic ? fakeProb : (1.0 - fakeProb);
     const confidence = (displayConf * 100).toFixed(1);
     document.getElementById('confidenceValue').textContent = confidence + '%';
 
@@ -2142,32 +2141,31 @@ function populateGenUiArtifacts(data) {
     if (pipeStep1Desc) {
         pipeStep1Desc.textContent = isAudio ? 'Tín Hiệu Âm Thanh (16kHz)' : (isVideo ? 'Video Đa Khung Hình' : 'Ảnh Tĩnh (RGB)');
     }
+    const vnCat = sceneCtx.vn_demographic_category || '';
     if (pipeStep2Icon && pipeStep2Desc) {
         if (isAudio) {
             pipeStep2Icon.textContent = '🎙️';
-            pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (Voice)';
+            pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (VietPrism Voice)';
         } else if (!hasHuman) {
             pipeStep2Icon.textContent = sceneIcon;
             pipeStep2Desc.textContent = sceneCategoryShort ? sceneCategoryShort : 'Phong Cảnh / Phi Sinh Trắc';
-        } else if (isOutdoor) {
-            pipeStep2Icon.textContent = sceneIcon;
-            pipeStep2Desc.textContent = `Ngoại Cảnh Có Người (${sceneCategoryShort})`;
         } else {
             pipeStep2Icon.textContent = sceneIcon;
-            pipeStep2Desc.textContent = `Chân Dung (${sceneCategoryShort})`;
+            const badgePrefix = (vnCat && vnCat !== 'non_human_media') ? `[${vnCat}] ` : '';
+            pipeStep2Desc.textContent = `${badgePrefix}${sceneCategoryShort}`;
         }
     }
     if (pipeStep3Desc) {
         if (isAudio) {
-            pipeStep3Desc.textContent = 'Spectral Vocoder Analyzer';
+            pipeStep3Desc.textContent = 'VietPrism F0 Pitch + Vocoder';
         } else if (isVideo) {
-            pipeStep3Desc.textContent = 'SARAAB 7s Micro-Windowing';
+            pipeStep3Desc.textContent = 'HDU-DFNet + SARAAB 7s';
         } else if (!hasHuman) {
             pipeStep3Desc.textContent = 'ViT 6D + PRNU Sensor';
         } else if (isOutdoor) {
-            pipeStep3Desc.textContent = 'Dual-ROI (ViT Nền Cảnh + WAVIE Mặt)';
+            pipeStep3Desc.textContent = 'HDU-DFNet + Dual-ROI';
         } else {
-            pipeStep3Desc.textContent = 'ViT + WAVIE + Corneal';
+            pipeStep3Desc.textContent = 'HDU-DFNet + WAVIE Mặt';
         }
     }
     if (pipeStep4Desc) {
@@ -2331,21 +2329,18 @@ function populateGenUiArtifacts(data) {
     const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
     currentOptimalTau = tau;
 
-    const isSynthetic = cert.composite_risk_score !== undefined 
-        ? (cert.composite_risk_score >= 0.50)
-        : (cert.auditable_verdict 
-            ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('CONFIRMED'))
-            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('deepfake'))));
-
     let fakeProb = 0.5;
     if (cert.composite_risk_score !== undefined) {
         fakeProb = cert.composite_risk_score;
     } else if (cert.calibrated_probability !== undefined) {
         fakeProb = cert.calibrated_probability;
     } else if (data.confidence !== undefined) {
-        fakeProb = isSynthetic ? data.confidence : (1.0 - data.confidence);
+        const lbl = (data.label || '').toLowerCase();
+        fakeProb = (lbl.includes('fake') || lbl.includes('deepfake')) ? data.confidence : (1.0 - data.confidence);
     }
 
+    // Harmonize with displayResults - strict Youden threshold tau* (0.8118)
+    const isSynthetic = (fakeProb >= tau);
     const isFake = isSynthetic;
 
     const safeP = Math.min(Math.max(fakeProb, 0.001), 0.999);

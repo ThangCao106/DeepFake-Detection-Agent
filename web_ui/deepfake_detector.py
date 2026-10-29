@@ -146,47 +146,55 @@ class HumanPresenceDetector:
             try:
                 face_gray = cv2.cvtColor(face_roi, cv2.COLOR_RGB2GRAY)
                 lap_var = float(np.var(cv2.Laplacian(face_gray, cv2.CV_64F)))
-                if lap_var < 4.0:
+                if lap_var < 3.5:
                     return False
 
-                # SOTA Deep Learning detection (YuNet) with high confidence is directly confirmed
-                if is_deep_model and model_confidence >= 0.40:
+                # SOTA Deep Learning detection (YuNet) with calibrated confidence is directly confirmed
+                if is_deep_model and model_confidence >= 0.28:
                     return True
 
                 face_ycbcr = cv2.cvtColor(face_roi, cv2.COLOR_RGB2YCrCb)
                 cr = face_ycbcr[:, :, 1]
                 cb = face_ycbcr[:, :, 2]
-                skin_mask_ycbcr = (cr >= 125) & (cr <= 180) & (cb >= 70) & (cb <= 135)
+                skin_mask_ycbcr = (cr >= 110) & (cr <= 185) & (cb >= 65) & (cb <= 145)
 
                 face_hsv = cv2.cvtColor(face_roi, cv2.COLOR_RGB2HSV)
                 H = face_hsv[:, :, 0]
                 S = face_hsv[:, :, 1]
                 V = face_hsv[:, :, 2]
-                skin_mask_hsv = ((H <= 25) | (H >= 160)) & (S >= 20) & (V >= 25)
+                skin_mask_hsv = ((H <= 30) | (H >= 155)) & (S >= 15) & (V >= 20)
 
                 skin_mask = skin_mask_ycbcr & skin_mask_hsv
                 face_skin_pct = float(np.mean(skin_mask) * 100)
                 y_std = float(np.std(face_ycbcr[:, :, 0]))
 
-                # Check sunglasses occlusion: dark eye region (V < 60 in upper 18-50% band)
+                # Check cap / headwear: dark or neutral upper forehead band (0-35% of box)
+                is_cap = False
+                cap_band = face_hsv[:int(bh * 0.35), :]
+                if cap_band.size > 0:
+                    dark_cap_pct = float(np.mean((cap_band[:, :, 2] < 60) | (cap_band[:, :, 1] < 25)) * 100)
+                    if dark_cap_pct > 25.0:
+                        is_cap = True
+
+                # Check sunglasses occlusion: dark eye region (V < 55 in upper 18-50% band)
                 is_sunglasses = False
                 eye_band = face_hsv[int(bh * 0.18):int(bh * 0.50), :]
                 if eye_band.size > 0:
-                    dark_eye_pct = float(np.mean(eye_band[:, :, 2] < 60) * 100)
+                    dark_eye_pct = float(np.mean(eye_band[:, :, 2] < 55) * 100)
                     if dark_eye_pct > 14.0:
                         is_sunglasses = True
 
-                # Check mask occlusion: low skin ratio in lower 40%
+                # Check mask occlusion: low skin or light medical mask in lower 40%
                 is_mask = False
                 lower_face = skin_mask[int(bh * 0.60):, :]
                 if lower_face.size > 0:
                     lower_skin_pct = float(np.mean(lower_face) * 100)
-                    if lower_skin_pct < 6.0:
+                    if lower_skin_pct < 8.0:
                         is_mask = True
 
-                is_occluded = (is_sunglasses or is_mask or (is_deep_model and model_confidence >= 0.35))
-                min_skin_req = 1.2 if is_occluded else 3.5
-                if face_skin_pct < min_skin_req or y_std < 4.0:
+                is_occluded = (is_cap or is_sunglasses or is_mask or (is_deep_model and model_confidence >= 0.25))
+                min_skin_req = 1.0 if is_occluded else 2.5
+                if face_skin_pct < min_skin_req or y_std < 3.5:
                     return False
                 return True
             except Exception:
@@ -209,14 +217,20 @@ class HumanPresenceDetector:
 
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
-        # Gate 0: SOTA YuNet Deep Learning Face Detector (Multi-Scale: 640p anchor space + Native)
+        # Gate 0: SOTA YuNet Deep Learning Face Detector (Multi-Scale Pyramid: 320p, 640p, Native)
         if YUNET_DETECTOR is not None:
             try:
-                scales_to_try = [640.0 / max(w_img, h_img)]
-                if scales_to_try[0] != 1.0:
-                    scales_to_try.append(1.0)
-
+                scales_to_try = [
+                    min(1.0, 320.0 / max(w_img, h_img)),
+                    min(1.5, 640.0 / max(w_img, h_img)),
+                    1.0
+                ]
+                unique_scales = []
                 for sc in scales_to_try:
+                    if not any(abs(sc - u) < 0.08 for u in unique_scales):
+                        unique_scales.append(sc)
+
+                for sc in unique_scales:
                     if detected_faces:
                         break
                     sw = max(32, int(w_img * sc))
@@ -228,7 +242,7 @@ class HumanPresenceDetector:
                     if yn_faces is not None and len(yn_faces) > 0:
                         for f in yn_faces:
                             score = float(f[-1])
-                            if score >= 0.35:  # Standard calibrated YuNet threshold
+                            if score >= 0.28:  # Calibrated for occluded/tilted faces
                                 fx = max(0, int(f[0] / sc))
                                 fy = max(0, int(f[1] / sc))
                                 fw = min(w_img - fx, int(f[2] / sc))
@@ -256,20 +270,13 @@ class HumanPresenceDetector:
                 )
                 if len(hog_boxes) > 0:
                     max_wt = float(max(hog_weights)) if len(hog_weights) > 0 else 0.0
-                    min_hog_threshold = 0.35
+                    min_hog_threshold = 0.70  # High threshold prevents false alarms on lampposts and vehicles
                     for hb, hw in zip(hog_boxes, hog_weights):
                         if hw >= min_hog_threshold:
                             bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
                             # Human body vertical aspect ratio validation
-                            if bh > int(bw * 1.1) and bh >= 40:
+                            if bh > int(bw * 1.5) and bh >= 50:
                                 detected_pedestrians.append((bx, by, bw, bh))
-                                head_x = max(0, bx + int(bw * 0.15))
-                                head_y = max(0, by)
-                                head_w = min(w_img - head_x, int(bw * 0.70))
-                                head_h = min(h_img - head_y, int(bh * 0.35))
-                                if _is_valid_face_candidate(head_x, head_y, head_w, head_h):
-                                    if not _is_box_overlapping((head_x, head_y, head_w, head_h), detected_faces):
-                                        detected_faces.append((head_x, head_y, head_w, head_h))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
             except Exception:
@@ -457,37 +464,35 @@ class HumanPresenceDetector:
 
 class SceneContextClassifier:
     """
-    Environmental & Scene Context Analyzer.
-    Categorizes visual media into forensic environmental domains:
-      - Outdoor Nature / Park (Ngoại Cảnh / Thiên Nhiên - greenery, foliage, trees, park benches)
-      - Outdoor Sky / Horizon (Ngoài Trời / Bầu Trời - open atmosphere, skylight)
-      - Outdoor Urban / Architecture (Đô Thị / Kiến Trúc - structures, streets, vehicles)
-      - Indoor Lifestyle / Cafe (Trong Nhà / Cafe - warm ambient, cozy interior)
-      - Studio / Official ID (Studio / Thẻ ID - homogeneous backdrop, formal illumination)
-      - Group / Social Event (Chân Dung Nhóm / Sự Kiện - multi-person social context)
-      - Non-Human Scenery / Nature (Phong Cảnh Thiên Nhiên)
-      - Non-Human Urban / Architecture (Kiến Trúc Đô Thị)
-      - Non-Human Objects / Graphic Art (Tĩnh Vật / Đồ Hoạ)
+    Environmental & Demographic Scene Context Analyzer.
+    Maps media directly to 5 In-The-Wild Vietnamese demographic and environmental taxonomy classes:
+      1. vn_id_official: Official citizen ID / studio portrait with uniform backdrop.
+      2. vn_selfie_lifestyle: Indoor smartphone selfie / informal lifestyle portrait.
+      3. vn_street_outdoor: Outdoor street / nature / park / urban environmental context.
+      4. vn_occlusion_glasses_mask: Facial occlusions (sunglasses, medical masks, baseball caps).
+      5. vn_mature_aging: Mature adults and elderly with natural facial aging lines.
+      6. non_human_media: Pure landscape, sunset, architecture, vehicles, or 2D posters.
     """
     @staticmethod
     def classify_scene_context(pil_image, has_human=True, detected_faces=None, is_2d_illustration=False):
         try:
             if is_2d_illustration:
                 return {
-                    "category": "Phi Sinh Trắc / Tranh Vẽ Áp Phích (2D Illustration)",
-                    "short_name": "Tranh Áp Phích 2D",
+                    "category": "Nội Dung Đồ Họa 2D / Áp Phích / Poster",
+                    "short_name": "Đồ Họa & Poster",
+                    "vn_demographic_category": "non_human_media",
                     "scene_type": "GRAPHIC_2D_ART",
                     "icon": "🎨",
-                    "environment": "Tranh cổ động, hội hoạ áp phích 2D (Phi thực thể người sống)",
-                    "confidence": 0.96,
+                    "environment": "Tranh cổ động, hội họa, đồ họa số 2D (Phi thực thể người thật)",
+                    "confidence": 0.98,
                     "is_outdoor": False,
                     "metrics": {"is_2d_art": True}
                 }
 
             if detected_faces is None:
                 detected_faces = []
-            
-            # Resize image to standardized 256x256 for fast, stable chromatic and structural inspection
+
+            orig_w, orig_h = pil_image.size
             small_img = pil_image.resize((256, 256))
             np_rgb = np.array(small_img, dtype=np.float32)
             h, w, _ = np_rgb.shape
@@ -495,48 +500,40 @@ class SceneContextClassifier:
             # Build background mask excluding human face regions
             bg_mask = np.ones((h, w), dtype=bool)
             if has_human and detected_faces:
-                orig_w, orig_h = pil_image.size
                 scale_x = w / max(1, orig_w)
                 scale_y = h / max(1, orig_h)
                 for (fx, fy, fw, fh) in detected_faces:
-                    # Dilate face bounding box slightly by 15% to exclude face skin
                     bx1 = max(0, int((fx - fw * 0.15) * scale_x))
                     by1 = max(0, int((fy - fh * 0.15) * scale_y))
                     bx2 = min(w, int((fx + fw * 1.15) * scale_x))
                     by2 = min(h, int((fy + fh * 1.15) * scale_y))
                     bg_mask[by1:by2, bx1:bx2] = False
-            
-            # If face occupies almost the whole frame, use peripheral background corners
+
             if np.mean(bg_mask) < 0.15:
                 bg_mask = np.ones((h, w), dtype=bool)
                 bg_mask[int(h*0.2):int(h*0.8), int(w*0.2):int(w*0.8)] = False
 
-            # Convert to HSV via OpenCV
             np_uint8 = np.uint8(np.clip(np_rgb, 0, 255))
             hsv = cv2.cvtColor(np_uint8, cv2.COLOR_RGB2HSV)
-            H = hsv[:, :, 0] # 0..180
-            S = hsv[:, :, 1] # 0..255
-            V = hsv[:, :, 2] # 0..255
+            H = hsv[:, :, 0]
+            S = hsv[:, :, 1]
+            V = hsv[:, :, 2]
 
             # 1. Foliage & Vegetation (Green Park/Trees)
-            # Hue between 25 and 85 (approx 50°-170° botanical spectrum), S >= 30, V >= 30
             foliage_mask = (H >= 25) & (H <= 85) & (S >= 30) & (V >= 30) & bg_mask
             foliage_ratio = float(np.sum(foliage_mask)) / max(1, np.sum(bg_mask))
 
-            # 2. Sky & Open Air
-            # Top 45% of image with blue/cyan hue (H in [95..130]) or high-key daylight (V >= 210, S <= 35)
+            # 2. Sky & Open Air (Top 45% of image)
             top_mask = np.zeros((h, w), dtype=bool)
             top_mask[:int(h * 0.45), :] = True
             sky_mask = (((H >= 95) & (H <= 130) & (S >= 25) & (V >= 70)) | ((V >= 210) & (S <= 35))) & bg_mask & top_mask
             sky_ratio = float(np.sum(sky_mask)) / max(1, np.sum(bg_mask & top_mask))
 
-            # 2b. Sunset / Sunrise / Golden Hour Sky & Sea Horizon
-            # Top 50% of image: warm golden/orange/red sunset tones (H <= 22 or H >= 160, S >= 35, V >= 70)
+            # 2b. Sunset / Sunrise Sky Gradient
             sunset_mask = (((H <= 22) | (H >= 160)) & (S >= 35) & (V >= 70)) & bg_mask & top_mask
             sunset_ratio = float(np.sum(sunset_mask)) / max(1, np.sum(bg_mask & top_mask))
 
-            # 3. Indoor Warm Ambient (Cafe / Interior Lifestyle)
-            # Warm hues (H <= 22 or H >= 165), moderate saturation (30..160), indoor value (40..220)
+            # 3. Indoor Warm Ambient
             warm_mask = ((H <= 22) | (H >= 165)) & (S >= 30) & (S <= 160) & (V >= 40) & (V <= 220) & bg_mask
             warm_ratio = float(np.sum(warm_mask)) / max(1, np.sum(bg_mask))
 
@@ -544,23 +541,58 @@ class SceneContextClassifier:
             gray = cv2.cvtColor(np_uint8, cv2.COLOR_RGB2GRAY)
             laplacian = cv2.Laplacian(gray, cv2.CV_64F)
             urban_edge_density = float(np.var(laplacian[bg_mask])) if np.any(bg_mask) else 0.0
-
             canny = cv2.Canny(gray, 60, 150)
             urban_canny_density = float(np.mean(canny[bg_mask] > 0) * 100) if np.any(bg_mask) else 0.0
 
-            # 4b. Atmospheric Smoothness vs High-Frequency Man-Made Surface:
-            # A natural sunset sky has very smooth internal gradient variance (sunset_lap_var < 35.0).
-            # A red bus, vehicle, banner, or red roof contains windows, text, rivets, sharp edges (sunset_lap_var >= 40.0).
             sunset_pixels = laplacian[sunset_mask]
             sunset_lap_var = float(np.var(sunset_pixels)) if len(sunset_pixels) > 50 else 999.0
-
             is_true_sunset = bool(sunset_ratio >= 0.16 and sunset_lap_var < 35.0)
-            is_urban = bool(urban_canny_density >= 1.6 or (urban_edge_density >= 180.0 and not is_true_sunset and foliage_ratio < 0.20))
-            is_outdoor = bool(foliage_ratio >= 0.08 or sky_ratio >= 0.12 or is_true_sunset or is_urban)
+
+            # Calibrated outdoor check: Requires genuine sky, sunset gradient, green foliage, or heavy structural edges with sky
+            is_urban_outdoor = bool(urban_canny_density >= 6.5 and (sky_ratio >= 0.05 or foliage_ratio >= 0.04 or urban_edge_density >= 320.0))
+            is_outdoor = bool(foliage_ratio >= 0.08 or sky_ratio >= 0.12 or is_true_sunset or is_urban_outdoor)
 
             # 5. Studio / Uniform Backdrop (Standard deviation of background pixels)
             bg_pixels = np_rgb[bg_mask]
             backdrop_std = float(np.mean(np.std(bg_pixels, axis=0))) if len(bg_pixels) > 20 else 99.0
+
+            # Demographic feature extraction from primary detected face
+            is_occlusion_detected = False
+            is_mature_aging = False
+            face_area_ratio = 0.0
+            if detected_faces:
+                primary_face = sorted(detected_faces, key=lambda f: f[2] * f[3], reverse=True)[0]
+                pfx, pfy, pfw, pfh = primary_face
+                face_area_ratio = float((pfw * pfh) / max(1, orig_w * orig_h))
+
+                # Convert original image to NumPy for high-res demographic inspection
+                full_np = np.array(pil_image.convert('RGB'))
+                p_roi = full_np[pfy:pfy+pfh, pfx:pfx+pfw]
+                if p_roi.size > 0:
+                    p_hsv = cv2.cvtColor(p_roi, cv2.COLOR_RGB2HSV)
+                    p_gray = cv2.cvtColor(p_roi, cv2.COLOR_RGB2GRAY)
+
+                    # 1. Sunglasses: Dark ocular band in y in [18%..48%]
+                    ocular_band = p_hsv[int(pfh * 0.18):int(pfh * 0.48), :]
+                    dark_eye_pct = float(np.mean(ocular_band[:, :, 2] < 55) * 100) if ocular_band.size > 0 else 0.0
+
+                    # 2. Mask: Low skin / white/blue surgical mask in y in [58%..100%]
+                    lower_band = p_hsv[int(pfh * 0.58):, :]
+                    mask_cov_pct = float(np.mean((lower_band[:, :, 1] < 28) | (lower_band[:, :, 2] < 45)) * 100) if lower_band.size > 0 else 0.0
+
+                    # 3. Cap / Hat: Dark or solid upper headwear in y in [0%..32%]
+                    cap_band = p_hsv[:int(pfh * 0.32), :]
+                    cap_pct = float(np.mean((cap_band[:, :, 2] < 55) | (cap_band[:, :, 1] < 25)) * 100) if cap_band.size > 0 else 0.0
+
+                    if dark_eye_pct > 18.0 or mask_cov_pct > 35.0 or cap_pct > 30.0:
+                        is_occlusion_detected = True
+
+                    # 4. Aging / Mature skin texture (evaluated on normalized 128x128 cheek region)
+                    face_128 = cv2.resize(p_gray, (128, 128))
+                    cheek_roi = face_128[int(128 * 0.45):int(128 * 0.75), int(128 * 0.20):int(128 * 0.80)]
+                    cheek_lap_var = float(np.var(cv2.Laplacian(cheek_roi, cv2.CV_64F)))
+                    if cheek_lap_var >= 480.0 and not is_occlusion_detected:
+                        is_mature_aging = True
 
             metrics = {
                 "foliage_ratio": float(round(foliage_ratio, 3)),
@@ -571,14 +603,54 @@ class SceneContextClassifier:
                 "urban_edge_density": float(round(urban_edge_density, 1)),
                 "indoor_warm_ratio": float(round(warm_ratio, 3)),
                 "backdrop_std": float(round(backdrop_std, 1)),
-                "is_outdoor": is_outdoor
+                "is_outdoor": is_outdoor,
+                "is_occluded": is_occlusion_detected,
+                "is_mature_aging": is_mature_aging,
+                "face_area_ratio": float(round(face_area_ratio, 3))
             }
 
             if has_human:
-                if len(detected_faces) >= 2:
+                if is_occlusion_detected:
+                    return {
+                        "category": "Chân Dung Che Khuất (Khẩu Trang / Kính / Mũ)",
+                        "short_name": "Che Khuất (Kính/Mũ)",
+                        "vn_demographic_category": "vn_occlusion_glasses_mask",
+                        "scene_type": "OCCLUDED_PORTRAIT",
+                        "icon": "🎭",
+                        "environment": "Chân dung đời thường có phụ kiện che khuất (Khẩu trang y tế, kính râm, nón lưỡi trai)",
+                        "confidence": 0.95,
+                        "is_outdoor": is_outdoor,
+                        "metrics": metrics
+                    }
+                elif backdrop_std < 24.0 and face_area_ratio >= 0.08:
+                    return {
+                        "category": "Chân Dung Studio / Thẻ ID",
+                        "short_name": "Studio / Thẻ ID",
+                        "vn_demographic_category": "vn_id_official",
+                        "scene_type": "STUDIO_ID",
+                        "icon": "🪪",
+                        "environment": "Phông nền đồng nhất / Chiếu sáng studio chuẩn công dân",
+                        "confidence": 0.96,
+                        "is_outdoor": False,
+                        "metrics": metrics
+                    }
+                elif is_mature_aging:
+                    return {
+                        "category": "Chân Dung Trung Niên / Cao Tuổi",
+                        "short_name": "Trung Niên / Cao Tuổi",
+                        "vn_demographic_category": "vn_mature_aging",
+                        "scene_type": "MATURE_AGING_PORTRAIT",
+                        "icon": "👵",
+                        "environment": "Chân dung người trưởng thành / cao tuổi có nếp nhăn và kết cấu da tự nhiên",
+                        "confidence": 0.92,
+                        "is_outdoor": is_outdoor,
+                        "metrics": metrics
+                    }
+                elif len(detected_faces) >= 2:
                     return {
                         "category": "Chân Dung Nhóm / Sự Kiện",
                         "short_name": "Chân Dung Nhóm",
+                        "vn_demographic_category": "vn_street_outdoor" if is_outdoor else "vn_selfie_lifestyle",
                         "scene_type": "GROUP_PORTRAIT",
                         "icon": "👥",
                         "environment": "Sự kiện / Không gian tập thể đông người",
@@ -587,103 +659,36 @@ class SceneContextClassifier:
                         "metrics": metrics
                     }
                 elif is_outdoor:
-                    # BRANCH 3: Hybrid (Human in Outdoor Environment / Decoupled Dual-ROI)
-                    if is_true_sunset:
-                        return {
-                            "category": "Chân Dung Ngoại Cảnh / Hoàng Hôn",
-                            "short_name": "Ngoại Cảnh / Hoàng Hôn",
-                            "scene_type": "OUTDOOR_SUNSET_PORTRAIT",
-                            "icon": "🌅",
-                            "environment": "Chân dung ngoại cảnh chiều tà (Hoàng hôn, biển trời, ánh sáng tự nhiên)",
-                            "confidence": 0.93,
-                            "is_outdoor": True,
-                            "metrics": metrics
-                        }
-                    elif is_urban:
-                        return {
-                            "category": "Chân Dung Ngoại Cảnh / Đô Thị",
-                            "short_name": "Ngoại Cảnh / Đô Thị",
-                            "scene_type": "OUTDOOR_URBAN_PORTRAIT",
-                            "icon": "🏙️",
-                            "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà, phương tiện)",
-                            "confidence": 0.92,
-                            "is_outdoor": True,
-                            "metrics": metrics
-                        }
-                    elif foliage_ratio >= 0.08:
-                        return {
-                            "category": "Chân Dung Ngoại Cảnh / Thiên Nhiên",
-                            "short_name": "Ngoại Cảnh / Công Viên",
-                            "scene_type": "OUTDOOR_NATURE_PORTRAIT",
-                            "icon": "🌳",
-                            "environment": "Ngoại cảnh tự nhiên (Công viên, cây xanh, ánh sáng ban ngày)",
-                            "confidence": float(round(min(0.98, 0.85 + foliage_ratio * 0.3), 2)),
-                            "is_outdoor": True,
-                            "metrics": metrics
-                        }
-                    elif sky_ratio >= 0.12:
-                        return {
-                            "category": "Chân Dung Ngoại Cảnh / Bầu Trời",
-                            "short_name": "Ngoại Cảnh / Bầu Trời",
-                            "scene_type": "OUTDOOR_SKY_PORTRAIT",
-                            "icon": "🌤️",
-                            "environment": "Không gian mở ngoài trời (Bầu trời, ánh sáng tự nhiên)",
-                            "confidence": 0.92,
-                            "is_outdoor": True,
-                            "metrics": metrics
-                        }
-                    else:
-                        return {
-                            "category": "Chân Dung Ngoại Cảnh / Đô Thị",
-                            "short_name": "Đô Thị / Kiến Trúc",
-                            "scene_type": "OUTDOOR_URBAN_PORTRAIT",
-                            "icon": "🏙️",
-                            "environment": "Đô thị ngoại cảnh (Kiến trúc đường phố, toà nhà)",
-                            "confidence": 0.90,
-                            "is_outdoor": True,
-                            "metrics": metrics
-                        }
+                    return {
+                        "category": "Chân Dung Ngoại Cảnh / Đường Phố",
+                        "short_name": "Ngoại Cảnh / Đường Phố",
+                        "vn_demographic_category": "vn_street_outdoor",
+                        "scene_type": "OUTDOOR_STREET_PORTRAIT",
+                        "icon": "🏙️",
+                        "environment": "Ngoại cảnh đường phố, phương tiện hoặc không gian tự nhiên ngoài trời",
+                        "confidence": 0.93,
+                        "is_outdoor": True,
+                        "metrics": metrics
+                    }
                 else:
-                    # BRANCH 2: Pure Indoor / Studio Human
-                    if backdrop_std < 24.0:
-                        return {
-                            "category": "Chân Dung Studio / Thẻ ID",
-                            "short_name": "Studio / Thẻ ID",
-                            "scene_type": "STUDIO_ID",
-                            "icon": "🪪",
-                            "environment": "Phông nền đồng nhất / Chiếu sáng studio chuẩn",
-                            "confidence": 0.96,
-                            "is_outdoor": False,
-                            "metrics": metrics
-                        }
-                    elif warm_ratio >= 0.20:
-                        return {
-                            "category": "Chân Dung Trong Nhà / Cafe",
-                            "short_name": "Trong Nhà / Cafe",
-                            "scene_type": "INDOOR_LIFESTYLE",
-                            "icon": "☕",
-                            "environment": "Không gian nội thất (Quán cafe, phòng ốc đời thường)",
-                            "confidence": 0.89,
-                            "is_outdoor": False,
-                            "metrics": metrics
-                        }
-                    else:
-                        return {
-                            "category": "Chân Dung Đời Thường",
-                            "short_name": "Đời Thường",
-                            "scene_type": "LIFESTYLE_PORTRAIT",
-                            "icon": "👤",
-                            "environment": "Chân dung đời thường / Không gian sinh hoạt",
-                            "confidence": 0.88,
-                            "is_outdoor": False,
-                            "metrics": metrics
-                        }
+                    return {
+                        "category": "Chân Dung Selfie / Đời Thường",
+                        "short_name": "Selfie / Đời Thường",
+                        "vn_demographic_category": "vn_selfie_lifestyle",
+                        "scene_type": "INDOOR_LIFESTYLE",
+                        "icon": "🤳",
+                        "environment": "Không gian nội thất, đời thường hoặc ảnh selfie góc gần",
+                        "confidence": 0.92,
+                        "is_outdoor": False,
+                        "metrics": metrics
+                    }
             else:
-                # BRANCH 1: Pure Non-Human Nature / Scenery / Architecture / Vehicles
+                # Pure Non-Human Scenery / Vehicles / Architecture / Nature
                 if is_true_sunset:
                     return {
-                        "category": "Hoàng Hôn / Biển Trời (Không Người)",
-                        "short_name": "Hoàng Hôn / Biển Trời",
+                        "category": "Hoàng Hôn / Bầu Trời (Không Người)",
+                        "short_name": "Hoàng Hôn / Bầu Trời",
+                        "vn_demographic_category": "non_human_media",
                         "scene_type": "SUNSET_LANDSCAPE",
                         "icon": "🌅",
                         "environment": "Phong cảnh hoàng hôn biển trời / Ánh sáng chiều tà tự nhiên",
@@ -691,24 +696,26 @@ class SceneContextClassifier:
                         "is_outdoor": True,
                         "metrics": metrics
                     }
-                elif is_urban:
-                    return {
-                        "category": "Kiến Trúc & Đô Thị (Đường Phố, Phương Tiện)",
-                        "short_name": "Đô Thị / Phương Tiện",
-                        "scene_type": "URBAN_ARCHITECTURE",
-                        "icon": "🏙️",
-                        "environment": "Kiến trúc công trình, đường phố đô thị, phương tiện giao thông",
-                        "confidence": 0.94,
-                        "is_outdoor": True,
-                        "metrics": metrics
-                    }
                 elif foliage_ratio >= 0.12:
                     return {
                         "category": "Phong Cảnh / Thiên Nhiên",
                         "short_name": "Thiên Nhiên / Cảnh Quan",
+                        "vn_demographic_category": "non_human_media",
                         "scene_type": "NATURE_LANDSCAPE",
-                        "icon": "🌲",
+                        "icon": "🌳",
                         "environment": "Phong cảnh tự nhiên / Thực vật, cây cối",
+                        "confidence": 0.94,
+                        "is_outdoor": True,
+                        "metrics": metrics
+                    }
+                elif is_urban_outdoor:
+                    return {
+                        "category": "Kiến Trúc & Đô Thị (Đường Phố, Phương Tiện)",
+                        "short_name": "Đô Thị / Xe Cộ",
+                        "vn_demographic_category": "non_human_media",
+                        "scene_type": "URBAN_ARCHITECTURE",
+                        "icon": "🚌",
+                        "environment": "Kiến trúc công trình, đường phố đô thị, phương tiện giao thông",
                         "confidence": 0.94,
                         "is_outdoor": True,
                         "metrics": metrics
@@ -717,6 +724,7 @@ class SceneContextClassifier:
                     return {
                         "category": "Bầu Trời / Không Gian Mở",
                         "short_name": "Bầu Trời / Cảnh Quan",
+                        "vn_demographic_category": "non_human_media",
                         "scene_type": "SKY_OPENAIR",
                         "icon": "☁️",
                         "environment": "Bầu trời quang đãng / Không gian mở ngoài trời",
@@ -726,12 +734,13 @@ class SceneContextClassifier:
                     }
                 else:
                     return {
-                        "category": "Phi Sinh Trắc / Đồ Hoạ",
-                        "short_name": "Tĩnh Vật / Đồ Hoạ",
-                        "scene_type": "GRAPHIC_OBJECT",
-                        "icon": "📦",
-                        "environment": "Vật thể, đồ hoạ hoặc phong cảnh phi sinh trắc",
-                        "confidence": 0.89,
+                        "category": "Tĩnh Vật & Không Gian Nội Thất (Phi Sinh Trắc)",
+                        "short_name": "Nội Thất / Tĩnh Vật",
+                        "vn_demographic_category": "non_human_media",
+                        "scene_type": "INTERIOR_STILL_LIFE",
+                        "icon": "🛋️",
+                        "environment": "Vật thể, đồ đạc, không gian tĩnh nội thất hoặc đồ họa tổng hợp",
+                        "confidence": 0.90,
                         "is_outdoor": False,
                         "metrics": metrics
                     }
@@ -739,8 +748,9 @@ class SceneContextClassifier:
             return {
                 "category": "Chân Dung (Đa Môi Trường)" if has_human else "Phi Sinh Trắc (Tổng Hợp)",
                 "short_name": "Chân Dung" if has_human else "Tổng Hợp",
+                "vn_demographic_category": "vn_selfie_lifestyle" if has_human else "non_human_media",
                 "scene_type": "GENERAL_FALLBACK",
-                "icon": "👤" if has_human else "🏞️",
+                "icon": "👤" if has_human else "📦",
                 "environment": f"Môi trường phân tích tự động: {str(e)}",
                 "confidence": 0.80,
                 "metrics": {}
