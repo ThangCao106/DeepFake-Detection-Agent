@@ -1852,31 +1852,113 @@
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.25rem;">
-          <!-- Claude SDK Settings -->
-          <div class="card">
-            <div class="card-title">
-              <span>Anthropic Claude SDK</span>
-              <span class="badge-sub" style="background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4);">Tier 1 Legal Auditor</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Claude 3.7 Sonnet phụ trách phản biện đối kháng (Devil's Advocate), truy vết biến dị PRNU, kiểm toán toán học Platt/Youden và ra quyết định forensic pháp lý theo EU AI Act Điều 50.
-            </p>
+          <!-- Claude SDK Settings (Option B: Inline Interactive Stepper) -->
+          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-weight: 700;">Anthropic Claude SDK</span>
+                  <span id="claudeCardAuthTag" class="badge-sub" style="background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); font-size: 0.72rem; padding: 2px 8px;">Đang kiểm tra...</span>
+                </div>
+                <span class="badge-sub" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3);">Tier 1 Legal Auditor</span>
+              </div>
+              
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.9rem; line-height: 1.4;">
+                Claude 3.7 Sonnet phụ trách phản biện đối kháng (Devil's Advocate), truy vết biến dị PRNU, kiểm toán toán học Platt/Youden và ra quyết định forensic pháp lý theo EU AI Act Điều 50.
+              </p>
 
-            <div class="form-group">
-              <label class="form-label">Phương thức xác thực</label>
-              <div style="font-size: 0.82rem; color: var(--accent-emerald); font-weight: 600; padding: 0.5rem 0;">
-                ✓ OAuth PKCE Session Key (Tự động kích hoạt qua CLI)
+              <!-- OPTION B: OAUTH PKCE INTERACTIVE STEPPER -->
+              <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(249, 115, 22, 0.25); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.78rem; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.04em;">
+                    ⚡ Xác thực Claude OAuth PKCE
+                  </span>
+                  <button id="claudeOAuthTriggerBtn" type="button" class="btn btn-sm" style="background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; font-size: 0.75rem; padding: 0.35rem 0.8rem;" onclick="triggerClaudeOAuth()">
+                    <span>🚀 Kích hoạt Đăng nhập</span>
+                  </button>
+                </div>
+
+                <!-- Active Stepper Content Container -->
+                <div id="claudeOAuthStepperBox" style="display: none; flex-direction: column; gap: 0.75rem; margin-top: 0.6rem; border-top: 1px dashed rgba(249, 115, 22, 0.2); padding-top: 0.75rem;">
+                  <!-- Step 1: Status Feedback -->
+                  <div id="claudeOAuthStatusMsg" style="font-size: 0.76rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="pulse-dot" style="width: 8px; height: 8px; background: #00e5ff; border-radius: 50%; display: inline-block;"></span>
+                    <span id="claudeOAuthStatusText">Đang khởi chạy tiến trình Claude CLI và quét link ủy quyền OAuth...</span>
+                  </div>
+
+                  <!-- Step 2: Open Auth Link & Copy Button -->
+                  <div id="claudeOAuthLinkRow" style="display: none; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 6px; padding: 0.65rem;">
+                    <div style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 0.4rem;">
+                      Bước 1: Mở liên kết ủy quyền từ Anthropic trong tab mới và đăng nhập:
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                      <a id="claudeOAuthOpenLink" href="#" target="_blank" class="btn btn-sm btn-emerald" style="text-decoration: none; font-size: 0.76rem; font-weight: 600;">
+                        <span>🔗 Mở Trang Đăng Nhập Anthropic ↗</span>
+                      </a>
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="copyClaudeOAuthUrl()" title="Sao chép liên kết vào bộ nhớ tạm" style="font-size: 0.75rem;">
+                        <span id="claudeCopyBtnText">📋 Sao chép Link</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Step 3: Paste Code & Submit -->
+                  <div id="claudeOAuthCodeRow" style="display: none;">
+                    <div style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 0.4rem;">
+                      Bước 2: Sau khi Anthropic cấp mã xác thực (code#state), dán vào đây để hoàn tất:
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                      <input type="text" id="claudeOAuthCodeInput" class="form-input mono" placeholder="Dán mã code (code#state) từ Anthropic..." style="font-size: 0.8rem; padding: 0.5rem 0.75rem; flex: 1;">
+                      <button id="claudeSubmitCodeBtn" type="button" class="btn btn-sm btn-primary" onclick="submitClaudeOAuthCode()" style="white-space: nowrap; font-size: 0.76rem;">
+                        <span>✅ Gửi Mã</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Inline Result Notification Banner -->
+                  <div id="claudeOAuthResultBanner" style="display: none; font-size: 0.76rem; padding: 0.5rem 0.75rem; border-radius: 5px; line-height: 1.4;"></div>
+                </div>
+
+                <!-- Collapsible CLI / Console Utilities -->
+                <div style="margin-top: 0.65rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 0.65rem;">
+                  <button type="button" onclick="toggleClaudeCliTools()" style="background: none; border: none; color: var(--text-muted); font-size: 0.74rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; padding: 0; font-family: inherit;">
+                    <span id="claudeCliToolsArrow">▶</span>
+                    <span style="text-decoration: underline;">Công cụ CLI Terminal & Debug Logs</span>
+                  </button>
+
+                  <div id="claudeCliToolsBox" style="display: none; margin-top: 0.55rem; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.6rem;">
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('enter')" title="Gửi phím Enter tới stdin Claude CLI">
+                        <span>⏎ Gửi Enter</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('down_enter')" title="Chọn dòng 2 và gửi Enter">
+                        <span>⬇️ Dòng 2 + Enter</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('/login')" title="Gửi lệnh /login">
+                        <span>🔑 /login</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="fetchDebugLogs()" title="Tải lại log console">
+                        <span>🔄 Làm mới Log</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="downloadClaudeDebugLog()" title="Tải file log debug">
+                        <span>📥 Tải File Log</span>
+                      </button>
+                    </div>
+                    <pre id="claudeConsoleLogBox" style="background: rgba(0, 0, 0, 0.75); color: #34d399; font-size: 0.68rem; padding: 0.5rem; border-radius: 4px; max-height: 120px; overflow-y: auto; font-family: var(--font-mono); line-height: 1.35; margin: 0; white-space: pre-wrap; word-break: break-all;">Chưa có log tương tác CLI...</pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FALLBACK: ANTHROPIC API KEY -->
+              <div class="form-group" style="margin-top: 0.85rem; margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.72rem;">Hoặc nhập dự phòng Anthropic API Key (sk-ant-...)</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input type="password" id="claudeApiKeyInput" class="form-input mono" placeholder="sk-ant-api03-..." style="font-size: 0.8rem; padding: 0.5rem 0.75rem; flex: 1;">
+                  <button type="button" class="btn btn-sm btn-primary" onclick="saveClaudeKey()" style="white-space: nowrap; font-size: 0.76rem;">
+                    <span>Lưu Key</span>
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div class="form-group">
-              <label class="form-label">Hoặc nhập dự phòng Anthropic API Key (sk-ant-...)</label>
-              <input type="password" id="claudeApiKeyInput" class="form-input mono" placeholder="sk-ant-api03-...">
-            </div>
-
-            <button class="btn btn-primary" onclick="saveClaudeKey()">
-              <span>Lưu Anthropic Key</span>
-            </button>
           </div>
 
           <!-- Gemini SDK Settings -->
@@ -2130,18 +2212,41 @@
         // Claude Badge
         const claudeBadge = document.getElementById('claudeStatusBadge');
         const claudeText = document.getElementById('claudeStatusText');
+        const claudeCardTag = document.getElementById('claudeCardAuthTag');
+        const claudeKeyInput = document.getElementById('claudeApiKeyInput');
         if (claudeData.authenticated) {
           claudeBadge.className = 'engine-badge active';
           claudeText.innerText = claudeData.auth_type === 'API_KEY' ? 'Online (API Key)' : 'Online (PKCE)';
           claudeBadge.title = 'Claude 3.7 Sonnet: Token hợp lệ, sẵn sàng giám định chuyên sâu.';
+          if (claudeCardTag) {
+            claudeCardTag.innerText = claudeData.auth_type === 'API_KEY' ? 'Online (API Key)' : 'Online (PKCE)';
+            claudeCardTag.style.background = 'rgba(16, 185, 129, 0.2)';
+            claudeCardTag.style.color = '#34d399';
+            claudeCardTag.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          }
+          if (claudeKeyInput && claudeData.claude_key_masked) {
+            claudeKeyInput.placeholder = `Đã cấu hình: ${claudeData.claude_key_masked}`;
+          }
         } else if (claudeData.status === 'EXPIRED') {
           claudeBadge.className = 'engine-badge warn';
           claudeText.innerText = 'Expired (Auto-fallback)';
           claudeBadge.title = 'Claude OAuth session đã hết hạn. Hệ thống tự động chuyển tiếp truy vấn sang Gemini 2.5!';
+          if (claudeCardTag) {
+            claudeCardTag.innerText = 'Expired (Hết hạn)';
+            claudeCardTag.style.background = 'rgba(239, 68, 68, 0.2)';
+            claudeCardTag.style.color = '#f87171';
+            claudeCardTag.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          }
         } else {
           claudeBadge.className = 'engine-badge warn';
           claudeText.innerText = 'Needs Auth';
           claudeBadge.title = 'Chưa hoàn tất xác thực Claude. Vào Cài đặt để nạp Key hoặc đăng nhập.';
+          if (claudeCardTag) {
+            claudeCardTag.innerText = 'Needs Auth';
+            claudeCardTag.style.background = 'rgba(249, 115, 22, 0.2)';
+            claudeCardTag.style.color = '#fb923c';
+            claudeCardTag.style.borderColor = 'rgba(249, 115, 22, 0.4)';
+          }
         }
 
         // Gemini Badge
@@ -2913,6 +3018,260 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
+
+        // ==========================================
+    // OPTION B: CLAUDE OAUTH PKCE INTERACTIVE STEPPER & CLI TOOLS
+    // ==========================================
+    let claudeOAuthPollTimer = null;
+
+    async function triggerClaudeOAuth() {
+      const stepper = document.getElementById('claudeOAuthStepperBox');
+      const triggerBtn = document.getElementById('claudeOAuthTriggerBtn');
+      const statusText = document.getElementById('claudeOAuthStatusText');
+      const linkRow = document.getElementById('claudeOAuthLinkRow');
+      const codeRow = document.getElementById('claudeOAuthCodeRow');
+      const openLink = document.getElementById('claudeOAuthOpenLink');
+      const banner = document.getElementById('claudeOAuthResultBanner');
+
+      if (stepper) stepper.style.display = 'flex';
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.innerHTML = '<span>⏳ Đang kích hoạt...</span>';
+      }
+      if (statusText) statusText.innerText = 'Đang khởi chạy Claude CLI và quét link ủy quyền OAuth...';
+      if (linkRow) linkRow.style.display = 'none';
+      if (codeRow) codeRow.style.display = 'none';
+      if (banner) banner.style.display = 'none';
+
+      try {
+        const res = await fetch(getApiUrl('api/auth/trigger-login'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'}
+        });
+        const data = await res.json();
+        
+        if (data.logs && data.logs.length) {
+          updateClaudeConsoleLogs(data.logs);
+        }
+
+        if (data.oauth_url) {
+          showClaudeOAuthLink(data.oauth_url);
+        } else {
+          // Poll for OAuth URL up to 10 times every 1.5s
+          startClaudeOAuthPolling();
+        }
+      } catch (err) {
+        if (statusText) statusText.innerText = '⚠️ Lỗi kích hoạt login: ' + err.message;
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.innerHTML = '<span>🚀 Thử lại Đăng nhập</span>';
+        }
+      }
+    }
+
+    function showClaudeOAuthLink(url) {
+      if (claudeOAuthPollTimer) {
+        clearInterval(claudeOAuthPollTimer);
+        claudeOAuthPollTimer = null;
+      }
+      const triggerBtn = document.getElementById('claudeOAuthTriggerBtn');
+      const statusText = document.getElementById('claudeOAuthStatusText');
+      const linkRow = document.getElementById('claudeOAuthLinkRow');
+      const codeRow = document.getElementById('claudeOAuthCodeRow');
+      const openLink = document.getElementById('claudeOAuthOpenLink');
+
+      if (triggerBtn) {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = '<span>🔄 Khởi chạy lại CLI</span>';
+      }
+      if (statusText) statusText.innerHTML = '✅ <strong>Đã có liên kết ủy quyền từ Anthropic!</strong> Vui lòng làm theo 2 bước bên dưới:';
+      if (openLink) {
+        openLink.href = url;
+      }
+      if (linkRow) linkRow.style.display = 'block';
+      if (codeRow) codeRow.style.display = 'block';
+    }
+
+    function startClaudeOAuthPolling() {
+      if (claudeOAuthPollTimer) clearInterval(claudeOAuthPollTimer);
+      let pollCount = 0;
+      const maxPolls = 10;
+      
+      claudeOAuthPollTimer = setInterval(async () => {
+        pollCount++;
+        try {
+          const res = await fetch(getApiUrl('api/auth/debug-logs'));
+          if (res.ok) {
+            const data = await res.json();
+            if (data.logs && data.logs.length) {
+              updateClaudeConsoleLogs(data.logs);
+            }
+            if (data.oauth_url) {
+              showClaudeOAuthLink(data.oauth_url);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Polling logs error:', e);
+        }
+
+        if (pollCount >= maxPolls) {
+          clearInterval(claudeOAuthPollTimer);
+          claudeOAuthPollTimer = null;
+          const statusText = document.getElementById('claudeOAuthStatusText');
+          const triggerBtn = document.getElementById('claudeOAuthTriggerBtn');
+          if (statusText) {
+            statusText.innerText = '⚠️ Chưa bắt được link tự động. Hãy mở mục [Công cụ CLI & Logs] bên dưới hoặc thử lại!';
+          }
+          if (triggerBtn) {
+            triggerBtn.disabled = false;
+            triggerBtn.innerHTML = '<span>🚀 Thử lại Đăng nhập</span>';
+          }
+        }
+      }, 1500);
+    }
+
+    function copyClaudeOAuthUrl() {
+      const openLink = document.getElementById('claudeOAuthOpenLink');
+      const copyBtn = document.getElementById('claudeCopyBtnText');
+      if (!openLink || !openLink.href || openLink.href === '#' || openLink.href.endsWith('#')) {
+        alert('Chưa có link OAuth để sao chép!');
+        return;
+      }
+      navigator.clipboard.writeText(openLink.href).then(() => {
+        if (copyBtn) copyBtn.innerText = '✅ Đã sao chép!';
+        setTimeout(() => { if (copyBtn) copyBtn.innerText = '📋 Sao chép Link'; }, 2000);
+      }).catch(() => {
+        prompt('Sao chép liên kết thủ công:', openLink.href);
+      });
+    }
+
+    async function submitClaudeOAuthCode() {
+      const codeInput = document.getElementById('claudeOAuthCodeInput');
+      const submitBtn = document.getElementById('claudeSubmitCodeBtn');
+      const banner = document.getElementById('claudeOAuthResultBanner');
+      const codeVal = codeInput ? codeInput.value.trim() : '';
+
+      if (!codeVal) {
+        alert('Vui lòng dán mã xác thực (code hoặc code#state) từ Anthropic!');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ Đang gửi...</span>';
+      }
+      if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = 'rgba(59, 130, 246, 0.2)';
+        banner.style.color = '#60a5fa';
+        banner.style.border = '1px solid rgba(59, 130, 246, 0.4)';
+        banner.innerText = 'Đang chuyển mã xác thực vào Claude CLI stdin...';
+      }
+
+      try {
+        const res = await fetch(getApiUrl('api/auth/submit-code'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({code: codeVal})
+        });
+        const data = await res.json();
+        
+        if (data.logs && data.logs.length) {
+          updateClaudeConsoleLogs(data.logs);
+        }
+
+        if (data.authenticated || data.status === 'SUCCESS') {
+          if (banner) {
+            banner.style.background = 'rgba(16, 185, 129, 0.2)';
+            banner.style.color = '#34d399';
+            banner.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+            banner.innerText = data.message || '🎉 Đăng nhập Claude thành công! Phiên làm việc đã sẵn sàng.';
+          }
+          if (codeInput) codeInput.value = '';
+          checkAuthStatus(true);
+        } else {
+          if (banner) {
+            banner.style.background = 'rgba(245, 158, 11, 0.2)';
+            banner.style.color = '#fbbf24';
+            banner.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+            banner.innerText = data.message || 'Mã đã gửi. Đang hoàn tất trao đổi token...';
+          }
+          setTimeout(() => checkAuthStatus(true), 2500);
+          setTimeout(() => checkAuthStatus(true), 6000);
+        }
+      } catch (err) {
+        if (banner) {
+          banner.style.background = 'rgba(239, 68, 68, 0.2)';
+          banner.style.color = '#f87171';
+          banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          banner.innerText = '❌ Lỗi gửi mã: ' + err.message;
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>✅ Gửi Mã</span>';
+        }
+      }
+    }
+
+    function toggleClaudeCliTools() {
+      const box = document.getElementById('claudeCliToolsBox');
+      const arrow = document.getElementById('claudeCliToolsArrow');
+      if (!box) return;
+      const isOpen = box.style.display !== 'none';
+      box.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.innerText = isOpen ? '▶' : '▼';
+      if (!isOpen) {
+        fetchDebugLogs();
+      }
+    }
+
+    async function sendInputCmd(cmd) {
+      try {
+        const res = await fetch(getApiUrl('api/auth/send-input'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({input_text: cmd})
+        });
+        const data = await res.json();
+        if (data.logs && data.logs.length) {
+          updateClaudeConsoleLogs(data.logs);
+        }
+      } catch (err) {
+        alert('Lỗi gửi lệnh stdin (' + cmd + '): ' + err.message);
+      }
+    }
+
+    async function fetchDebugLogs() {
+      try {
+        const res = await fetch(getApiUrl('api/auth/debug-logs'));
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.logs && data.logs.length) {
+          updateClaudeConsoleLogs(data.logs);
+        }
+        if (data.oauth_url) {
+          showClaudeOAuthLink(data.oauth_url);
+        }
+      } catch (e) {
+        console.warn('Lỗi fetch debug logs:', e);
+      }
+    }
+
+    function updateClaudeConsoleLogs(logs) {
+      const logBox = document.getElementById('claudeConsoleLogBox');
+      if (!logBox) return;
+      if (Array.isArray(logs)) {
+        logBox.innerText = logs.slice(-35).join('\n');
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    }
+
+    function downloadClaudeDebugLog() {
+      window.open(getApiUrl('api/auth/download-debug-log'), '_blank');
+    }
+
 
     // TAB 5: SAVE KEYS
     async function saveClaudeKey() {
