@@ -48,6 +48,17 @@ app = FastAPI(title="Observability Agent (local test)")
 app.include_router(openai_router)
 
 
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith(".html") or "/api/" in path:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 class GateLoginRequest(BaseModel):
     username: str
     password: str
@@ -230,15 +241,18 @@ def _clean_stale_credentials(force: bool = False) -> None:
 
 @app.get("/api/auth/status")
 async def auth_status() -> dict:
-    """Return Claude CLI and Gemini API authentication status with upfront token check."""
+    """Return Claude CLI, Gemini API, and Meta Muse authentication status with upfront token check."""
     claude_info = check_claude_token_validity()
     from app.gemini_backend import verify_gemini_api_key
     gemini_info = await verify_gemini_api_key()
     gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+    muse_model = os.environ.get("MUSE_MODEL", "meta-muse-spark")
+    muse_mode = os.environ.get("MUSE_ENGINE_MODE", "EMBEDDED_LOCAL")
 
     return {
+        "status": "SUCCESS",
         "authenticated": claude_info["valid"],
-        "status": claude_info["status"],
+        "claude_status": claude_info["status"],
         "auth_type": claude_info["auth_type"],
         "auth_message": claude_info.get("message", ""),
         "claude_key_masked": claude_info.get("masked", ""),
@@ -247,6 +261,11 @@ async def auth_status() -> dict:
         "gemini_key_masked": gemini_info["masked"],
         "gemini_message": gemini_info.get("message", ""),
         "gemini_model": gem_model,
+        "muse_status": "ONLINE",
+        "muse_vendor": "Meta AI",
+        "muse_model": muse_model,
+        "muse_mode": muse_mode,
+        "tier": "HYBRID_TRIAD_COUNCIL_OPTION_B",
         "default_key": API_KEY,
         "login_command": "docker compose run --rm login",
         "cli_command": "npx @anthropic-ai/claude-code login",

@@ -84,6 +84,10 @@ services:
       - PORT=8787
       - ANTHROPIC_API_KEY=${CLAUDE_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - META_MUSE_API_KEY=${META_MUSE_API_KEY:-}
+      - MUSE_ENGINE_MODE=${MUSE_ENGINE_MODE:-EMBEDDED_LOCAL}
+      - MUSE_MODEL=${MUSE_MODEL:-meta-muse-spark}
     volumes:
       - claude-home-new:/home/agent
       - ./report_colab:/app/report_colab
