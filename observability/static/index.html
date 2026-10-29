@@ -1024,13 +1024,13 @@
         <span>⚡</span>
         <span>Live Forensic Studio (GenUI)</span>
       </a>
-      <div class="engine-badge active" id="claudeStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Anthropic Claude 3.7: Trưởng Ban Phản Biện & Kiểm Toán EU AI Act (Nhấn để vào Cài đặt)">
+      <div class="engine-badge active" id="claudeStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Anthropic Claude Sonnet 5.5: Trưởng Ban Phản Biện & Kiểm Toán EU AI Act (Nhấn để vào Cài đặt)">
         <span class="dot"></span>
-        <span>Claude 3.7: <strong id="claudeStatusText">Active (PKCE)</strong></span>
+        <span>Claude Sonnet 5.5: <strong id="claudeStatusText">Active (PKCE)</strong></span>
       </div>
-      <div class="engine-badge" id="geminiStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Google Gemini 2.5/2.0: Chủ Trì Thẩm Định Đa Phương Thức (Nhấn để cấu hình Key)">
+      <div class="engine-badge" id="geminiStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Google Gemini 3.8 Flash: Chủ Trì Thẩm Định Đa Phương Thức (Nhấn để cấu hình Key)">
         <span class="dot"></span>
-        <span>Gemini 2.5: <strong id="geminiStatusText">Checking...</strong></span>
+        <span>Gemini 3.8 Flash: <strong id="geminiStatusText">Checking...</strong></span>
       </div>
       <div class="engine-badge active" id="museStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Meta Muse AI: Tác thể Điều tra Kháng chứng & Dấu vết Mô hình Trọng số Mở (Nhấn để vào Cài đặt)">
         <span class="dot" style="background: #c084fc; box-shadow: 0 0 8px #c084fc;"></span>
@@ -1864,7 +1864,7 @@
               </div>
               
               <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.9rem; line-height: 1.4;">
-                Claude 3.7 Sonnet phụ trách phản biện đối kháng (Devil's Advocate), truy vết biến dị PRNU, kiểm toán toán học Platt/Youden và ra quyết định forensic pháp lý theo EU AI Act Điều 50.
+                Claude Sonnet 5.5 phụ trách phản biện đối kháng (Devil's Advocate), truy vết biến dị PRNU, kiểm toán toán học Platt/Youden và ra quyết định forensic pháp lý theo EU AI Act Điều 50.
               </p>
 
               <!-- OPTION B: OAUTH PKCE INTERACTIVE STEPPER -->
@@ -1957,10 +1957,10 @@
               <div class="form-group" style="margin-top: 0.85rem;">
                 <label class="form-label" style="font-size: 0.72rem;">Mô hình phục vụ (Serving Model)</label>
                 <select id="claudeDefaultModel" class="form-input">
-                  <option value="claude-3-7-sonnet-20250219" selected>claude-3-7-sonnet (Mới nhất 2025 - Hybrid Reasoning & Extended Thinking)</option>
-                  <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-v2 (Cân bằng lý luận cao)</option>
-                  <option value="claude-3-5-haiku-20241022">claude-3-5-haiku (Tốc độ phản hồi cực nhanh)</option>
-                  <option value="claude-3-opus-20240229">claude-3-opus (Phân tích văn bản phức tạp)</option>
+                  <option value="claude-sonnet-5.5" selected>Claude Sonnet 5.5 (Mới nhất 2026 - Tốc độ cao, Extended Reasoning)</option>
+                  <option value="claude-3-7-sonnet">Claude 3.7 Sonnet (Hybrid Reasoning & Thinking)</option>
+                  <option value="claude-3-5-sonnet">Claude 3.5 Sonnet v2 (Cân bằng lý luận cao)</option>
+                  <option value="claude-3-opus">Claude 3 Opus (Phân tích chuyên sâu)</option>
                 </select>
               </div>
 
@@ -2003,12 +2003,12 @@
               <div class="form-group">
                 <label class="form-label">Mô hình phục vụ (Serving Model)</label>
                 <select id="geminiDefaultModel" class="form-input">
-                  <option value="gemini-2.5-flash" selected>gemini-2.5-flash (Mới nhất 2025/2026 - Flash Thinking, tốc độ cao)</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro (Tư duy suy luận chuyên sâu nhất)</option>
+                  <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Mới nhất 2026 - Long-horizon Reasoning, tốc độ cao)</option>
+                  <option value="gemini-3.8-flash-cyber">gemini-3.8-flash-cyber (Chuyên sâu an ninh mạng & Pentest)</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash (Flash Thinking)</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro (Tư duy suy luận chuyên sâu)</option>
                   <option value="gemini-2.0-flash">gemini-2.0-flash (Thế hệ 2.0 đa phương thức)</option>
-                  <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Tối ưu độ trễ thấp)</option>
                   <option value="gemini-1.5-flash">gemini-1.5-flash (Production ổn định cao)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (Ngữ cảnh lớn 2M tokens)</option>
                 </select>
               </div>
             </div>
@@ -2087,13 +2087,13 @@
         </div>
         <div class="model-selector-wrap">
           <select id="modelSelector" class="model-select">
-            <option value="gemini-2.5-flash" selected>Google Gemini 2.5 Flash</option>
-            <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Thinking)</option>
-            <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
-            <option value="claude-3-7-sonnet">Claude 3.7 Sonnet (Hybrid)</option>
-            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-            <option value="meta-muse-spark">Meta Muse Spark (Active Focus)</option>
-            <option value="meta-muse-wonder">Meta Muse Wonder (Frontier)</option>
+            <option value="gemini-3.8-flash" selected>Google Gemini 3.8 Flash (Mới nhất)</option>
+            <option value="claude-sonnet-5.5">Claude Sonnet 5.5 (Mới nhất)</option>
+            <option value="gemini-3.8-flash-cyber">Gemini 3.8 Flash Cyber</option>
+            <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+            <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
+            <option value="meta-muse-spark">Meta Muse Spark</option>
+            <option value="meta-muse-wonder">Meta Muse Wonder</option>
           </select>
         </div>
       </div>
@@ -2268,7 +2268,7 @@
         if (claudeData.authenticated) {
           claudeBadge.className = 'engine-badge active';
           claudeText.innerText = claudeData.auth_type === 'API_KEY' ? 'Online (API Key)' : 'Online (PKCE)';
-          claudeBadge.title = 'Claude 3.7 Sonnet: Token hợp lệ, sẵn sàng giám định chuyên sâu.';
+          claudeBadge.title = 'Claude Sonnet 5.5: Token hợp lệ, sẵn sàng giám định chuyên sâu.';
           if (claudeCardTag) {
             claudeCardTag.innerText = claudeData.auth_type === 'API_KEY' ? 'Online (API Key)' : 'Online (PKCE)';
             claudeCardTag.style.background = 'rgba(16, 185, 129, 0.2)';
@@ -2306,13 +2306,13 @@
         const geminiCardTag = document.getElementById('geminiCardAuthTag');
         if (geminiData.authenticated) {
           geminiBadge.className = 'engine-badge active';
-          geminiText.innerText = `Online (${geminiData.active_model || '2.5 Flash'})`;
+          geminiText.innerText = `Online (${geminiData.active_model || '3.8 Flash'})`;
           geminiBadge.title = `Google Gemini SDK: ${geminiData.message || 'Token hợp lệ'} (${geminiData.masked_key || ''})`;
           if (geminiData.masked_key) {
             document.getElementById('geminiApiKeyInput').placeholder = `Đã cấu hình: ${geminiData.masked_key}`;
           }
           if (geminiCardTag) {
-            geminiCardTag.innerText = `Online (${geminiData.active_model || '2.5 Flash'})`;
+            geminiCardTag.innerText = `Online (${geminiData.active_model || '3.8 Flash'})`;
             geminiCardTag.style.background = 'rgba(16, 185, 129, 0.2)';
             geminiCardTag.style.color = '#34d399';
             geminiCardTag.style.borderColor = 'rgba(16, 185, 129, 0.4)';

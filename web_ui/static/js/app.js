@@ -1157,7 +1157,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 5px; line-height: 1.45;">
                         <div style="background: #eff6ff; padding: 6px 8px; border-left: 3px solid #3b82f6; border-radius: 4px;">
-                            <strong style="color: #1d4ed8;">🟦 Google Gemini 2.0 (Thẩm Định Viên Đa Phương Thức):</strong><br/>
+                            <strong style="color: #1d4ed8;">🟦 Google Gemini 3.8 Flash (Thẩm Định Viên Đa Phương Thức):</strong><br/>
                             <span style="color: #1e3a8a;">${escapeHtml(msgGeminiText)}</span>
                         </div>
                         <div style="background: #faf5ff; padding: 6px 8px; border-left: 3px solid #a855f7; border-radius: 4px;">
@@ -1165,7 +1165,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                             <span style="color: #581c87;">${escapeHtml(msgMuseText)}</span>
                         </div>
                         <div style="background: #fff7ed; padding: 6px 8px; border-left: 3px solid #f97316; border-radius: 4px;">
-                            <strong style="color: #c2410c;">🟧 Anthropic Claude 3.5 (Phản Biện Đối Kháng & Kiểm Toán EU AI Act):</strong><br/>
+                            <strong style="color: #c2410c;">🟧 Anthropic Claude Sonnet 5.5 (Phản Biện Đối Kháng & Kiểm Toán EU AI Act):</strong><br/>
                             <span style="color: #7c2d12;">${escapeHtml(msgClaudeText)}</span>
                         </div>
                         <div style="margin-top: 2px; font-size: 0.75rem; color: #475569; font-style: italic;">

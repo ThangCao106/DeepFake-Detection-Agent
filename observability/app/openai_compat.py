@@ -22,6 +22,9 @@ LEGACY_MODEL_ID = "observability-agent"
 ANTIGRAVITY_MODEL_ID = "antigravity-agent"
 SUPPORTED_MODELS = [
     "sre-agent-hybrid",
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-cyber",
+    "claude-sonnet-5.5",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
     "gemini-2.0-flash",

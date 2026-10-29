@@ -279,3 +279,4 @@ async def analyze_video_with_muse_ai(video_url_or_path: str) -> Dict[str, Any]:
             "verdict": "LIPSYNC_CONSISTENT"
         }
     }
+

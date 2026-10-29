@@ -15,15 +15,15 @@ from typing import AsyncIterator, Optional, Dict, Any, List
 
 _CACHED_ACTIVE_MODELS: list[str] = []
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
 SUPPORTED_GEMINI_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-cyber",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
     "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
+    "gemini-1.5-flash"
 ]
 
 def get_gemini_api_key() -> str:
@@ -192,8 +192,8 @@ async def run_gemini_generate(
             # Auto-fallback on 404 (model not in beta yet), 503 (high demand), 429 (rate-limited), or 500
             if e.code in [404, 429, 500, 502, 503, 504]:
                 fallback_candidates = [
-                    "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash",
-                    "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-2.5-pro"
+                    "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash",
+                    "gemini-1.5-flash", "gemini-flash-latest"
                 ]
                 for fb_model in fallback_candidates:
                     if fb_model == model:

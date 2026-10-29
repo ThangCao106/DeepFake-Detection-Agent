@@ -245,7 +245,7 @@ async def auth_status() -> dict:
     claude_info = check_claude_token_validity()
     from app.gemini_backend import verify_gemini_api_key
     gemini_info = await verify_gemini_api_key()
-    gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+    gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-3.8-flash")
     muse_model = os.environ.get("MUSE_MODEL", "meta-muse-spark")
     muse_mode = os.environ.get("MUSE_ENGINE_MODE", "EMBEDDED_LOCAL")
 
@@ -465,7 +465,7 @@ async def _read_subprocess_output(proc):
 class SetGeminiKeyRequest(BaseModel):
     gemini_api_key: Optional[str] = None
     api_key: Optional[str] = None
-    default_model: Optional[str] = "gemini-2.5-flash"
+    default_model: Optional[str] = "gemini-3.8-flash"
 
 
 @app.get("/api/gemini/live-models")
@@ -494,7 +494,7 @@ async def get_gemini_status_api() -> dict:
     """Return status and configuration of Google Gemini SDK engine with upfront token check."""
     from app.gemini_backend import verify_gemini_api_key
     gemini_info = await verify_gemini_api_key()
-    model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+    model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-3.8-flash")
     return {
         "status": "SUCCESS",
         "has_key": bool(gemini_info["masked"]),
@@ -1037,13 +1037,13 @@ def check_api_key(x_api_key: str = Header(default="")) -> None:
 @app.post("/api/chat", dependencies=[Depends(check_api_key)])
 async def chat(req: ChatRequest):
     sess_id = req.session_id or "default"
-    target_model = req.model or "claude-3-7-sonnet"
+    target_model = req.model or "claude-sonnet-5.5"
 
     async def sse_generator():
         # --- PATH 1: GEMINI SDK ROUTING ---
         if target_model.lower().startswith("gemini"):
             from app.gemini_backend import stream_gemini_generate
-            gem_model = target_model if target_model.lower().startswith("gemini") else os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+            gem_model = target_model if target_model.lower().startswith("gemini") else os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-3.8-flash")
             try:
                 async for chunk in stream_gemini_generate(
                     prompt=req.message,
@@ -1106,7 +1106,7 @@ async def chat(req: ChatRequest):
             # Token expired or not logged in: Auto-fallback to Gemini 2.5
             from app.gemini_backend import is_gemini_configured, stream_gemini_generate
             if is_gemini_configured():
-                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-2.5-flash")
+                gem_model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-3.8-flash")
                 fallback_header = (
                     "> ⚠️ **[Dual-Engine Smart Fallback]**: Phiên Claude OAuth PKCE đã hết hạn (`OAuth session expired`). "
                     f"Hệ thống đã **tự động chuyển tiếp** truy vấn sang **Google Gemini ({gem_model})** để phục vụ bạn ngay lập tức!\n\n---\n\n"
