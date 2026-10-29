@@ -302,6 +302,11 @@ def _clean_and_parse_oauth_url(candidate: str) -> str | None:
         clean_chars.append(ch)
     url_clean = "".join(clean_chars).strip()
 
+    # Strip any trailing CLI UI prompts accidentally glued to URL (e.g. Pastecode, Browser, Esc)
+    for stop_w in ["Pastecode", "pastecode", "Paste", "paste", "Browser", "browser", "Esc", "esc"]:
+        if stop_w in url_clean:
+            url_clean = url_clean.split(stop_w)[0]
+
     # Replace only root domain for authorize endpoint, preserving redirect_uri parameters
     if url_clean.startswith("https://claude.com/cai/"):
         url_clean = url_clean.replace("https://claude.com/cai/", "https://claude.ai/", 1)
@@ -377,7 +382,7 @@ async def _read_subprocess_output(proc):
             if "claude.com" in buffer or "claude.ai" in buffer:
                 flat_buffer = buffer
                 for _ in range(6):
-                    new_flat = re.sub(r'(https?://[^\s]+)[\r\n]+([a-zA-Z0-9_\-\.\%\&\=\+\/]+)', r'\1\2', flat_buffer)
+                    new_flat = re.sub(r'(https?://[^\s]+)[\r\n]+(?!Paste|paste|Browser|browser|Esc|esc|Enter|enter)([a-zA-Z0-9_\-\.\%\&\=\+\/]+)', r'\1\2', flat_buffer)
                     if new_flat == flat_buffer:
                         break
                     flat_buffer = new_flat
@@ -409,6 +414,17 @@ async def _read_subprocess_output(proc):
                         _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Sent carriage return (\\r\\n) to select default Dark mode theme.")
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
+
+            # Auto-respond with Enter when Claude CLI prompts 'Select login method: 1. Claude account with subscription'
+            if any(k in buffer_nospace for k in ["selectloginmethod", "claudeaccountwithsubscription", "1.claudeaccount", "enterpriseyes"]):
+                if proc.stdin and not getattr(proc, "_auto_selected_login_1", False):
+                    try:
+                        proc.stdin.write(b"\r\n")
+                        await proc.stdin.drain()
+                        proc._auto_selected_login_1 = True
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically confirmed Option 1 'Claude account with subscription'.")
+                    except Exception as e_stdin:
+                        _LOGIN_LOGS.append(f"⚠️ Warning sending login method enter: {e_stdin}")
 
             # Auto-respond with /login if Claude CLI is waiting at 'Not logged in · Run /login' prompt
             if any(k in buffer_nospace for k in ["notloggedin", "run/login", "pleaserun/login"]):
@@ -660,6 +676,28 @@ async def send_input_to_proc(req: SendInputRequest) -> dict:
         except Exception as e_inp:
             raise HTTPException(status_code=500, detail=f"Lỗi gửi input: {e_inp}")
     raise HTTPException(status_code=500, detail="Process stdin is not writable.")
+
+
+def _clean_oauth_code(raw: str) -> str:
+    """Extract clean CODE#STATE string if user pasted a full callback URL or query parameters."""
+    code = raw.strip().strip("'\"")
+    for stop_w in ["Pastecode", "pastecode", "Paste", "paste", "Browser", "browser", "Esc", "esc"]:
+        if stop_w in code:
+            code = code.split(stop_w)[0].strip()
+    if "code=" in code:
+        code_val = ""
+        state_val = ""
+        query_str = code.split("?", 1)[1] if "?" in code else code
+        for param in query_str.split("&"):
+            if param.startswith("code="):
+                code_val = param.split("code=")[1].split("#")[0].strip()
+            elif param.startswith("state="):
+                state_val = param.split("state=")[1].split("#")[0].strip()
+        if code_val:
+            if state_val:
+                return f"{code_val}#{state_val}"
+            return code_val
+    return code
 
 
 class SubmitAuthCodeRequest(BaseModel):
