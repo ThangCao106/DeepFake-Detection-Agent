@@ -96,14 +96,57 @@ jobs:
               exit 1
             fi
 
-            # Create / Update .env File
-            echo "⚙️ Updating environment variables (.env)..."
+            # Backup & Preserve existing keys from .env and report_colab persistent backup
+            OLD_GEMINI=""
+            OLD_CLAUDE=""
+            OLD_MUSE=""
+            OLD_MUSE_MODE=""
+            OLD_MUSE_MODEL=""
+
+            if [ -f .env ]; then
+              OLD_GEMINI=$(grep "^GEMINI_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_CLAUDE=$(grep "^CLAUDE_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_MUSE=$(grep "^META_MUSE_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_MUSE_MODE=$(grep "^MUSE_ENGINE_MODE=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_MUSE_MODEL=$(grep "^MUSE_MODEL=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+            fi
+
+            if [ -z "$OLD_GEMINI" ] && [ -f report_colab/.credentials/.env.backup ]; then
+              OLD_GEMINI=$(grep "^GEMINI_API_KEY=" report_colab/.credentials/.env.backup | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+            fi
+            if [ -z "$OLD_CLAUDE" ] && [ -f report_colab/.credentials/.env.backup ]; then
+              OLD_CLAUDE=$(grep "^CLAUDE_API_KEY=" report_colab/.credentials/.env.backup | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+            fi
+            if [ -z "$OLD_MUSE" ] && [ -f report_colab/.credentials/.env.backup ]; then
+              OLD_MUSE=$(grep "^META_MUSE_API_KEY=" report_colab/.credentials/.env.backup | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+            fi
+
+            SECRET_GEMINI="${{ secrets.GEMINI_API_KEY }}"
+            SECRET_CLAUDE="${{ secrets.CLAUDE_API_KEY }}"
+
+            FINAL_GEMINI="$OLD_GEMINI"
+            if [ -n "$SECRET_GEMINI" ] && [ "$SECRET_GEMINI" != "null" ]; then
+              FINAL_GEMINI="$SECRET_GEMINI"
+            fi
+
+            FINAL_CLAUDE="$OLD_CLAUDE"
+            if [ -n "$SECRET_CLAUDE" ] && [ "$SECRET_CLAUDE" != "null" ]; then
+              FINAL_CLAUDE="$SECRET_CLAUDE"
+            fi
+
+            FINAL_MUSE_MODE="${OLD_MUSE_MODE:-EMBEDDED_LOCAL}"
+            FINAL_MUSE_MODEL="${OLD_MUSE_MODEL:-meta-muse-spark}"
+
+            echo "⚙️ Updating environment variables (.env with preserved keys)..."
             cat <<EOF > .env
-            PORT=5000
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            CLAUDE_API_KEY=${{ secrets.CLAUDE_API_KEY }}
-            OBSERVABILITY_AGENT_URL=http://observability-agent:8787
-            EOF
+PORT=5000
+GEMINI_API_KEY=${FINAL_GEMINI}
+CLAUDE_API_KEY=${FINAL_CLAUDE}
+META_MUSE_API_KEY=${OLD_MUSE}
+MUSE_ENGINE_MODE=${FINAL_MUSE_MODE}
+MUSE_MODEL=${FINAL_MUSE_MODEL}
+OBSERVABILITY_AGENT_URL=http://observability-agent:8787
+EOF
 
             # Build Docker Image & Run Container with Docker Compose (Reusing Layer Cache)
             echo "🐳 Building Docker images (reusing layer cache) & launching containers..."

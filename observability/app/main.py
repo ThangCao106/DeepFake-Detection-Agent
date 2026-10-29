@@ -563,7 +563,18 @@ async def set_muse_config_api(req: SetMuseConfigRequest) -> dict:
     except Exception as e:
         _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Meta Muse): {e}")
 
-    _LOGIN_LOGS.append(f"✅ [SUCCESS] Meta Muse AI updated: Model={model}, Mode={mode}")
+    try:
+        from app.credentials_manager import save_persistent_credentials
+        save_persistent_credentials({
+            "MUSE_ENGINE_MODE": mode,
+            "MUSE_ENDPOINT_URL": endpoint,
+            "MUSE_MODEL": model,
+            "META_MUSE_API_KEY": key,
+            "MUSE_AI_PLATFORM_KEY": getattr(req, "muse_ai_key", "")
+        })
+    except Exception as e_p:
+        _LOGIN_LOGS.append(f"⚠️ Warning saving persistent credentials (Muse): {e_p}")
+    _LOGIN_LOGS.append(f"✅ [SUCCESS] Meta Muse AI updated: Model={model}, Mode={mode} in persistent volumes!")
     return {
         "status": "SUCCESS",
         "message": f"Đã lưu cấu hình Meta Muse AI ({model}) thành công!",
@@ -601,7 +612,12 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
     except Exception as e:
         _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Gemini): {e}")
 
-    _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment!")
+    try:
+        from app.credentials_manager import save_persistent_credentials
+        save_persistent_credentials({"GEMINI_API_KEY": key, "GEMINI_DEFAULT_MODEL": req.default_model or "gemini-3.8-flash"})
+    except Exception as e_p:
+        _LOGIN_LOGS.append(f"⚠️ Warning saving persistent credentials: {e_p}")
+    _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment and persistent volumes!")
     return {
         "status": "SUCCESS",
         "message": "Đã lưu GEMINI_API_KEY thành công vào hệ thống!",

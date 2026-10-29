@@ -6,6 +6,12 @@ PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
 
 load_dotenv(Path(PROJECT_ROOT) / ".env")
 
+try:
+    from app.credentials_manager import load_persistent_credentials
+    load_persistent_credentials()
+except Exception:
+    pass
+
 API_KEY = os.environ.get("API_KEY", "observability-agent-key")
 
 # Pure SRE Agent: No external database or MCP dependencies needed.

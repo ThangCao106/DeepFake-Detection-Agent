@@ -27,6 +27,7 @@ services:
       # Live hot-reload/sync for application code without container rebuilds
       - ./web_ui:/app/web_ui
       - ./benchmark:/app/benchmark
+      - ./report_colab:/app/report_colab
       # Cache Hugging Face model weights so they are not re-downloaded on container restart
       - hf_model_cache:/root/.cache/huggingface
     depends_on:
@@ -60,6 +61,7 @@ services:
       # Live hot-reload/sync for application code without container rebuilds
       - ./web_ui:/app/web_ui
       - ./benchmark:/app/benchmark
+      - ./report_colab:/app/report_colab
       # Cache Hugging Face model weights so they are not re-downloaded on container restart
       - hf_model_cache:/root/.cache/huggingface
     depends_on:

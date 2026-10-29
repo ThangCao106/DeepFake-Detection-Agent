@@ -27,8 +27,16 @@ SUPPORTED_GEMINI_MODELS = [
 ]
 
 def get_gemini_api_key() -> str:
-    """Retrieve Gemini API key from environment."""
-    return os.environ.get("GEMINI_API_KEY", "").strip()
+    """Retrieve Gemini API key from environment, falling back to persistent credentials store."""
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key or key.startswith("AQ."):
+        try:
+            from app.credentials_manager import load_persistent_credentials
+            load_persistent_credentials()
+            key = os.environ.get("GEMINI_API_KEY", "").strip()
+        except Exception:
+            pass
+    return key
 
 def is_gemini_configured() -> bool:
     """Check if a valid Gemini API key is configured."""
