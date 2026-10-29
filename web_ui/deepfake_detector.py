@@ -18,12 +18,15 @@ try:
     from benchmark.deepfake_memory import save_forensic_certificate
     from benchmark.google_indexing import publish_google_indexing_url
     from human_multimodal_detector import HumanMultiModalDetector
+    from agents.triad_council_engine import ForensicFactManifest, TriadCouncilEngine
 except Exception:
     def save_forensic_certificate(cert, db_path=None):
         return cert.get("certificate_id")
     def publish_google_indexing_url(cert_url):
         pass
     HumanMultiModalDetector = None
+    TriadCouncilEngine = None
+    ForensicFactManifest = None
 
 import cv2
 
@@ -1953,10 +1956,29 @@ class DeepfakeDetector:
             media_filename = os.path.basename(str(image_path)) if image_path else f"media_{cert_id.lower()}.png"
             media_url = f"/uploads/{media_filename}" if media_filename else ""
 
+            # Option B: Asymmetric Triad Council Debate (Gemini + Muse + Claude)
+            triad_debate_result = None
+            try:
+                if TriadCouncilEngine is not None and ForensicFactManifest is not None:
+                    fact_manifest = ForensicFactManifest.build(
+                        media_type="image",
+                        filename=media_filename,
+                        composite_risk=composite_risk,
+                        has_human=has_human,
+                        scene_context=scene_context,
+                        evidence_matrix=evidence_matrix_6d,
+                        tau_optimal=tau_star,
+                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                    )
+                    triad_debate_result = TriadCouncilEngine.conduct_debate(fact_manifest)
+            except Exception as te:
+                print(f"[warning] Triad Council Debate execution error: {te}")
+
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
                 "forensic_version": "3.0-XAI-6D-AUDITABLE",
+                "triad_council_debate": triad_debate_result,
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
                 "media_filename": media_filename,
                 "media_url": media_url,
@@ -2034,6 +2056,7 @@ class DeepfakeDetector:
                 "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
+                "triad_council_debate": triad_debate_result,
                 "forensic_certificate": forensic_certificate
             }
         except Exception as e:
@@ -2318,10 +2341,29 @@ class DeepfakeDetector:
 
             xai_explanation_vid = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if composite_video_risk > 0.50 else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro video tổng hợp: {composite_video_risk*100:.1f}%]. Phân tích ma trận chứng cứ 6 chiều video:\n" + "\n".join(f"- {r}" for r in reasons_vid)
 
+            # Option B: Asymmetric Triad Council Debate for Video
+            triad_debate_video = None
+            try:
+                if TriadCouncilEngine is not None and ForensicFactManifest is not None:
+                    fact_manifest_vid = ForensicFactManifest.build(
+                        media_type="video",
+                        filename=os.path.basename(str(video_path)) if video_path else "video_sample.mp4",
+                        composite_risk=composite_video_risk,
+                        has_human=has_human_video,
+                        scene_context=scene_context,
+                        evidence_matrix=evidence_matrix_6d_video,
+                        tau_optimal=tau_star,
+                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                    )
+                    triad_debate_video = TriadCouncilEngine.conduct_debate(fact_manifest_vid)
+            except Exception as te:
+                print(f"[warning] Triad Council Debate Video error: {te}")
+
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
                 "forensic_version": "3.0-VIDEO-6D-AUDITABLE",
+                "triad_council_debate": triad_debate_video,
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Video",
                 "analysis_mode": analysis_mode,
                 "dual_stream_breakdown": dual_stream_breakdown,
@@ -2442,10 +2484,33 @@ class DeepfakeDetector:
 
             xai_explanation = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if is_fake else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro âm học: {calibrated_prob*100:.1f}%]. Phân tích ma trận chứng cứ âm học:\n" + "\n".join(f"- {r}" for r in reasons)
 
+            # Option B: Asymmetric Triad Council Debate for Audio
+            triad_debate_aud = None
+            try:
+                if TriadCouncilEngine is not None and ForensicFactManifest is not None:
+                    fact_manifest_aud = ForensicFactManifest.build(
+                        media_type="audio",
+                        filename=os.path.basename(str(audio_path)) if audio_path else "audio_sample.wav",
+                        composite_risk=calibrated_prob,
+                        has_human=True,
+                        scene_context={
+                            "category": "Tín Hiệu Âm Thanh (VietPrism Voice)",
+                            "environment": "Bản ghi âm thanh giọng nói tiếng Việt",
+                            "vn_demographic_category": "vn_voice_vietnamese"
+                        },
+                        evidence_matrix=evidence_matrix_6d,
+                        tau_optimal=tau_star,
+                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                    )
+                    triad_debate_aud = TriadCouncilEngine.conduct_debate(fact_manifest_aud)
+            except Exception as te:
+                print(f"[warning] Triad Council Debate Audio error: {te}")
+
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
                 "forensic_version": "3.0-AUDIO-6D-AUDITABLE",
+                "triad_council_debate": triad_debate_aud,
                 "compliance_standard": "EU AI Act Article 50 & DSA Acoustic Integrity",
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
                 "media_type": "audio",
