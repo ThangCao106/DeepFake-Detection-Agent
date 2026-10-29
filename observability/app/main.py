@@ -294,12 +294,13 @@ def _clean_and_parse_oauth_url(candidate: str) -> str | None:
     if not candidate or not ("claude.ai" in candidate or "claude.com" in candidate):
         return None
 
-    # Strip any control characters, whitespace, quotes, or trailing terminal artifacts
-    url_clean = candidate.strip()
-    for bad_ch in ['"', "'", '<', '>', ')', '(', ']', '[', ';', '\x07', '\x1b', ' ']:
-        if bad_ch in url_clean:
-            url_clean = url_clean.split(bad_ch)[0]
-    url_clean = url_clean.strip()
+    # Strip any control characters (< 32, including \x07 BEL / \x1b ESC), whitespace, quotes, or trailing terminal artifacts
+    clean_chars = []
+    for ch in candidate.strip():
+        if ord(ch) < 32 or ch in "\"'<>()[]{};\\`":
+            break
+        clean_chars.append(ch)
+    url_clean = "".join(clean_chars).strip()
 
     # Replace only root domain for authorize endpoint, preserving redirect_uri parameters
     if url_clean.startswith("https://claude.com/cai/"):
