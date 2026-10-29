@@ -318,3 +318,4 @@ class TriadCouncilEngine:
                 "legal_compliance_status": "CERTIFIED"
             }
         }
+
