@@ -960,15 +960,16 @@ async def trigger_login(force: bool = False, req: TriggerLoginRequest = None) ->
             "hasCompletedOnboarding": True,
             "hasSeenWelcome": True,
             "hasCompletedTour": True,
-            "trustedDirectories": ["/app", "/home/agent", "/root", "."],
+            "trustedDirectories": ["/app", "/home/agent", "/root", "/tmp", "."],
             "projects": {
                 "/app": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
                 "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
-                "/root": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
+                "/root": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
+                "/tmp": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
             }
         }
         cfg_payload = json.dumps(cfg_data, indent=2)
-        home_candidates = [Path("/home/agent"), Path.home(), Path("/root"), Path(env.get("HOME", "/home/agent"))]
+        home_candidates = [Path("/tmp"), Path("/home/agent"), Path.home(), Path("/root"), Path(env.get("HOME", "/home/agent"))]
         for h_dir in home_candidates:
             try:
                 h_dir.mkdir(parents=True, exist_ok=True)
