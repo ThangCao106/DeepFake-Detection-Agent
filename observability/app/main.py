@@ -288,31 +288,66 @@ def _strip_ansi(text: str) -> str:
     return text
 
 
+def _clean_and_parse_oauth_url(candidate: str) -> str | None:
+    """Parse and clean an Anthropic OAuth URL, validating all PKCE parameters."""
+    import urllib.parse
+    if not candidate or not ("claude.ai" in candidate or "claude.com" in candidate):
+        return None
+
+    # Strip any control characters, whitespace, quotes, or trailing terminal artifacts
+    url_clean = candidate.strip()
+    for bad_ch in ['"', "'", '<', '>', ')', '(', ']', '[', ';', '\x07', '\x1b', ' ']:
+        if bad_ch in url_clean:
+            url_clean = url_clean.split(bad_ch)[0]
+    url_clean = url_clean.strip()
+
+    # Replace only root domain for authorize endpoint, preserving redirect_uri parameters
+    if url_clean.startswith("https://claude.com/cai/"):
+        url_clean = url_clean.replace("https://claude.com/cai/", "https://claude.ai/", 1)
+    elif url_clean.startswith("https://claude.com/"):
+        url_clean = url_clean.replace("https://claude.com/", "https://claude.ai/", 1)
+    elif url_clean.startswith("http://claude.com/cai/"):
+        url_clean = url_clean.replace("http://claude.com/cai/", "https://claude.ai/", 1)
+    elif url_clean.startswith("http://claude.com/"):
+        url_clean = url_clean.replace("http://claude.com/", "https://claude.ai/", 1)
+
+    try:
+        parsed = urllib.parse.urlsplit(url_clean)
+        if "oauth" not in parsed.path and "authorize" not in parsed.path:
+            return None
+
+        query_params = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        param_dict = dict(query_params)
+
+        # Must contain state and code_challenge for valid OAuth PKCE flow
+        if "state" not in param_dict or "code_challenge" not in param_dict:
+            return None
+
+        clean_query = urllib.parse.urlencode(query_params)
+        return f"https://claude.ai/oauth/authorize?{clean_query}"
+    except Exception:
+        return None
+
+
 def _extract_oauth_url(text: str) -> str | None:
     if not text:
         return None
 
-    # Extract candidate URLs directly from raw text before ANSI strip removes OSC 8 escape sequence
-    urls = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[;\\]+)', text, re.IGNORECASE)
+    # 1. Search for full OSC 8 hyperlinks: \x1b]8;;(https://...)\x07 or \x1b\\
+    osc8_matches = re.findall(r'\x1b\]8;;(https?://[^\x07\x1b]+)(?:\x07|\x1b\\)', text)
+    for candidate in osc8_matches:
+        cleaned = _clean_and_parse_oauth_url(candidate)
+        if cleaned:
+            return cleaned
 
-    best_url = None
+    # 2. Search for plain text URLs excluding control characters
+    urls = [u.rstrip('.,;:') for u in re.findall(r'https?://\S+', text, re.IGNORECASE) if any(k in u.lower() for k in ['claude', 'anthropic', 'oauth'])]
     for url in urls:
-        url_clean = url.rstrip('.,;:;\\')
-        url_lower = url_clean.lower()
-        if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize"]):
-            # Normalize domain while preserving all query parameters
-            if "claude.com/cai" in url_clean:
-                url_clean = url_clean.replace("claude.com/cai", "claude.ai")
-            elif "claude.com" in url_lower and "oauth" in url_lower and "claude.ai" not in url_lower:
-                url_clean = url_clean.replace("claude.com", "claude.ai")
+        cleaned = _clean_and_parse_oauth_url(url)
+        if cleaned:
+            return cleaned
 
-            # Prioritize URL containing complete PKCE state and code_challenge
-            if "state=" in url_clean and "code_challenge=" in url_clean:
-                return url_clean
-            if best_url is None or len(url_clean) > len(best_url):
-                best_url = url_clean
-
-    return best_url
+    return None
 
 
 async def _read_subprocess_output(proc):
@@ -326,20 +361,31 @@ async def _read_subprocess_output(proc):
             if not chunk:
                 break
             raw_text = chunk.decode("utf-8", errors="ignore")
-
-            # Extract OAuth URL directly from raw chunk (including OSC 8 escape sequences)
-            found_url = _extract_oauth_url(raw_text)
-            if found_url:
-                if not _LAST_OAUTH_URL:
-                    _LAST_OAUTH_URL = found_url
-                elif len(found_url) > len(_LAST_OAUTH_URL) and "state=" in found_url:
-                    _LAST_OAUTH_URL = found_url
-
             clean_text = _strip_ansi(raw_text)
             buffer += clean_text
 
-            # Extract lines from buffer (handling both \r and \n from PTY terminal UI)
-            raw_lines = re.split(r'[\r\n]+', buffer)
+            if len(buffer) > 32768:
+                buffer = buffer[-32768:]
+
+            # 1. Direct search in raw chunk
+            found_url = _extract_oauth_url(raw_text)
+            if found_url:
+                _LAST_OAUTH_URL = found_url
+
+            # 2. Check multiline buffer for wrapped OAuth URL
+            if "claude.com" in buffer or "claude.ai" in buffer:
+                flat_buffer = buffer
+                for _ in range(6):
+                    new_flat = re.sub(r'(https?://[^\s]+)[\r\n]+([a-zA-Z0-9_\-\.\%\&\=\+\/]+)', r'\1\2', flat_buffer)
+                    if new_flat == flat_buffer:
+                        break
+                    flat_buffer = new_flat
+                found_multiline_url = _extract_oauth_url(flat_buffer)
+                if found_multiline_url:
+                    _LAST_OAUTH_URL = found_multiline_url
+
+            # Extract lines from buffer
+            raw_lines = re.split(r'[\r\n]+', clean_text)
             for line in raw_lines:
                 clean_line = line.strip()
                 if clean_line:
@@ -348,24 +394,18 @@ async def _read_subprocess_output(proc):
 
                     line_url = _extract_oauth_url(clean_line)
                     if line_url:
-                        if not _LAST_OAUTH_URL:
-                            _LAST_OAUTH_URL = line_url
-                        elif len(line_url) > len(_LAST_OAUTH_URL) and "state=" in line_url:
-                            _LAST_OAUTH_URL = line_url
+                        _LAST_OAUTH_URL = line_url
 
-            # Space-collapsed matching to handle ANSI stripped terminal text
             buffer_nospace = re.sub(r'\s+', '', buffer.lower())
 
-            # Auto-respond with Enter (\r\n) if Claude CLI pauses at initial Theme selection screen
+            # Auto-respond with Enter if Claude CLI pauses at Theme selection screen
             if any(k in buffer_nospace for k in ["choosethetextstyle", "letsgetstarted", "monokaiextended", "textstylethatlooksbest"]):
-                if proc.stdin:
+                if proc.stdin and not getattr(proc, "_auto_entered_theme", False):
                     try:
                         proc.stdin.write(b"\r\n")
-                        proc.stdin.write(b"\r")
                         await proc.stdin.drain()
-                        if not getattr(proc, "_auto_entered_theme", False):
-                            proc._auto_entered_theme = True
-                            _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Sent carriage return (\\r\\n) to select default Dark mode theme.")
+                        proc._auto_entered_theme = True
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Sent carriage return (\\r\\n) to select default Dark mode theme.")
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending auto-enter: {e_stdin}")
 
@@ -382,19 +422,17 @@ async def _read_subprocess_output(proc):
 
             # Auto-respond to Workspace Safety Check (select '2. Yes, I trust this folder')
             if any(k in buffer_nospace for k in ["quicksafetycheck", "isthisaproject", "trustthisfolder", "securityguide", "entertoconfirm"]):
-                if proc.stdin:
+                if proc.stdin and not getattr(proc, "_auto_approved_safety", False):
                     try:
-                        if not getattr(proc, "_auto_approved_safety", False):
-                            proc.stdin.write(b"\x1b[B\r\n")
-                            proc.stdin.write(b"2\r\n")
-                            await proc.stdin.drain()
-                            proc._auto_approved_safety = True
-                            _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically selected '2. Yes, I trust this folder' for workspace safety check.")
+                        proc.stdin.write(b"\x1b[B\r\n2\r\n")
+                        await proc.stdin.drain()
+                        proc._auto_approved_safety = True
+                        _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically selected '2. Yes, I trust this folder' for workspace safety check.")
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending workspace trust selection: {e_stdin}")
 
-            # Auto-respond with Enter (\r\n) when Claude CLI displays 'Login successful. Press Enter to continue...'
-            if any(k in buffer_nospace for k in ["loginsuccessful", "pressentertocontinue", "loggedinas"]):
+            # Auto-respond with Enter when Claude CLI displays 'Login successful. Press Enter to continue...'
+            if any(k in buffer_nospace for k in ["loginsuccessful", "pressentertocontinue", "loggedinas", "credentials saved"]):
                 if proc.stdin and not getattr(proc, "_auto_sent_success_enter", False):
                     try:
                         proc.stdin.write(b"\r\n")
@@ -403,61 +441,8 @@ async def _read_subprocess_output(proc):
                         _LOGIN_LOGS.append("➡️ [AUTO-ENTER] Automatically sent Enter (\\r\\n) to confirm 'Login successful. Press Enter to continue...'.")
                     except Exception as e_stdin:
                         _LOGIN_LOGS.append(f"⚠️ Warning sending success enter: {e_stdin}")
-
-            # Also check raw buffer directly for OAuth URLs
-            raw_matches = re.findall(r'(https?://[^\s"\'\`<>\)\(\]\[]+)', buffer)
-            for url in raw_matches:
-                url_clean = url.rstrip('.,;:')
-                url_lower = url_clean.lower()
-                if any(kw in url_lower for kw in ["claude", "anthropic", "oauth", "authorize", "login", "account"]):
-                    if not _LAST_OAUTH_URL:
-                        _LAST_OAUTH_URL = url_clean
-
     except Exception as e:
-        _LOGIN_LOGS.append(f"Output reader error: {e}")
-
-
-class SetApiKeyRequest(BaseModel):
-    claude_api_key: Optional[str] = None
-    api_key: Optional[str] = None
-
-
-@app.post("/api/auth/set-key")
-@app.post("/api/claude/key")
-async def set_claude_api_key(req: SetApiKeyRequest) -> dict:
-    """Dynamically set CLAUDE_API_KEY environment variable and persist to .env."""
-    key = (req.claude_api_key or req.api_key or "").strip()
-    if not key:
-        raise HTTPException(status_code=400, detail="Vui lòng nhập API Key hợp lệ.")
-
-    os.environ["CLAUDE_API_KEY"] = key
-    os.environ["ANTHROPIC_API_KEY"] = key
-
-    # Persist to .env file in project root
-    env_file = Path(PROJECT_ROOT) / ".env"
-    try:
-        env_lines = []
-        if env_file.exists():
-            env_lines = env_file.read_text(encoding="utf-8").splitlines()
-
-        new_lines = [
-            line for line in env_lines
-            if not line.startswith("CLAUDE_API_KEY=") and not line.startswith("ANTHROPIC_API_KEY=")
-        ]
-        new_lines.append(f"CLAUDE_API_KEY={key}")
-        new_lines.append(f"ANTHROPIC_API_KEY={key}")
-        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-    except Exception as e:
-        _LOGIN_LOGS.append(f"⚠️ Warning saving .env: {e}")
-
-    global _CLAUDE_OAUTH_EXPIRED
-    _CLAUDE_OAUTH_EXPIRED = False
-    _LOGIN_LOGS.append("✅ [SUCCESS] CLAUDE_API_KEY updated dynamically in environment!")
-    return {
-        "status": "SUCCESS",
-        "message": "Đã lưu CLAUDE_API_KEY thành công vào hệ thống!",
-        "authenticated": True,
-    }
+        _LOGIN_LOGS.append(f"⚠️ Subprocess reader exited: {e}")
 
 
 class SetGeminiKeyRequest(BaseModel):
@@ -648,49 +633,32 @@ class SendInputRequest(BaseModel):
 
 @app.post("/api/auth/send-input")
 async def send_input_to_proc(req: SendInputRequest) -> dict:
-    """Send interactive keyboard inputs (e.g. down_enter, enter, '2\n') to running login process stdin."""
+    """Send interactive keyboard inputs (e.g. esc, enter, down_enter, '/login') to running login process stdin."""
     global _ACTIVE_LOGIN_PROC, _LOGIN_LOGS
     if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
-        raise HTTPException(status_code=400, detail="Không có tiến trình login nào đang chạy.")
+        raise HTTPException(status_code=400, detail="Không có tiến trình login nào đang chạy. Vui lòng bấm [Khởi chạy lại CLI].")
 
     if _ACTIVE_LOGIN_PROC.stdin:
         try:
-            inp = req.input_text.strip()
-            if inp == "down_enter":
+            inp = req.input_text.strip().lower()
+            if inp in ["esc", "cancel", "\x1b"]:
+                _ACTIVE_LOGIN_PROC.stdin.write(b"\x1b")
+            elif inp == "down_enter":
                 _ACTIVE_LOGIN_PROC.stdin.write(b"\x1b[B\r\n2\r\n")
-            elif inp == "enter":
+            elif inp in ["enter", "return", "retry"]:
                 _ACTIVE_LOGIN_PROC.stdin.write(b"\r\n")
             else:
-                _ACTIVE_LOGIN_PROC.stdin.write(f"{inp}\n".encode("utf-8"))
+                _ACTIVE_LOGIN_PROC.stdin.write(f"{req.input_text.strip()}\n".encode("utf-8"))
             await _ACTIVE_LOGIN_PROC.stdin.drain()
-            _LOGIN_LOGS.append(f"➡️ [MANUAL-INPUT] Sent input '{inp}' to process stdin")
+            _LOGIN_LOGS.append(f"➡️ [MANUAL-INPUT] Sent input '{req.input_text.strip()}' to process stdin")
             return {
                 "status": "SUCCESS",
-                "message": f"Đã gửi lệnh '{inp}' tới tiến trình!",
+                "message": f"Đã gửi lệnh '{req.input_text.strip()}' tới tiến trình!",
                 "logs": _LOGIN_LOGS[-25:]
             }
         except Exception as e_inp:
             raise HTTPException(status_code=500, detail=f"Lỗi gửi input: {e_inp}")
     raise HTTPException(status_code=500, detail="Process stdin is not writable.")
-
-
-def _clean_oauth_code(raw: str) -> str:
-    """Extract clean CODE#STATE string if user pasted a full callback URL or query parameters."""
-    code = raw.strip().strip("'\"")
-    if "code=" in code:
-        code_val = ""
-        state_val = ""
-        query_str = code.split("?", 1)[1] if "?" in code else code
-        for param in query_str.split("&"):
-            if param.startswith("code="):
-                code_val = param.split("code=")[1].split("#")[0].strip()
-            elif param.startswith("state="):
-                state_val = param.split("state=")[1].split("#")[0].strip()
-        if code_val:
-            if state_val:
-                return f"{code_val}#{state_val}"
-            return code_val
-    return code
 
 
 class SubmitAuthCodeRequest(BaseModel):
@@ -700,7 +668,7 @@ class SubmitAuthCodeRequest(BaseModel):
 @app.post("/api/auth/submit-code")
 async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
     """Submit OAuth authorization code or API key to running claude login subprocess stdin or environment."""
-    global _ACTIVE_LOGIN_PROC, _LOGIN_LOGS
+    global _ACTIVE_LOGIN_PROC, _LAST_OAUTH_URL, _LOGIN_LOGS
     code_input = _clean_oauth_code(req.code)
     if not code_input:
         raise HTTPException(status_code=400, detail="Vui lòng nhập mã code hoặc API Key hợp lệ.")
@@ -731,70 +699,63 @@ async def submit_auth_code(req: SubmitAuthCodeRequest) -> dict:
     os.environ.pop("CLAUDE_API_KEY", None)
     os.environ.pop("ANTHROPIC_API_KEY", None)
 
-    # 2. OAuth Code: If login process isn't active, launch fresh login process
+    # 2. Check active login process: must be alive to accept code
     if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
-        _LOGIN_LOGS.append("🔄 [SUBMIT-CODE] Launching Claude CLI login process for OAuth code exchange...")
-        cmd = "claude login" if shutil.which("claude") else "npx -y @anthropic-ai/claude-code login"
-        if shutil.which("script"):
-            cmd = f'script -q -c "{cmd}" /dev/null'
-        
-        env = os.environ.copy()
-        env.pop("CI", None)
-        env["FORCE_COLOR"] = "0"
-        env["HOME"] = "/home/agent"
-        env["DISABLE_CLAUDE_AUTO_UPDATE"] = "1"
-        env["DISABLE_AUTO_UPDATE"] = "1"
-        env["CLAUDE_AUTO_UPDATE_DISABLE"] = "1"
-        env["NO_UPDATE_NOTIFIER"] = "1"
+        raise HTTPException(
+            status_code=400,
+            detail="Tiến trình Claude CLI không đang chạy. Vui lòng bấm [Khởi chạy lại CLI] để bắt đầu phiên đăng nhập mới."
+        )
 
-        try:
-            _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
-                cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                cwd="/tmp",
-                env=env
-            )
-            asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
-            await asyncio.sleep(1.5)
-        except Exception as proc_exc:
-            _LOGIN_LOGS.append(f"❌ [SUBMIT-CODE ERROR] Failed to start login process: {proc_exc}")
-            raise HTTPException(status_code=500, detail=f"Không thể khởi chạy tiến trình login: {proc_exc}")
-
-    # 3. Write code to process stdin ONCE
+    # 3. Write code to process stdin
     if _ACTIVE_LOGIN_PROC and _ACTIVE_LOGIN_PROC.stdin:
         try:
-            submit_start_time = time.time()
+            # If CLI is currently waiting at "Press Enter to retry", send Enter first to get back to prompt!
+            recent_tail = "\n".join(_LOGIN_LOGS[-10:]).lower()
+            if "press enter to retry" in recent_tail:
+                _ACTIVE_LOGIN_PROC.stdin.write(b"\r\n")
+                await _ACTIVE_LOGIN_PROC.stdin.drain()
+                await asyncio.sleep(0.6)
+
             _ACTIVE_LOGIN_PROC.stdin.write(f"{code_input}\n".encode("utf-8"))
             await _ACTIVE_LOGIN_PROC.stdin.drain()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.4)
             _ACTIVE_LOGIN_PROC.stdin.write(b"\r\n")
             await _ACTIVE_LOGIN_PROC.stdin.drain()
             _LOGIN_LOGS.append(f"➡️ [SUBMIT-CODE] Sent OAuth Code ({code_input[:8]}...{len(code_input)} chars) to Claude CLI stdin.")
-            
-            # Verify file credentials OR stdout success logs
-            def _has_newly_written_credentials() -> bool:
-                if _has_valid_credentials():
-                    return True
-                recent_logs = "\n".join(_LOGIN_LOGS[-25:]).lower()
-                if any(kw in recent_logs for kw in ["logged in as", "credentials saved", "successfully authenticated", "login successful", "press enter"]):
-                    return True
-                return False
 
+            # Fast poll to verify status: Check for success OR explicit OAuth error
             is_verified = False
-            for step in range(12):
+            error_message = None
+
+            for step in range(8):
                 await asyncio.sleep(1.0)
-                if _has_newly_written_credentials():
+                if _has_valid_credentials():
                     is_verified = True
-                    _LOGIN_LOGS.append("🎉 [SUBMIT-CODE VERIFIED] Claude CLI successfully verified OAuth token and saved credentials!")
+                    break
+
+                recent_logs = "\n".join(_LOGIN_LOGS[-15:]).lower()
+                if any(kw in recent_logs for kw in ["logged in as", "credentials saved", "successfully authenticated", "login successful"]):
+                    is_verified = True
+                    break
+
+                # Detect explicit OAuth error from CLI
+                if "oauth error" in recent_logs or "invalid code" in recent_logs:
+                    error_message = "Mã xác thực không hợp lệ hoặc phiên OAuth đã bị lệch/hết hạn. Vui lòng bấm [Khởi chạy lại CLI] để tạo phiên mới và lấy mã mới!"
                     break
 
             if is_verified:
+                _LOGIN_LOGS.append("🎉 [SUBMIT-CODE VERIFIED] Claude CLI successfully verified OAuth token and saved credentials!")
                 return {
                     "status": "SUCCESS",
                     "message": "🎉 Đăng nhập Claude CLI thành công! Đã xác thực token với Anthropic.",
                     "authenticated": True,
+                    "logs": _LOGIN_LOGS[-25:],
+                }
+            elif error_message:
+                return {
+                    "status": "ERROR",
+                    "message": f"❌ {error_message}",
+                    "authenticated": False,
                     "logs": _LOGIN_LOGS[-25:],
                 }
             else:
@@ -885,18 +846,22 @@ async def download_debug_log() -> PlainTextResponse:
     )
 
 
+class TriggerLoginRequest(BaseModel):
+    force: bool = False
+
+
+@app.post("/api/auth/reset-login")
 @app.post("/api/auth/trigger-login")
-async def trigger_login() -> dict:
-    """Auto-launch Claude CLI login subprocess non-blockingly and capture OAuth URL."""
+async def trigger_login(force: bool = False, req: TriggerLoginRequest = None) -> dict:
+    """Auto-launch or restart Claude CLI login subprocess non-blockingly and capture fresh OAuth URL."""
     global _ACTIVE_LOGIN_PROC, _LAST_OAUTH_URL, _LOGIN_LOGS
     import asyncio
     import os
     import re
     import shutil
 
-    # Smart command selection based on available executables in environment.
-    # Wraps in 'script -q -c ... /dev/null' if available to allocate a pseudo-TTY for non-interactive containers,
-    # preventing Claude CLI from failing with 'Warning: no stdin data received in 3s'.
+    is_force = force or (req and req.force)
+
     if shutil.which("claude"):
         base_cmd = "claude login"
     elif shutil.which("npx"):
@@ -911,121 +876,114 @@ async def trigger_login() -> dict:
     else:
         cmd = base_cmd
 
-    # Return cached URL if available
-    if _LAST_OAUTH_URL:
+    # If NOT force, and we have an actively running process AND valid URL, return cached
+    if not is_force and _LAST_OAUTH_URL and _ACTIVE_LOGIN_PROC is not None and _ACTIVE_LOGIN_PROC.returncode is None:
         return {
             "status": "SUCCESS",
-            "message": "OAuth URL retrieved from cache.",
+            "message": "OAuth URL retrieved from active session.",
             "command": cmd,
             "oauth_url": _LAST_OAUTH_URL,
             "logs": _LOGIN_LOGS[-25:],
         }
+
+    # If force, or process exited/missing: terminate previous process and reset state!
+    if _ACTIVE_LOGIN_PROC is not None:
+        _LOGIN_LOGS.append(f"🛑 [RESET-LOGIN] Terminating previous Claude CLI process (PID: {_ACTIVE_LOGIN_PROC.pid})...")
+        try:
+            _ACTIVE_LOGIN_PROC.terminate()
+            try:
+                await asyncio.wait_for(_ACTIVE_LOGIN_PROC.wait(), timeout=1.5)
+            except asyncio.TimeoutError:
+                _ACTIVE_LOGIN_PROC.kill()
+        except Exception as e_kill:
+            _LOGIN_LOGS.append(f"⚠️ Warning killing process: {e_kill}")
+        _ACTIVE_LOGIN_PROC = None
+
+    _LAST_OAUTH_URL = None
+    _LOGIN_LOGS = []
+
+    env = os.environ.copy()
+    env.pop("CI", None)
+    env["FORCE_COLOR"] = "0"
+    env["HOME"] = "/home/agent"
+    env["COLUMNS"] = "500"  # Critical: Prevent terminal wrapping of OAuth URLs!
+    env["LINES"] = "50"
+    env["TERM"] = "xterm-256color"
+    env["DISABLE_CLAUDE_AUTO_UPDATE"] = "1"
+    env["DISABLE_AUTO_UPDATE"] = "1"
+    env["CLAUDE_AUTO_UPDATE_DISABLE"] = "1"
+    env["NO_UPDATE_NOTIFIER"] = "1"
+
+    # Pre-create default theme config in all candidate home directories
+    try:
+        cfg_data = {
+            "theme": "dark",
+            "hasCompletedOnboarding": True,
+            "hasSeenWelcome": True,
+            "hasCompletedTour": True,
+            "trustedDirectories": ["/app", "/home/agent", "/root", "."],
+            "projects": {
+                "/app": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
+                "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
+                "/root": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
+            }
+        }
+        cfg_payload = json.dumps(cfg_data, indent=2)
+        home_candidates = [Path("/home/agent"), Path.home(), Path("/root"), Path(env.get("HOME", "/home/agent"))]
+        for h_dir in home_candidates:
+            try:
+                h_dir.mkdir(parents=True, exist_ok=True)
+                (h_dir / ".claude.json").write_text(cfg_payload, encoding="utf-8")
+                (h_dir / ".claude").mkdir(parents=True, exist_ok=True)
+                (h_dir / ".claude" / "config.json").write_text(cfg_payload, encoding="utf-8")
+                (h_dir / ".config" / "claude-code").mkdir(parents=True, exist_ok=True)
+                (h_dir / ".config" / "claude-code" / "config.json").write_text(cfg_payload, encoding="utf-8")
+            except Exception:
+                pass
+    except Exception as e_cfg:
+        _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
+
+    _LOGIN_LOGS.append(f"🚀 [DEBUG] Launching login command: '{cmd}'")
+    _LOGIN_LOGS.append(f"📂 [DEBUG] Login Working Dir: '/tmp', HOME: '{env.get('HOME')}'")
 
     try:
-        if _ACTIVE_LOGIN_PROC is None or _ACTIVE_LOGIN_PROC.returncode is not None:
-            _LOGIN_LOGS = []
-            env = os.environ.copy()
-            env.pop("CI", None)
-            env["FORCE_COLOR"] = "0"
-            env["HOME"] = "/home/agent"
-            env["DISABLE_CLAUDE_AUTO_UPDATE"] = "1"
-            env["DISABLE_AUTO_UPDATE"] = "1"
-            env["CLAUDE_AUTO_UPDATE_DISABLE"] = "1"
-            env["NO_UPDATE_NOTIFIER"] = "1"
+        _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
+            cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd="/tmp",
+            env=env
+        )
+        asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
+    except Exception as e_sub:
+        _LOGIN_LOGS.append(f"❌ Failed to launch login process: {e_sub}")
+        raise HTTPException(status_code=500, detail=f"Không thể khởi chạy tiến trình login: {e_sub}")
 
-            # Pre-create default theme config in all Claude CLI config locations across all candidate home directories
-            try:
-                cfg_data = {
-                    "theme": "dark",
-                    "hasCompletedOnboarding": True,
-                    "hasSeenWelcome": True,
-                    "hasCompletedTour": True,
-                    "trustedDirectories": ["/app", "/home/agent", "/root", "."],
-                    "projects": {
-                        "/app": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
-                        "/home/agent": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"},
-                        "/root": {"hasCompletedOnboarding": True, "trustState": "TRUSTED"}
-                    }
-                }
-                cfg_payload = json.dumps(cfg_data, indent=2)
-                
-                home_candidates = [
-                    Path("/home/agent"),
-                    Path.home(),
-                    Path("/root"),
-                    Path(env.get("HOME", "/home/agent"))
-                ]
-                
-                for h_dir in home_candidates:
-                    try:
-                        h_dir.mkdir(parents=True, exist_ok=True)
-                        (h_dir / ".claude.json").write_text(cfg_payload, encoding="utf-8")
-                        
-                        c_sub = h_dir / ".claude"
-                        c_sub.mkdir(parents=True, exist_ok=True)
-                        (c_sub / "config.json").write_text(cfg_payload, encoding="utf-8")
-                        
-                        cfg_sub = h_dir / ".config" / "claude-code"
-                        cfg_sub.mkdir(parents=True, exist_ok=True)
-                        (cfg_sub / "config.json").write_text(cfg_payload, encoding="utf-8")
-                    except Exception as e_h:
-                        pass
-            except Exception as e_cfg:
-                _LOGIN_LOGS.append(f"⚠️ Warning pre-creating .claude.json: {e_cfg}")
+    # Non-blocking poll for up to 5 seconds to capture fresh OAuth URL
+    for _ in range(10):
+        if _LAST_OAUTH_URL:
+            break
+        await asyncio.sleep(0.5)
 
-            _LOGIN_LOGS.append(f"🚀 [DEBUG] Launching login command: '{cmd}'")
-            _LOGIN_LOGS.append(f"📂 [DEBUG] Login Working Dir: '/tmp', HOME: '{env.get('HOME')}'")
-            _LOGIN_LOGS.append(f"🔑 [DEBUG] API Key present in env: {bool(env.get('CLAUDE_API_KEY') or env.get('ANTHROPIC_API_KEY'))}")
-
-            _ACTIVE_LOGIN_PROC = await asyncio.create_subprocess_shell(
-                cmd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                cwd="/tmp",
-                env=env
-            )
-            asyncio.create_task(_read_subprocess_output(_ACTIVE_LOGIN_PROC))
-
-        # Non-blocking poll for up to 3 seconds for initial fast detection
-        for _ in range(6):
-            if _LAST_OAUTH_URL:
+    if not _LAST_OAUTH_URL:
+        for log in _LOGIN_LOGS:
+            found_url = _extract_oauth_url(log)
+            if found_url:
+                _LAST_OAUTH_URL = found_url
                 break
-            await asyncio.sleep(0.5)
 
-        # Fallback regex check over captured logs
-        if not _LAST_OAUTH_URL:
-            for log in _LOGIN_LOGS:
-                found_url = _extract_oauth_url(log)
-                if found_url:
-                    _LAST_OAUTH_URL = found_url
-                    break
-
-        return {
-            "status": "SUCCESS" if _LAST_OAUTH_URL else "PENDING",
-            "message": (
-                "OAuth URL captured successfully!"
-                if _LAST_OAUTH_URL
-                else f"Login command '{cmd}' running..."
-            ),
-            "command": cmd,
-            "oauth_url": _LAST_OAUTH_URL,
-            "logs": _LOGIN_LOGS[-25:],
-        }
-    except Exception as exc:
-        _LOGIN_LOGS.append(f"❌ [DEBUG ERROR] Execution error: {exc}")
-        return {
-            "status": "ERROR",
-            "message": f"Execution error: {exc}",
-            "command": cmd,
-            "oauth_url": None,
-            "logs": _LOGIN_LOGS,
-        }
-
-
-def check_api_key(x_api_key: str = Header(default="")) -> None:
-    if API_KEY and x_api_key and x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="invalid api key")
+    return {
+        "status": "SUCCESS" if _LAST_OAUTH_URL else "PENDING",
+        "message": (
+            "OAuth URL captured successfully!"
+            if _LAST_OAUTH_URL
+            else f"Login command '{cmd}' running... (PID: {_ACTIVE_LOGIN_PROC.pid})"
+        ),
+        "command": cmd,
+        "oauth_url": _LAST_OAUTH_URL,
+        "logs": _LOGIN_LOGS[-25:],
+    }
 
 
 class ChatAttachment(BaseModel):
@@ -1041,47 +999,10 @@ class ChatRequest(BaseModel):
     attachments: list[ChatAttachment] = []
 
 
-def _generate_sre_knowledge_response(msg: str) -> str:
-    m = msg.lower()
-    if "ece" in m or "t*" in m or "platt" in m or "nhiệt độ" in m:
-        return (
-            "### 📊 Phân Tích Độ Lệch ECE & Ý Nghĩa Tham Số Hiệu Chuẩn $T^* = 1.6178$\n\n"
-            "1. **Bản Chất Của Lỗi Quá Tự Tin Nơ-ron (Neural Overconfidence)**:\n"
-            "   - Trong các mạng học sâu (Vision Transformer, ResNet, EfficientNet), hàm kích hoạt Softmax thường xuất ra xác suất thô cực cao ($>99\\%$) ngay cả trên các mẫu ảnh bị nhiễu hoặc đối kháng ngoài phân phối (OOD).\n"
-            "   - Điều này dẫn đến **chỉ số lỗi hiệu chuẩn kỳ vọng ECE (Expected Calibration Error)** ban đầu lên tới **$0.184$** (quá cao, không đáp ứng được yêu cầu kiểm toán pháp lý theo **Điều 50 Đạo luật EU AI Act**).\n\n"
-            "2. **Ý Nghĩa Toán Học Của Tham Số $T^* = 1.6178$**:\n"
-            "   - Thuật toán **Platt Temperature Scaling** áp dụng biến đổi logit:\n"
-            "     $$\\hat{p}_i = \\sigma\\left(\\frac{z_i}{T^*}\\right) = \\frac{1}{1 + e^{-z_i / 1.6178}}$$\n"
-            "   - Do $T^* = 1.6178 > 1.0$, phép chia này **làm mềm phân bố xác suất (Softening logits)**, triệt tiêu độ tự tin ảo, đưa xác suất dự đoán khớp hoàn hảo với tần suất xuất hiện thực tế của mẫu giả mạo.\n\n"
-            "3. **Kết Quả Đạt Được Sau Hiệu Chuẩn**:\n"
-            "   - **ECE giảm hơn 90%**: Từ $0.184$ nén xuống **$<0.018$** (đáp ứng tiêu chuẩn kiểm định quốc tế).\n"
-            "   - **Kết hợp Ngưỡng Tối Ưu Youden $\\tau^* = 0.8118$**: Tối đa hóa đồng thời độ nhạy ($TPR$) và độ đặc hiệu ($1 - FPR$), triệt tiêu các ca báo động giả trên ảnh chụp chân dung đời thường và người lớn tuổi."
-        )
-    elif "cert" in m or "chứng thư" in m or "tra cứu" in m:
-        return (
-            f"### 🛡️ Tra Cứu Thông Tin Chứng Thư Số DeepFake\n\n"
-            f"**Truy vấn**: `{msg.strip()}`\n\n"
-            "- **Tiêu chuẩn pháp lý**: Tuân thủ **Điều 50 Đạo luật AI Liên minh Châu Âu (EU AI Act)** & Đạo luật Dịch vụ Số (DSA).\n"
-            "- **Cơ chế niêm phong**: Sử dụng thuật toán chữ ký số **Ed25519-SHA256** liên kết chuỗi băm bất biến của tệp phương tiện ($H_{\\text{media}}$).\n"
-            "- **Xác thực toàn cầu**: Nhúng cấu trúc siêu dữ liệu `Schema.org/DigitalDocument` cho phép công cụ tìm kiếm và cơ quan giám định tư pháp đối soát tức thời.\n"
-            "- **Trạng thái**: Chứng thư hợp lệ, toàn vẹn dữ liệu được bảo vệ chống chối bỏ."
-        )
-    elif "prnu" in m or "vân cảm biến" in m:
-        return (
-            "### 📷 Phân Tích Vân Cảm Biến Phần Cứng PRNU (Photo-Response Non-Uniformity)\n\n"
-            "- **Bản chất vật lý**: PRNU là dấu vân tay phần cứng độc nhất vô nhị của từng cảm biến CMOS do sai số vi mô trong quá trình chế tạo bán dẫn silicon.\n"
-            "- **Cơ chế phát hiện**: Khi ảnh bị can thiệp chắp vá bằng AI (FaceSwap, Inpainting), vùng mặt nhân tạo sẽ bị mất hoặc lệch pha hoàn toàn vân PRNU so với phông nền máy ảnh thực.\n"
-            "- **Định lượng**: Điểm số bất tương đồng PRNU $\\Delta_{\\text{PRNU}} > 0.35$ là bằng chứng đanh thép xác nhận sự can thiệp nhân tạo."
-        )
-    else:
-        return (
-            "### 🤖 Trợ Lý SRE & Giám Định Pháp Y DeepFake Đa Tác Thể (Triad Council)\n\n"
-            "Hệ thống giám định đang vận hành với kiến trúc Hội đồng Ba Tác thể:\n"
-            "1. **Google Gemini (Lead Examiner)**: Lập luận suy diễn CoT đa phương thức.\n"
-            "2. **Meta Muse AI (Counter-Evidence Specialist)**: Điều tra kháng chứng với Active Focus & đối soát mô hình mở (Movie Gen, DiT).\n"
-            "3. **Anthropic Claude (Legal Auditor)**: Trưởng ban phản biện đối kháng Devil's Advocate & Kiểm toán viên pháp lý EU AI Act Điều 50.\n\n"
-            "Hệ thống sẵn sàng giải đáp mọi câu hỏi về kỹ thuật, ECE calibration ($T^*=1.6178$), ngưỡng Youden ($\\tau^*=0.8118$) và tra cứu chứng thư số."
-        )
+def check_api_key(x_api_key: str = Header(default="")) -> None:
+    if API_KEY and x_api_key and x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="invalid api key")
+
 
 @app.post("/api/chat", dependencies=[Depends(check_api_key)])
 async def chat(req: ChatRequest):

@@ -1873,7 +1873,7 @@
                   <span style="font-size: 0.78rem; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.04em;">
                     ⚡ Xác thực Claude OAuth PKCE
                   </span>
-                  <button id="claudeOAuthTriggerBtn" type="button" class="btn btn-sm" style="background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; font-size: 0.75rem; padding: 0.35rem 0.8rem;" onclick="triggerClaudeOAuth()">
+                  <button id="claudeOAuthTriggerBtn" type="button" class="btn btn-sm" style="background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; font-size: 0.75rem; padding: 0.35rem 0.8rem;" onclick="triggerClaudeOAuth(true)">
                     <span>🚀 Kích hoạt Đăng nhập</span>
                   </button>
                 </div>
@@ -1929,6 +1929,12 @@
                     <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
                       <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('enter')" title="Gửi phím Enter tới stdin Claude CLI">
                         <span>⏎ Gửi Enter</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('esc')" title="Gửi phím Esc hủy lệnh">
+                        <span>⎋ Gửi Esc</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('esc')" title="Gửi phím Esc hủy lệnh">
+                        <span>⎋ Gửi Esc</span>
                       </button>
                       <button type="button" class="btn btn-sm btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;" onclick="sendInputCmd('down_enter')" title="Chọn dòng 2 và gửi Enter">
                         <span>⬇️ Dòng 2 + Enter</span>
@@ -3020,11 +3026,13 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
     }
 
         // ==========================================
+    // ==========================================
+    // ==========================================
     // OPTION B: CLAUDE OAUTH PKCE INTERACTIVE STEPPER & CLI TOOLS
     // ==========================================
     let claudeOAuthPollTimer = null;
 
-    async function triggerClaudeOAuth() {
+    async function triggerClaudeOAuth(force = true) {
       const stepper = document.getElementById('claudeOAuthStepperBox');
       const triggerBtn = document.getElementById('claudeOAuthTriggerBtn');
       const statusText = document.getElementById('claudeOAuthStatusText');
@@ -3032,21 +3040,24 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
       const codeRow = document.getElementById('claudeOAuthCodeRow');
       const openLink = document.getElementById('claudeOAuthOpenLink');
       const banner = document.getElementById('claudeOAuthResultBanner');
+      const codeInput = document.getElementById('claudeOAuthCodeInput');
 
       if (stepper) stepper.style.display = 'flex';
       if (triggerBtn) {
         triggerBtn.disabled = true;
-        triggerBtn.innerHTML = '<span>⏳ Đang kích hoạt...</span>';
+        triggerBtn.innerHTML = '<span>⏳ Đang khởi động CLI...</span>';
       }
-      if (statusText) statusText.innerText = 'Đang khởi chạy Claude CLI và quét link ủy quyền OAuth...';
+      if (statusText) statusText.innerHTML = '🔄 Đang dừng phiên cũ và khởi chạy Claude CLI mới...';
       if (linkRow) linkRow.style.display = 'none';
       if (codeRow) codeRow.style.display = 'none';
       if (banner) banner.style.display = 'none';
+      if (codeInput) codeInput.value = '';
 
       try {
-        const res = await fetch(getApiUrl('api/auth/trigger-login'), {
+        const res = await fetch(getApiUrl(`api/auth/trigger-login?force=${force}`), {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'}
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({force: force})
         });
         const data = await res.json();
         
@@ -3057,7 +3068,6 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
         if (data.oauth_url) {
           showClaudeOAuthLink(data.oauth_url);
         } else {
-          // Poll for OAuth URL up to 10 times every 1.5s
           startClaudeOAuthPolling();
         }
       } catch (err) {
@@ -3095,7 +3105,7 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
     function startClaudeOAuthPolling() {
       if (claudeOAuthPollTimer) clearInterval(claudeOAuthPollTimer);
       let pollCount = 0;
-      const maxPolls = 10;
+      const maxPolls = 12;
       
       claudeOAuthPollTimer = setInterval(async () => {
         pollCount++;
@@ -3121,11 +3131,11 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
           const statusText = document.getElementById('claudeOAuthStatusText');
           const triggerBtn = document.getElementById('claudeOAuthTriggerBtn');
           if (statusText) {
-            statusText.innerText = '⚠️ Chưa bắt được link tự động. Hãy mở mục [Công cụ CLI & Logs] bên dưới hoặc thử lại!';
+            statusText.innerText = '⚠️ Chưa bắt được link tự động. Hãy mở mục [Công cụ CLI & Logs] bên dưới hoặc bấm [Khởi chạy lại CLI]!';
           }
           if (triggerBtn) {
             triggerBtn.disabled = false;
-            triggerBtn.innerHTML = '<span>🚀 Thử lại Đăng nhập</span>';
+            triggerBtn.innerHTML = '<span>🔄 Khởi chạy lại CLI</span>';
           }
         }
       }, 1500);
@@ -3183,6 +3193,7 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
 
         if (data.authenticated || data.status === 'SUCCESS') {
           if (banner) {
+            banner.style.display = 'block';
             banner.style.background = 'rgba(16, 185, 129, 0.2)';
             banner.style.color = '#34d399';
             banner.style.border = '1px solid rgba(16, 185, 129, 0.4)';
@@ -3190,8 +3201,24 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
           }
           if (codeInput) codeInput.value = '';
           checkAuthStatus(true);
+        } else if (data.status === 'ERROR' || (data.message && data.message.includes('Mã xác thực không hợp lệ'))) {
+          if (banner) {
+            banner.style.display = 'block';
+            banner.style.background = 'rgba(239, 68, 68, 0.2)';
+            banner.style.color = '#f87171';
+            banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+            banner.innerHTML = `
+              <div>${data.message || '❌ Mã xác thực không khớp phiên đăng nhập CLI!'}</div>
+              <div style="margin-top: 6px;">
+                <button type="button" class="btn btn-sm btn-primary" style="font-size: 0.72rem; padding: 0.25rem 0.65rem;" onclick="triggerClaudeOAuth(true)">
+                  <span>🔄 Khởi chạy lại CLI ngay</span>
+                </button>
+              </div>
+            `;
+          }
         } else {
           if (banner) {
+            banner.style.display = 'block';
             banner.style.background = 'rgba(245, 158, 11, 0.2)';
             banner.style.color = '#fbbf24';
             banner.style.border = '1px solid rgba(245, 158, 11, 0.4)';
@@ -3202,10 +3229,18 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
         }
       } catch (err) {
         if (banner) {
+          banner.style.display = 'block';
           banner.style.background = 'rgba(239, 68, 68, 0.2)';
           banner.style.color = '#f87171';
           banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-          banner.innerText = '❌ Lỗi gửi mã: ' + err.message;
+          banner.innerHTML = `
+            <div>❌ Lỗi gửi mã: ${err.message}</div>
+            <div style="margin-top: 6px;">
+              <button type="button" class="btn btn-sm btn-primary" style="font-size: 0.72rem; padding: 0.25rem 0.65rem;" onclick="triggerClaudeOAuth(true)">
+                <span>🔄 Khởi chạy lại CLI ngay</span>
+              </button>
+            </div>
+          `;
         }
       } finally {
         if (submitBtn) {
@@ -3271,7 +3306,6 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
     function downloadClaudeDebugLog() {
       window.open(getApiUrl('api/auth/download-debug-log'), '_blank');
     }
-
 
     // TAB 5: SAVE KEYS
     async function saveClaudeKey() {
