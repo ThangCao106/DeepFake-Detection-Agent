@@ -121,3 +121,4 @@ def save_persistent_credentials(updates: Dict[str, Any]) -> None:
 
 # Automatically load on module import
 load_persistent_credentials()
+
