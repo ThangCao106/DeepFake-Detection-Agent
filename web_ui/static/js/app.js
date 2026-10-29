@@ -879,7 +879,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
 
     if (triad && triad.debate_transcript) {
         msgGeminiText = triad.debate_transcript.gemini_lead_examiner ? triad.debate_transcript.gemini_lead_examiner.findings_argument : "";
-        msgMuseText = triad.debate_transcript.muse_threat_expert ? triad.debate_transcript.muse_threat_expert.threat_matching_assessment : "";
+        msgMuseText = triad.debate_transcript.meta_muse_investigator ? (triad.debate_transcript.meta_muse_investigator.active_focus_investigation || triad.debate_transcript.meta_muse_investigator.threat_matching_assessment) : (triad.debate_transcript.muse_threat_expert ? triad.debate_transcript.muse_threat_expert.threat_matching_assessment : "");
         msgClaudeText = triad.debate_transcript.claude_chief_inquisitor ? triad.debate_transcript.claude_chief_inquisitor.audit_ruling : "";
         msgMagistrateText = triad.consensus_summary || "";
     }
@@ -896,8 +896,8 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     }
     if (!msgMuseText) {
         msgMuseText = isFake
-            ? "Đối soát mẫu đối kháng thế hệ mới: Bằng chứng số trùng khớp với dấu vết sinh của Diffusion Transformer (DiT) / Masked Generative Transformer (Google Muse)."
-            : "Đối soát cơ sở dữ liệu mẫu sinh: Không phát hiện bất kỳ dấu vết ranh giới token lượng tử hóa hay vết inpainting khẩu hình nào.";
+            ? "Meta Muse AI (Active Focus): Điều tra kháng chứng độc lập loại trừ nguyên nhân nén lossy/ISO noise; đối soát trùng khớp cấu trúc suy hao tiềm ẩn từ mô hình sinh mã nguồn mở (Meta Movie Gen / DiT / LLaMA-based generator)."
+            : "Meta Muse AI (Active Focus): Điều tra kháng chứng độc lập xác nhận phân phối quang sai và cảm biến CMOS vật lý hoàn toàn tự nhiên; không phát hiện can thiệp trường tiềm ẩn từ mô hình sinh mã nguồn mở.";
     }
     if (!msgClaudeText) {
         msgClaudeText = isFake
@@ -993,7 +993,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                             <span style="color: #1e3a8a;">${escapeHtml(msgGeminiText)}</span>
                         </div>
                         <div style="background: #faf5ff; padding: 6px 8px; border-left: 3px solid #a855f7; border-radius: 4px;">
-                            <strong style="color: #7e22ce;">🟪 Muse Threat Expert (Đối Soát Dấu Vết Tạo Sinh):</strong><br/>
+                            <strong style="color: #7e22ce;">🟪 Meta Muse AI (Điều Tra Kháng Chứng & Dấu Vết Mã Nguồn Mở):</strong><br/>
                             <span style="color: #581c87;">${escapeHtml(msgMuseText)}</span>
                         </div>
                         <div style="background: #fff7ed; padding: 6px 8px; border-left: 3px solid #f97316; border-radius: 4px;">

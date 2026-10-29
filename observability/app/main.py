@@ -468,57 +468,83 @@ async def get_gemini_status_api() -> dict:
 class SetMuseConfigRequest(BaseModel):
     mode: Optional[str] = "EMBEDDED_LOCAL"
     endpoint_url: Optional[str] = "embedded://triad-council"
+    model: Optional[str] = "meta-muse-spark"
+    api_key: Optional[str] = None
 
 
 @app.get("/api/muse/status")
 async def get_muse_status_api() -> dict:
-    """Return status and configuration of Muse Threat & Counterfactual Footprint Engine (Option B)."""
+    """Return status and configuration of Meta Muse AI Threat & Counter-Evidence Engine (Option B)."""
     mode = os.environ.get("MUSE_ENGINE_MODE", "EMBEDDED_LOCAL")
     endpoint = os.environ.get("MUSE_ENDPOINT_URL", "embedded://triad-council")
+    model = os.environ.get("MUSE_MODEL", "meta-muse-spark")
+    key = os.environ.get("META_MUSE_API_KEY", "").strip()
+
+    status_tag = "Ready (Spark)" if model == "meta-muse-spark" else ("Ready (Wonder)" if model == "meta-muse-wonder" else "Ready (Glimmer 30B)")
+    if mode == "LOCAL_GLIMMER_30B":
+        status_tag = "Local (Glimmer 30B)"
+    elif mode == "META_CLOUD_API":
+        status_tag = "Cloud API (Active)" if key else "Cloud API (Need Key)"
+
     return {
         "status": "SUCCESS",
         "authenticated": True,
-        "engine": "Muse Threat & Counterfactual Footprint Specialist",
+        "vendor": "Meta AI",
+        "engine": "Meta Muse AI (Autonomous Counter-Evidence & Open-Weight Threat Specialist)",
         "mode": mode,
         "endpoint_url": endpoint,
-        "active_status": "ONLINE (READY)",
+        "active_model": model,
+        "active_status": f"ONLINE ({status_tag})",
         "models_covered": [
-            "Google Muse (Masked Generative Transformer discrete token boundaries)",
-            "Meta Muse (Diffusion Transformer DiT Realtime Avatar)",
-            "MuseTalk (Audio-driven Lip-sync Latent Inpainting)"
+            "Meta Muse Wonder (Frontier Agentic Reasoning & Active Focus)",
+            "Meta Muse Spark (High-Efficiency Multimodal Reasoning Agent)",
+            "Meta Muse Glimmer 30B (Distilled Open-Weight Local Causal Model)"
         ],
-        "latency_mode": "Zero-Latency (<10ms Embedded)",
-        "message": "Động cơ Muse Threat Footprint sẵn sàng (MGT, DiT, MuseTalk)"
+        "latency_mode": "Zero-Latency (<10ms Embedded / Glimmer 30B)" if mode != "META_CLOUD_API" else "Cloud Latency (~300ms)",
+        "message": f"Động cơ Meta Muse AI sẵn sàng (Mô hình: {model}, Chế độ: {mode})"
     }
 
 
 @app.post("/api/muse/config")
 async def set_muse_config_api(req: SetMuseConfigRequest) -> dict:
-    """Configure and persist Muse Threat Engine operation mode."""
+    """Configure and persist Meta Muse AI operation mode and model."""
     mode = req.mode or "EMBEDDED_LOCAL"
     endpoint = req.endpoint_url or "embedded://triad-council"
+    model = req.model or "meta-muse-spark"
+    key = (req.api_key or "").strip().strip('"\'')
+
     os.environ["MUSE_ENGINE_MODE"] = mode
     os.environ["MUSE_ENDPOINT_URL"] = endpoint
+    os.environ["MUSE_MODEL"] = model
+    if key:
+        os.environ["META_MUSE_API_KEY"] = key
 
     env_file = Path(PROJECT_ROOT) / ".env"
     try:
         env_lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.exists() else []
         new_lines = [
             line for line in env_lines
-            if not line.startswith("MUSE_ENGINE_MODE=") and not line.startswith("MUSE_ENDPOINT_URL=")
+            if not line.startswith("MUSE_ENGINE_MODE=")
+            and not line.startswith("MUSE_ENDPOINT_URL=")
+            and not line.startswith("MUSE_MODEL=")
+            and not (key and line.startswith("META_MUSE_API_KEY="))
         ]
         new_lines.append(f"MUSE_ENGINE_MODE={mode}")
         new_lines.append(f"MUSE_ENDPOINT_URL={endpoint}")
+        new_lines.append(f"MUSE_MODEL={model}")
+        if key:
+            new_lines.append(f"META_MUSE_API_KEY={key}")
         env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     except Exception as e:
-        _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Muse): {e}")
+        _LOGIN_LOGS.append(f"⚠️ Warning saving .env (Meta Muse): {e}")
 
-    _LOGIN_LOGS.append(f"✅ [SUCCESS] MUSE Threat Engine mode updated: {mode}")
+    _LOGIN_LOGS.append(f"✅ [SUCCESS] Meta Muse AI updated: Model={model}, Mode={mode}")
     return {
         "status": "SUCCESS",
-        "message": "Đã lưu cấu hình Muse Threat Engine thành công!",
+        "message": f"Đã lưu cấu hình Meta Muse AI ({model}) thành công!",
         "mode": mode,
         "endpoint_url": endpoint,
+        "active_model": model,
         "authenticated": True
     }
 

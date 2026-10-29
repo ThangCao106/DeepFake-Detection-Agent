@@ -1032,9 +1032,9 @@
         <span class="dot"></span>
         <span>Gemini 2.5: <strong id="geminiStatusText">Checking...</strong></span>
       </div>
-      <div class="engine-badge active" id="museStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Muse Threat Expert: Đối Soát Dấu Vết Mô Hình Sinh MGT, DiT, MuseTalk (Nhấn để vào Cài đặt)">
+      <div class="engine-badge active" id="museStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Meta Muse AI: Tác thể Điều tra Kháng chứng & Dấu vết Mô hình Trọng số Mở (Nhấn để vào Cài đặt)">
         <span class="dot" style="background: #c084fc; box-shadow: 0 0 8px #c084fc;"></span>
-        <span>Muse: <strong id="museStatusText" style="color: #e9d5ff;">Ready (MGT/DiT)</strong></span>
+        <span>Meta Muse: <strong id="museStatusText" style="color: #e9d5ff;">Ready (Spark)</strong></span>
       </div>
       <button class="btn-toggle-agent" onclick="toggleAgentDrawer()">
         <span>🤖</span>
@@ -1911,35 +1911,50 @@
             </button>
           </div>
 
-          <!-- Muse Threat Engine Settings -->
+          <!-- Meta Muse AI Settings -->
           <div class="card">
             <div class="card-title">
-              <span>Muse Threat Engine</span>
-              <span class="badge-sub" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">Tier 3 Specialist</span>
+              <span>Meta Muse AI SDK & Local Engine</span>
+              <span class="badge-sub" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">Tier 3 Meta Agentic Engine</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Hệ sinh thái Muse (Google Muse MGT + Meta Muse DiT + MuseTalk) phụ trách đối soát dấu vết mô hình tạo sinh vi mô (Token Boundaries, Lip-Sync Inpainting).
+              Meta Muse (thuộc hệ sinh thái Meta AI: Muse Wonder, Muse Spark, Muse Glimmer 30B) phụ trách điều tra kháng chứng độc lập (Active Focus), tìm kiếm nguyên nhân phi giả mạo và đối soát đe dọa từ mô hình sinh mã nguồn mở (Movie Gen, DiT, LLaMA-based generators).
             </p>
 
             <div class="form-group">
               <label class="form-label">Chế độ vận hành (Engine Mode)</label>
               <select id="museEngineMode" class="form-input">
-                <option value="EMBEDDED_LOCAL" selected>Local Embedded Engine (Zero-Latency, MGT & Lip-Sync)</option>
-                <option value="REMOTE_WORKER">Remote GPU Worker (MuseTalk / DiT Server Endpoint)</option>
+                <option value="EMBEDDED_LOCAL" selected>Local Embedded Engine (Zero-Latency, Active Focus Analysis)</option>
+                <option value="META_CLOUD_API">Meta Muse Cloud Agent API (Meta AI Endpoint)</option>
+                <option value="LOCAL_GLIMMER_30B">Local Open-Weight Worker (Muse Glimmer 30B vLLM/Ollama)</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Endpoint URL (Dành cho GPU Worker ngoài)</label>
+              <label class="form-label">Mô hình phục vụ (Serving Model)</label>
+              <select id="museDefaultModel" class="form-input">
+                <option value="meta-muse-spark" selected>meta-muse-spark (Khuyến nghị - Tốc độ cao, đa phương thức)</option>
+                <option value="meta-muse-wonder">meta-muse-wonder (Mô hình suy luận sâu Frontier, Active Focus)</option>
+                <option value="muse-glimmer-30b-local">muse-glimmer-30b (Trọng số mở 30B chạy On-Premise GPU)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Endpoint URL / Worker Address</label>
               <input type="text" id="museEndpointInput" class="form-input mono" placeholder="embedded://triad-council" value="embedded://triad-council">
             </div>
 
+            <div class="form-group">
+              <label class="form-label">Meta AI API Key (Dành cho Meta Cloud Agent API)</label>
+              <input type="password" id="museApiKeyInput" class="form-input mono" placeholder="Nhập Meta AI / LLaMA API Key (nếu dùng Cloud)">
+            </div>
+
             <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 600; margin-bottom: 1rem;">
-              ✓ Tích hợp sẵn: Google Muse MGT, Meta Muse DiT, MuseTalk LipSync Footprints
+              ✓ Hệ sinh thái Meta AI: Meta Muse Wonder, Muse Spark, Muse Glimmer 30B (Active Focus & Open-Weight Analysis)
             </div>
 
             <button class="btn btn-primary" style="background: linear-gradient(135deg, #7e22ce, #a855f7); border: none;" onclick="saveMuseConfig()">
-              <span>Lưu Cấu Hình Muse</span>
+              <span>Lưu Cấu Hình Meta Muse</span>
             </button>
           </div>
         </div>
@@ -2089,22 +2104,25 @@
         const geminiData = geminiRes.ok ? await geminiRes.json() : {};
         const museData = museRes.ok ? await museRes.json() : {};
 
-        // Muse Badge
+        // Meta Muse Badge
         const museBadge = document.getElementById('museStatusBadge');
         const museText = document.getElementById('museStatusText');
         if (museBadge && museText) {
           if (museData && museData.status === 'SUCCESS') {
             museBadge.className = 'engine-badge active';
-            museText.innerText = museData.mode === 'REMOTE_WORKER' ? 'Online (GPU)' : 'Ready (MGT/DiT)';
-            museBadge.title = `Muse Threat Expert: ${museData.message || 'Sẵn sàng'} (${museData.latency_mode || ''})`;
+            const modelLabel = museData.active_model === 'meta-muse-wonder' ? 'Online (Wonder)' : (museData.active_model === 'muse-glimmer-30b-local' ? 'Local (Glimmer 30B)' : 'Ready (Spark)');
+            museText.innerText = museData.mode === 'LOCAL_GLIMMER_30B' ? 'Local (30B)' : (museData.mode === 'META_CLOUD_API' ? 'Cloud (Active)' : modelLabel);
+            museBadge.title = `Meta Muse AI: ${museData.message || 'Sẵn sàng'} (${museData.latency_mode || ''})`;
             const modeSelect = document.getElementById('museEngineMode');
             const endInput = document.getElementById('museEndpointInput');
+            const modelSelect = document.getElementById('museDefaultModel');
             if (modeSelect && museData.mode) modeSelect.value = museData.mode;
             if (endInput && museData.endpoint_url) endInput.value = museData.endpoint_url;
+            if (modelSelect && museData.active_model) modelSelect.value = museData.active_model;
           } else {
             museBadge.className = 'engine-badge warn';
             museText.innerText = 'Offline';
-            museBadge.title = 'Động cơ Muse chưa được kết nối.';
+            museBadge.title = 'Động cơ Meta Muse chưa được kết nối.';
           }
         }
 
@@ -2950,21 +2968,23 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
     async function saveMuseConfig() {
       const mode = document.getElementById('museEngineMode').value;
       const endpoint = document.getElementById('museEndpointInput').value.trim();
+      const model = document.getElementById('museDefaultModel') ? document.getElementById('museDefaultModel').value : 'meta-muse-spark';
+      const apiKey = document.getElementById('museApiKeyInput') ? document.getElementById('museApiKeyInput').value.trim() : '';
       try {
         const res = await fetch(getApiUrl('api/muse/config'), {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({mode: mode, endpoint_url: endpoint})
+          body: JSON.stringify({mode: mode, endpoint_url: endpoint, model: model, api_key: apiKey})
         });
         if (!res.ok) {
           const errText = await res.text();
-          alert('Lỗi lưu cấu hình Muse (' + res.status + '): ' + errText);
+          alert('Lỗi lưu cấu hình Meta Muse (' + res.status + '): ' + errText);
           return;
         }
-        alert('Lưu cấu hình Muse Threat Engine thành công!');
+        alert('Lưu cấu hình Meta Muse AI (' + model + ') thành công!');
         checkAuthStatus();
       } catch (err) {
-        alert('Lỗi lưu cấu hình Muse: ' + err.message);
+        alert('Lỗi lưu cấu hình Meta Muse: ' + err.message);
       }
     }
 
