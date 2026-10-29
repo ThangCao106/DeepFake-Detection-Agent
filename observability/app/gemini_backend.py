@@ -1,5 +1,3 @@
-_CACHED_ACTIVE_MODELS: List[str] = []
-
 """
 Gemini SDK & Google GenAI Backend for Observability Agent (Tier 1 Engine).
 
@@ -15,6 +13,8 @@ import asyncio
 import urllib.request
 import urllib.error
 from typing import AsyncIterator, Optional, Dict, Any, List
+
+_CACHED_ACTIVE_MODELS: list[str] = []
 
 DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 
