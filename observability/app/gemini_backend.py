@@ -1,3 +1,5 @@
+_CACHED_ACTIVE_MODELS: List[str] = []
+
 """
 Gemini SDK & Google GenAI Backend for Observability Agent (Tier 1 Engine).
 
@@ -55,13 +57,26 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
                 "x-goog-api-key": key
             }
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 if resp.status == 200:
+                    try:
+                        res_json = json.loads(resp.read().decode("utf-8"))
+                        live_models = [
+                            m.get("name", "").replace("models/", "")
+                            for m in res_json.get("models", [])
+                            if "generateContent" in m.get("supportedGenerationMethods", [])
+                        ]
+                        global _CACHED_ACTIVE_MODELS
+                        if live_models:
+                            _CACHED_ACTIVE_MODELS = live_models
+                    except Exception:
+                        pass
                     return {
                         "valid": True,
                         "status": "AUTHENTICATED",
                         "message": "API Key hợp lệ và hoạt động bình thường",
-                        "masked": masked
+                        "masked": masked,
+                        "active_models_count": len(_CACHED_ACTIVE_MODELS)
                     }
         except urllib.error.HTTPError as e:
             if e.code in [400, 401, 403]:
@@ -166,20 +181,28 @@ async def run_gemini_generate(
 
             # Auto-fallback on 503 (High demand / Unavailable), 429 (Rate-limited), 404 (Retired), or 500/502/504
             if e.code in [404, 429, 500, 502, 503, 504]:
-                fallback_chain = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-pro", "gemini-1.5-pro"]
-                for fallback_model in fallback_chain:
+                # Combine cached live models from Google with standard known working models
+                candidates_chain = list(_CACHED_ACTIVE_MODELS) if _CACHED_ACTIVE_MODELS else []
+                default_chain = [
+                    "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash",
+                    "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-2.5-pro",
+                    "gemini-pro"
+                ]
+                for m_def in default_chain:
+                    if m_def not in candidates_chain:
+                        candidates_chain.append(m_def)
+
+                for fallback_model in candidates_chain:
                     if fallback_model == model:
                         continue
                     try:
                         fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
                         fb_req = urllib.request.Request(fb_url, data=data_bytes, headers=req_headers, method="POST")
-                        with urllib.request.urlopen(fb_req, timeout=25) as fb_resp:
+                        with urllib.request.urlopen(fb_req, timeout=20) as fb_resp:
                             fb_body = fb_resp.read().decode("utf-8")
                             parsed = json.loads(fb_body)
                             if parsed.get("candidates"):
                                 return parsed
-                    except urllib.error.HTTPError as fb_err:
-                        continue
                     except Exception:
                         continue
 
