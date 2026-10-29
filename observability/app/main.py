@@ -826,18 +826,26 @@ async def get_debug_logs() -> dict:
     claude_dir = Path(home_dir) / ".claude"
     user_claude_dir = Path.home() / ".claude"
 
-    # Scan persistent volume /home/agent for diagnostic audit
+    # Fast audit of candidate credentials and configuration files
     volume_files = []
-    for h in [Path("/home/agent"), Path.home(), Path(home_dir)]:
+    audit_candidates = [
+        Path("/home/agent/.claude.json"),
+        Path("/home/agent/.claude/config.json"),
+        Path("/home/agent/.claude/credentials.json"),
+        Path("/home/agent/.config/claude-code/config.json"),
+        Path.home() / ".claude.json",
+        Path.home() / ".claude/config.json",
+        Path.home() / ".claude/credentials.json",
+        Path.home() / ".config/claude-code/config.json",
+    ]
+    for p in audit_candidates:
         try:
-            if h.exists():
-                for p in h.rglob("*"):
-                    if p.is_file() and any(k in str(p) for k in [".claude", "config", "cred", "auth", "session", "keys"]):
-                        volume_files.append({
-                            "path": str(p),
-                            "size": p.stat().st_size,
-                            "mtime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
-                        })
+            if p.exists() and p.is_file():
+                volume_files.append({
+                    "path": str(p),
+                    "size": p.stat().st_size,
+                    "mtime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
+                })
         except Exception as exc_vol:
             volume_files.append({"error": str(exc_vol)})
 
