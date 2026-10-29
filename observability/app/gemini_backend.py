@@ -20,6 +20,9 @@ DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 SUPPORTED_GEMINI_MODELS = [
     "gemini-3.8-flash",
     "gemini-3.8-flash-cyber",
+    "gemini-3.5-flash",
+    "gemini-3-flash-preview",
+    "gemini-flash-latest",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
     "gemini-2.0-flash",
@@ -29,7 +32,7 @@ SUPPORTED_GEMINI_MODELS = [
 def get_gemini_api_key() -> str:
     """Retrieve Gemini API key from environment, falling back to persistent credentials store."""
     key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not key or key.startswith("AQ."):
+    if not key:
         try:
             from app.credentials_manager import load_persistent_credentials
             load_persistent_credentials()
@@ -55,13 +58,7 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
 
     masked = (key[:8] + "...") if len(key) > 8 else "***"
 
-    if key.startswith("AQ.") or key.startswith("AQ"):
-        return {
-            "valid": False,
-            "status": "INVALID_KEY",
-            "message": "Mã token dạng AQ.Ab8... là OAuth refresh token, không thể dùng trực tiếp cho Google GenAI API. Vui lòng tạo API Key chuẩn (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey",
-            "masked": masked
-        }
+    # AQ. and AIzaSy keys (Google Cloud Express & AI Studio) are both supported
 
     if len(key) < 20:
         return {
@@ -140,11 +137,7 @@ async def run_gemini_generate(
     if not key:
         raise ValueError("GEMINI_API_KEY chưa được cấu hình. Vui lòng cập nhật API Key tại menu 'Cài đặt kết nối'.")
 
-    if key.startswith("AQ.") or key.startswith("AQ"):
-        raise ValueError(
-            "GEMINI_API_KEY hiện tại là token dạng OAuth ('AQ.Ab8...'), không thể dùng cho Google GenAI API. "
-            "Vui lòng vào https://aistudio.google.com/apikey tạo API Key chuẩn (bắt đầu bằng AIzaSy...) và lưu vào Cài đặt."
-        )
+    # Both AIzaSy... and AQ... keys are supported
 
     # Normalize requested model
     model = model.strip() if model else DEFAULT_GEMINI_MODEL
@@ -200,8 +193,9 @@ async def run_gemini_generate(
             # Auto-fallback on 404 (model not in beta yet), 503 (high demand), 429 (rate-limited), or 500
             if e.code in [404, 429, 500, 502, 503, 504]:
                 fallback_candidates = [
-                    "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash",
-                    "gemini-1.5-flash", "gemini-flash-latest"
+                    "gemini-3.8-flash", "gemini-3.5-flash", "gemini-3-flash-preview",
+                    "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash",
+                    "gemini-1.5-flash"
                 ]
                 for fb_model in fallback_candidates:
                     if fb_model == model:

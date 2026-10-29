@@ -1992,11 +1992,11 @@
               </p>
 
               <div class="form-group">
-                <label class="form-label">Google Gemini API Key (AIzaSy...)</label>
-                <input type="password" id="geminiApiKeyInput" class="form-input mono" placeholder="Nhập Google AI Studio API Key (AIzaSy...)">
+                <label class="form-label">Google Gemini API Key (AIzaSy... hoặc AQ...)</label>
+                <input type="password" id="geminiApiKeyInput" class="form-input mono" placeholder="Nhập Google Gemini API Key (AIzaSy... hoặc AQ...)">
                 <small style="display: block; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; line-height: 1.4;">
-                  Lấy API Key chuẩn (bắt đầu bằng <code>AIzaSy...</code>) tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">Google AI Studio ↗</a><br/>
-                  <span style="color: #fbbf24;">⚠️ Lưu ý: Mã token dạng <code>AQ.Ab8...</code> là refresh token của OAuth/Vertex, không dùng trực tiếp được cho Google GenAI API.</span>
+                  ✅ Hỗ trợ toàn diện cả Google AI Studio (<code>AIzaSy...</code>) và Google Cloud Express Mode (<code>AQ...</code>).<br/>
+                  Lấy API Key tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">Google AI Studio ↗</a>
                 </small>
               </div>
 
@@ -2004,6 +2004,8 @@
                 <label class="form-label">Mô hình phục vụ (Serving Model)</label>
                 <select id="geminiDefaultModel" class="form-input">
                   <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Mới nhất 2026 - Long-horizon Reasoning, tốc độ cao)</option>
+                  <option value="gemini-3-flash-preview">gemini-3-flash-preview (Tốc độ phản hồi cực nhanh, 2026 flagship)</option>
+                  <option value="gemini-3.5-flash">gemini-3.5-flash (Cân bằng hiệu năng cao)</option>
                   <option value="gemini-3.8-flash-cyber">gemini-3.8-flash-cyber (Chuyên sâu an ninh mạng & Pentest)</option>
                   <option value="gemini-2.5-flash">gemini-2.5-flash (Flash Thinking)</option>
                   <option value="gemini-2.5-pro">gemini-2.5-pro (Tư duy suy luận chuyên sâu)</option>
@@ -2088,6 +2090,7 @@
         <div class="model-selector-wrap">
           <select id="modelSelector" class="model-select">
             <option value="gemini-3.8-flash" selected>Google Gemini 3.8 Flash (Mới nhất)</option>
+            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Siêu tốc)</option>
             <option value="claude-sonnet-5.5">Claude Sonnet 5.5 (Mới nhất)</option>
             <option value="gemini-3.8-flash-cyber">Gemini 3.8 Flash Cyber</option>
             <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
