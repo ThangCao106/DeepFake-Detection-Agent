@@ -24,8 +24,16 @@ SUPPORTED_MODELS = [
     "sre-agent-hybrid",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
     "claude-3-7-sonnet",
+    "claude-3-7-sonnet-20250219",
     "claude-3-5-sonnet",
+    "meta-muse-spark",
+    "meta-muse-wonder",
+    "meta-muse-glimmer-30b",
     "observability-agent",
     "antigravity-agent"
 ]

@@ -225,7 +225,7 @@ class TriadCouncilEngine:
                 )
 
         return {
-            "agent": "Google Gemini 2.0 (Lead Forensic Examiner)",
+            "agent": "Google Gemini 2.5 (Lead Forensic Examiner)",
             "role": "Multimodal Abductive Reasoner",
             "findings_argument": argument,
             "confidence_assessment": round(float(risk if is_fake else (1.0 - risk)), 4)
@@ -326,7 +326,7 @@ class TriadCouncilEngine:
             )
 
         return {
-            "agent": "Anthropic Claude 3.5 (Chief Inquisitor & Legal Auditor)",
+            "agent": "Anthropic Claude 3.7 Sonnet (Chief Inquisitor & Legal Auditor)",
             "role": "Cross-Examiner, Devil's Advocate & EU AI Act Article 50 Auditor",
             "audit_ruling": critique,
             "mathematical_calibration_audit": {

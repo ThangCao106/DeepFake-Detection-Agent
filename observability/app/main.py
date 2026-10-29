@@ -512,39 +512,22 @@ class SetMuseConfigRequest(BaseModel):
     endpoint_url: Optional[str] = "embedded://triad-council"
     model: Optional[str] = "meta-muse-spark"
     api_key: Optional[str] = None
+    muse_ai_key: Optional[str] = None
 
 
 @app.get("/api/muse/status")
 async def get_muse_status_api() -> dict:
-    """Return status and configuration of Meta Muse AI Threat & Counter-Evidence Engine (Option B)."""
-    mode = os.environ.get("MUSE_ENGINE_MODE", "EMBEDDED_LOCAL")
-    endpoint = os.environ.get("MUSE_ENDPOINT_URL", "embedded://triad-council")
-    model = os.environ.get("MUSE_MODEL", "meta-muse-spark")
-    key = os.environ.get("META_MUSE_API_KEY", "").strip()
+    """Return status and configuration of Meta Muse AI Threat & Counter-Evidence Engine (Option C)."""
+    from app.muse_backend import verify_muse_status
+    return await verify_muse_status()
 
-    status_tag = "Ready (Spark)" if model == "meta-muse-spark" else ("Ready (Wonder)" if model == "meta-muse-wonder" else "Ready (Glimmer 30B)")
-    if mode == "LOCAL_GLIMMER_30B":
-        status_tag = "Local (Glimmer 30B)"
-    elif mode == "META_CLOUD_API":
-        status_tag = "Cloud API (Active)" if key else "Cloud API (Need Key)"
 
-    return {
-        "status": "SUCCESS",
-        "authenticated": True,
-        "vendor": "Meta AI",
-        "engine": "Meta Muse AI (Autonomous Counter-Evidence & Open-Weight Threat Specialist)",
-        "mode": mode,
-        "endpoint_url": endpoint,
-        "active_model": model,
-        "active_status": f"ONLINE ({status_tag})",
-        "models_covered": [
-            "Meta Muse Wonder (Frontier Agentic Reasoning & Active Focus)",
-            "Meta Muse Spark (High-Efficiency Multimodal Reasoning Agent)",
-            "Meta Muse Glimmer 30B (Distilled Open-Weight Local Causal Model)"
-        ],
-        "latency_mode": "Zero-Latency (<10ms Embedded / Glimmer 30B)" if mode != "META_CLOUD_API" else "Cloud Latency (~300ms)",
-        "message": f"Động cơ Meta Muse AI sẵn sàng (Mô hình: {model}, Chế độ: {mode})"
-    }
+@app.post("/api/muse/video-analysis")
+async def muse_video_analysis_api(req: dict) -> dict:
+    """Run deep video timeline & speech transcription analysis using muse.ai Video Tool."""
+    from app.muse_backend import analyze_video_with_muse_ai
+    target = req.get("video_url") or req.get("video_path") or "sample_video.mp4"
+    return await analyze_video_with_muse_ai(target)
 
 
 @app.post("/api/muse/config")
@@ -1095,6 +1078,25 @@ async def chat(req: ChatRequest):
                 for w in kb_answer.split(" "):
                     yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': w + ' '}})}\n\n"
                     await asyncio.sleep(0.01)
+                yield "data: [DONE]\n\n"
+                return
+
+        # --- PATH 1.5: META MUSE AI ROUTING ---
+        elif target_model.lower().startswith("muse") or target_model.lower().startswith("meta"):
+            from app.muse_backend import stream_muse_generate
+            muse_model = target_model if target_model.lower().startswith("meta-muse") else os.environ.get("MUSE_MODEL", "meta-muse-spark")
+            try:
+                async for chunk in stream_muse_generate(
+                    prompt=req.message,
+                    system_instruction=CHAT_SYSTEM_PROMPT,
+                    model=muse_model
+                ):
+                    event = {"type": "content_block_delta", "delta": {"text": chunk}}
+                    yield f"data: {json.dumps(event)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            except Exception as me:
+                yield f"data: {json.dumps({'type': 'content_block_delta', 'delta': {'text': f'\\n\\n⚠️ Lỗi Meta Muse AI: {str(me)}'}})}\n\n"
                 yield "data: [DONE]\n\n"
                 return
 

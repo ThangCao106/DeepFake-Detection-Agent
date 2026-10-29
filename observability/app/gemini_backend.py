@@ -1,11 +1,10 @@
 """
 Gemini SDK & Google GenAI Backend for Observability Agent (Tier 1 Engine).
 
-Implements Option B Tiered Hybrid Architecture:
-  - Tier 1 (Gemini 2.5 Flash / Pro): Fast telemetry triaging, real-time log scanning,
-    and high-throughput query synthesis using Google GenAI API.
+Implements Option C Tiered Hybrid Architecture:
+  - Lead Forensic Examiner & Fast Telemetry Engine: Google Gemini 2.5 Flash / Pro, Gemini 2.0 Flash
   - Streaming support for OpenAI-compatible completions.
-  - Automatic fallback & ClickHouse query fast-path.
+  - Automatic fallback across model generations (2.5 -> 2.0 -> 1.5).
 """
 import os
 import json
@@ -16,7 +15,16 @@ from typing import AsyncIterator, Optional, Dict, Any, List
 
 _CACHED_ACTIVE_MODELS: list[str] = []
 
-DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+
+SUPPORTED_GEMINI_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
+]
 
 def get_gemini_api_key() -> str:
     """Retrieve Gemini API key from environment."""
@@ -39,6 +47,14 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
 
     masked = (key[:8] + "...") if len(key) > 8 else "***"
 
+    if key.startswith("AQ.") or key.startswith("AQ"):
+        return {
+            "valid": False,
+            "status": "INVALID_KEY",
+            "message": "Mã token dạng AQ.Ab8... là OAuth refresh token, không thể dùng trực tiếp cho Google GenAI API. Vui lòng tạo API Key chuẩn (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey",
+            "masked": masked
+        }
+
     if len(key) < 20:
         return {
             "valid": False,
@@ -53,7 +69,7 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
     def _sync_check():
         try:
             headers = {
-                "User-Agent": "Deepfake-Forensic-Agent/2.5",
+                "User-Agent": "Deepfake-Forensic-Agent/3.0",
                 "x-goog-api-key": key
             }
             req = urllib.request.Request(url, headers=headers)
@@ -83,7 +99,7 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
                 return {
                     "valid": False,
                     "status": "INVALID_KEY",
-                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code}). Cần lấy API key chuẩn tại aistudio.google.com",
+                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code}). Vui lòng tạo API key chuẩn (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey",
                     "masked": masked
                 }
             return {
@@ -93,7 +109,6 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
                 "masked": masked
             }
         except Exception as ex:
-            # Container network or DNS fallback
             return {
                 "valid": False,
                 "status": "CONNECTION_ERROR",
@@ -112,27 +127,24 @@ async def run_gemini_generate(
     api_key: Optional[str] = None,
     temperature: float = 0.2
 ) -> str:
-    """Execute one-shot generation using Google Gemini API."""
+    """Execute one-shot generation using Google Gemini API with smart fallback."""
     key = api_key or get_gemini_api_key()
     if not key:
-        raise ValueError("GEMINI_API_KEY is not configured. Please set it in .env or via Web UI.")
+        raise ValueError("GEMINI_API_KEY chưa được cấu hình. Vui lòng cập nhật API Key tại menu 'Cài đặt kết nối'.")
 
-    # Normalize deprecated or alias model IDs to current active endpoints
-    MODEL_MAP = {
-        "gemini-2.5-flash": "gemini-flash-latest",
-        "gemini-2.5-pro": "gemini-flash-latest",
-        "gemini-1.5-flash": "gemini-flash-latest",
-        "gemini-1.5-pro": "gemini-flash-latest",
-        "gemini-flash": "gemini-flash-latest",
-        "gemini-pro": "gemini-flash-latest",
-        "fast": "gemini-flash-latest",
-        "l1": "gemini-flash-latest",
-        "deep": "gemini-flash-latest"
-    }
+    if key.startswith("AQ.") or key.startswith("AQ"):
+        raise ValueError(
+            "GEMINI_API_KEY hiện tại là token dạng OAuth ('AQ.Ab8...'), không thể dùng cho Google GenAI API. "
+            "Vui lòng vào https://aistudio.google.com/apikey tạo API Key chuẩn (bắt đầu bằng AIzaSy...) và lưu vào Cài đặt."
+        )
+
     # Normalize requested model
-    model = model.strip() if model else "gemini-2.5-flash"
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    model = model.strip() if model else DEFAULT_GEMINI_MODEL
+    # Aliases
+    if model in ["gemini-flash", "fast", "l1"]:
+        model = "gemini-2.5-flash"
+    elif model in ["gemini-pro", "deep"]:
+        model = "gemini-2.5-pro"
 
     payload: Dict[str, Any] = {
         "contents": [
@@ -155,48 +167,39 @@ async def run_gemini_generate(
     data_bytes = json.dumps(payload).encode("utf-8")
     req_headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": key
+        "x-goog-api-key": key,
+        "User-Agent": "Deepfake-Forensic-Agent/3.0"
     }
-    req = urllib.request.Request(
-        url,
-        data=data_bytes,
-        headers=req_headers,
-        method="POST"
-    )
 
     loop = asyncio.get_running_loop()
 
     def _sync_post():
+        primary_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+        primary_req = urllib.request.Request(primary_url, data=data_bytes, headers=req_headers, method="POST")
+
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(primary_req, timeout=30) as resp:
                 res_body = resp.read().decode("utf-8")
                 return json.loads(res_body)
         except urllib.error.HTTPError as e:
             err_text = e.read().decode("utf-8", errors="ignore")
             if e.code == 401:
                 raise RuntimeError(
-                    f"Gemini API Error (HTTP 401): API key không hợp lệ hoặc không có quyền truy cập (ACCESS_TOKEN_TYPE_UNSUPPORTED). "
-                    f"Vui lòng tạo Google AI Studio API Key (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey và cập nhật qua menu 'Cài đặt kết nối'."
+                    f"Gemini API Error (HTTP 401): API key không hợp lệ hoặc không có quyền truy cập. "
+                    f"Vui lòng tạo Google AI Studio API Key (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey"
                 )
 
-            # Auto-fallback on 503 (High demand / Unavailable), 429 (Rate-limited), 404 (Retired), or 500/502/504
+            # Auto-fallback on 404 (model not in beta yet), 503 (high demand), 429 (rate-limited), or 500
             if e.code in [404, 429, 500, 502, 503, 504]:
-                # Combine cached live models from Google with standard known working models
-                candidates_chain = list(_CACHED_ACTIVE_MODELS) if _CACHED_ACTIVE_MODELS else []
-                default_chain = [
+                fallback_candidates = [
                     "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash",
-                    "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-2.5-pro",
-                    "gemini-pro"
+                    "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-2.5-pro"
                 ]
-                for m_def in default_chain:
-                    if m_def not in candidates_chain:
-                        candidates_chain.append(m_def)
-
-                for fallback_model in candidates_chain:
-                    if fallback_model == model:
+                for fb_model in fallback_candidates:
+                    if fb_model == model:
                         continue
                     try:
-                        fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fallback_model}:generateContent?key={key}"
+                        fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fb_model}:generateContent?key={key}"
                         fb_req = urllib.request.Request(fb_url, data=data_bytes, headers=req_headers, method="POST")
                         with urllib.request.urlopen(fb_req, timeout=20) as fb_resp:
                             fb_body = fb_resp.read().decode("utf-8")
@@ -224,9 +227,10 @@ async def run_gemini_generate(
             parts = candidates[0].get("content", {}).get("parts", [])
             if parts:
                 return "".join(p.get("text", "") for p in parts)
-        return "⚠️ Gemini returned an empty response."
+        return "⚠️ Gemini không phản hồi nội dung văn bản."
     except Exception as e_parse:
-        return f"⚠️ Error parsing Gemini response: {e_parse}\nRaw: {res_json}"
+        return f"⚠️ Lỗi phân tích phản hồi từ Gemini: {e_parse}\nRaw: {res_json}"
+
 
 async def stream_gemini_generate(
     prompt: str,
@@ -235,11 +239,7 @@ async def stream_gemini_generate(
     api_key: Optional[str] = None,
     temperature: float = 0.2
 ) -> AsyncIterator[str]:
-    """Stream text tokens from Gemini."""
-    # To ensure stable streaming over standard HTTP without server-sent-event chunking issues on all OSs,
-    # we yield initial triaging header then stream the generated tokens smoothly.
-    yield "⚡ **[Gemini Tier 1 Engine]** Telemetry Triaging...\n\n"
-    
+    """Execute streaming generation via word slicing over one-shot generation."""
     full_text = await run_gemini_generate(
         prompt=prompt,
         system_instruction=system_instruction,
@@ -247,15 +247,9 @@ async def stream_gemini_generate(
         api_key=api_key,
         temperature=temperature
     )
-    
-    # Stream in word/line chunks
+
     words = full_text.split(" ")
-    buffer = []
-    for w in words:
-        buffer.append(w)
-        if len(buffer) >= 4:
-            yield " ".join(buffer) + " "
-            buffer = []
-            await asyncio.sleep(0.015)
-    if buffer:
-        yield " ".join(buffer)
+    for i, word in enumerate(words):
+        chunk = word + (" " if i < len(words) - 1 else "")
+        yield chunk
+        await asyncio.sleep(0.015)
