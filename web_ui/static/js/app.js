@@ -660,7 +660,12 @@ function displayResults(data) {
     predictionLabel.textContent = finalLabel;
     predictionLabel.className = 'prediction-label ' + (isSynthetic ? 'deepfake' : 'realism');
 
-    const displayConf = isSynthetic ? fakeProb : (1.0 - fakeProb);
+    let displayConf = isSynthetic ? fakeProb : (1.0 - fakeProb);
+    if (cert.calibrated_confidence !== undefined) {
+        displayConf = cert.calibrated_confidence;
+    } else if (data.confidence !== undefined) {
+        displayConf = data.confidence;
+    }
     const confidence = (displayConf * 100).toFixed(1);
     document.getElementById('confidenceValue').textContent = confidence + '%';
 
@@ -673,9 +678,9 @@ function displayResults(data) {
     const detailedScores = document.getElementById('detailedScores');
     detailedScores.innerHTML = '';
 
-    const scoreMap = data.all_scores || {
-        'Deepfake': cert.composite_risk_score !== undefined ? cert.composite_risk_score : (isSynthetic ? data.confidence : 1.0 - data.confidence),
-        'Realism': cert.composite_risk_score !== undefined ? (1.0 - cert.composite_risk_score) : (isSynthetic ? 1.0 - data.confidence : data.confidence)
+    const scoreMap = data.all_scores || cert.calibrated_scores || {
+        'Deepfake': cert.calibrated_scores ? cert.calibrated_scores.Deepfake : (isSynthetic ? displayConf : (1.0 - displayConf)),
+        'Realism': cert.calibrated_scores ? cert.calibrated_scores.Realism : (isSynthetic ? (1.0 - displayConf) : displayConf)
     };
     for (const [lbl, score] of Object.entries(scoreMap)) {
         const scoreItem = document.createElement('div');
@@ -956,9 +961,13 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     const labelBadgeBg = isFake ? '#fee2e2' : '#dcfce7';
     const labelBadgeColor = isFake ? '#b91c1c' : '#15803d';
 
-    const displayConf = cert.composite_risk_score !== undefined
-        ? (isFake ? cert.composite_risk_score : (1.0 - cert.composite_risk_score))
-        : (data.confidence !== undefined ? data.confidence : 0.95);
+    const displayConf = cert.calibrated_confidence !== undefined
+        ? cert.calibrated_confidence
+        : (data.confidence !== undefined
+            ? data.confidence
+            : (cert.composite_risk_score !== undefined
+                ? (isFake ? cert.composite_risk_score : (1.0 - cert.composite_risk_score))
+                : 0.95));
     const confidence = (displayConf * 100).toFixed(1) + '%';
     const certId = cert.certificate_id || 'N/A';
     const compositeRisk = cert.composite_risk_score !== undefined ? (cert.composite_risk_score * 100).toFixed(1) + '%' : 'N/A';

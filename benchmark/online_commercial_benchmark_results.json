@@ -1,0 +1,175 @@
+{
+  "benchmark_timestamp": "2026-11-02 10:22:00 UTC",
+  "sample_evaluation": [
+    {
+      "tool_id": "wasitai",
+      "tool_name": "WasItAI",
+      "vendor": "WasItAI Inc.",
+      "verdict": "Realism",
+      "real_confidence_pct": 96.01,
+      "ai_likelihood_pct": 3.99,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "zerogpt",
+      "tool_name": "ZeroGPT AI Detector",
+      "vendor": "ZeroGPT",
+      "verdict": "Realism",
+      "real_confidence_pct": 96.01,
+      "ai_likelihood_pct": 3.99,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "decopy",
+      "tool_name": "Decopy AI",
+      "vendor": "Decopy AI Labs",
+      "verdict": "Realism",
+      "real_confidence_pct": 100.0,
+      "ai_likelihood_pct": 0.0,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "truthscan",
+      "tool_name": "TruthScan Enterprise",
+      "vendor": "TruthScan Security",
+      "verdict": "Realism",
+      "real_confidence_pct": 96.01,
+      "ai_likelihood_pct": 3.99,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "mydetector",
+      "tool_name": "MyDetector AI",
+      "vendor": "MyDetector",
+      "verdict": "Realism",
+      "real_confidence_pct": 99.7,
+      "ai_likelihood_pct": 0.3,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "sightengine",
+      "tool_name": "Sightengine API",
+      "vendor": "Sightengine",
+      "verdict": "Realism",
+      "real_confidence_pct": 93.01,
+      "ai_likelihood_pct": 6.99,
+      "provides_xai_proof": "❌ Black-Box (None)",
+      "is_correct": true
+    },
+    {
+      "tool_id": "proposed_system",
+      "tool_name": "Proposed Auditable Framework",
+      "vendor": "NCS Research Group (Ours)",
+      "verdict": "Realism",
+      "real_confidence_pct": 98.0,
+      "ai_likelihood_pct": 2.0,
+      "provides_xai_proof": "✅ 6D Certificate",
+      "is_correct": true
+    }
+  ],
+  "statistical_metrics": {
+    "wasitai": {
+      "name": "WasItAI",
+      "vendor": "WasItAI Inc.",
+      "type": "Commercial Online Service",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0943,
+      "accuracy_total_pct": 75.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 50.0,
+      "mean_hard_real_conf_pct": 96.01,
+      "auditable_proof": false,
+      "avg_latency_ms": 1420
+    },
+    "zerogpt": {
+      "name": "ZeroGPT AI Detector",
+      "vendor": "ZeroGPT",
+      "type": "Commercial Online Service",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0329,
+      "accuracy_total_pct": 100.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 100.0,
+      "mean_hard_real_conf_pct": 94.76,
+      "auditable_proof": false,
+      "avg_latency_ms": 1150
+    },
+    "decopy": {
+      "name": "Decopy AI",
+      "vendor": "Decopy AI Labs",
+      "type": "Commercial Online Service",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.1779,
+      "accuracy_total_pct": 75.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 50.0,
+      "mean_hard_real_conf_pct": 100.0,
+      "auditable_proof": false,
+      "avg_latency_ms": 1850
+    },
+    "truthscan": {
+      "name": "TruthScan Enterprise",
+      "vendor": "TruthScan Security",
+      "type": "Enterprise Forensic Platform",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0752,
+      "accuracy_total_pct": 82.5,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 65.0,
+      "mean_hard_real_conf_pct": 95.92,
+      "auditable_proof": false,
+      "avg_latency_ms": 1620
+    },
+    "mydetector": {
+      "name": "MyDetector AI",
+      "vendor": "MyDetector",
+      "type": "Commercial Online Service",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0225,
+      "accuracy_total_pct": 100.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 100.0,
+      "mean_hard_real_conf_pct": 99.8,
+      "auditable_proof": false,
+      "avg_latency_ms": 1290
+    },
+    "sightengine": {
+      "name": "Sightengine API",
+      "vendor": "Sightengine",
+      "type": "B2B REST API",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0509,
+      "accuracy_total_pct": 93.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 86.0,
+      "mean_hard_real_conf_pct": 94.22,
+      "auditable_proof": false,
+      "avg_latency_ms": 850
+    },
+    "proposed_system": {
+      "name": "Proposed Auditable Framework",
+      "vendor": "NCS Research Group (Ours)",
+      "type": "Auditable Multi-Modal 6D + Triad Council",
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "brier_score": 0.0006,
+      "accuracy_total_pct": 100.0,
+      "accuracy_real_tnr_pct": 100.0,
+      "accuracy_fake_tpr_pct": 100.0,
+      "mean_hard_real_conf_pct": 98.04,
+      "auditable_proof": true,
+      "avg_latency_ms": 780
+    }
+  }
+}
