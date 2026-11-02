@@ -348,3 +348,4 @@ def run_vietnamese_demographic_benchmark_pipeline(detector=None) -> Dict[str, An
 
 if __name__ == "__main__":
     run_vietnamese_demographic_benchmark_pipeline()
+
