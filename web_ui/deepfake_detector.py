@@ -1101,8 +1101,9 @@ class SensorPRNUAnalyzer:
             var_center = float(np.var(center_res))
             var_periph = float(np.var(periph_res)) + 1e-8
 
-            # Variance ratio differential between center and peripheral sensor frame
-            var_ratio = abs(var_center - var_periph) / var_periph
+            # Symmetric normalized relative variance differential
+            total_var = var_center + var_periph + 1e-4
+            sym_var_ratio = abs(var_center - var_periph) / total_var
 
             # Overall residual energy
             overall_res_energy = float(np.mean(np.abs(residual_W)))
@@ -1112,9 +1113,15 @@ class SensorPRNUAnalyzer:
             std_W = np.std(residual_W) + 1e-6
             kurtosis = float(np.mean(((residual_W - mean_W) / std_W) ** 4))
 
-            # Discrepancy score
-            kurtosis_penalty = float(np.clip(abs(kurtosis - 3.0) / 4.0, 0.0, 1.0))
-            variance_penalty = float(np.clip(var_ratio * 1.2, 0.0, 1.0))
+            # Texture-adaptive masking: if periphery is smooth sky/clouds/fog/bokeh (var < 2.5),
+            # the variance differential is a natural optical depth/landscape gradient, not tampering
+            is_smooth_bg = var_periph < 2.5
+            if is_smooth_bg:
+                variance_penalty = float(np.clip(sym_var_ratio * 0.20, 0.0, 0.20))
+            else:
+                variance_penalty = float(np.clip(sym_var_ratio * 0.85, 0.0, 1.0))
+
+            kurtosis_penalty = float(np.clip(abs(kurtosis - 3.0) / 10.0, 0.0, 1.0))
             energy_penalty = float(np.clip((1.8 - overall_res_energy) / 1.5, 0.0, 1.0)) if overall_res_energy < 1.8 else 0.0
 
             prnu_discrepancy = float(np.clip(0.45 * variance_penalty + 0.35 * kurtosis_penalty + 0.20 * energy_penalty, 0.0, 1.0))
@@ -1835,24 +1842,27 @@ class DeepfakeDetector:
                 0.05 * heatmap_peak_val
             )
 
-            # Dynamic Environmental & Low-Light Gating (IEEE T-IFS 2025):
-            # Natural low-light night scenes, high ISO, or complex stage lighting create photon shot noise
-            # and grid reflections that falsely inflate PRNU and 2D-FFT.
+            # Dynamic Environmental, Low-Light & Landscape Gating (IEEE T-IFS 2025):
+            # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
+            # create natural optical variances that falsely inflate PRNU and 2D-FFT.
             # If ViT model predicts Real with high confidence (fake_prob < 0.40) and no severe generative spikes (spectral < 0.45):
             if not is_fake_pred and fake_prob < 0.40 and spectral_anomaly < 0.45:
                 calibrated_aux_risk = (
-                    0.70 * fake_prob + 
-                    0.10 * spectral_anomaly + 
-                    0.08 * prnu_score + 
-                    0.07 * spatial_inconsistency + 
-                    0.05 * heatmap_peak_val
+                    0.75 * fake_prob + 
+                    0.09 * spectral_anomaly + 
+                    0.06 * prnu_score + 
+                    0.06 * spatial_inconsistency + 
+                    0.04 * heatmap_peak_val
                 )
-                general_risk = round(float(min(calibrated_aux_risk, fake_prob + 0.08)), 4)
+                general_risk = round(float(min(calibrated_aux_risk, fake_prob + 0.05)), 4)
             else:
                 general_risk = round(float(raw_general_risk), 4)
 
             # Step 2: Parallel Stream 2 & Cross-Evidence Fusion Engine
-            if has_human and self.human_detector is not None:
+            # Biometrics Stream 2 is ONLY activated when a verified human face is detected (face_found=True).
+            # If the subject is facing away (back turned) or in the far distance without facial landmarks,
+            # we rely strictly on Stream 1 General Vision to avoid false biometric penalties.
+            if has_human and face_found and self.human_detector is not None:
                 # Stream 2: Human-Centric Specialist Stream (WAVIE + Corneal Reflection + rPPG + ECE Calibration)
                 human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
