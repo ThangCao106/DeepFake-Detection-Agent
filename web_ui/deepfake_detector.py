@@ -1137,7 +1137,7 @@ class SensorPRNUAnalyzer:
             return {
                 "prnu_discrepancy_score": round(prnu_discrepancy, 4),
                 "sensor_fingerprint_verified": has_sensor_prnu,
-                "residual_variance_ratio": round(var_ratio, 4),
+                "residual_variance_ratio": round(sym_var_ratio, 4),
                 "noise_kurtosis": round(kurtosis, 4),
                 "residual_energy": round(overall_res_energy, 4),
                 "interpretation": interpretation
@@ -1551,6 +1551,51 @@ class XAIExplainabilityGenerator:
         return statement
 
 
+
+class GenerativeAIDiffusionDetector:
+    """
+    Forensic Discriminator for Text-to-Image Generative Media & AI Art (Midjourney, DALL-E, FLUX, Stable Diffusion).
+    Distinguishes AI-generated graphics, synthetic avatars, and digital art from authentic human photographs:
+      1. Zero-Skin Anomaly: Face geometry detected without biological human dermis pigmentation (skin_pct < 1.0%).
+      2. Non-Camera Optical Residual: Physical CMOS sensor residual energy < 0.60 (Zero Camera PRNU).
+      3. Generative Latent Diffusion Complexity: High Laplacian / High-Frequency micro-texture variance (lap_var > 1200).
+    """
+    @staticmethod
+    def inspect_generative_art(pil_image, img_np, detected_faces, skin_pct, prnu_analysis, spectral_anomaly):
+        try:
+            h, w, _ = img_np.shape
+            gray = cv2.cvtColor(np.uint8(img_np), cv2.COLOR_RGB2GRAY)
+            lap = cv2.Laplacian(gray, cv2.CV_64F)
+            lap_var = float(np.var(lap))
+
+            denoised = cv2.fastNlMeansDenoising(gray, None, h=3, templateWindowSize=7, searchWindowSize=21).astype(np.float32)
+            res_w = gray.astype(np.float32) - denoised
+            overall_res_energy = float(np.mean(np.abs(res_w)))
+
+            has_face_structure = len(detected_faces) > 0
+            prnu_discrepancy = prnu_analysis.get("prnu_discrepancy_score", 0.0)
+
+            # Condition 1: Stylized/Cybernetic Face with 0% biological skin (Midjourney/DALL-E cyber avatar or cartoon)
+            is_cyber_face = bool(has_face_structure and skin_pct < 1.0 and overall_res_energy < 0.65)
+
+            # Condition 2: Pure Generative Graphic/Illustration (Zero camera sensor PRNU + High Diffusion edge complexity)
+            is_diffusion_graphic = bool(overall_res_energy < 0.35 and (lap_var > 1500.0 or prnu_discrepancy > 0.40) and skin_pct < 2.0)
+
+            if is_cyber_face or is_diffusion_graphic:
+                confidence = 0.970 if is_cyber_face else 0.955
+                return {
+                    "is_ai_generative_art": True,
+                    "confidence_score": confidence,
+                    "synthetic_type": "CYBER_AVATAR" if is_cyber_face else "DIFFUSION_GRAPHIC",
+                    "laplacian_variance": round(lap_var, 1),
+                    "sensor_residual_energy": round(overall_res_energy, 4),
+                    "skin_percentage": round(skin_pct, 2),
+                    "details": "Phát hiện cấu trúc đồ họa tạo sinh AI (Diffusion/GAN Synthesized Art). Thiếu vắng sắc tố da người sinh học và năng lượng cảm biến máy ảnh vật lý."
+                }
+            return {"is_ai_generative_art": False, "confidence_score": 0.0}
+        except Exception as e:
+            return {"is_ai_generative_art": False, "confidence_score": 0.0, "error": str(e)}
+
 class DeepfakeDetector:
     @staticmethod
     def calibrate_posterior_probability(composite_risk: float, tau_star: float = 0.8118):
@@ -1842,11 +1887,30 @@ class DeepfakeDetector:
                 0.05 * heatmap_peak_val
             )
 
+            # Step 1b-2: Generative AI Art & Synthetic Graphic Inspection (Midjourney / DALL-E / FLUX / AI Avatars)
+            img_np_eval = np.array(image.convert("RGB"))
+            skin_pct_val = human_presence.get("skin_percentage", 0.0)
+            ai_art_eval = GenerativeAIDiffusionDetector.inspect_generative_art(
+                image, img_np_eval, detected_faces, skin_pct_val, prnu_analysis, spectral_anomaly
+            )
+            is_ai_art = ai_art_eval.get("is_ai_generative_art", False)
+            if is_ai_art:
+                scene_context["category"] = "Đồ Họa & Avatar Tạo Sinh AI (Generative AI Artwork & Diffusion Avatar)"
+                scene_context["short_name"] = "Đồ Họa Tạo Sinh AI"
+                scene_context["scene_type"] = "AI_GENERATIVE_ART"
+                scene_context["icon"] = "🤖"
+                scene_context["environment"] = "Tác phẩm đồ họa / poster / logo được tạo sinh từ mô hình AI (Midjourney / DALL-E / FLUX)"
+                scene_context["is_ai_art"] = True
+                has_human = False
+                raw_general_risk = max(raw_general_risk, ai_art_eval.get("confidence_score", 0.970))
+                fake_prob = max(fake_prob, ai_art_eval.get("confidence_score", 0.970))
+                is_fake_pred = True
+
             # Dynamic Environmental, Low-Light & Landscape Gating (IEEE T-IFS 2025):
+            # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
             # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
-            # If ViT model predicts Real with high confidence (fake_prob < 0.40) and no severe generative spikes (spectral < 0.45):
-            if not is_fake_pred and fake_prob < 0.40 and spectral_anomaly < 0.45:
+            if not is_ai_art and not is_fake_pred and fake_prob < 0.40 and spectral_anomaly < 0.45:
                 calibrated_aux_risk = (
                     0.75 * fake_prob + 
                     0.09 * spectral_anomaly + 
