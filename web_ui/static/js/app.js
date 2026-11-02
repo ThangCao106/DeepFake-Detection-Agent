@@ -1408,6 +1408,9 @@ function toggleBenchmarkCard() {
     }
 }
 
+// Benchmark Hub State Variables (Declared early to prevent ReferenceError / Hoisting issues)
+// (benchmarkPollingTimer & seenLogKeys declared at benchmark top)
+
 function getBenchmarkApiBase() {
     return window.location.pathname.startsWith('/benchmark') ? '/benchmark' : '';
 }
@@ -1419,7 +1422,7 @@ function fetchBenchmarkStatus() {
         .catch(err => console.error('Failed to fetch benchmark status:', err));
 
     // Đồng bộ log gần nhất nếu Terminal đang trống hoặc vừa tải trang
-    if (seenLogKeys.size <= 1) {
+    if (typeof seenLogKeys !== 'undefined' && seenLogKeys && seenLogKeys.size <= 1) {
         fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=150`)
             .then(res => res.json())
             .then(logData => {
@@ -1501,6 +1504,9 @@ function handleBenchmarkModeChange() {
 
 function startBenchmark() {
     try {
+        // Xóa sạch log cũ để chuẩn bị đón nhận luồng log trực tiếp của Job mới
+        clearTerminalLogs();
+
         // Tự động gán quyền nếu đang mở trực tiếp trên Benchmark Hub Subsystem
         if (!sessionStorage.getItem("benchmark_gate_user")) {
             sessionStorage.setItem("benchmark_gate_user", "thang.cd");

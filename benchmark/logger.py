@@ -711,16 +711,23 @@ class BenchmarkJobRunner:
             # Ghi log mở đầu ngay lập tức để frontend polling luôn đọc được log đầu tiên
             self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận Benchmark Job [{job_id}] | Quy mô: {job_name_label} | Dataset: '{dataset_name}'")
 
-            # Launch background worker directly via daemon Thread
+            # Launch background worker (SocketIO greenlet if available for real-time streaming, else daemon Thread)
             try:
-                self.worker_thread = threading.Thread(
-                    target=self._run_benchmark_worker,
-                    args=(mode, dataset_name, sample_count),
-                    daemon=True,
-                    name=f"Worker-{job_id}"
-                )
-                self.worker_thread.start()
-                logger.info(f"✅ [RUNNER-DEBUG] Background worker đã được kích hoạt thành công (Thread: {self.worker_thread.name}) cho Job {job_id}")
+                if self.socketio_instance and hasattr(self.socketio_instance, "start_background_task"):
+                    self.worker_thread = self.socketio_instance.start_background_task(
+                        self._run_benchmark_worker,
+                        mode, dataset_name, sample_count
+                    )
+                    logger.info(f"✅ [RUNNER-DEBUG] SocketIO Eventlet Background Task kích hoạt thành công cho Job {job_id}")
+                else:
+                    self.worker_thread = threading.Thread(
+                        target=self._run_benchmark_worker,
+                        args=(mode, dataset_name, sample_count),
+                        daemon=True,
+                        name=f"Worker-{job_id}"
+                    )
+                    self.worker_thread.start()
+                    logger.info(f"✅ [RUNNER-DEBUG] Background worker đã được kích hoạt thành công (Thread: {self.worker_thread.name}) cho Job {job_id}")
             except Exception as e:
                 logger.error(f"❌ [RUNNER-DEBUG] Không thể kích hoạt worker: {e}", exc_info=True)
                 self.is_running = False
@@ -851,7 +858,7 @@ class BenchmarkJobRunner:
             if BENCHMARK_RUNS_DIR.exists():
                 job_dirs = [d for d in BENCHMARK_RUNS_DIR.iterdir() if d.is_dir() and d.name.startswith("bench_")]
                 if job_dirs:
-                    latest_dir = max(job_dirs, key=lambda d: d.stat().st_mtime)
+                    latest_dir = max(job_dirs, key=lambda d: d.name)
                     log_file = latest_dir / "live_running.log"
                     if log_file.exists():
                         with open(log_file, "r", encoding="utf-8", errors="replace") as f:
@@ -862,11 +869,14 @@ class BenchmarkJobRunner:
                             line_str = line.strip()
                             if not line_str:
                                 continue
-                            match = re.match(r"^\[(\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]\s*\[([A-Z_]+)\]\s*(.*)$", line_str)
+                            # Matches both:
+                            # [2026-11-02 08:43:27.684] [INFO   ] message
+                            # [08:43:27.684] [METRIC] message
+                            match = re.match(r"^\[(?:[\d-]+\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]\s*\[([A-Z_]+)\s*\]\s*(.*)$", line_str)
                             if match:
                                 parsed_logs.append({
                                     "timestamp": match.group(1),
-                                    "level": match.group(2),
+                                    "level": match.group(2).strip(),
                                     "message": match.group(3)
                                 })
                             else:
