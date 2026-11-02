@@ -7,6 +7,13 @@ Enables uploading directly under the user's personal Google Drive quota (bypassi
 import os
 import sys
 import json
+try:
+    from dotenv import load_dotenv
+    from pathlib import Path
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except Exception:
+    pass
+
 import time
 from pathlib import Path
 import requests
@@ -38,7 +45,7 @@ def exchange_refresh_token_for_access_token(refresh_token: str) -> str:
 
     # Candidate OAuth client IDs (Verified Google Cloud Project credentials)
     DEFAULT_CLIENT_ID = "691972060412-4ohemhnfujg29c9gp78mrs4m49r7ejkn.apps.googleusercontent.com"
-    DEFAULT_CLIENT_SECRET = "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"
+    DEFAULT_CLIENT_SECRET = os.environ.get("GDRIVE_CLIENT_SECRET", "")
 
     custom_client_id = os.environ.get("GDRIVE_CLIENT_ID") or DEFAULT_CLIENT_ID
     custom_client_secret = os.environ.get("GDRIVE_CLIENT_SECRET") or DEFAULT_CLIENT_SECRET

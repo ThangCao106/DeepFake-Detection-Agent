@@ -9,9 +9,21 @@ import time
 from pathlib import Path
 from datetime import datetime, timezone
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Ensure project root is in sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env")
+except Exception:
+    pass
 
 def run_test():
     target_folder_id = os.environ.get("GDRIVE_TARGET_FOLDER_ID") or "1s6G-cscNpEMBbUlvJfb4i24s9_7UVjet"
@@ -93,8 +105,14 @@ def run_test():
         print(f"❌ Upload failed: {e}")
         sys.exit(1)
     finally:
+        import gc
+        media = None
+        gc.collect()
         if test_file.exists():
-            test_file.unlink()
+            try:
+                test_file.unlink()
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     run_test()
