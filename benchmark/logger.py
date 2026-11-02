@@ -1094,22 +1094,71 @@ class BenchmarkJobRunner:
             else:
                 target_count = 50
 
+        ds_lower = dataset_name.lower().strip()
+
+        # 1. Determine dataset filter mode:
+        # Combined 14 International + Threads
+        is_combined_14 = (
+            ("14" in ds_lower and "benchmark" in ds_lower) or 
+            ("14" in ds_lower and "suite" in ds_lower) or 
+            ("toàn bộ 14" in ds_lower) or
+            (ds_lower in ["all", "full", "synthetic", "14 benchmark suite & threads-dfbench"])
+        )
+
+        # Pure Threads-DFBench (Vietnamese Media)
+        is_threads = (not is_combined_14) and (
+            "threads" in ds_lower or 
+            "vietnam" in ds_lower or 
+            "nhóm" in ds_lower or 
+            "nhom" in ds_lower or
+            any(k in ds_lower for k in ["crypto", "extortion", "livestream", "kol", "fakenews"])
+        )
+
+        # Specific Vietnamese cohorts
+        is_c1 = any(k in ds_lower for k in ["crypto", "kyc", "nhóm 1", "nhom 1", "nhom_1"])
+        is_c2 = any(k in ds_lower for k in ["extortion", "mạo danh", "tống tiền", "nhóm 2", "nhom 2", "nhom_2"])
+        is_c3 = any(k in ds_lower for k in ["livestream", "voice clone", "nhóm 3", "nhom 3", "nhom_3"])
+        is_c4 = any(k in ds_lower for k in ["kol", "bôi nhọ", "doanh nhân", "nhóm 4", "nhom 4", "nhom_4"])
+        is_c5 = any(k in ds_lower for k in ["fakenews", "tin tức", "xuyên tạc", "nhóm 5", "nhom 5", "nhom_5"])
+        is_threads_all = is_threads and not (is_c1 or is_c2 or is_c3 or is_c4 or is_c5)
+
         # 0. Primary: Check Stratified Manifest from Ablation Evidence (14 International + 5 Threads-DFBench)
         ablation_manifest = PROJECT_ROOT / "benchmark" / "ablation_study" / "manifest_eval_samples.jsonl"
         if ablation_manifest.exists():
             try:
-                # Build pool of actual physical seed files on disk
+                # Build pool of actual physical seed files on disk categorized by cohort
                 real_file_pool = []
+                cohort_file_pools = {
+                    "Threads_vn_id_official": [],
+                    "Threads_vn_selfie_lifestyle": [],
+                    "Threads_vn_street_outdoor": [],
+                    "Threads_vn_occlusion_glasses_mask": [],
+                    "Threads_vn_mature_aging": []
+                }
+
                 for folder in [
-                    PROJECT_ROOT / "crawler" / "seeds_vietnamese",
                     PROJECT_ROOT / "crawler" / "verified_threads_seeds",
+                    PROJECT_ROOT / "crawler" / "seeds_vietnamese",
+                    PROJECT_ROOT / "crawler" / "vietnamese_face_vault",
                     PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals"
                 ]:
                     if folder.exists():
                         for ext in ("*.jpg", "*.jpeg", "*.png"):
-                            real_file_pool.extend([str(p) for p in folder.glob(ext)])
+                            for p in folder.glob(ext):
+                                sp = str(p)
+                                real_file_pool.append(sp)
+                                p_name = p.name.lower()
+                                if "id_official" in p_name:
+                                    cohort_file_pools["Threads_vn_id_official"].append(sp)
+                                elif "selfie" in p_name:
+                                    cohort_file_pools["Threads_vn_selfie_lifestyle"].append(sp)
+                                elif "street" in p_name:
+                                    cohort_file_pools["Threads_vn_street_outdoor"].append(sp)
+                                elif "occlusion" in p_name or "mask" in p_name or "glasses" in p_name:
+                                    cohort_file_pools["Threads_vn_occlusion_glasses_mask"].append(sp)
+                                elif "mature" in p_name or "aging" in p_name:
+                                    cohort_file_pools["Threads_vn_mature_aging"].append(sp)
 
-                ds_lower = dataset_name.lower()
                 loaded_manifest = []
                 with open(ablation_manifest, "r", encoding="utf-8") as mf:
                     for line in mf:
@@ -1118,12 +1167,27 @@ class BenchmarkJobRunner:
                         record = json.loads(line)
                         rec_ds = (record.get("dataset_source") or record.get("dataset") or "").lower()
                         rec_cohort = (record.get("cohort_category") or record.get("cohort") or "").lower()
+                        is_rec_vn = ("threads" in rec_ds) or (rec_cohort == "vietnamese") or ("vn_" in rec_ds)
 
                         match = False
-                        if "all" in ds_lower or "suite" in ds_lower or "synthetic" in ds_lower:
+                        if is_threads:
+                            # 100% strict Vietnamese cohort filter - NO INTERNATIONAL DATASETS PERMITTED
+                            if not is_rec_vn:
+                                match = False
+                            elif is_c1:
+                                match = ("id_official" in rec_ds or "id" in rec_ds)
+                            elif is_c2:
+                                match = ("selfie" in rec_ds or "lifestyle" in rec_ds)
+                            elif is_c3:
+                                match = ("street" in rec_ds or "outdoor" in rec_ds)
+                            elif is_c4:
+                                match = ("occlusion" in rec_ds or "glasses" in rec_ds or "mask" in rec_ds)
+                            elif is_c5:
+                                match = ("mature" in rec_ds or "aging" in rec_ds)
+                            elif is_threads_all:
+                                match = True
+                        elif is_combined_14:
                             match = True
-                        elif "threads" in ds_lower or "vietnam" in ds_lower:
-                            match = ("threads" in rec_ds or "vietnam" in rec_cohort or "nhóm" in ds_lower or "cifake" not in rec_ds)
                         elif any(k in ds_lower for k in ["faceforensics", "ff++"]):
                             match = "faceforensics" in rec_ds
                         elif "celeb" in ds_lower:
@@ -1144,10 +1208,14 @@ class BenchmarkJobRunner:
                             match = "asvspoof" in rec_ds
                         elif "genimage" in ds_lower:
                             match = "genimage" in rec_ds
+                        elif "cifake" in ds_lower:
+                            match = "cifake" in rec_ds
                         elif "artifact" in ds_lower:
                             match = "artifact" in rec_ds
+                        elif "deepdetect" in ds_lower:
+                            match = "deepdetect" in rec_ds
                         else:
-                            match = True
+                            match = (ds_lower in rec_ds)
 
                         if match:
                             # Extract accurate ground truth label
@@ -1158,8 +1226,13 @@ class BenchmarkJobRunner:
 
                             # Link actual physical sample if available on server
                             phys_file = record.get("filepath")
-                            if not phys_file and real_file_pool:
-                                phys_file = real_file_pool[len(loaded_manifest) % len(real_file_pool)]
+                            ds_key = record.get("dataset_source") or record.get("dataset", "")
+                            if not phys_file:
+                                cohort_pool = cohort_file_pools.get(ds_key, [])
+                                if cohort_pool:
+                                    phys_file = cohort_pool[len(loaded_manifest) % len(cohort_pool)]
+                                elif real_file_pool:
+                                    phys_file = real_file_pool[len(loaded_manifest) % len(real_file_pool)]
 
                             loaded_manifest.append({
                                 "sample_id": record.get("sample_id", f"sample_{len(loaded_manifest)+1}"),
@@ -1182,7 +1255,27 @@ class BenchmarkJobRunner:
                 if b_logger:
                     b_logger.log("WARN", f"Could not read ablation manifest: {mex}")
 
-        # 1. Fallback: Look for existing test manifest
+        # If Threads mode was requested, NEVER leak international test_manifest or uploads
+        if is_threads and len(samples) > 0:
+            if target_count is not None and len(samples) < target_count:
+                base_pool = list(samples)
+                idx = 0
+                while len(samples) < target_count:
+                    orig = base_pool[idx % len(base_pool)]
+                    rep = dict(orig)
+                    rep["sample_id"] = f"{orig.get('sample_id')}_aug{idx // len(base_pool) + 1}"
+                    samples.append(rep)
+                    idx += 1
+            elif target_count is not None and len(samples) > target_count:
+                import random
+                random.seed(42)
+                samples = random.sample(samples, target_count)
+
+            if b_logger:
+                b_logger.log("INFO", f"🇻🇳 Đã chuẩn bị {len(samples)} mẫu thuần Việt từ Threads-DFBench (100% khớp danh mục nhân khẩu học đã chọn)")
+            return samples
+
+        # 1. Fallback for non-threads modes: Look for existing test manifest
         if len(samples) == 0:
             test_manifest_path = PROJECT_ROOT / "dataset_pipeline" / "source_split" / "test_manifest.json"
             if test_manifest_path.exists():
@@ -1197,13 +1290,22 @@ class BenchmarkJobRunner:
                 except Exception as e:
                     b_logger.log("WARN", f"Error reading test_manifest: {e}")
 
-        # Slice to target_count if required
+        # Slice or expand to target_count if required
         if target_count is not None and len(samples) > target_count:
             import random
             random.seed(42)
             samples = random.sample(samples, target_count)
+        elif target_count is not None and len(samples) > 0 and len(samples) < target_count:
+            base_pool = list(samples)
+            idx = 0
+            while len(samples) < target_count:
+                orig = base_pool[idx % len(base_pool)]
+                rep = dict(orig)
+                rep["sample_id"] = f"{orig.get('sample_id')}_aug{idx // len(base_pool) + 1}"
+                samples.append(rep)
+                idx += 1
 
-        # 2. Look in static or uploads folder for existing images
+        # 2. Look in static or uploads folder for existing images if still empty
         min_required = target_count if target_count is not None else 20
         if len(samples) < min_required:
             for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
