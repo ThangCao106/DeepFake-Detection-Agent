@@ -111,7 +111,16 @@ WIKIMEDIA_SEARCH_QUERIES = [
     "Vietnamese student portrait",
     "Vietnamese street portrait",
     "Chân dung phụ nữ Việt Nam",
-    "Chân dung nam thanh niên Việt Nam"
+    "Chân dung nam thanh niên Việt Nam",
+    # Sports & Fitness Expansion (User Requested)
+    "Vietnamese badminton player",
+    "Vietnamese runner marathon",
+    "Vietnamese tennis player",
+    "Vietnamese gym fitness portrait",
+    "Vietnamese sports athlete",
+    "Người Việt chơi thể thao",
+    "Cầu lông Việt Nam",
+    "Chạy bộ marathon Việt Nam"
 ]
 
 CATEGORY_MAPPINGS = {

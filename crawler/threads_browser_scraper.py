@@ -36,6 +36,12 @@ from crawler.dedup_engine import (
     PerceptualDeduplicationRegistry,
     DEFAULT_HAMMING_THRESHOLD
 )
+from crawler.trending_keywords import (
+    TrendingKeywordEngine,
+    CORE_CURATED_KEYWORDS,
+    EXPANDED_INSTAGRAM_TARGETS,
+    EXPANDED_FACEBOOK_TARGETS
+)
 
 def compute_sha256(data_bytes: bytes) -> str:
     """Computes SHA256 hex digest of image/video bytes for 100% deduplication."""
@@ -553,7 +559,28 @@ class ThreadsBrowserScraper:
                 }
             });
             
-            return { imgs, vids };
+            // Dynamic in-flight trending hashtag and keyword miner
+            const tags = [];
+            document.querySelectorAll('a[href*="/tag/"], a[href*="/tags/"], a[href*="/hashtag/"]').forEach(a => {
+                let t = a.innerText ? a.innerText.trim().replace(/^#/, '').toLowerCase() : '';
+                if (t && t.length >= 3 && t.length <= 30 && !/^\d+$/.test(t)) {
+                    tags.push(t);
+                }
+            });
+            document.querySelectorAll('article, div[data-pressable-container="true"], div[role="feed"]').forEach(el => {
+                const text = el.innerText || '';
+                const m = text.match(/#([a-zA-Z0-9_À-ỹ]+)/g);
+                if (m) {
+                    m.forEach(tag => {
+                        let t = tag.replace(/^#/, '').toLowerCase();
+                        if (t && t.length >= 3 && t.length <= 30 && !/^\d+$/.test(t)) {
+                            tags.push(t);
+                        }
+                    });
+                }
+            });
+            
+            return { imgs, vids, tags };
         }""")
 
     async def harvest_live_threads_media_async(
@@ -662,6 +689,9 @@ class ThreadsBrowserScraper:
             async def drain_dom_media(src_platform: str):
                 try:
                     dom_media = await self._extract_media_from_page(page)
+                    # Dynamically register newly discovered trending hashtags
+                    if "tags" in dom_media and trend_engine:
+                        trend_engine.add_discovered_tags(dom_media["tags"])
                     for m_item in dom_media.get("imgs", []):
                         if len(harvested_images) >= target_images:
                             break
@@ -726,49 +756,90 @@ class ThreadsBrowserScraper:
                 except Exception:
                     pass
 
-            # Step 1: Scrape active public Vietnamese profiles on Threads (threads.net)
+            # Initialize Dynamic Trending Keyword & Hashtag Discovery Engine
+            trend_engine = TrendingKeywordEngine()
+            active_keywords = trend_engine.get_all_keywords()
+            print(f"\n🔥 [Dynamic Trending Engine] Active Crawl Queue: {len(active_keywords)} topics:")
+            print(f"   Keywords: {', '.join(active_keywords[:15])}...")
+
+            async def dismiss_modal_overlays():
+                """Dismisses cookie banners, login prompts, and modal overlays on Threads, Instagram, and Facebook."""
+                for sel in [
+                    'button:has-text("Not now")',
+                    'button:has-text("Không phải bây giờ")',
+                    'button:has-text("Decline optional cookies")',
+                    'button:has-text("Only allow essential cookies")',
+                    'button:has-text("Đóng")',
+                    'button:has-text("Close")',
+                    'div[role="dialog"] button',
+                    'svg[aria-label="Close"]',
+                    'svg[aria-label="Đóng"]'
+                ]:
+                    try:
+                        btn = page.locator(sel).first
+                        if await btn.is_visible(timeout=400):
+                            await btn.click()
+                    except Exception:
+                        pass
+
+            # ----------------------------------------------------
+            # Phase 1: Active Vietnamese Public Profiles on Meta Threads (threads.net)
+            # ----------------------------------------------------
             for username in PUBLIC_VIETNAMESE_PROFILES:
                 if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
                     break
                 url = f"https://www.threads.net/@{username}"
-                print(f"\n[Threads Scraper] Scraping public profile: @{username} ({url})")
+                print(f"\n[Threads Scraper] Scraping public creator: @{username} ({url})")
                 try:
                     await page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                    await dismiss_modal_overlays()
                     await page.wait_for_timeout(2000)
                     for _ in range(5):
                         await page.evaluate("window.scrollBy(0, 1200)")
                         await page.wait_for_timeout(1500)
-                    await drain_dom_media("threads.net")
+                    await drain_dom_media("threads.net/profile")
                 except Exception as e_prof:
                     print(f"  [Scraper Notice] Error on @{username}: {e_prof}")
-                    
-            # Step 2: Scrape public tag pages on threads.net
-            TAGS_TO_CRAWL = ["saigon", "vietnam", "hanoi", "danang", "dalat", "travelvietnam", "nguoiviet"]
-            if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
-                for tag in TAGS_TO_CRAWL:
-                    if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
-                        break
-                    tag_url = f"https://www.threads.net/tag/{tag}"
-                    print(f"\n[Threads Scraper] Scraping public tag: #{tag} ({tag_url})")
-                    try:
-                        await page.goto(tag_url, wait_until="domcontentloaded", timeout=25000)
-                        await page.wait_for_timeout(2000)
-                        for _ in range(5):
-                            await page.evaluate("window.scrollBy(0, 1200)")
-                            await page.wait_for_timeout(1500)
-                        await drain_dom_media("threads.net/tag")
-                    except Exception as e_tag:
-                        print(f"  [Scraper Notice] Error on tag #{tag}: {e_tag}")
 
-            # Step 3: Scrape public Instagram targets (instagram.com)
+            # ----------------------------------------------------
+            # Phase 2: Meta Threads Trending & Keyword Tags (viral, thinhhanh, mauanh, caulong, tennis, running, gym, etc.)
+            # ----------------------------------------------------
+            threads_tags = trend_engine.get_tag_urls_for_threads(limit=30)
+            for tag_url in threads_tags:
+                if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
+                    break
+                tag_name = tag_url.split("/")[-1]
+                print(f"\n[Threads Scraper] 🏷️ Scraping trending tag: #{tag_name} ({tag_url})")
+                try:
+                    await page.goto(tag_url, wait_until="domcontentloaded", timeout=25000)
+                    await dismiss_modal_overlays()
+                    await page.wait_for_timeout(2000)
+                    for _ in range(5):
+                        await page.evaluate("window.scrollBy(0, 1200)")
+                        await page.wait_for_timeout(1500)
+                    await drain_dom_media("threads.net/tag")
+                except Exception as e_tag:
+                    print(f"  [Scraper Notice] Error on tag #{tag_name}: {e_tag}")
+
+            # ----------------------------------------------------
+            # Phase 3: Instagram Explore Tags & Public Accounts (instagram.com)
+            # ----------------------------------------------------
             if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
-                print(f"\n📸 [Instagram Harvester] Scraping public Instagram targets ({len(harvested_images)}/{target_images} images)...")
-                for ig_target in PUBLIC_INSTAGRAM_TARGETS:
+                print(f"\n📸 [Instagram Harvester] Scraping Instagram explore tags & photography targets ({len(harvested_images)}/{target_images} images)...")
+                ig_targets = list(EXPANDED_INSTAGRAM_TARGETS)
+                # Dynamically append discovered trending keywords to Instagram explore
+                for kw in trend_engine.get_all_keywords()[:20]:
+                    ig_explore_url = f"https://www.instagram.com/explore/tags/{kw}/"
+                    if ig_explore_url not in ig_targets:
+                        ig_targets.append(ig_explore_url)
+
+                for ig_target in ig_targets:
                     if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
                         break
                     print(f"  [Instagram Scraper] Visiting: {ig_target}")
                     try:
                         await page.goto(ig_target, wait_until="domcontentloaded", timeout=25000)
+                        await dismiss_modal_overlays()
                         await page.wait_for_timeout(2000)
                         for _ in range(6):
                             await page.evaluate("window.scrollBy(0, 1200)")
@@ -777,15 +848,25 @@ class ThreadsBrowserScraper:
                     except Exception as e_ig:
                         print(f"  [Instagram Notice] Error on {ig_target}: {e_ig}")
 
-            # Step 4: Scrape public Facebook targets (facebook.com)
+            # ----------------------------------------------------
+            # Phase 4: Facebook Mobile Public Hashtags & Photo Pages (m.facebook.com)
+            # ----------------------------------------------------
             if len(harvested_images) < target_images or len(harvested_videos) < target_videos:
-                print(f"\n👥 [Facebook Harvester] Scraping public Facebook targets ({len(harvested_images)}/{target_images} images)...")
-                for fb_target in PUBLIC_FACEBOOK_TARGETS:
+                print(f"\n👥 [Facebook Harvester] Scraping Facebook mobile targets & public hashtags ({len(harvested_images)}/{target_images} images)...")
+                fb_targets = list(EXPANDED_FACEBOOK_TARGETS)
+                # Dynamically append discovered trending keywords to Facebook hashtags
+                for kw in trend_engine.get_all_keywords()[:20]:
+                    fb_hashtag_url = f"https://m.facebook.com/hashtag/{kw}"
+                    if fb_hashtag_url not in fb_targets:
+                        fb_targets.append(fb_hashtag_url)
+
+                for fb_target in fb_targets:
                     if len(harvested_images) >= target_images and len(harvested_videos) >= target_videos:
                         break
                     print(f"  [Facebook Scraper] Visiting: {fb_target}")
                     try:
                         await page.goto(fb_target, wait_until="domcontentloaded", timeout=25000)
+                        await dismiss_modal_overlays()
                         await page.wait_for_timeout(2000)
                         for _ in range(6):
                             await page.evaluate("window.scrollBy(0, 1200)")
@@ -816,7 +897,7 @@ class ThreadsBrowserScraper:
                 if sha in seen_shas:
                     continue
                 vp_bytes = vp["image_bytes"]
-                is_dup, min_dist, _ = is_visual_duplicate(vp_bytes, batch_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                is_dup, min_dist, _ = is_visual_duplicate(vp_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
                 if is_dup:
                     continue
                 is_p, reason, _ = is_photographic_human_portrait(vp_bytes)
