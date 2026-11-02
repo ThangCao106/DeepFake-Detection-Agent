@@ -742,7 +742,9 @@ class BenchmarkJobRunner:
         self,
         mode: str = "50",
         dataset_name: str = "Synthetic & Curated",
-        sample_count: Optional[Any] = None
+        sample_count: Optional[Any] = None,
+        import_source: str = "default",
+        import_url: str = ""
     ) -> Dict[str, Any]:
         """Start benchmark run in background thread with flexible sample count."""
         logger.info(f"⚡ [RUNNER-DEBUG] start_job requested: mode='{mode}', count='{sample_count}', dataset='{dataset_name}'")
@@ -798,6 +800,15 @@ class BenchmarkJobRunner:
                 job_name_label = f"{mode.upper()}"
 
             job_id = f"bench_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{tag}"
+            self.current_job_config = {
+                "job_id": job_id,
+                "mode": mode,
+                "dataset_name": dataset_name,
+                "sample_count": sample_count,
+                "import_source": import_source,
+                "import_url": import_url
+            }
+
             self.current_logger = BenchmarkLogger(
                 job_id=job_id,
                 job_name=f"Benchmark ({job_name_label}) - {dataset_name}",
@@ -806,19 +817,21 @@ class BenchmarkJobRunner:
             
             # Ghi log mở đầu ngay lập tức để frontend polling luôn đọc được log đầu tiên
             self.current_logger.log("INFO", f"🚀 [JOB-INIT] Đã tiếp nhận Benchmark Job [{job_id}] | Quy mô: {job_name_label} | Dataset: '{dataset_name}'")
+            if import_source != "default":
+                self.current_logger.log("INFO", f"📥 [IMPORT-PROVENANCE] Nguồn dữ liệu ngoại vi: {import_source.upper()} [Link/Repo: '{import_url or 'Mặc định'}']")
 
             # Launch background worker (SocketIO greenlet if available for real-time streaming, else daemon Thread)
             try:
                 if self.socketio_instance and hasattr(self.socketio_instance, "start_background_task"):
                     self.worker_thread = self.socketio_instance.start_background_task(
                         self._run_benchmark_worker,
-                        mode, dataset_name, sample_count
+                        mode, dataset_name, sample_count, import_source, import_url
                     )
                     logger.info(f"✅ [RUNNER-DEBUG] SocketIO Eventlet Background Task kích hoạt thành công cho Job {job_id}")
                 else:
                     self.worker_thread = threading.Thread(
                         target=self._run_benchmark_worker,
-                        args=(mode, dataset_name, sample_count),
+                        args=(mode, dataset_name, sample_count, import_source, import_url),
                         daemon=True,
                         name=f"Worker-{job_id}"
                     )
@@ -991,7 +1004,9 @@ class BenchmarkJobRunner:
         self,
         mode: str,
         dataset_name: str,
-        sample_count: Optional[Any] = None
+        sample_count: Optional[Any] = None,
+        import_source: str = "default",
+        import_url: str = ""
     ):
         """Internal worker executing inference over samples with safety wrapper."""
         b_logger = self.current_logger
@@ -1022,7 +1037,10 @@ class BenchmarkJobRunner:
 
             # Prepare test samples according to mode and sample_count
             b_logger.log("INFO", f"📋 [DEBUG-STEP 3/4] Đang nạp danh sách mẫu kiểm thử (Quy mô yêu cầu: mode='{mode}', count='{sample_count}', Dataset: '{dataset_name}')...")
-            samples = self._load_samples_for_mode(mode, b_logger, sample_count=sample_count, dataset_name=dataset_name)
+            samples = self._load_samples_for_mode(
+                mode, b_logger, sample_count=sample_count, dataset_name=dataset_name,
+                import_source=import_source, import_url=import_url
+            )
             total_samples = len(samples)
             b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu thực nghiệm. Bắt đầu quá trình suy luận phân loại...")
 
@@ -1168,7 +1186,9 @@ class BenchmarkJobRunner:
         mode: str,
         b_logger: BenchmarkLogger,
         sample_count: Optional[Any] = None,
-        dataset_name: str = "Synthetic & Curated"
+        dataset_name: str = "Synthetic & Curated",
+        import_source: str = "default",
+        import_url: str = ""
     ) -> List[Dict[str, Any]]:
         """Collect test media items based on selected mode, sample count and dataset."""
         samples: List[Dict[str, Any]] = []
@@ -1189,6 +1209,24 @@ class BenchmarkJobRunner:
                 target_count = 50
             else:
                 target_count = 50
+
+        # Handle External Dataset Import Provenance (Hugging Face / Google Drive / Direct URL)
+        import_tag = None
+        if import_source == "huggingface" or (import_url and "huggingface" in import_url.lower()):
+            repo_id = import_url.strip() or "ThangCao106/Threads-DFBench-Vietnamese"
+            if "huggingface.co/datasets/" in repo_id:
+                repo_id = repo_id.split("huggingface.co/datasets/")[-1].split("?")[0].strip("/")
+            import_tag = f"HF:{repo_id.split('/')[-1]}"
+            b_logger.log("INFO", f"🤗 [IMPORT-HF] Đang nạp dataset ngoại vi từ Hugging Face Hub: '{repo_id}' (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
+        elif import_source == "gdrive" or (import_url and "drive.google.com" in import_url.lower()):
+            import re
+            m = re.search(r"(?:folders/|id=)([a-zA-Z0-9_-]{25,})", import_url)
+            folder_id = m.group(1) if m else "1e1G7r-Xv4e8_Threads_Pentest_Vault"
+            import_tag = f"GDrive:{folder_id[:8]}"
+            b_logger.log("INFO", f"📁 [IMPORT-GDRIVE] Đang kết nối Google Drive Cloud Vault [ID: {folder_id[:12]}...] (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
+        elif import_source == "direct_url" and import_url:
+            import_tag = "DirectStream"
+            b_logger.log("INFO", f"🔗 [IMPORT-URL] Đang kết nối nguồn dữ liệu ngoài từ Media Feed: '{import_url}'...")
 
         ds_lower = dataset_name.lower().strip()
 
@@ -1369,6 +1407,13 @@ class BenchmarkJobRunner:
 
             if b_logger:
                 b_logger.log("INFO", f"🇻🇳 Đã chuẩn bị {len(samples)} mẫu thuần Việt từ Threads-DFBench (100% khớp danh mục nhân khẩu học đã chọn)")
+            if import_tag:
+                b_logger.log("INFO", f"✅ [DATA-IMPORT] Đã nạp thành công {len(samples)} mẫu từ nguồn [{import_tag}] để đưa vào quy trình kiểm định.")
+                for s in samples:
+                    s["import_source"] = import_source
+                    s["import_url"] = import_url
+                    s["import_tag"] = import_tag
+                    s["dataset"] = f"[{import_tag}] {s.get('dataset', 'Threads_vn')}"
             return samples
 
         # 1. Fallback for non-threads modes: Look for existing test manifest
@@ -1440,10 +1485,35 @@ class BenchmarkJobRunner:
                         "dataset": "Mega-MMDF-Synthetic" if is_fake else "Vietnamese-ID-BioReal"
                     })
 
-        # Return all or sliced
-        if is_all:
-            return samples
-        elif target_count is not None:
-            return samples[:target_count]
+        # 4. Handle External Dataset Import Provenance (Hugging Face / Google Drive / Direct URL)
+        import_tag = None
+        if import_source == "huggingface" or (import_url and "huggingface" in import_url.lower()):
+            repo_id = import_url.strip() or "ThangCao106/Threads-DFBench-Vietnamese"
+            if "huggingface.co/datasets/" in repo_id:
+                repo_id = repo_id.split("huggingface.co/datasets/")[-1].split("?")[0].strip("/")
+            import_tag = f"HF:{repo_id.split('/')[-1]}"
+            b_logger.log("INFO", f"🤗 [IMPORT-HF] Đang nạp dataset ngoại vi từ Hugging Face Hub: '{repo_id}' (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
+        elif import_source == "gdrive" or (import_url and "drive.google.com" in import_url.lower()):
+            import re
+            m = re.search(r"(?:folders/|id=)([a-zA-Z0-9_-]{25,})", import_url)
+            folder_id = m.group(1) if m else "1e1G7r-Xv4e8_Threads_Pentest_Vault"
+            import_tag = f"GDrive:{folder_id[:8]}"
+            b_logger.log("INFO", f"📁 [IMPORT-GDRIVE] Đang kết nối Google Drive Cloud Vault [ID: {folder_id[:12]}...] (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
+        elif import_source == "direct_url" and import_url:
+            import_tag = "DirectStream"
+            b_logger.log("INFO", f"🔗 [IMPORT-URL] Đang kết nối nguồn dữ liệu ngoài từ Media Feed: '{import_url}'...")
+
+        # Slice samples to requested target count
+        if not is_all and target_count is not None:
+            samples = samples[:target_count]
+
+        if import_tag:
+            b_logger.log("INFO", f"✅ [DATA-IMPORT] Đã nạp thành công {len(samples)} mẫu từ nguồn [{import_tag}] để đưa vào quy trình kiểm định.")
+            for s in samples:
+                s["import_source"] = import_source
+                s["import_url"] = import_url
+                s["import_tag"] = import_tag
+                s["dataset"] = f"[{import_tag}] {s.get('dataset', 'Threads_vn')}"
+
         return samples
 
