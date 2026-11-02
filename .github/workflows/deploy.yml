@@ -20,6 +20,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for Syntax & Lint Validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python for Regression Test Suite
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Automated UI & Historical Bug Regression Tests
+        run: |
+          python tests/test_ui_regression_bugs.py
+
       - name: Deploy via SSH Password to Target Server
         uses: appleboy/ssh-action@v1.0.3
         with:

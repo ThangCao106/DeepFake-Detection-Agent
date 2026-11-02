@@ -968,8 +968,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     const prnu = ev.sensor_prnu_analysis ? (ev.sensor_prnu_analysis.prnu_discrepancy_score * 100).toFixed(1) + '%' : '12.4%';
     const corneal = !hasHuman ? 'N/A (Non-Human)' : (ev.corneal_reflection_analysis ? (ev.corneal_reflection_analysis.corneal_reflection_symmetry * 100).toFixed(1) + '%' : '91.2%');
 
-    // Option B: Triad Council Multi-Agent Debate (Gemini + Muse + Claude)
-    const triad = cert.triad_council_debate || data.triad_council_debate;
+    // Option B: Triad Council Multi-Agent Debate (Gemini + Muse + Claude) - reusing already resolved triad
     let msgGeminiText = "";
     let msgMuseText = "";
     let msgClaudeText = "";
