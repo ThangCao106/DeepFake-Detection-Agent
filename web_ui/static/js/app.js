@@ -1902,6 +1902,9 @@ async function loadAuditReportData(period = 'weekly', targetDate = '') {
             ).join('');
         }
 
+        // Render Canonical 10 Commercial Tools Suite
+        renderCommercialSuite10Table(data.commercial_suite_10 || []);
+
         // Render Commercial Arena Table
         renderCommercialArenaTable(data.commercial_arena || []);
 
@@ -1911,6 +1914,38 @@ async function loadAuditReportData(period = 'weekly', targetDate = '') {
     } catch (err) {
         console.warn('[Audit Report] Error loading aggregate history:', err);
     }
+}
+
+function renderCommercialSuite10Table(suite) {
+    const tbody = document.getElementById('commercialSuite10TableBody');
+    if (!tbody) return;
+
+    if (!suite || suite.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 14px; text-align: center; color: #94a3b8;">Không có dữ liệu 10 công cụ thương mại.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = suite.map((item, idx) => {
+        const isOurs = item.is_ours || item.tool_id === 'ours';
+        const rowBg = isOurs ? '#eef2ff' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
+        const nameColor = isOurs ? '#4338ca' : '#0f172a';
+
+        return `
+            <tr style="background: ${rowBg}; border-bottom: 1px solid #f1f5f9; ${isOurs ? 'font-weight: 700;' : ''}">
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: ${nameColor};">${item.rank}</td>
+                <td style="padding: 8px 10px; color: ${nameColor};">
+                    ${item.tool_name}
+                    ${isOurs ? ' <span style="background:#4338ca; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-left:4px;">OURS</span>' : ''}
+                    <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">${item.vendor || ''}</div>
+                </td>
+                <td style="padding: 8px 10px; color: #475569; font-size: 0.78rem;">${item.modalities}</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">${item.auc}</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: ${item.eer_pct <= 2.5 ? '#16a34a' : '#d97706'};">${item.eer_pct}%</td>
+                <td style="padding: 8px 10px; text-align: center; color: #475569;">${item.avg_latency_ms} ms</td>
+                <td style="padding: 8px 10px; color: #334155; font-size: 0.78rem;">${item.explainability}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderCommercialArenaTable(arena) {
