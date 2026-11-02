@@ -1,6 +1,13 @@
 // WebSocket connection
 const socket = io();
 
+// Benchmark & Forensic Global State (Window-scoped for 100% fail-safe access)
+window.seenLogKeys = new Set();
+var seenLogKeys = window.seenLogKeys;
+var benchmarkPollingTimer = null;
+var pollConsecutiveIdleCount = 0;
+var pollStartTime = 0;
+
 // ===== Multi-Language (i18n) Translations =====
 const TRANSLATIONS = {
     en: {
@@ -1702,7 +1709,12 @@ function stopBenchmarkPollingFallback() {
 }
 
 function clearTerminalLogs() {
-    seenLogKeys.clear();
+    if (!window.seenLogKeys || typeof window.seenLogKeys.clear !== 'function') {
+        window.seenLogKeys = new Set();
+    }
+    window.seenLogKeys.clear();
+    seenLogKeys = window.seenLogKeys;
+
     const termBody = document.getElementById('terminalLogBody');
     if (termBody) {
         termBody.innerHTML = '<div class="terminal-line comment"># Terminal cleared. Waiting for events...</div>';
