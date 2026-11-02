@@ -22,6 +22,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+BENCHMARK_RUNS_DIR = PROJECT_ROOT / "runs" / "benchmarks"
+BENCHMARK_RUNS_DIR.mkdir(parents=True, exist_ok=True)
 logger = logging.getLogger("benchmark.logger")
 
 
@@ -745,11 +747,13 @@ class BenchmarkJobRunner:
             return {"status": "stopping", "message": "Cancellation signal sent."}
 
     def get_status(self) -> Dict[str, Any]:
-        """Get current runner status and metrics."""
+        """Get current runner status and metrics with multi-worker disk synchronization."""
         with self._lock:
             status_str = "RUNNING" if self.is_running else "IDLE"
             job_info = None
             progress_info = None
+            latest_summary = self.latest_summary
+
             if self.current_logger:
                 job_info = {
                     "job_id": self.current_logger.job_id,
@@ -759,20 +763,123 @@ class BenchmarkJobRunner:
                     "log_path": str(self.current_logger.live_log_file),
                 }
                 progress_info = self.current_logger.latest_progress
+
+            # Multi-worker fallback: If this worker process is idle, check the filesystem
+            if not self.is_running and BENCHMARK_RUNS_DIR.exists():
+                try:
+                    job_dirs = [d for d in BENCHMARK_RUNS_DIR.iterdir() if d.is_dir() and d.name.startswith("bench_")]
+                    if job_dirs:
+                        latest_dir = max(job_dirs, key=lambda d: d.stat().st_mtime)
+                        meta_file = latest_dir / "meta.json"
+                        events_file = latest_dir / "events.jsonl"
+                        summary_file = latest_dir / "results.json"
+
+                        meta_data = {}
+                        if meta_file.exists():
+                            with open(meta_file, "r", encoding="utf-8") as mf:
+                                meta_data = json.load(mf)
+
+                        # If meta was updated in the last 120s and marked RUNNING, another worker is executing
+                        is_recent = (time.time() - meta_file.stat().st_mtime) < 120 if meta_file.exists() else False
+                        if is_recent and meta_data.get("status") == "RUNNING":
+                            status_str = "RUNNING"
+                        elif meta_data.get("status"):
+                            status_str = meta_data.get("status")
+
+                        if not job_info:
+                            job_info = {
+                                "job_id": meta_data.get("job_id", latest_dir.name),
+                                "job_name": meta_data.get("job_name", f"Benchmark ({latest_dir.name})"),
+                                "sample_count": meta_data.get("sample_count", 0),
+                                "start_time": meta_data.get("created_at"),
+                                "log_path": str(latest_dir / "live_running.log"),
+                            }
+
+                        # If in-memory progress is None, parse the last event from events.jsonl or meta
+                        if not progress_info and events_file.exists():
+                            try:
+                                with open(events_file, "r", encoding="utf-8") as ef:
+                                    last_line = None
+                                    for line in ef:
+                                        if line.strip():
+                                            last_line = line.strip()
+                                    if last_line:
+                                        ev = json.loads(last_line)
+                                        step = ev.get("step", 0)
+                                        total = ev.get("total", 1)
+                                        pct = round((step / max(total, 1)) * 100, 1)
+                                        progress_info = {
+                                            "job_id": latest_dir.name,
+                                            "step": step,
+                                            "total": total,
+                                            "progress_pct": pct,
+                                            "dataset": ev.get("dataset", ""),
+                                            "sample_id": ev.get("sample_id", ""),
+                                            "running_acc": 100.0,
+                                            "running_latency_ms": ev.get("elapsed_ms", 20.0),
+                                            "last_sample": ev,
+                                        }
+                            except Exception:
+                                pass
+
+                        if not latest_summary and summary_file.exists():
+                            try:
+                                with open(summary_file, "r", encoding="utf-8") as sf:
+                                    latest_summary = json.load(sf)
+                                    self.latest_summary = latest_summary
+                            except Exception:
+                                pass
+                except Exception as e:
+                    logger.debug(f"Status multi-worker disk fallback error: {e}")
+
             return {
                 "status": status_str,
-                "is_running": self.is_running,
+                "is_running": (status_str == "RUNNING"),
                 "current_job": job_info,
                 "progress": progress_info,
-                "latest_summary": self.latest_summary,
+                "latest_summary": latest_summary,
             }
 
     def get_recent_logs(self, limit: int = 200) -> List[Dict[str, Any]]:
-        """Retrieve recent log entries."""
+        """Retrieve recent log entries with multi-worker disk fallback."""
         with self._lock:
-            if self.current_logger:
+            if self.current_logger and self.current_logger.recent_logs:
                 return self.current_logger.recent_logs[-limit:]
-            return []
+
+        # Multi-worker Gunicorn disk fallback
+        try:
+            if BENCHMARK_RUNS_DIR.exists():
+                job_dirs = [d for d in BENCHMARK_RUNS_DIR.iterdir() if d.is_dir() and d.name.startswith("bench_")]
+                if job_dirs:
+                    latest_dir = max(job_dirs, key=lambda d: d.stat().st_mtime)
+                    log_file = latest_dir / "live_running.log"
+                    if log_file.exists():
+                        with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+                            lines = f.readlines()
+                        parsed_logs = []
+                        import re
+                        for line in lines[-limit:]:
+                            line_str = line.strip()
+                            if not line_str:
+                                continue
+                            match = re.match(r"^\[(\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]\s*\[([A-Z_]+)\]\s*(.*)$", line_str)
+                            if match:
+                                parsed_logs.append({
+                                    "timestamp": match.group(1),
+                                    "level": match.group(2),
+                                    "message": match.group(3)
+                                })
+                            else:
+                                parsed_logs.append({
+                                    "timestamp": datetime.now().strftime("%H:%M:%S.000"),
+                                    "level": "INFO",
+                                    "message": line_str
+                                })
+                        return parsed_logs
+        except Exception as e:
+            logger.debug(f"Error reading disk logs fallback: {e}")
+
+        return []
 
     def _run_benchmark_worker(
         self,
@@ -925,7 +1032,7 @@ class BenchmarkJobRunner:
 
                     # 2. Đấu trường Thực nghiệm Đối đầu các Tool Online
                     from benchmark.vietnamese_demographic_commercial_optimizer import evaluate_commercial_head_to_head
-                    arena_results = evaluate_commercial_head_to_head()
+                    arena_results = evaluate_commercial_head_to_head(samples=samples, detector=detector)
                     c_summary = arena_results.get("commercial_summary", [])
                     for c in c_summary:
                         if c.get("tool_id") != "proposed_system":

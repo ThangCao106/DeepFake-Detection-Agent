@@ -1417,6 +1417,24 @@ function fetchBenchmarkStatus() {
         .then(res => res.json())
         .then(data => updateBenchmarkStatusUI(data))
         .catch(err => console.error('Failed to fetch benchmark status:', err));
+
+    // Đồng bộ log gần nhất nếu Terminal đang trống hoặc vừa tải trang
+    if (seenLogKeys.size <= 1) {
+        fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=150`)
+            .then(res => res.json())
+            .then(logData => {
+                if (logData.logs && logData.logs.length > 0) {
+                    logData.logs.forEach(entry => {
+                        const key = `${entry.timestamp}_${entry.message}`;
+                        if (!seenLogKeys.has(key)) {
+                            seenLogKeys.add(key);
+                            appendTerminalLogLine(entry.level, entry.message, entry.timestamp);
+                        }
+                    });
+                }
+            })
+            .catch(err => console.debug('Initial log load error:', err));
+    }
 }
 
 function updateBenchmarkStatusUI(statusData) {
@@ -1634,7 +1652,7 @@ function startBenchmarkPollingFallback() {
             .catch(err => console.debug('Status poll error:', err));
 
         // 2. Poll logs thực thi gần nhất để đẩy vào Terminal
-        fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=100`)
+        fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=200`)
             .then(res => res.json())
             .then(logData => {
                 if (logData.logs && logData.logs.length > 0) {
@@ -1660,6 +1678,21 @@ function stopBenchmarkPollingFallback() {
         clearInterval(benchmarkPollingTimer);
         benchmarkPollingTimer = null;
     }
+    // Quét vét lần cuối để đảm bảo toàn bộ log kết quả & đấu trường đều hiển thị đầy đủ
+    fetch(`${getBenchmarkApiBase()}/api/benchmark/logs?limit=300`)
+        .then(res => res.json())
+        .then(logData => {
+            if (logData.logs && logData.logs.length > 0) {
+                logData.logs.forEach(entry => {
+                    const key = `${entry.timestamp}_${entry.message}`;
+                    if (!seenLogKeys.has(key)) {
+                        seenLogKeys.add(key);
+                        appendTerminalLogLine(entry.level, entry.message, entry.timestamp);
+                    }
+                });
+            }
+        })
+        .catch(err => console.debug('Final log pull error:', err));
 }
 
 function clearTerminalLogs() {
