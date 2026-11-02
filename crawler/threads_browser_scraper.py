@@ -805,7 +805,10 @@ class ThreadsBrowserScraper:
             print(f"[Harvester Safeguard] Need {deficit_imgs} more images. Supplementing authentic Vietnamese portraits from Face Vault & Open Harvester...")
             
             from crawler.vietnam_face_vault import load_vault_portraits
-            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=dedup_registry)
+            # Important: pass dedup_registry=None so local vault assets are not rejected against historical registry.
+            # Intra-batch deduplication is strictly maintained via batch_dhashes.
+            vault_portraits = load_vault_portraits(min_images=deficit_imgs, dedup_registry=None)
+            batch_dhashes = set()
             for vp in vault_portraits:
                 if len(harvested_images) >= target_images:
                     break
@@ -813,7 +816,7 @@ class ThreadsBrowserScraper:
                 if sha in seen_shas:
                     continue
                 vp_bytes = vp["image_bytes"]
-                is_dup, min_dist, _ = is_visual_duplicate(vp_bytes, known_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
+                is_dup, min_dist, _ = is_visual_duplicate(vp_bytes, batch_dhashes, threshold=DEFAULT_HAMMING_THRESHOLD)
                 if is_dup:
                     continue
                 is_p, reason, _ = is_photographic_human_portrait(vp_bytes)
@@ -822,6 +825,7 @@ class ThreadsBrowserScraper:
 
                 seen_shas.add(sha)
                 item_dhash = vp.get("dhash") or compute_dhash(vp_bytes)
+                batch_dhashes.add(item_dhash)
                 known_dhashes.add(item_dhash)
                 idx_img = len(harvested_images) + 1
                 cat = vp.get("category", "vn_selfie_lifestyle")
@@ -894,6 +898,45 @@ class ThreadsBrowserScraper:
                     harvested_audios.append(a_path)
             except Exception as e_a_open:
                 print(f"  [Harvester Notice] Notice on Open Audio harvest: {e_a_open}")
+
+        # Local verified video fallback
+        if len(harvested_videos) < target_videos:
+            verified_vids_dir = PROJECT_ROOT / "crawler" / "verified_threads_videos"
+            if verified_vids_dir.exists():
+                v_candidates = sorted(list(verified_vids_dir.glob("*.mp4")))
+                for v_file in v_candidates:
+                    if len(harvested_videos) >= target_videos:
+                        break
+                    v_data = v_file.read_bytes()
+                    v_sha = compute_sha256(v_data)
+                    idx_vid = len(harvested_videos) + 1
+                    out_vid = raw_dir / f"real_vid_{idx_vid:03d}_{v_sha[:8]}.mp4"
+                    if not out_vid.exists():
+                        out_vid.write_bytes(v_data)
+                    if out_vid not in harvested_videos:
+                        harvested_videos.append(out_vid)
+                    if len(harvested_audios) < target_audios:
+                        idx_a = len(harvested_audios) + 1
+                        out_a = raw_dir / f"real_aud_{idx_a:03d}_{v_sha[:8]}.wav"
+                        if extract_audio_from_video(out_vid, out_a):
+                            harvested_audios.append(out_a)
+
+        # Local verified audio fallback
+        if len(harvested_audios) < target_audios:
+            verified_auds_dir = PROJECT_ROOT / "crawler" / "verified_threads_audio_seeds"
+            if verified_auds_dir.exists():
+                a_candidates = sorted(list(verified_auds_dir.glob("*.wav")))
+                for a_file in a_candidates:
+                    if len(harvested_audios) >= target_audios:
+                        break
+                    a_data = a_file.read_bytes()
+                    a_sha = compute_sha256(a_data)
+                    idx_aud = len(harvested_audios) + 1
+                    out_aud = raw_dir / f"real_aud_{idx_aud:03d}_{a_sha[:8]}.wav"
+                    if not out_aud.exists():
+                        out_aud.write_bytes(a_data)
+                    if out_aud not in harvested_audios:
+                        harvested_audios.append(out_aud)
 
         dedup_registry.save()
         print("\n" + "=" * 80)

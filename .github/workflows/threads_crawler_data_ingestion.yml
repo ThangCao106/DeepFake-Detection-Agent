@@ -87,7 +87,7 @@ jobs:
           echo "   Vault-Only Mode: $THREADS_VAULT_ONLY"
           echo "=========================================================================="
           # Option C & B: Pre-prime Vietnamese Real Face Vault with authentic human portraits
-          python scripts/populate_vietnamese_real_vault.py --target "$CRAWL_NUM_IMAGES" --workers 8 || true
+          python scripts/populate_vietnamese_real_vault.py --target 150 --workers 2 || true
           
           python crawler/daily_pentest_pipeline.py \
             --images "$CRAWL_NUM_IMAGES" \
