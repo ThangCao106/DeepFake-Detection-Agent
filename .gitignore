@@ -104,3 +104,4 @@ runs/
 # Local face vault cache (auto-primed via scripts/populate_vietnamese_real_vault.py)
 crawler/vietnamese_face_vault/
 crawler/verified_threads_seeds/real_vn_*.jpg
+report_colab/daily_benchmark/synthetic_counterfactuals/

@@ -1682,6 +1682,18 @@ class DeepfakeDetector:
         else:
             self.calibration_params = None
 
+        # Load Vietnamese demographic adaptive parameters if present
+        vn_param_file = os.path.join(custom_dir, "vietnamese_demographic_params.json")
+        self.vn_demographic_params = None
+        if os.path.exists(vn_param_file):
+            import json
+            try:
+                with open(vn_param_file, "r", encoding="utf-8") as f:
+                    self.vn_demographic_params = json.load(f)
+                print(f"[info] Vietnamese Demographic Parameters loaded: tau*={self.vn_demographic_params.get('optimal_decision_threshold_tau_star')}")
+            except Exception as e:
+                pass
+
         # Initialize Human-Centric Multi-Modal Detector (Model 2) for Dual-Stream Execution
         if HumanMultiModalDetector is not None:
             try:
@@ -2048,7 +2060,12 @@ class DeepfakeDetector:
             }
 
             # 6. Step 6 Post-Hoc Platt Scaling & Decision Calibration
-            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+            if self.vn_demographic_params and "optimal_decision_threshold_tau_star" in self.vn_demographic_params:
+                tau_star = float(self.vn_demographic_params["optimal_decision_threshold_tau_star"])
+            elif self.calibration_params:
+                tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118))
+            else:
+                tau_star = 0.8118
 
             # 7. Natural Language Explainability Statement (EU AI Act Article 50 aligned with Youden tau*)
             xai_explanation = XAIExplainabilityGenerator.generate_statement(
