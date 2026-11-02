@@ -891,7 +891,7 @@ def get_latest_benchmark_report():
         if reports:
             latest_md = reports[0]
             content = latest_md.read_text(encoding="utf-8", errors="ignore")
-            if "Sample-by-Sample Forensic Audit" not in content or "Bảng Đối Chiếu 10 Công Cụ Thương Mại Toàn Cầu" not in content:
+            if "Sample-by-Sample Multi-Tool Confrontation" not in content or "Bảng Đối Chiếu 10 Công Cụ Thương Mại Toàn Cầu" not in content:
                 results_json_path = latest_md.parent / "results.json"
                 if results_json_path.exists():
                     try:
