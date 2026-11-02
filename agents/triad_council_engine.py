@@ -211,10 +211,11 @@ class TriadCouncilEngine:
                 )
         else:
             if not has_human:
+                prnu_desc = f"vân nhiễu PRNU ({prnu:.2f}) đồng nhất" if prnu <= 0.40 else f"vân PRNU ({prnu:.2f}) có độ phân tán vi sai cảnh quan nhưng bảo toàn hạt cảm biến máy ảnh"
                 argument = (
                     f"Phân tích quang học và cảm biến ghi nhận tính chân thực cao: "
                     f"Độ phân rã phổ 2D-FFT ({fft:.2f}) tuân thủ định luật tự nhiên 1/f^α; "
-                    f"vân nhiễu PRNU ({prnu:.2f}) đồng nhất, phù hợp cảm biến CMOS camera vật lý."
+                    f"{prnu_desc}, phù hợp cảm biến CMOS camera vật lý."
                 )
             else:
                 corneal_desc = "đã bypass an toàn do che khuất/không đủ tương phản" if corneal.get("bypassed") else f"đối xứng quang học Δθ = {delta_theta}° nhất quán"

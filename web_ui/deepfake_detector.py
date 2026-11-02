@@ -1474,7 +1474,7 @@ class XAIExplainabilityGenerator:
     Synthesizes the 6D Evidence Matrix into natural-language forensic reasoning tailored to media category.
     """
     @staticmethod
-    def generate_statement(evidence_matrix, composite_risk, analysis_mode, has_human, scene_context=None):
+    def generate_statement(evidence_matrix, composite_risk, analysis_mode, has_human, scene_context=None, tau_star=0.8118):
         ev = evidence_matrix
         p_vit = ev.get("dim1_passive_vit", {}).get("score", 0.5)
         fft_score = ev.get("dim2_frequency_fft", {}).get("score", 0.0)
@@ -1487,7 +1487,7 @@ class XAIExplainabilityGenerator:
         if scene_context is None:
             scene_context = ev.get("dim6_patch_heatmap_uncertainty", {}).get("scene_context", {})
 
-        is_fake = composite_risk >= 0.50
+        is_fake = composite_risk >= tau_star
         reasons = []
 
         # 0. Environmental Scene & Context Classification
@@ -1498,9 +1498,11 @@ class XAIExplainabilityGenerator:
             )
 
         # 1. PRNU Hardware Sensor Noise Trace
-        if prnu_score > 0.40:
+        if prnu_score > 0.40 and is_fake:
             target_str = "khuôn mặt và phông nền" if has_human else "đối tượng chính và môi trường phông nền"
             reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) bất thường: thiếu vân nhiễu quang học tự nhiên hoặc có độ lệch lớn giữa {target_str} (dấu hiệu của ảnh sinh AI).")
+        elif prnu_score > 0.40 and not is_fake:
+            reasons.append(f"Dấu vết phần cứng cảm biến (PRNU = {prnu_score:.2f}) ghi nhận độ biến thiên vi sai do tương phản quang học phông cảnh, bảo toàn cấu trúc hạt cảm biến máy ảnh vật lý.")
         else:
             if has_human:
                 reasons.append(f"Vân cảm biến phần cứng (PRNU = {prnu_score:.2f}) đồng nhất và liền mạch giữa vùng da mặt, viền tóc và phông nền thực tế.")
@@ -1915,29 +1917,28 @@ class DeepfakeDetector:
                 }
             }
 
-            # 6. Natural Language Explainability Statement (EU AI Act Article 50)
+            # 6. Step 6 Post-Hoc Platt Scaling & Decision Calibration
+            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+
+            # 7. Natural Language Explainability Statement (EU AI Act Article 50 aligned with Youden tau*)
             xai_explanation = XAIExplainabilityGenerator.generate_statement(
                 evidence_matrix=evidence_matrix_6d,
                 composite_risk=composite_risk,
                 analysis_mode=analysis_mode,
                 has_human=has_human,
-                scene_context=scene_context
+                scene_context=scene_context,
+                tau_star=tau_star
             )
-
-            # 7. Step 6 Post-Hoc Platt Scaling & Decision Calibration
-            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
             # Calibrated classification aligned with Youden optimal threshold tau*
             is_synthetic = (composite_risk >= tau_star)
             final_label = "Deepfake" if is_synthetic else "Realism"
             calibrated_confidence = round(float(composite_risk if is_synthetic else (1.0 - composite_risk)), 4)
 
-            # Auditable Forensic Verdict (EU AI Act Article 50 & High-Specificity threshold)
-            if composite_risk >= tau_star:
-                auditable_verdict = "SYNTHETIC_MEDIA_CONFIRMED"
-            elif composite_risk >= 0.50:
-                auditable_verdict = "SYNTHETIC_MEDIA_SUSPECTED"
+            # Auditable Forensic Verdict (EU AI Act Article 50 & Youden Decision Boundary)
+            if is_synthetic:
+                auditable_verdict = "SYNTHETIC_MEDIA_CONFIRMED" if composite_risk >= (tau_star + 0.08) else "SYNTHETIC_MEDIA_SUSPECTED"
             else:
-                auditable_verdict = "AUTHENTIC_MEDIA_LIKELY"
+                auditable_verdict = "AUTHENTIC_MEDIA_VERIFIED" if composite_risk <= 0.35 else "AUTHENTIC_MEDIA_LIKELY"
 
             calibrated_scores = {
                 "Deepfake": round(float(composite_risk), 4),
@@ -1971,6 +1972,16 @@ class DeepfakeDetector:
                         temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
                     )
                     triad_debate_result = TriadCouncilEngine.conduct_debate(fact_manifest)
+                    if triad_debate_result:
+                        c_verdict = triad_debate_result.get("consensus_verdict", "")
+                        if "AUTHENTIC" in c_verdict or "REAL" in c_verdict:
+                            is_synthetic = False
+                            final_label = "Realism"
+                            auditable_verdict = "AUTHENTIC_MEDIA_LIKELY"
+                        elif "DEEPFAKE" in c_verdict or "SYNTHETIC" in c_verdict:
+                            is_synthetic = True
+                            final_label = "Deepfake"
+                            auditable_verdict = "SYNTHETIC_MEDIA_CONFIRMED"
             except Exception as te:
                 print(f"[warning] Triad Council Debate execution error: {te}")
 
@@ -2339,7 +2350,8 @@ class DeepfakeDetector:
             else:
                 reasons_vid.append("Chỉ số sinh trắc học cử động môi: Bỏ qua (video phi nhân vật / phong cảnh / đồ vật).")
 
-            xai_explanation_vid = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if composite_video_risk > 0.50 else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro video tổng hợp: {composite_video_risk*100:.1f}%]. Phân tích ma trận chứng cứ 6 chiều video:\n" + "\n".join(f"- {r}" for r in reasons_vid)
+            is_synthetic_vid = (composite_video_risk >= tau_star)
+            xai_explanation_vid = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if is_synthetic_vid else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro video tổng hợp: {composite_video_risk*100:.1f}%]. Phân tích ma trận chứng cứ 6 chiều video:\n" + "\n".join(f"- {r}" for r in reasons_vid)
 
             # Option B: Asymmetric Triad Council Debate for Video
             triad_debate_video = None

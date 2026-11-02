@@ -831,8 +831,9 @@ function displayResults(data) {
         }
 
         const certBadge = document.getElementById('certBadge');
-        certBadge.textContent = cert.auditable_verdict || (isSynthetic ? 'SYNTHETIC_MEDIA_SUSPECTED' : 'AUTHENTIC_MEDIA_LIKELY');
-        certBadge.style.background = isSynthetic ? '#ef4444' : '#10b981';
+        const isAuditableSynthetic = cert.auditable_verdict ? (cert.auditable_verdict.startsWith('SYNTHETIC') || cert.auditable_verdict.includes('DETECTED') || cert.auditable_verdict.includes('CONFIRMED')) : isSynthetic;
+        certBadge.textContent = cert.auditable_verdict || (isAuditableSynthetic ? 'SYNTHETIC_MEDIA_CONFIRMED' : 'AUTHENTIC_MEDIA_LIKELY');
+        certBadge.style.background = isAuditableSynthetic ? '#ef4444' : '#10b981';
         certBadge.style.color = '#fff';
 
         forensicCertCard.style.display = 'block';
@@ -939,11 +940,18 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                     (cert.audio_metadata !== undefined);
 
     const tau = cert.decision_threshold || 0.8118;
-    const isFake = cert.auditable_verdict
-        ? (cert.auditable_verdict.includes('SUSPECTED') || cert.auditable_verdict.includes('DETECTED'))
-        : (cert.composite_risk_score !== undefined
-            ? cert.composite_risk_score >= tau
-            : (data.label && (data.label.toLowerCase().includes('fake') || data.label.toLowerCase().includes('synthetic') || data.label.toLowerCase().includes('manipulate'))));
+    const triad = cert.triad_council_debate || data.triad_council_debate;
+    let isFake = false;
+    if (triad && triad.consensus_verdict) {
+        isFake = triad.consensus_verdict.includes('DEEPFAKE') || triad.consensus_verdict.includes('SYNTHETIC');
+    } else if (cert.auditable_verdict) {
+        isFake = cert.auditable_verdict.startsWith('SYNTHETIC') || cert.auditable_verdict.includes('DETECTED') || cert.auditable_verdict.includes('CONFIRMED');
+    } else if (cert.composite_risk_score !== undefined) {
+        isFake = cert.composite_risk_score >= tau;
+    } else if (data.label) {
+        const l = data.label.toLowerCase();
+        isFake = l.includes('fake') || l.includes('synthetic') || l.includes('manipulate');
+    }
     const labelBadgeText = isFake ? t.badge_fake : t.badge_real;
     const labelBadgeBg = isFake ? '#fee2e2' : '#dcfce7';
     const labelBadgeColor = isFake ? '#b91c1c' : '#15803d';
