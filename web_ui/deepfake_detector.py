@@ -1867,17 +1867,31 @@ class DeepfakeDetector:
                 human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
 
-                # Cross-Stream Evidence Fusion: 40% General ViT + 60% Human Biometrics
-                composite_risk = round(float(0.40 * general_risk + 0.60 * human_risk), 4)
+                # Demographic-Adaptive Cohort Fusion for Vietnamese Population (Paper v2 / IEEE T-IFS 2026)
+                vn_cohort = scene_context.get("vn_demographic_category", "standard_portrait") if scene_context else "standard_portrait"
+                vn_alpha_map = {
+                    "vn_street_outdoor": 0.05,
+                    "vn_mature_aging": 0.25,
+                    "vn_occlusion_glasses_mask": 0.40,
+                    "vn_selfie_lifestyle": 0.40,
+                    "vn_id_official": 0.35,
+                    "standard_portrait": 0.60,
+                }
+                alpha_human = vn_alpha_map.get(vn_cohort, 0.60)
+                weight_general = round(1.0 - alpha_human, 2)
+                weight_human = round(alpha_human, 2)
+
+                composite_risk = round(float(weight_general * general_risk + weight_human * human_risk), 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
 
                 dual_stream_breakdown = {
                     "mode": "DUAL_STREAM_PARALLEL",
                     "human_gate_triggered": True,
-                    "fusion_formula": "Risk_composite = 0.40 * Risk_general + 0.60 * Risk_human",
+                    "vn_demographic_cohort": vn_cohort,
+                    "fusion_formula": f"Risk_composite = {weight_general:.2f} * Risk_general + {weight_human:.2f} * Risk_human",
                     "stream_1_general_vision": {
                         "model_name": "General Vision Transformer + PRNU Hardware Filter (6D Multi-Modal)",
-                        "weight": 0.40,
+                        "weight": weight_general,
                         "stream_risk_score": general_risk,
                         "fake_probability": round(fake_prob, 4),
                         "spectral_2d_fft": spectral_anomaly,
@@ -1887,7 +1901,7 @@ class DeepfakeDetector:
                     },
                     "stream_2_human_biometrics": {
                         "model_name": "Human-Centric Multi-Modal Detector (WAVIE + Corneal Reflection + rPPG + ECE)",
-                        "weight": 0.60,
+                        "weight": weight_human,
                         "stream_risk_score": round(human_risk, 4),
                         "raw_logit": human_eval.get("raw_logit"),
                         "platt_temperature_T": human_eval.get("platt_temperature_T"),

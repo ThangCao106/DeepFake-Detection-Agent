@@ -1,0 +1,44 @@
+{
+  "population": "Vietnamese In-The-Wild (Threads-DFBench-VN)",
+  "benchmark_date": "2026-11-02",
+  "optimal_decision_threshold_tau_star": 0.465,
+  "optimal_platt_temperature_T_star": 0.4,
+  "demographic_cohort_weights": {
+    "vn_street_outdoor": {
+      "alpha_human": 0.05,
+      "weight_general": 0.95,
+      "description": "Ngoại cảnh đường phố, chợ đêm, xe cộ - ưu tiên ViT 95%"
+    },
+    "vn_mature_aging": {
+      "alpha_human": 0.25,
+      "weight_general": 0.75,
+      "description": "Người cao tuổi, nếp nhăn tự nhiên - ưu tiên ViT 75%"
+    },
+    "vn_occlusion_glasses_mask": {
+      "alpha_human": 0.4,
+      "weight_general": 0.6,
+      "description": "Khẩu trang, kính râm, mũ - cân đối ViT 60% / Biometrics 40%"
+    },
+    "vn_selfie_lifestyle": {
+      "alpha_human": 0.4,
+      "weight_general": 0.6,
+      "description": "Selfie đời thường, filter mịn da - cân đối ViT 60% / Biometrics 40%"
+    },
+    "vn_id_official": {
+      "alpha_human": 0.35,
+      "weight_general": 0.65,
+      "description": "Ảnh thẻ CCCD, bằng lái xe - ViT 65% / Biometrics 35%"
+    },
+    "standard_portrait": {
+      "alpha_human": 0.6,
+      "weight_general": 0.4,
+      "description": "Chân dung studio chuẩn - Biometrics 60% / ViT 40%"
+    }
+  },
+  "fairness_metrics": {
+    "demographic_parity_gap": 0.0556,
+    "equalized_odds_gap": 0.1111,
+    "overall_accuracy_pct": 97.78,
+    "auc": 0.9981
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "dataset_summary": {
+    "total_samples": 180,
+    "real_samples": 90,
+    "fake_samples": 90,
+    "num_cohorts": 5
+  },
+  "baseline_parameters": {
+    "description": "Fixed Global Settings (Non-Demographic)",
+    "alpha_human": 0.6,
+    "decision_threshold_tau": 0.8118,
+    "platt_temperature_T": 1.0,
+    "overall_accuracy_pct": 86.11,
+    "tnr_real_pct": 100.0,
+    "tpr_fake_pct": 72.22,
+    "auc": 1.0,
+    "eer_pct": 0.0,
+    "ece": 0.1512,
+    "demographic_parity_gap": 0.0833,
+    "equalized_odds_gap": 0.1667
+  },
+  "optimized_demographic_parameters": {
+    "description": "Demographic-Adaptive Cohort Tuning (Our Optimized Contribution)",
+    "optimal_alphas": {
+      "Threads_vn_id_official": 0.35,
+      "Threads_vn_selfie_lifestyle": 0.4,
+      "Threads_vn_street_outdoor": 0.05,
+      "Threads_vn_occlusion_glasses_mask": 0.4,
+      "Threads_vn_mature_aging": 0.25
+    },
+    "optimal_decision_threshold_tau_star": 0.465,
+    "optimal_platt_temperature_T_star": 0.4,
+    "youden_j_index": 0.9556,
+    "overall_accuracy_pct": 97.78,
+    "tnr_real_pct": 96.67,
+    "tpr_fake_pct": 98.89,
+    "auc": 0.9981,
+    "eer_pct": 2.22,
+    "ece": 0.0375,
+    "demographic_parity_gap": 0.0556,
+    "equalized_odds_gap": 0.1111
+  },
+  "cohort_level_breakdown": {
+    "Threads_vn_id_official": {
+      "name": "CCCD / Ảnh Thẻ Công Dân (Official ID)",
+      "icon": "🪪",
+      "optimal_alpha": 0.35,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "acc_pct": 97.22,
+      "tnr_real_pct": 94.44,
+      "tpr_fake_pct": 100.0,
+      "gain_acc_pct": 8.33
+    },
+    "Threads_vn_selfie_lifestyle": {
+      "name": "Selfie Đời Sống & Filter Làm Đẹp (Lifestyle Selfie)",
+      "icon": "🤳",
+      "optimal_alpha": 0.4,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "acc_pct": 97.22,
+      "tnr_real_pct": 94.44,
+      "tpr_fake_pct": 100.0,
+      "gain_acc_pct": 16.66
+    },
+    "Threads_vn_street_outdoor": {
+      "name": "Đường Phố Ngoại Cảnh & Chợ Đêm (Street & Outdoor)",
+      "icon": "🛵",
+      "optimal_alpha": 0.05,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "acc_pct": 97.22,
+      "tnr_real_pct": 100.0,
+      "tpr_fake_pct": 94.44,
+      "gain_acc_pct": 13.89
+    },
+    "Threads_vn_occlusion_glasses_mask": {
+      "name": "Che Khuất Khẩu Trang & Kính Râm (Occluded Face)",
+      "icon": "😷",
+      "optimal_alpha": 0.4,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "acc_pct": 97.22,
+      "tnr_real_pct": 94.44,
+      "tpr_fake_pct": 100.0,
+      "gain_acc_pct": 8.33
+    },
+    "Threads_vn_mature_aging": {
+      "name": "Người Cao Tuổi & Lão Hóa Tự Nhiên (Mature & Aging)",
+      "icon": "👵",
+      "optimal_alpha": 0.25,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "acc_pct": 100.0,
+      "tnr_real_pct": 100.0,
+      "tpr_fake_pct": 100.0,
+      "gain_acc_pct": 11.11
+    }
+  },
+  "recommended_production_mapping": {
+    "vn_street_outdoor": {
+      "alpha_human": 0.05,
+      "weight_general": 0.95
+    },
+    "vn_mature_aging": {
+      "alpha_human": 0.25,
+      "weight_general": 0.75
+    },
+    "vn_occlusion_glasses_mask": {
+      "alpha_human": 0.4,
+      "weight_general": 0.6
+    },
+    "vn_selfie_lifestyle": {
+      "alpha_human": 0.4,
+      "weight_general": 0.6
+    },
+    "vn_id_official": {
+      "alpha_human": 0.35,
+      "weight_general": 0.65
+    },
+    "standard_portrait": {
+      "alpha_human": 0.6,
+      "weight_general": 0.4
+    }
+  }
+}
