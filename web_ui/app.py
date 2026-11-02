@@ -918,6 +918,24 @@ def get_latest_benchmark_report():
 # 🔬 ABLATION STUDY & PARAMETER CALIBRATION API
 # =========================================================================
 
+@app.route('/api/benchmark/aggregate_history', methods=['GET'])
+@app.route('/benchmark/api/benchmark/aggregate_history', methods=['GET'])
+def get_benchmark_aggregate_history_api():
+    """Returns aggregated benchmark KPIs and time series across Daily, Weekly, and Monthly periods."""
+    try:
+        try:
+            from web_ui.benchmark_aggregator import aggregate_benchmark_history
+        except ImportError:
+            from benchmark_aggregator import aggregate_benchmark_history
+        period = request.args.get("period", "weekly")
+        target_date = request.args.get("date")
+        data = aggregate_benchmark_history(period=period, target_date=target_date)
+        return jsonify(data), 200
+    except Exception as e:
+        logger.error(f"Failed to aggregate benchmark history: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/benchmark/ablation_data', methods=['GET'])
 @app.route('/benchmark/api/benchmark/ablation_data', methods=['GET'])
 def get_ablation_grid_search_data():
