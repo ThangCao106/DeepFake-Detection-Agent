@@ -1820,13 +1820,14 @@ socket.on('benchmark_completed', (data) => {
     const summary = data.summary;
     appendTerminalLogLine('INFO', `🎉 Benchmark finished! Accuracy: ${summary.accuracy_pct}% | Recall(FAKE): ${summary.fake_recall_pct}% | Latency: ${summary.avg_latency_ms}ms`);
     updateBenchmarkStatusUI({ is_running: false, status: 'COMPLETED', latest_summary: summary });
+    loadAuditReportData(currentAuditPeriod, currentAuditDate);
 });
 
 // =========================================================================
 // 🔬 ABLATION STUDY & PARAMETER CALIBRATION CONTROLLERS
 // =========================================================================
 
-let currentAuditPeriod = 'weekly';
+let currentAuditPeriod = 'daily';
 let currentAuditDate = '';
 
 function switchBenchmarkSubtab(tab) {
@@ -1912,7 +1913,7 @@ function handleAuditDateSelect() {
     }
 }
 
-async function loadAuditReportData(period = 'weekly', targetDate = '') {
+async function loadAuditReportData(period = 'daily', targetDate = '') {
     const apiBase = getBenchmarkApiBase();
     let url = `${apiBase}/api/benchmark/aggregate_history?period=${encodeURIComponent(period)}`;
     if (targetDate) {
@@ -3746,6 +3747,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSubsystemGateOnLoad();
     if (isBenchmarkModeActive()) {
         fetchBenchmarkStatus();
+        loadAuditReportData('daily');
     }
     if (typeof initGenUi === 'function') {
         initGenUi();
