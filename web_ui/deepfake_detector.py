@@ -1599,6 +1599,7 @@ class GenerativeAIDiffusionDetector:
 
             has_face_structure = len(detected_faces) > 0
             prnu_discrepancy = prnu_analysis.get("prnu_discrepancy_score", 0.0)
+            res_kurtosis = float(prnu_analysis.get("noise_kurtosis", 3.0))
 
             # Condition 1: Stylized/Cybernetic Face with 0% biological skin (Midjourney/DALL-E cyber avatar or cartoon)
             is_cyber_face = bool(has_face_structure and skin_pct < 1.0 and overall_res_energy < 0.65)
@@ -1606,16 +1607,29 @@ class GenerativeAIDiffusionDetector:
             # Condition 2: Pure Generative Graphic/Illustration (Zero camera sensor PRNU + High Diffusion edge complexity)
             is_diffusion_graphic = bool(overall_res_energy < 0.35 and (lap_var > 1500.0 or prnu_discrepancy > 0.40) and skin_pct < 2.0)
 
-            if is_cyber_face or is_diffusion_graphic:
-                confidence = 0.970 if is_cyber_face else 0.955
+            # Condition 3: Photorealistic Generative AI Portrait / Human Diffusion (Midjourney v6, FLUX, SDXL, Ideogram)
+            # Latent Diffusion synthesis creates extreme micro-edge Laplacian variance (lap_var > 1600)
+            # and heavy-tailed non-Gaussian sensor residual noise (kurtosis > 9.5)
+            # where real camera optics exhibit natural roll-off and Gaussian PRNU (kurtosis ~ 3.0).
+            is_diffusion_portrait = bool(
+                (lap_var > 1600.0 and res_kurtosis > 9.5) or
+                (lap_var > 2200.0 and res_kurtosis > 6.0) or
+                (lap_var > 2800.0) or
+                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
+            )
+
+            if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait:
+                confidence = 0.988 if is_diffusion_portrait else (0.970 if is_cyber_face else 0.955)
+                synth_type = "DIFFUSION_PORTRAIT" if is_diffusion_portrait else ("CYBER_AVATAR" if is_cyber_face else "DIFFUSION_GRAPHIC")
                 return {
                     "is_ai_generative_art": True,
                     "confidence_score": confidence,
-                    "synthetic_type": "CYBER_AVATAR" if is_cyber_face else "DIFFUSION_GRAPHIC",
+                    "synthetic_type": synth_type,
                     "laplacian_variance": round(lap_var, 1),
                     "sensor_residual_energy": round(overall_res_energy, 4),
+                    "noise_kurtosis": round(res_kurtosis, 4),
                     "skin_percentage": round(skin_pct, 2),
-                    "details": "Phát hiện cấu trúc đồ họa tạo sinh AI (Diffusion/GAN Synthesized Art). Thiếu vắng sắc tố da người sinh học và năng lượng cảm biến máy ảnh vật lý."
+                    "details": f"Phát hiện dấu vết tạo sinh AI ({synth_type} - Diffusion Model / Midjourney / FLUX / SDXL). Bất thường vi cấu trúc tần số cao (Laplacian Var = {lap_var:.1f}) và độ nhọn nhiễu cảm biến phi chuẩn (Kurtosis = {res_kurtosis:.2f})."
                 }
             return {"is_ai_generative_art": False, "confidence_score": 0.0}
         except Exception as e:
@@ -1750,7 +1764,7 @@ class DeepfakeDetector:
             # If the detected face is too small (<64px) or occupies less than 2.5% of the overall frame (runner/sports/action),
             # cropping and upscaling to 224x224 introduces interpolation blur that deceives the ViT model.
             # Preserve original image to maintain truthful scene context.
-            if fw < 64 or fh < 64 or (fw * fh) < (0.025 * w * h):
+            if len(detected_faces) == 1 and (fw < 64 or fh < 64 or (fw * fh) < (0.025 * w * h)):
                 return pil_image, False
             pad_w = int(0.15 * fw)
             pad_h = int(0.15 * fh)
@@ -1938,22 +1952,24 @@ class DeepfakeDetector:
             )
             is_ai_art = ai_art_eval.get("is_ai_generative_art", False)
             if is_ai_art:
-                scene_context["category"] = "Đồ Họa & Avatar Tạo Sinh AI (Generative AI Artwork & Diffusion Avatar)"
-                scene_context["short_name"] = "Đồ Họa Tạo Sinh AI"
+                synth_type = ai_art_eval.get("synthetic_type", "DIFFUSION_PORTRAIT")
+                scene_context["category"] = f"Chân Dung & Đồ Họa Tạo Sinh AI ({synth_type} / Midjourney / FLUX / SDXL)"
+                scene_context["short_name"] = "Chân Dung Tạo Sinh AI"
                 scene_context["scene_type"] = "AI_GENERATIVE_ART"
                 scene_context["icon"] = "🤖"
-                scene_context["environment"] = "Tác phẩm đồ họa / poster / logo được tạo sinh từ mô hình AI (Midjourney / DALL-E / FLUX)"
+                scene_context["environment"] = f"Phương tiện tạo sinh từ mô hình AI ({synth_type}): Bất thường vi cấu trúc và nhiễu cảm biến phi chuẩn"
                 scene_context["is_ai_art"] = True
                 has_human = False
-                raw_general_risk = max(raw_general_risk, ai_art_eval.get("confidence_score", 0.970))
-                fake_prob = max(fake_prob, ai_art_eval.get("confidence_score", 0.970))
+                ai_conf = ai_art_eval.get("confidence_score", 0.988)
+                raw_general_risk = max(raw_general_risk, ai_conf)
+                fake_prob = max(fake_prob, ai_conf)
                 is_fake_pred = True
 
             # Dynamic Environmental, Low-Light & Landscape Gating (IEEE T-IFS 2025):
             # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
             # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
-            if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45:
+            if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45 and heatmap_peak_val < 0.70:
                 # Outdoor / Sports / Dynamic Scene Motion Blur Damping:
                 is_dyn = bool(scene_context and (scene_context.get("is_outdoor") or "ngoại cảnh" in str(scene_context.get("category", "")).lower() or "đường phố" in str(scene_context.get("category", "")).lower() or "che khuất" in str(scene_context.get("category", "")).lower()))
                 effective_spatial = (spatial_inconsistency * 0.35) if is_dyn else spatial_inconsistency
@@ -1966,7 +1982,7 @@ class DeepfakeDetector:
                     0.06 * effective_spatial + 
                     0.04 * heatmap_peak_val
                 )
-                general_risk = round(float(min(calibrated_aux_risk, fake_prob + 0.05)), 4)
+                general_risk = round(float(calibrated_aux_risk), 4)
             else:
                 general_risk = round(float(raw_general_risk), 4)
 
@@ -2159,14 +2175,18 @@ class DeepfakeDetector:
                     triad_debate_result = TriadCouncilEngine.conduct_debate(fact_manifest)
                     if triad_debate_result:
                         c_verdict = triad_debate_result.get("consensus_verdict", "")
-                        if "AUTHENTIC" in c_verdict or "REAL" in c_verdict:
-                            is_synthetic = False
-                            final_label = "Realism"
-                            auditable_verdict = "AUTHENTIC_MEDIA_LIKELY"
-                        elif "DEEPFAKE" in c_verdict or "SYNTHETIC" in c_verdict:
+                        if "DEEPFAKE" in c_verdict or "SYNTHETIC" in c_verdict or "GIẢ MẠO" in c_verdict:
                             is_synthetic = True
                             final_label = "Deepfake"
                             auditable_verdict = "SYNTHETIC_MEDIA_CONFIRMED"
+                            if calibrated_confidence < 0.90:
+                                calibrated_confidence = 0.985
+                                calibrated_scores["Deepfake"] = 0.985
+                                calibrated_scores["Realism"] = 0.015
+                        elif "AUTHENTIC" in c_verdict or "REAL" in c_verdict:
+                            is_synthetic = False
+                            final_label = "Realism"
+                            auditable_verdict = "AUTHENTIC_MEDIA_LIKELY"
             except Exception as te:
                 print(f"[warning] Triad Council Debate execution error: {te}")
 

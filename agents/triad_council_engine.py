@@ -77,7 +77,8 @@ class ForensicFactManifest:
                 "has_human": has_human,
                 "scene_classification": scene_context.get("category", "General Media"),
                 "scene_environment": scene_context.get("environment", "Unknown"),
-                "vn_demographic_category": scene_context.get("vn_demographic_category", "non_human_media")
+                "vn_demographic_category": scene_context.get("vn_demographic_category", "non_human_media"),
+                "is_ai_art": bool(scene_context.get("is_ai_art", False))
             },
             "biometric_and_physical_measurements": {
                 "vit_passive_probability": round(float(p_vit), 4),
@@ -127,6 +128,14 @@ class TriadCouncilEngine:
         risk = calib.get("composite_risk_score", 0.5)
         tau = calib.get("youden_optimal_threshold_tau", 0.8118)
         is_fake = calib.get("is_synthetic_verdict", (risk >= tau))
+
+        # Forensic Cross-Examination Override:
+        # If passive classifier was bypassed or gave low risk, but generative diffusion detector
+        # explicitly identified AI synthesis (Diffusion Portrait / AI-Synthesized media)
+        is_ai_art = bool(meta.get("is_ai_art", False) or "Tạo Sinh AI" in str(meta.get("scene_classification", "")))
+        if not is_fake and is_ai_art:
+            is_fake = True
+            risk = max(risk, 0.985)
 
         # --- 1. GEMINI AGENT: Lead Forensic Examiner ---
         gemini_findings = cls._run_gemini_lead_examiner(media_type, has_human, vn_cat, bio, risk, is_fake)
