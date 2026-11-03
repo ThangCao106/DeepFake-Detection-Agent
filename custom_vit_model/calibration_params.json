@@ -1,5 +1,15 @@
 {
-  "temperature_scaling_T": 1.6177712678909302,
+  "optimal_alpha": 0.6,
+  "weight_general": 0.4,
+  "weight_human_specialist": 0.6,
+  "temperature_scaling_T": 1.6178,
   "optimal_threshold_tau": 0.8118,
-  "calibration_status": "CALIBRATED"
+  "focal_loss_gamma": 2.25,
+  "focal_loss_alpha": 0.25,
+  "council_deliberation_id": "COUNCIL-CERT-1145C49B6E",
+  "council_decision_hash": "8405e9b5144152f90c88d2dcab4f40fdcb5c60d084b376b5e61b5283f82c3a2f",
+  "authorized_by_council": true,
+  "approved_by_user": "test_suite",
+  "timestamp_utc": "2026-11-03T06:37:55Z",
+  "calibration_status": "COUNCIL_AUDITED_AND_CALIBRATED"
 }

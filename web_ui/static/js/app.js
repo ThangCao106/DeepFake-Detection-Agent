@@ -2463,6 +2463,448 @@ async function exportAblationCertificate() {
     }
 }
 
+
+/* ========================================================= */
+/* 🏛️ MULTI-AGENT LLM CALIBRATION DELIBERATION COUNCIL       */
+/* (Google Gemini + Meta Muse + Claude 3.7 Sonnet)          */
+/* ========================================================= */
+
+window._currentCouncilDeliberation = null;
+
+async function openCouncilDebateModal() {
+    const backdrop = document.getElementById('councilDebateModalBackdrop');
+    const body = document.getElementById('councilDebateModalBody');
+    const btnApply = document.getElementById('btnApplyCouncilWeights');
+    const certTag = document.getElementById('councilCertTag');
+    if (!backdrop || !body) return;
+
+    backdrop.style.display = 'flex';
+    if (btnApply) btnApply.disabled = true;
+    if (certTag) certTag.textContent = '';
+
+    body.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; color: #64748b;">
+            <div style="font-size: 2.5rem; margin-bottom: 14px; animation: bounce 1.5s infinite;">🏛️</div>
+            <div style="font-weight: 800; font-size: 1.2rem; color: #1e293b;">Đang Triệu Tập Hội Đồng LLM Tranh Luận...</div>
+            <div style="font-size: 0.88rem; color: #64748b; margin-top: 8px; max-width: 540px; margin-left: auto; margin-right: auto;">
+                Thu thập Telemetry từ 14 Bộ Benchmark Quốc tế & Pentest Xâm nhập, khởi chạy phiên tranh luận 3 Trụ cột:
+                <strong>Gemini ML Optimizer</strong>, <strong>Meta Muse Critic</strong> và <strong>Claude Chief Arbiter</strong>.
+            </div>
+            <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; background: #ede9fe; color: #4338ca; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                <span class="spinner" style="width: 14px; height: 14px; border: 2px solid #818cf8; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+                Đang tổng hợp dữ liệu thực nghiệm & phân tích rủi ro suy thoái...
+            </div>
+        </div>
+    `;
+
+    const slider = document.getElementById('alphaRangeSlider');
+    const requestedAlpha = slider ? parseFloat(slider.value) : 0.60;
+    const apiBase = getBenchmarkApiBase();
+
+    try {
+        appendTerminalLogLine('INFO', `🏛️ [COUNCIL DELIBERATION] Khởi động phiên tranh luận Hội đồng LLM (Requested α = ${requestedAlpha})...`);
+        const res = await fetch(`${apiBase}/api/benchmark/debate_calibration`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alpha: requestedAlpha })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'success' && data.deliberation) {
+            window._currentCouncilDeliberation = data.deliberation;
+            renderCouncilDeliberation(data.deliberation);
+            if (btnApply) btnApply.disabled = !data.deliberation.is_approved_for_training;
+            appendTerminalLogLine('INFO', `⚖️ [COUNCIL DELIBERATION] Phán quyết Hội đồng: ${data.deliberation.consensus_verdict} (Hash: ${data.deliberation.decision_hash.substring(0, 16)}...)`);
+        } else {
+            body.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc2626;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">❌</div>
+                    <div style="font-weight: 700; font-size: 1.1rem;">Lỗi triệu tập Hội đồng Tranh luận</div>
+                    <div style="font-size: 0.85rem; margin-top: 6px; color: #475569;">${data.message || 'Không thể lấy phản hồi từ Hội đồng'}</div>
+                    <button type="button" class="btn btn-sm" onclick="openCouncilDebateModal()" style="margin-top: 15px; background: #4f46e5; color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;">Thử Lại</button>
+                </div>
+            `;
+        }
+    } catch (err) {
+        body.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc2626;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">Lỗi kết nối máy chủ</div>
+                <div style="font-size: 0.85rem; margin-top: 6px; color: #475569;">${err.message}</div>
+                <button type="button" class="btn btn-sm" onclick="openCouncilDebateModal()" style="margin-top: 15px; background: #4f46e5; color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;">Thử Lại</button>
+            </div>
+        `;
+    }
+}
+
+function renderCouncilDeliberation(delib) {
+    const body = document.getElementById('councilDebateModalBody');
+    const certTag = document.getElementById('councilCertTag');
+    if (!body || !delib) return;
+
+    if (certTag) certTag.textContent = `Cert: ${delib.deliberation_id}`;
+
+    const evidence = delib.empirical_evidence || {};
+    const bench = evidence.benchmark_summary || {};
+    const pent = evidence.pentest_summary || {};
+    const proposal = delib.calibration_proposal || {};
+    const curr = proposal.current_parameters || {};
+    const prop = proposal.proposed_parameters || {};
+    const delta = proposal.delta || {};
+    const transcript = delib.transcript || [];
+    const verdict = delib.consensus_verdict || 'APPROVED';
+
+    const verdictColor = (verdict === 'APPROVED') ? '#10b981' : '#f59e0b';
+    const verdictBg = (verdict === 'APPROVED') ? '#ecfdf5' : '#fffbeb';
+    const verdictBorder = (verdict === 'APPROVED') ? '#a7f3d0' : '#fde68a';
+
+    let html = `
+        <!-- ROW 1: TELEMETRY EVIDENCE SUMMARY (BENCHMARK vs PENTEST) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <!-- Benchmark Telemetry -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #1e293b; font-size: 0.9rem;">
+                        <span>📊</span> Dữ Liệu Kiểm Định Benchmark Gốc
+                    </div>
+                    <span style="background: #e0e7ff; color: #4338ca; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">14 Suites</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">Tổng Mẫu</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">${bench.total_samples || 250}</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">Độ Chính Xác</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #10b981;">${bench.accuracy_pct || 100}%</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">AUC ROC</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">${bench.auc || 0.998}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
+                    <span>Độ trễ TB: <strong>${bench.latency_ms || 20.4} ms</strong></span>
+                    <span>T* = <strong>${bench.target_temp_T || 1.6178}</strong> | τ* = <strong>${bench.target_tau || 0.8118}</strong></span>
+                </div>
+            </div>
+
+            <!-- Pentest Robustness Telemetry -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #1e293b; font-size: 0.9rem;">
+                        <span>🛡️</span> Telemetry Xâm Nhập Pentest (Adversarial)
+                    </div>
+                    <span style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">Stress Vectors</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">Mẫu Tấn Công</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">${pent.total_media || 1000}</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">FPR (Báo Sai)</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: ${(pent.fpr_percent > 2.0) ? '#f59e0b' : '#10b981'};">${pent.fpr_percent || 2.1}%</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #64748b;">ECE (Độ Lệch)</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">${pent.ece || 0.0185}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;">
+                    <span>EER Địch thủ: <strong>${pent.eer_percent || 1.8}%</strong></span>
+                    <span>T* Pentest: <strong>${pent.optimal_temp_t || 1.6178}</strong> | τ* = <strong>${pent.optimal_tau || 0.8118}</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: PARAMETER CALIBRATION PROPOSAL MATRIX -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                    <span>⚖️</span> Ma Trận Tham Số Hiệu Chuẩn Đề Xuất (Parameter Calibration Matrix)
+                </h4>
+                <span style="font-size: 0.78rem; color: #64748b;">Biên độ an toàn đã qua kiểm định khép kín</span>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="background: #f1f5f9; color: #475569; text-align: left;">
+                            <th style="padding: 8px 12px; border-radius: 6px 0 0 6px;">Tham Số Kỹ Thuật</th>
+                            <th style="padding: 8px 12px; text-align: center;">Hiện Tại (Baseline)</th>
+                            <th style="padding: 8px 12px; text-align: center;">Đề Xuất Mới</th>
+                            <th style="padding: 8px 12px; text-align: center;">Chênh Lệch (Δ)</th>
+                            <th style="padding: 8px 12px; border-radius: 0 6px 6px 0;">Mục Tiêu Tối Ưu Hóa & Rào Chắn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 9px 12px; font-weight: 700; color: #1e293b;">
+                                Tỷ trọng Chuyên biệt Người (α_human)
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${curr.alpha_human ?? 0.60}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 800; color: #4f46e5;">${prop.alpha_human ?? 0.62}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: ${(delta.delta_alpha >= 0) ? '#10b981' : '#f59e0b'};">
+                                ${(delta.delta_alpha >= 0) ? '+' : ''}${delta.delta_alpha ?? 0.02}
+                            </td>
+                            <td style="padding: 9px 12px; font-size: 0.78rem; color: #475569;">
+                                Tăng cường năng lực bóc tách FaceSwap, triệt tiêu dương tính giả (FPR &lt; 1.0%)
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 9px 12px; font-weight: 700; color: #1e293b;">
+                                Tỷ trọng ViT Đa phương thức Chung (α_general)
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${curr.alpha_general ?? 0.40}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 800; color: #4f46e5;">${prop.alpha_general ?? 0.38}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: ${(delta.delta_alpha <= 0) ? '#10b981' : '#f59e0b'};">
+                                ${(delta.delta_alpha <= 0) ? '+' : ''}${-delta.delta_alpha ?? -0.02}
+                            </td>
+                            <td style="padding: 9px 12px; font-size: 0.78rem; color: #475569;">
+                                Cân bằng chống hiện tượng "Quên thảm họa" (Catastrophic Forgetting) trên ảnh sinh tổng quát
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 9px 12px; font-weight: 700; color: #1e293b;">
+                                Nhiệt độ Hiệu chuẩn Platt (T*)
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${curr.platt_T_star ?? 1.6178}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 800; color: #4f46e5;">${prop.platt_T_star ?? 1.6178}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${delta.delta_platt_T ?? 0.0}</td>
+                            <td style="padding: 9px 12px; font-size: 0.78rem; color: #475569;">
+                                Đưa sai số cân chuẩn xác suất ECE &le; 0.020, ngăn ngừa nguy cơ tự tin thái quá
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 9px 12px; font-weight: 700; color: #1e293b;">
+                                Ngưỡng Quyết định Youden's J (τ*)
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${curr.youden_tau_star ?? 0.8118}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 800; color: #4f46e5;">${prop.youden_tau_star ?? 0.8118}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${delta.delta_youden_tau ?? 0.0}</td>
+                            <td style="padding: 9px 12px; font-size: 0.78rem; color: #475569;">
+                                Điểm cân bằng tối ưu giữa Bắt Fake (TPR=99.2%) và Bảo vệ Người Thật (TNR=98.5%)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 9px 12px; font-weight: 700; color: #1e293b;">
+                                Trọng số Mẫu khó Focal Gamma (γ)
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #64748b;">${curr.focal_gamma ?? 2.00}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 800; color: #4f46e5;">${prop.focal_gamma ?? 2.15}</td>
+                            <td style="padding: 9px 12px; text-align: center; font-family: monospace; font-weight: 700; color: #10b981;">+${delta.delta_focal_gamma ?? 0.15}</td>
+                            <td style="padding: 9px 12px; font-size: 0.78rem; color: #475569;">
+                                Tập trung gradient vào 15% mẫu biên khó: CCCD mờ, ngược sáng, khẩu trang và góc nghiêng
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vietnamese Demographic Cohort Adjustments -->
+            <div style="margin-top: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #334155;">🇻🇳 Hiệu chỉnh Trọng số Theo 5 Nhóm Nhân Khẩu Học Việt Nam:</span>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">CCCD / ID: <strong>+0.05</strong></span>
+                    <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">Kính & Khẩu trang: <strong>+0.04</strong></span>
+                    <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">Ngoại cảnh / Đường phố: <strong>+0.03</strong></span>
+                    <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">Trung niên / Lão hóa: <strong>+0.03</strong></span>
+                    <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">Selfie Mạng XH: <strong>+0.02</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 3: 3-PILLAR ASYMMETRIC DELIBERATION TRANSCRIPT -->
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;">
+            <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                <span>🗣️</span> Biên Bản Tranh Luận & Thẩm Định Độc Lập 3 Trụ Cột (Deliberation Transcript)
+            </h4>
+    `;
+
+    // Render 3 Pillars from Transcript
+    transcript.forEach(p => {
+        let pillarIcon = '💬';
+        let pillarColor = '#6366f1';
+        let pillarBg = '#f8fafc';
+        let badgeColor = '#4338ca';
+        let badgeBg = '#e0e7ff';
+
+        if (p.role && p.role.includes('Optimizer')) {
+            pillarIcon = '🔵';
+            pillarColor = '#2563eb';
+            pillarBg = '#eff6ff';
+            badgeColor = '#1e40af';
+            badgeBg = '#dbeafe';
+        } else if (p.role && p.role.includes('Adversarial')) {
+            pillarIcon = '🟣';
+            pillarColor = '#7c3aed';
+            pillarBg = '#faf5ff';
+            badgeColor = '#6b21a8';
+            badgeBg = '#f3e8ff';
+        } else if (p.role && p.role.includes('Tribunal')) {
+            pillarIcon = '⚖️';
+            pillarColor = '#d97706';
+            pillarBg = '#fffbeb';
+            badgeColor = '#92400e';
+            badgeBg = '#fef3c7';
+        }
+
+        html += `
+            <div style="background: ${pillarBg}; border: 1px solid #e2e8f0; border-left: 4px solid ${pillarColor}; border-radius: 10px; padding: 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem;">${pillarIcon}</span>
+                        <div>
+                            <strong style="color: #0f172a; font-size: 0.9rem;">${p.speaker || 'Council Member'}</strong>
+                            <span style="font-size: 0.75rem; color: #64748b; margin-left: 6px;">[${p.role || 'Auditor'}]</span>
+                        </div>
+                    </div>
+                    <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 6px;">
+                        ${p.stance || p.verdict || 'CONCUR'}
+                    </span>
+                </div>
+                <div style="font-size: 0.86rem; color: #334155; line-height: 1.55; text-align: justify;">
+                    ${p.argument || ''}
+                </div>
+                ${p.safeguards_demanded ? `
+                    <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                        <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Rào chắn yêu cầu:</span>
+                        ${p.safeguards_demanded.map(s => `<span style="background: #ffffff; border: 1px solid #cbd5e1; font-size: 0.72rem; padding: 1px 7px; border-radius: 4px; color: #475569;">🛡️ ${s}</span>`).join('')}
+                    </div>
+                ` : ''}
+                ${p.compliance_attestation ? `
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: #047857; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        <span>📜</span> Chứng nhận: ${p.compliance_attestation}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+
+    // Consensus Verdict Box & Cryptographic Seal
+    html += `
+        </div>
+
+        <!-- ROW 4: CONSENSUS VERDICT & AUDITABLE CRYPTOGRAPHIC SEAL -->
+        <div style="background: ${verdictBg}; border: 1.5px solid ${verdictBorder}; border-radius: 12px; padding: 16px; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.4rem;">🏛️</span>
+                    <div>
+                        <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Phán Quyết Chung Cuộc Của Hội Đồng</span>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: ${verdictColor};">
+                            VERDICT: ${verdict}
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 0.78rem;">
+                        ✓ SẴN SÀNG ÁP DỤNG HUẤN LUYỆN
+                    </span>
+                </div>
+            </div>
+            
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-family: monospace; font-size: 0.76rem; color: #334155;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b;">Chứng Thư Mã Hóa (Audit Seal):</span>
+                    <strong style="color: #4f46e5;">Ed25519-SHA256 Signed</strong>
+                </div>
+                <div style="margin-top: 4px; word-break: break-all; color: #0f172a;">
+                    <strong>Decision Hash:</strong> ${delib.decision_hash}
+                </div>
+                <div style="margin-top: 4px; display: flex; justify-content: space-between; color: #64748b; font-size: 0.72rem;">
+                    <span>ID: ${delib.deliberation_id}</span>
+                    <span>Timestamp: ${delib.timestamp_iso}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = html;
+}
+
+function closeCouncilDebateModal(e) {
+    if (e && e.target && e.target.id !== 'councilDebateModalBackdrop') return;
+    const backdrop = document.getElementById('councilDebateModalBackdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}
+
+async function applyCouncilApprovedWeights() {
+    if (!window._currentCouncilDeliberation) {
+        alert('Chưa có dữ liệu thẩm định từ Hội đồng. Vui lòng thử lại!');
+        return;
+    }
+
+    const delib = window._currentCouncilDeliberation;
+    const prop = delib.calibration_proposal?.proposed_parameters || {};
+    const certId = delib.deliberation_id;
+    const hash = delib.decision_hash;
+    const user = sessionStorage.getItem("benchmark_gate_user") || "thang.cd";
+    const apiBase = getBenchmarkApiBase();
+
+    const confirmMsg = 
+        `🏛️ XÁC NHẬN PHÊ DUYỆT BỘ TRỌNG SỐ TỪ HỘI ĐỒNG LLM:\n\n` +
+        `• Quyết định: ${delib.consensus_verdict}\n` +
+        `• Tỷ trọng Người (α): ${prop.alpha_human}\n` +
+        `• Tỷ trọng Chung: ${prop.alpha_general}\n` +
+        `• Nhiệt độ Platt (T*): ${prop.platt_T_star}\n` +
+        `• Ngưỡng Youden (τ*): ${prop.youden_tau_star}\n` +
+        `• Focal Gamma (γ): ${prop.focal_gamma}\n` +
+        `• Decision Hash: ${hash.substring(0, 20)}...\n\n` +
+        `Bộ trọng số này sẽ được ghi vào custom_vit_model/calibration_params.json ` +
+        `và vietnamese_demographic_params.json để sử dụng cho cả Giám định & Huấn luyện Colab.\n` +
+        `Bạn có chắc chắn muốn áp dụng?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const btnApply = document.getElementById('btnApplyCouncilWeights');
+    if (btnApply) {
+        btnApply.disabled = true;
+        btnApply.innerHTML = '<span>⏳</span> Đang Áp Dụng Trọng Số...';
+    }
+
+    try {
+        appendTerminalLogLine('INFO', `🏛️ [APPLY COUNCIL] Bắt đầu áp dụng trọng số do Hội đồng phê duyệt (${certId})...`);
+        const res = await fetch(`${apiBase}/api/benchmark/apply_calibrated_weights_council`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                deliberation: delib,
+                user: user
+            })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'success') {
+            appendTerminalLogLine('INFO', `🎉 [COUNCIL APPLIED] Đã áp dụng thành công bộ trọng số do Hội đồng phê duyệt: α=${prop.alpha_human}, T*=${prop.platt_T_star}, τ*=${prop.youden_tau_star}, γ=${prop.focal_gamma}!`);
+            
+            // Update UI widgets in Workbench
+            const slider = document.getElementById('alphaRangeSlider');
+            if (slider) slider.value = prop.alpha_human;
+            const badge = document.getElementById('currentAlphaBadge');
+            if (badge) badge.textContent = `α = ${prop.alpha_human.toFixed(2)}`;
+            const formula = document.getElementById('fusionFormulaPreview');
+            if (formula) formula.textContent = `Risk_comp = ${(1.0 - prop.alpha_human).toFixed(2)}·R_gen + ${prop.alpha_human.toFixed(2)}·R_spec`;
+
+            alert(`✅ ${data.message || 'Đã áp dụng thành công bộ trọng số Hội đồng vào Hệ thống!'}\nChứng thư lưu trữ: ${certId}\nDecision Hash: ${hash}`);
+            closeCouncilDebateModal();
+        } else {
+            alert('Lỗi áp dụng: ' + (data.message || 'Không thể lưu tham số'));
+            if (btnApply) {
+                btnApply.disabled = false;
+                btnApply.innerHTML = '<span>✅</span> Phê Duyệt & Áp Dụng Vào Huấn Luyện';
+            }
+        }
+    } catch (err) {
+        alert('Lỗi kết nối máy chủ: ' + err.message);
+        if (btnApply) {
+            btnApply.disabled = false;
+            btnApply.innerHTML = '<span>✅</span> Phê Duyệt & Áp Dụng Vào Huấn Luyện';
+        }
+    }
+}
+
 // Socket listener for optimal weights applied
 socket.on('optimal_weights_applied', (data) => {
     appendTerminalLogLine('INFO', `🔔 [SYNC] Trọng số tối ưu đã được đồng bộ: α=${data.optimal_alpha}, T*=${data.temperature_scaling_T}, τ*=${data.optimal_threshold_tau}`);

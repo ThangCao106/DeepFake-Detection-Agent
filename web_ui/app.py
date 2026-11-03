@@ -1110,6 +1110,55 @@ def run_ablation_experiment_api():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/benchmark/debate_calibration', methods=['POST'])
+@app.route('/benchmark/api/benchmark/debate_calibration', methods=['POST'])
+def debate_calibration_api():
+    """Trigger Multi-Agent LLM Deliberation Council on Benchmark & Pentest telemetry."""
+    try:
+        data = request.get_json(silent=True) or {}
+        requested_alpha = data.get("alpha")
+        if requested_alpha is not None:
+            requested_alpha = float(requested_alpha)
+
+        from agents.calibration_deliberation_council import CalibrationDeliberationCouncil
+        result = CalibrationDeliberationCouncil.conduct_deliberation(requested_alpha=requested_alpha)
+        return jsonify({
+            "status": "success",
+            "deliberation": result
+        }), 200
+    except Exception as e:
+        logger.error(f"Deliberation debate error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/benchmark/apply_calibrated_weights_council', methods=['POST'])
+@app.route('/benchmark/api/benchmark/apply_calibrated_weights_council', methods=['POST'])
+def apply_calibrated_weights_council_api():
+    """Apply Council-audited and approved weights into training and inference."""
+    try:
+        data = request.get_json(silent=True) or {}
+        deliberation_data = data.get("deliberation")
+        user = data.get("user", "thang.cd")
+
+        if not deliberation_data:
+            return jsonify({"status": "error", "message": "Missing deliberation data"}), 400
+
+        from agents.calibration_deliberation_council import CalibrationDeliberationCouncil
+        apply_res = CalibrationDeliberationCouncil.apply_approved_parameters(deliberation_data, user=user)
+
+        global orchestrator
+        if orchestrator and hasattr(orchestrator, "detector"):
+            from deepfake_detector import DeepfakeDetector
+            orchestrator.detector = DeepfakeDetector()
+            logger.info(f"[council_apply] DeepfakeDetector reloaded with council-approved weights.")
+
+        socketio.emit('optimal_weights_applied', apply_res.get("parameters", {}))
+        return jsonify(apply_res), 200
+    except Exception as e:
+        logger.error(f"Apply council weights error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/benchmark/apply_weights', methods=['POST'])
 @app.route('/benchmark/api/benchmark/apply_weights', methods=['POST'])
 def apply_optimal_weights_api():

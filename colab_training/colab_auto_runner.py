@@ -84,7 +84,46 @@ def resolve_credentials(hf_token=None, github_token=None):
     return resolved_hf, resolved_gh
 
 
-def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all", upload_hf=False):
+
+def conduct_council_preflight(requested_alpha=None, apply_if_approved=True):
+    """
+    Triggers the 3-Pillar LLM Deliberation Council before training begins.
+    Validates empirical Benchmark & Pentest telemetry, ensuring calibrated weights are sound.
+    """
+    print("\n" + "="*70)
+    print("🏛️ [COUNCIL PREFLIGHT AUDIT] Summoning LLM Deliberation Council...")
+    print("   Empirical telemetry check: Benchmark vs Pentest Attack Vectors")
+    print("   3 Pillars: Gemini ML Optimizer, Meta Muse Robustness, Claude Arbiter")
+    print("="*70)
+    try:
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+        from agents.calibration_deliberation_council import CalibrationDeliberationCouncil
+        delib = CalibrationDeliberationCouncil.conduct_deliberation(requested_alpha=requested_alpha)
+        
+        verdict = delib.get("consensus_verdict", "UNKNOWN")
+        is_approved = delib.get("is_approved_for_training", False)
+        decision_hash = delib.get("decision_hash", "")
+        prop = delib.get("calibration_proposal", {}).get("proposed_parameters", {})
+        
+        print(f"🏛️ Council Deliberation Verdict: [{verdict}]")
+        print(f"   Proposed Parameters: α_human={prop.get('alpha_human')}, α_gen={prop.get('alpha_general')}, T*={prop.get('platt_T_star')}, τ*={prop.get('youden_tau_star')}, γ={prop.get('focal_gamma')}")
+        print(f"   Cryptographic Seal: SHA256={decision_hash[:16]}... (Cert: {delib.get('deliberation_id')})")
+        
+        if is_approved and apply_if_approved:
+            CalibrationDeliberationCouncil.apply_approved_parameters(delib, user="colab_runner")
+            print("   ✅ [APPROVED & APPLIED] Calibrated weights successfully written to custom_vit_model & vietnamese_demographics!")
+            return True, delib
+        else:
+            print("   ⚠️ [REJECTED / UNGUARDED] Calibration parameters were not approved. Baseline weights retained.")
+            return False, delib
+    except Exception as e:
+        print(f"   ⚠️ [Council Audit Note]: Could not complete council deliberation ({e}). Proceeding with baseline weights.")
+        return False, None
+
+
+def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detection", max_samples=2000, hf_token=None, github_token=None, auto_pull=True, pass_number=1, target="all", upload_hf=False, council_audit=False):
     hf_token, github_token = resolve_credentials(hf_token, github_token)
     sync_manager = ColabAutoSyncManager()
 
@@ -118,6 +157,10 @@ def run_colab_auto_pipeline(modality="IMAGE", dataset_key="ntire_robust_detectio
     print(f"Manifest created at: {manifest_path}")
 
     target = target.lower()
+
+    # Council Audit Check before training
+    if council_audit:
+        conduct_council_preflight()
 
     # 3. Step 3 & 4 & 5: Stream-Specific Fine-Tuning, Hugging Face Upload & Report Generation
     if target in ["general", "all"]:
@@ -363,6 +406,7 @@ def main():
     parser.add_argument("--loop", action="store_true", help="Run smart hybrid continuous loop (Pass 1 -> Pass 2... + Auto-Detect commits)")
     parser.add_argument("--listen", action="store_true", help="Auto-Listen Daemon mode: Polls GitHub continuously and triggers training on every git push")
     parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds for --listen mode")
+    parser.add_argument("--council-audit", action="store_true", help="Audit & debate calibrated weights using 3-Pillar LLM Council before training")
     args = parser.parse_args()
 
     hf_token, github_token = resolve_credentials(args.hf_token, args.github_token)
@@ -390,7 +434,8 @@ def main():
             github_token=github_token,
             auto_pull=not args.no_pull,
             target=args.target,
-            upload_hf=True
+            upload_hf=True,
+            council_audit=args.council_audit
         )
 
 

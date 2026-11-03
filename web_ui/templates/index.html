@@ -271,7 +271,10 @@
                                 Thực nghiệm xác định Tỷ trọng Tối ưu $\alpha$, Nhiệt độ Platt $T^*$, Ngưỡng Youden's J $\tau^*$ và Hiệu quả Tham số LoRA PEFT.
                             </p>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-sm" id="btnOpenCouncilModal" onclick="openCouncilDebateModal()" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; padding: 6px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);" title="Mở Hội Đồng LLM Tranh Luận (Gemini, Meta Muse, Claude) thẩm định dữ liệu Benchmark & Pentest trước khi áp dụng trọng số">
+                                <span>🏛️</span> Hội Đồng LLM Tranh Luận & Thẩm Định Trọng Số
+                            </button>
                             <button type="button" class="btn btn-sm" onclick="exportAblationCertificate()" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
                                 📜 Xuất Chứng Thư SHA-256
                             </button>
@@ -1308,6 +1311,57 @@
                 <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
             </div>
         </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 🏛️ LLM COUNCIL DELIBERATION MODAL (GEMINI + META MUSE + CLAUDE) -->
+    <!-- ========================================================= -->
+    <div class="modal-backdrop" id="councilDebateModalBackdrop" style="display: none; z-index: 10050;" onclick="closeCouncilDebateModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()" style="max-width: 1080px; max-height: 90vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+            
+            <!-- Header -->
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12);">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-size: 1.85rem; background: rgba(255,255,255,0.12); width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🏛️</div>
+                    <div>
+                        <h3 class="modal-title" style="color: white; margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em;">
+                            Hội Đồng LLM Tranh Luận & Thẩm Định Trọng Số
+                        </h3>
+                        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #cbd5e1;">
+                            Đối chiếu Dữ liệu Benchmark & Pentest • 3 Trụ Cột: Gemini 3.8 Flash, Meta Muse Critic, Claude 3.7 Sonnet
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="closeCouncilDebateModal()" style="color: white; font-size: 1.2rem; background: rgba(255,255,255,0.12); border: none; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Body (Dynamic Deliberation Container) -->
+            <div class="modal-body" id="councilDebateModalBody" style="padding: 22px 26px; overflow-y: auto; background: #f8fafc; flex: 1;">
+                <div style="text-align: center; padding: 50px 20px; color: #64748b;">
+                    <div style="font-size: 2.2rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">⚖️</div>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: #1e293b;">Đang Triệu Tập Hội Đồng LLM Tranh Luận...</div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">Đang trích xuất telemetry Benchmark & Pentest và khởi tạo phiên phản biện 3 bên.</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer" style="padding: 14px 24px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <div id="councilFooterStatus" style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #64748b;">
+                    <span style="background: #ede9fe; color: #6366f1; padding: 4px 10px; border-radius: 6px; font-weight: 700;">🛡️ EU AI Act Art. 50 Governance Ready</span>
+                    <span id="councilCertTag" style="font-family: monospace; font-size: 0.78rem; color: #94a3b8;"></span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-browse" onclick="closeCouncilDebateModal()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Đóng
+                    </button>
+                    <button type="button" id="btnApplyCouncilWeights" class="btn" onclick="applyCouncilApprovedWeights()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        <span>✅</span> Phê Duyệt & Áp Dụng Vào Huấn Luyện
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
     {% if is_benchmark_mode %}
     <!-- ========================================================= -->
     <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (PIXEL-PERFECT FROM OBSAGENT) -->
