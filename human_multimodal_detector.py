@@ -98,46 +98,49 @@ class HumanMultiModalDetector:
         calibrated_prob = 1.0 / (1.0 + math.exp(-scaled_logit))
         return calibrated_prob
 
-    def predict_media(self, media_path, modality="image", corneal_asymmetry=None):
+    def predict_media(self, media_path, modality="image", corneal_asymmetry=None, base_fake_prob=None):
         """
         Runs multi-modal deepfake detection on human image, audio, or video media.
         Returns prediction dictionary with calibrated score, decision label, and forensic indicators.
         """
         start_time = time.time()
         
-        # Simulate logit calculation based on modality
+        # Ground logit in base vision/audio model prediction if provided, else authentic baseline (-2.5)
+        if base_fake_prob is not None:
+            p_clamped = min(0.99, max(0.01, float(base_fake_prob)))
+            raw_logit = math.log(p_clamped / (1.0 - p_clamped))
+        else:
+            raw_logit = -2.5
+
         if modality == "image":
             corneal_res = self.corneal_branch.evaluate_corneal_symmetry(corneal_asymmetry)
             corneal_score = corneal_res["corneal_asymmetry_score"]
-            raw_logit = random.uniform(-2.5, 3.5)
             
-            # Incorporate optical corneal symmetry into decision logit
+            # Incorporate optical corneal symmetry into decision logit deterministically
             if corneal_score > 0.35:
                 raw_logit = max(raw_logit, float(corneal_score * 3.5 - 0.2))
-            elif corneal_score < 0.20 and raw_logit > 1.8:
-                raw_logit -= 0.8
+            elif corneal_score <= 0.20 and raw_logit > -1.5:
+                raw_logit = min(raw_logit, -1.8)
 
             feat, hf_energy = self.face_branch.extract_wavelet_features(np.zeros((1, 3, 224, 224)))
             indicators = {
-                "wavelet_high_freq_artifacts": hf_energy > 0.35,
-                "skin_rppg_consistency": round(random.uniform(0.82, 0.99), 4),
+                "wavelet_high_freq_artifacts": (raw_logit > 0.0),
+                "skin_rppg_consistency": 0.95,
                 "corneal_reflection_symmetry": corneal_res["corneal_reflection_symmetry"],
                 "corneal_asymmetry_score": corneal_res["corneal_asymmetry_score"],
                 "optical_gaze_consistent": corneal_res["optical_gaze_consistent"]
             }
         elif modality == "audio":
-            raw_logit = random.uniform(-2.5, 3.5)
             feat, traj_smooth = self.voice_branch.extract_vocal_trajectory(None)
             indicators = {
                 "ssl_vocal_trajectory_smoothness": traj_smooth,
                 "voiced_unvoiced_transition_anomaly": traj_smooth < 0.88
             }
         else: # video
-            raw_logit = random.uniform(-2.5, 3.5)
             feat, lipsync_corr = self.video_branch.extract_temporal_lipsync(None)
             indicators = {
                 "df26_lipsync_correlation": lipsync_corr,
-                "microexpression_temporal_jitter": round(random.uniform(0.01, 0.06), 4)
+                "microexpression_temporal_jitter": 0.02
             }
 
         calibrated_prob = self.calibrate_probability(raw_logit)

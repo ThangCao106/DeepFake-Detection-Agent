@@ -1949,12 +1949,14 @@ class DeepfakeDetector:
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
             if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45:
                 # Outdoor / Sports / Dynamic Scene Motion Blur Damping:
-                # Natural motion blur on runner/moving limbs vs static background elevates spatial inconsistency.
-                effective_spatial = (spatial_inconsistency * 0.35) if (scene_context and scene_context.get("is_outdoor")) else spatial_inconsistency
+                is_dyn = bool(scene_context and (scene_context.get("is_outdoor") or "ngoại cảnh" in str(scene_context.get("category", "")).lower() or "đường phố" in str(scene_context.get("category", "")).lower() or "che khuất" in str(scene_context.get("category", "")).lower()))
+                effective_spatial = (spatial_inconsistency * 0.35) if is_dyn else spatial_inconsistency
+                # Social Media JPEG Compression PRNU Attenuation:
+                effective_prnu = min(prnu_score, 0.20) if (fake_prob < 0.40 and spectral_anomaly < 0.30) else prnu_score
                 calibrated_aux_risk = (
                     0.75 * fake_prob + 
                     0.09 * spectral_anomaly + 
-                    0.06 * prnu_score + 
+                    0.06 * effective_prnu + 
                     0.06 * effective_spatial + 
                     0.04 * heatmap_peak_val
                 )
@@ -1968,7 +1970,7 @@ class DeepfakeDetector:
             # we rely strictly on Stream 1 General Vision to avoid false biometric penalties.
             if has_human and face_found and self.human_detector is not None:
                 # Stream 2: Human-Centric Specialist Stream (WAVIE + Corneal Reflection + rPPG + ECE Calibration)
-                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score)
+                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score, base_fake_prob=fake_prob)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
 
                 # Demographic-Adaptive Cohort Fusion for Vietnamese Population (Paper v2 / IEEE T-IFS 2026)
@@ -2394,7 +2396,7 @@ class DeepfakeDetector:
 
             # Step 2: Dual-Stream Video Fusion if Human Present
             if has_human_video and self.human_detector is not None:
-                human_vid_eval = self.human_detector.predict_media(video_path, modality="video")
+                human_vid_eval = self.human_detector.predict_media(video_path, modality="video", base_fake_prob=general_video_score)
                 human_vid_risk = float(human_vid_eval.get("calibrated_probability", general_video_score))
                 composite_video_risk = round(0.40 * general_video_score + 0.60 * human_vid_risk, 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
