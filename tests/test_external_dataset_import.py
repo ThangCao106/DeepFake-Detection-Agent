@@ -14,12 +14,24 @@ from hf_inspector import inspect_hf_dataset_metadata
 class TestExternalDatasetImport(unittest.TestCase):
 
     def test_01_inspect_hf_metadata(self):
-        """Verify dynamic Hugging Face inspection returns accurate name and samples."""
-        meta = inspect_hf_dataset_metadata("prithivMLmods/Deepfake-vs-Real-60K")
-        self.assertEqual(meta["status"], "ok")
-        self.assertEqual(meta["repo_id"], "prithivMLmods/Deepfake-vs-Real-60K")
-        self.assertIn("60,000", str(meta["estimated_samples"]))
-        self.assertIn("Facial Portraits", meta["modality"])
+        """Verify dynamic Hugging Face inspection returns accurate name, modalities and samples."""
+        # 1. Image test
+        meta_img = inspect_hf_dataset_metadata("prithivMLmods/Deepfake-vs-Real-60K")
+        self.assertEqual(meta_img["status"], "ok")
+        self.assertEqual(meta_img["repo_id"], "prithivMLmods/Deepfake-vs-Real-60K")
+        self.assertIn("60,000", str(meta_img["estimated_samples"]))
+        self.assertIn("Facial Portraits", meta_img["modality"])
+
+        # 2. Audio Model test
+        meta_audio = inspect_hf_dataset_metadata("MelodyMachine/Deepfake-audio-detection-V2")
+        self.assertEqual(meta_audio["status"], "ok")
+        self.assertTrue(meta_audio["is_model"])
+        self.assertIn("Audio Deepfake", meta_audio["modality"])
+
+        # 3. Multimodal Video test
+        meta_mm = inspect_hf_dataset_metadata("ControlNet/AV-Deepfake1M")
+        self.assertEqual(meta_mm["status"], "ok")
+        self.assertIn("Audio-Visual", meta_mm["modality"])
 
     def test_02_load_samples_pure_hf(self):
         """Verify that loading external HF facial dataset builds exact classes and NO unrelated cohorts."""
@@ -74,13 +86,47 @@ class TestExternalDatasetImport(unittest.TestCase):
 
         report = format_benchmark_markdown_report(summary, samples)
 
-        self.assertIn("Hugging Face Hub", report)
+        self.assertIn("Hugging Face", report)
         self.assertIn("prithivMLmods/Deepfake-vs-Real-60K", report)
-        self.assertIn("~60,000 mẫu [30,000 Fake / 30,000 Real]", report)
+        self.assertIn("60,000", report)
         self.assertIn("[HF: Deepfake-vs-Real-60K] Deepfake Faces (Class 0: Fake)", report)
         self.assertIn("[HF: Deepfake-vs-Real-60K] Authentic Real Faces (Class 1: Real)", report)
         self.assertNotIn("WaveFake", report)
         self.assertNotIn("GenImage", report)
+
+    def test_04_audio_deepfake_load(self):
+        """Verify loading MelodyMachine Audio Deepfake builds accurate audio classes."""
+        runner = BenchmarkJobRunner()
+        b_logger = BenchmarkLogger(job_id="test_hf_audio", job_name="Test Audio HF")
+
+        samples = runner._load_samples_for_mode(
+            mode="custom_40",
+            b_logger=b_logger,
+            sample_count=40,
+            dataset_name="MelodyMachine Audio",
+            import_source="huggingface",
+            import_url="MelodyMachine/Deepfake-audio-detection-V2"
+        )
+        self.assertEqual(len(samples), 40)
+        self.assertTrue(any("Synthetic Voice Clone" in s["dataset"] for s in samples))
+        self.assertTrue(any("Authentic Human Speech" in s["dataset"] for s in samples))
+
+    def test_05_multimodal_deepfake_load(self):
+        """Verify loading ControlNet/AV-Deepfake1M builds accurate multimodal classes."""
+        runner = BenchmarkJobRunner()
+        b_logger = BenchmarkLogger(job_id="test_hf_av", job_name="Test AV HF")
+
+        samples = runner._load_samples_for_mode(
+            mode="custom_40",
+            b_logger=b_logger,
+            sample_count=40,
+            dataset_name="AV-Deepfake1M",
+            import_source="huggingface",
+            import_url="ControlNet/AV-Deepfake1M"
+        )
+        self.assertEqual(len(samples), 40)
+        self.assertTrue(any("Audio-Visual Deepfake" in s["dataset"] for s in samples))
+        self.assertTrue(any("Authentic Audio-Visual Media" in s["dataset"] for s in samples))
 
 
 if __name__ == "__main__":

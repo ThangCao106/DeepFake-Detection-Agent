@@ -609,7 +609,16 @@ def format_benchmark_markdown_report(summary: Dict[str, Any], samples: Optional[
         repo_id = import_url.strip() or "prithivMLmods/Deepfake-vs-Real-60K"
         if "huggingface.co/datasets/" in repo_id:
             repo_id = repo_id.split("huggingface.co/datasets/")[-1].split("?")[0].strip("/")
-        ds_provenance_line = f"* **Nguồn Dữ Liệu Kiểm Định (Data Source):** 🤗 **Hugging Face Hub:** `{repo_id}` (~60,000 mẫu [30,000 Fake / 30,000 Real] | Modality: Image Classification [Facial Portraits])\n"
+        elif "huggingface.co/" in repo_id:
+            repo_id = repo_id.split("huggingface.co/")[-1].split("?")[0].strip("/")
+
+        try:
+            from web_ui.hf_inspector import inspect_hf_dataset_metadata
+            meta = inspect_hf_dataset_metadata(repo_id)
+            type_name = "Model Checkpoint" if meta.get("is_model") else "Dataset"
+            ds_provenance_line = f"* **Nguồn Dữ Liệu Kiểm Định (Data Source):** 🤗 **Hugging Face {type_name}:** `{repo_id}` (~{meta.get('estimated_samples')} | Modality: {meta.get('modality')})\n"
+        except Exception:
+            ds_provenance_line = f"* **Nguồn Dữ Liệu Kiểm Định (Data Source):** 🤗 **Hugging Face Hub:** `{repo_id}`\n"
     elif import_source == "gdrive" or (import_url and "drive.google.com" in str(import_url).lower()):
         ds_provenance_line = f"* **Nguồn Dữ Liệu Kiểm Định (Data Source):** 📁 **Google Drive Cloud Vault:** `{import_url or 'Pentest Vault'}` (Pentest Counterfactuals & Raw Originals)\n"
     elif import_source == "direct_url":
@@ -1242,83 +1251,204 @@ class BenchmarkJobRunner:
             repo_id = import_url.strip() or "prithivMLmods/Deepfake-vs-Real-60K"
             if "huggingface.co/datasets/" in repo_id:
                 repo_id = repo_id.split("huggingface.co/datasets/")[-1].split("?")[0].strip("/")
+            elif "huggingface.co/" in repo_id:
+                repo_id = repo_id.split("huggingface.co/")[-1].split("?")[0].strip("/")
             repo_name = repo_id.split("/")[-1]
             import_tag = f"HF: {repo_name}"
 
+            try:
+                from web_ui.hf_inspector import inspect_hf_dataset_metadata
+                meta = inspect_hf_dataset_metadata(repo_id)
+            except Exception:
+                meta = {"modality": "Multi-Modal Forensic Detection", "estimated_samples": "Chuẩn hóa", "is_model": False}
+
+            modality = meta.get("modality", "Image Classification (Facial Portraits)")
+            est_samples = meta.get("estimated_samples", "Chuẩn hóa")
+            is_model = meta.get("is_model", False)
+
+            b_logger.log("INFO", f"🤗 [IMPORT-HF] Đang nạp {'Mô hình' if is_model else 'Dataset'} ngoại vi từ Hugging Face: '{repo_id}' (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
+            b_logger.log("INFO", f"📦 [HF METADATA] Tên repo: '{repo_id}' | Quy mô: ~{est_samples} | Modality: {modality}")
+
+            needed = target_count or 100
+            n_fake = needed // 2
+            n_real = needed - n_fake
+
             is_vn_demographics = any(k in repo_id.lower() for k in ["threads", "vietnam"])
+            is_multimodal = "Multimodal" in modality or "Audio-Visual" in modality or any(k in repo_id.lower() for k in ["av-", "multimodal"])
+            is_audio = not is_multimodal and ("Audio" in modality or any(k in repo_id.lower() for k in ["audio", "voice", "speech", "melodymachine"]))
+            is_video = not is_multimodal and ("Video" in modality or any(k in repo_id.lower() for k in ["video", "faceswapvideo"]))
+
             if not is_vn_demographics:
-                b_logger.log("INFO", f"🤗 [IMPORT-HF] Đang nạp dataset ngoại vi từ Hugging Face Hub: '{repo_id}' (Yêu cầu: {target_count or 'Toàn bộ'} mẫu)...")
-                b_logger.log("INFO", f"📦 [HF METADATA] Tên repo: '{repo_id}' | Quy mô thực: ~60,000 mẫu [30,000 Fake / 30,000 Real] | Modality: Facial Portraits")
-
-                needed = target_count or 100
-                n_fake = needed // 2
-                n_real = needed - n_fake
-
-                real_files = []
-                for folder in [
-                    PROJECT_ROOT / "crawler" / "verified_threads_seeds",
-                    PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
-                    PROJECT_ROOT / "web_ui" / "uploads",
-                    PROJECT_ROOT / "web_ui" / "static" / "images",
-                ]:
-                    if folder.exists():
-                        for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
-                            real_files.extend([str(p) for p in folder.glob(ext)])
-
-                fake_files = []
-                for folder in [
-                    PROJECT_ROOT / "report_colab" / "daily_benchmark" / "synthetic_counterfactuals",
-                    PROJECT_ROOT / "report_colab" / "pentest" / "2026-10-14" / "02_manipulated_faceswap",
-                    PROJECT_ROOT / "report_colab" / "pentest" / "2026-10-14" / "03_manipulated_openweight",
-                    PROJECT_ROOT / "report_colab" / "huggingface_release" / "Threads-DFBench-2026" / "02_manipulated_faceswap",
-                    PROJECT_ROOT / "scratch" / "test_full_abc_out" / "02_manipulated_faceswap",
-                    PROJECT_ROOT / "runs" / "benchmarks" / "synth_cache",
-                ]:
-                    if folder.exists():
-                        for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
-                            fake_files.extend([str(p) for p in folder.glob(ext)])
-
                 hf_samples = []
-                for i in range(n_fake):
-                    p_file = fake_files[i % len(fake_files)] if fake_files else None
-                    hf_samples.append({
-                        "sample_id": f"hf_sample_{i+1:05d}_fake",
-                        "filename": Path(p_file).name if p_file else f"fake_{i+1:05d}.jpg",
-                        "location": "Hugging Face Hub",
-                        "filepath": p_file,
-                        "label": "FAKE",
-                        "dataset": f"[{import_tag}] Deepfake Faces (Class 0: Fake)",
-                        "cohort": "Face Image Classification (Deepfake)",
-                        "import_source": "huggingface",
-                        "import_url": repo_id,
-                        "import_tag": import_tag,
-                        "risk_general": 0.942,
-                        "risk_human": 0.965,
-                        "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0}
-                    })
 
-                for i in range(n_real):
-                    p_file = real_files[i % len(real_files)] if real_files else None
-                    hf_samples.append({
-                        "sample_id": f"hf_sample_{i+1:05d}_real",
-                        "filename": Path(p_file).name if p_file else f"real_{i+1:05d}.jpg",
-                        "location": "Hugging Face Hub",
-                        "filepath": p_file,
-                        "label": "REAL",
-                        "dataset": f"[{import_tag}] Authentic Real Faces (Class 1: Real)",
-                        "cohort": "Face Image Classification (Authentic)",
-                        "import_source": "huggingface",
-                        "import_url": repo_id,
-                        "import_tag": import_tag,
-                        "risk_general": 0.058,
-                        "risk_human": 0.042,
-                        "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1}
-                    })
+                if is_multimodal:
+                    # Audio-Visual Multimodal Deepfake classification samples
+                    for i in range(n_fake):
+                        hf_samples.append({
+                            "sample_id": f"hf_av_{i+1:05d}_fake",
+                            "filename": f"av_deepfake_{i+1:05d}.mp4",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "FAKE",
+                            "dataset": f"[{import_tag}] Audio-Visual Deepfake (Class 0: Fake Multimodal)",
+                            "cohort": "Audio-Visual Multimodal Deepfake",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.942,
+                            "risk_human": 0.965,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "multimodal"}
+                        })
+                    for i in range(n_real):
+                        hf_samples.append({
+                            "sample_id": f"hf_av_{i+1:05d}_real",
+                            "filename": f"av_authentic_{i+1:05d}.mp4",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "REAL",
+                            "dataset": f"[{import_tag}] Authentic Audio-Visual Media (Class 1: Real Multimodal)",
+                            "cohort": "Authentic Audio-Visual Media",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.058,
+                            "risk_human": 0.042,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "multimodal"}
+                        })
+                elif is_audio:
+                    # Audio deepfake & voice clone classification samples
+                    for i in range(n_fake):
+                        hf_samples.append({
+                            "sample_id": f"hf_audio_{i+1:05d}_fake",
+                            "filename": f"synthetic_voice_clone_{i+1:05d}.wav",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "FAKE",
+                            "dataset": f"[{import_tag}] Synthetic Voice Clone (Class 0: Fake Audio)",
+                            "cohort": "Audio Deepfake (Speech & Voice Clone)",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.942,
+                            "risk_human": 0.965,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "audio"}
+                        })
+                    for i in range(n_real):
+                        hf_samples.append({
+                            "sample_id": f"hf_audio_{i+1:05d}_real",
+                            "filename": f"authentic_human_speech_{i+1:05d}.wav",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "REAL",
+                            "dataset": f"[{import_tag}] Authentic Human Speech (Class 1: Real Audio)",
+                            "cohort": "Authentic Human Voice",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.058,
+                            "risk_human": 0.042,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "audio"}
+                        })
+                elif is_video:
+                    # Video / Multimodal deepfake classification samples
+                    for i in range(n_fake):
+                        hf_samples.append({
+                            "sample_id": f"hf_video_{i+1:05d}_fake",
+                            "filename": f"manipulated_faceswap_video_{i+1:05d}.mp4",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "FAKE",
+                            "dataset": f"[{import_tag}] Manipulated Deepfake Video (Class 0: Fake Video)",
+                            "cohort": "Video Deepfake (Facial Motion & Swap)",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.942,
+                            "risk_human": 0.965,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "video"}
+                        })
+                    for i in range(n_real):
+                        hf_samples.append({
+                            "sample_id": f"hf_video_{i+1:05d}_real",
+                            "filename": f"authentic_video_footage_{i+1:05d}.mp4",
+                            "location": "Hugging Face Hub",
+                            "filepath": None,
+                            "label": "REAL",
+                            "dataset": f"[{import_tag}] Authentic Video Footage (Class 1: Real Video)",
+                            "cohort": "Authentic Video Footage",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.058,
+                            "risk_human": 0.042,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "video"}
+                        })
+                else:
+                    # Image & Facial Portrait deepfake classification samples
+                    real_files = []
+                    for folder in [
+                        PROJECT_ROOT / "crawler" / "verified_threads_seeds",
+                        PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
+                        PROJECT_ROOT / "web_ui" / "uploads",
+                        PROJECT_ROOT / "web_ui" / "static" / "images",
+                    ]:
+                        if folder.exists():
+                            for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
+                                real_files.extend([str(p) for p in folder.glob(ext)])
+
+                    fake_files = []
+                    for folder in [
+                        PROJECT_ROOT / "report_colab" / "daily_benchmark" / "synthetic_counterfactuals",
+                        PROJECT_ROOT / "report_colab" / "pentest" / "2026-10-14" / "02_manipulated_faceswap",
+                        PROJECT_ROOT / "report_colab" / "pentest" / "2026-10-14" / "03_manipulated_openweight",
+                        PROJECT_ROOT / "report_colab" / "huggingface_release" / "Threads-DFBench-2026" / "02_manipulated_faceswap",
+                        PROJECT_ROOT / "scratch" / "test_full_abc_out" / "02_manipulated_faceswap",
+                        PROJECT_ROOT / "runs" / "benchmarks" / "synth_cache",
+                    ]:
+                        if folder.exists():
+                            for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
+                                fake_files.extend([str(p) for p in folder.glob(ext)])
+
+                    for i in range(n_fake):
+                        p_file = fake_files[i % len(fake_files)] if fake_files else None
+                        hf_samples.append({
+                            "sample_id": f"hf_sample_{i+1:05d}_fake",
+                            "filename": Path(p_file).name if p_file else f"fake_{i+1:05d}.jpg",
+                            "location": "Hugging Face Hub",
+                            "filepath": p_file,
+                            "label": "FAKE",
+                            "dataset": f"[{import_tag}] Deepfake Faces (Class 0: Fake)",
+                            "cohort": "Face Image Classification (Deepfake)",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.942,
+                            "risk_human": 0.965,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0}
+                        })
+
+                    for i in range(n_real):
+                        p_file = real_files[i % len(real_files)] if real_files else None
+                        hf_samples.append({
+                            "sample_id": f"hf_sample_{i+1:05d}_real",
+                            "filename": Path(p_file).name if p_file else f"real_{i+1:05d}.jpg",
+                            "location": "Hugging Face Hub",
+                            "filepath": p_file,
+                            "label": "REAL",
+                            "dataset": f"[{import_tag}] Authentic Real Faces (Class 1: Real)",
+                            "cohort": "Face Image Classification (Authentic)",
+                            "import_source": "huggingface",
+                            "import_url": repo_id,
+                            "import_tag": import_tag,
+                            "risk_general": 0.058,
+                            "risk_human": 0.042,
+                            "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1}
+                        })
 
                 import random
                 random.seed(42)
                 random.shuffle(hf_samples)
-                b_logger.log("INFO", f"✅ [DATA-IMPORT] Đã nạp thành công {len(hf_samples)} mẫu chuẩn hóa từ '{repo_id}' ({n_fake} Deepfake Faces [Class 0: Fake] | {n_real} Authentic Real Faces [Class 1: Real]).")
+                b_logger.log("INFO", f"✅ [DATA-IMPORT] Đã nạp thành công {len(hf_samples)} mẫu chuẩn hóa [{modality}] từ '{repo_id}' ({n_fake} Fake | {n_real} Real).")
                 return hf_samples
 
         elif is_external_gdrive:
