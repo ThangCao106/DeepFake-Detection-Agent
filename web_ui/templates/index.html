@@ -110,32 +110,56 @@
                                 <option value="gdrive">📁 Google Drive Shared Folder (Link / ID)</option>
                                 <option value="direct_url">🔗 Direct Web Media / Dataset Link</option>
                             </select>
-                            <div id="customImportUrlGroup" style="display: none; flex: 1; min-width: 280px; align-items: center; gap: 6px;">
-                                <input type="text" id="customImportUrlInput" list="hfDatasetPresets" placeholder="VD: prithivMLmods/Deepfake-vs-Real-60K" value="prithivMLmods/Deepfake-vs-Real-60K" style="flex: 1; padding: 5px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem; color: #1e293b; background: #ffffff;">
-                                <datalist id="hfDatasetPresets">
-                                    <!-- Audio Deepfake & Voice Clone -->
-                                    <option value="MelodyMachine/Deepfake-audio-detection-V2">🎵 MelodyMachine: Deepfake Audio Detection V2 (SOTA wav2vec2)</option>
-                                    <option value="garystafford/deepfake-audio-detection">🎙️ Gary Stafford: Deepfake Audio Detection (1,866 clips)</option>
-                                    <option value="UniDataPro/real-vs-fake-human-voice-deepfake-audio">🗣️ UniDataPro: Real vs Fake Human Voice Audio</option>
-                                    <option value="unfake/fake_voices">🔊 Unfake: Multi-Generator Fake Voices</option>
-                                    <!-- Image & Facial Deepfake -->
-                                    <option value="prithivMLmods/Deepfake-vs-Real-60K">🖼️ PrithivML: Deepfake vs Real 60K (30K Fake / 30K Real)</option>
-                                    <option value="OpenRL/DeepFakeFace">🎭 OpenRL: DeepFakeFace (30,000 Face Images)</option>
-                                    <option value="jzousz/GenImage">🎨 GenImage: Multi-Generator Diffusion Dataset (>100K)</option>
-                                    <option value="dragonintelligence/CIFAKE-image-dataset">⚡ CIFAKE: Real vs Synthetic Image Dataset (60K)</option>
-                                    <option value="ThangCao106/Threads-DFBench-Vietnamese">🇻🇳 Threads-DFBench: 5 Nhóm Nhân Khẩu Học Việt Nam</option>
-                                    <!-- Video & Multimodal -->
-                                    <option value="ControlNet/AV-Deepfake1M">🎬 ControlNet: AV-Deepfake1M (1M Audio-Visual Deepfakes)</option>
-                                    <option value="bitmind/FaceForensicsC23">📹 BitMind: FaceForensics++ c23</option>
-                                    <option value="nuriachandra/Deepfake-Eval-2024">🌐 Deepfake-Eval-2024 Multimodal Benchmark</option>
-                                </datalist>
-                                <button type="button" class="btn btn-sm" onclick="validateImportDatasetSource()" style="background: #4338ca; color: #ffffff; font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                            <div id="customImportUrlGroup" style="display: none; flex: 1; min-width: 320px; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <!-- Dropdown Trực Tiếp 13 Dataset Hugging Face -->
+                                <select id="customHfPresetSelect" onchange="handleHfPresetChange()" style="flex: 1; min-width: 290px; padding: 6px 12px; border-radius: 6px; border: 1.5px solid #6366f1; font-size: 0.82rem; font-weight: 600; color: #1e293b; background: #ffffff; cursor: pointer;">
+                                    <optgroup label="🎵 Nhóm 1: Audio Deepfake & Voice Clone">
+                                        <option value="MelodyMachine/Deepfake-audio-detection-V2">🎵 MelodyMachine: Deepfake Audio V2 (SOTA wav2vec2)</option>
+                                        <option value="garystafford/deepfake-audio-detection">🎙️ Gary Stafford: Deepfake Audio Detection (1,866 clips)</option>
+                                        <option value="UniDataPro/real-vs-fake-human-voice-deepfake-audio">🗣️ UniDataPro: Real vs Fake Human Voice Audio</option>
+                                        <option value="unfake/fake_voices">🔊 Unfake: Multi-Generator Fake Voices (OOD)</option>
+                                        <option value="thenewsupercell/celeb-df-audio-dataset">🎧 Celeb-DF Audio Dataset</option>
+                                    </optgroup>
+                                    <optgroup label="🖼️ Nhóm 2: Image & Facial Portrait Deepfake">
+                                        <option value="prithivMLmods/Deepfake-vs-Real-60K" selected>🖼️ PrithivML: Deepfake vs Real 60K (30K Fake / 30K Real)</option>
+                                        <option value="OpenRL/DeepFakeFace">🎭 OpenRL: DeepFakeFace (30,000 Face Images)</option>
+                                        <option value="jzousz/GenImage">🎨 GenImage: Multi-Generator Diffusion (>100K)</option>
+                                        <option value="dragonintelligence/CIFAKE-image-dataset">⚡ CIFAKE: Real vs Synthetic Images (60K)</option>
+                                        <option value="ThangCao106/Threads-DFBench-Vietnamese">🇻🇳 Threads-DFBench: 5 Nhóm Nhân Khẩu Học VN</option>
+                                    </optgroup>
+                                    <optgroup label="🎬 Nhóm 3: Video & Audio-Visual Multimodal">
+                                        <option value="ControlNet/AV-Deepfake1M">🎬 ControlNet: AV-Deepfake1M (>1,000,000 videos)</option>
+                                        <option value="bitmind/FaceForensicsC23">📹 BitMind: FaceForensics++ c23 (HQ)</option>
+                                        <option value="nuriachandra/Deepfake-Eval-2024">🌐 Deepfake-Eval-2024 Multimodal Benchmark</option>
+                                    </optgroup>
+                                    <optgroup label="✏️ Tùy Chỉnh Khác">
+                                        <option value="custom_manual">✏️ Tự nhập link hoặc Repo ID Hugging Face khác...</option>
+                                    </optgroup>
+                                </select>
+                                <!-- Text input khi nhập thủ công hoặc khi chọn Google Drive / Direct URL -->
+                                <input type="text" id="customImportUrlInput" placeholder="VD: prithivMLmods/Deepfake-vs-Real-60K" value="prithivMLmods/Deepfake-vs-Real-60K" style="display: none; flex: 1; min-width: 250px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem; color: #1e293b; background: #ffffff;">
+                                <button type="button" class="btn btn-sm" onclick="validateImportDatasetSource()" style="background: #4338ca; color: #ffffff; font-size: 0.78rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
                                     <span>⚡</span> Kiểm Tra Nguồn
                                 </button>
                             </div>
                             <div id="customImportFeedback" style="font-size: 0.78rem; color: #475569; font-weight: 600; display: flex; align-items: center; gap: 4px;"></div>
                         </div>
-                        <select id="benchmarkDatasetSelect" class="benchmark-select">
+                        <select id="benchmarkDatasetSelect" class="benchmark-select" onchange="handleDatasetSelectChange()">
+                            <optgroup label="🤗 Hugging Face Deepfake Hub (13 Datasets)">
+                                <option value="[HF: Image] prithivMLmods/Deepfake-vs-Real-60K">🖼️ [HF Image] prithivMLmods/Deepfake-vs-Real-60K (60K)</option>
+                                <option value="[HF: Image] OpenRL/DeepFakeFace">🎭 [HF Image] OpenRL/DeepFakeFace (30K)</option>
+                                <option value="[HF: Image] jzousz/GenImage">🎨 [HF Image] jzousz/GenImage (>100K)</option>
+                                <option value="[HF: Image] dragonintelligence/CIFAKE-image-dataset">⚡ [HF Image] dragonintelligence/CIFAKE (60K)</option>
+                                <option value="[HF: Image] ThangCao106/Threads-DFBench-Vietnamese">🇻🇳 [HF Image] Threads-DFBench Vietnamese</option>
+                                <option value="[HF: Audio] MelodyMachine/Deepfake-audio-detection-V2">🎵 [HF Audio] MelodyMachine/Deepfake-audio-detection-V2</option>
+                                <option value="[HF: Audio] garystafford/deepfake-audio-detection">🎙️ [HF Audio] garystafford/deepfake-audio-detection</option>
+                                <option value="[HF: Audio] UniDataPro/real-vs-fake-human-voice-deepfake-audio">🗣️ [HF Audio] UniDataPro/real-vs-fake-human-voice</option>
+                                <option value="[HF: Audio] unfake/fake_voices">🔊 [HF Audio] unfake/fake_voices</option>
+                                <option value="[HF: Audio] thenewsupercell/celeb-df-audio-dataset">🎧 [HF Audio] thenewsupercell/celeb-df-audio</option>
+                                <option value="[HF: Video] ControlNet/AV-Deepfake1M">🎬 [HF Video] ControlNet/AV-Deepfake1M (>1M)</option>
+                                <option value="[HF: Video] bitmind/FaceForensicsC23">📹 [HF Video] bitmind/FaceForensicsC23</option>
+                                <option value="[HF: Video] nuriachandra/Deepfake-Eval-2024">🌐 [HF Video] Deepfake-Eval-2024</option>
+                            </optgroup>
                             <optgroup label="🌐 14 Benchmark Quốc Tế (>1,683,000 Mẫu Gốc)">
                                 <option value="14 Benchmark Suite" selected>Full 14 Benchmark Suite (Tất cả)</option>
                                 <option value="FaceForensics++">FaceForensics++ (c23 / c40)</option>
