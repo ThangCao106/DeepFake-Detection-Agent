@@ -1746,6 +1746,12 @@ class DeepfakeDetector:
         if detected_faces and len(detected_faces) > 0:
             sorted_faces = sorted(detected_faces, key=lambda f: f[2] * f[3], reverse=True)
             x, y, fw, fh = sorted_faces[0]
+            # Ocular resolution & scene context guard:
+            # If the detected face is too small (<64px) or occupies less than 2.5% of the overall frame (runner/sports/action),
+            # cropping and upscaling to 224x224 introduces interpolation blur that deceives the ViT model.
+            # Preserve original image to maintain truthful scene context.
+            if fw < 64 or fh < 64 or (fw * fh) < (0.025 * w * h):
+                return pil_image, False
             pad_w = int(0.15 * fw)
             pad_h = int(0.15 * fh)
             left = max(0, x - pad_w)
@@ -1975,15 +1981,19 @@ class DeepfakeDetector:
 
                 # Demographic-Adaptive Cohort Fusion for Vietnamese Population (Paper v2 / IEEE T-IFS 2026)
                 vn_cohort = scene_context.get("vn_demographic_category", "standard_portrait") if scene_context else "standard_portrait"
-                vn_alpha_map = {
-                    "vn_street_outdoor": 0.05,
-                    "vn_mature_aging": 0.25,
-                    "vn_occlusion_glasses_mask": 0.40,
-                    "vn_selfie_lifestyle": 0.40,
-                    "vn_id_official": 0.35,
-                    "standard_portrait": 0.60,
-                }
-                alpha_human = vn_alpha_map.get(vn_cohort, 0.60)
+                cohort_weights = (self.vn_demographic_params or {}).get("demographic_cohort_weights", {})
+                if vn_cohort in cohort_weights and "alpha_human" in cohort_weights[vn_cohort]:
+                    alpha_human = float(cohort_weights[vn_cohort]["alpha_human"])
+                else:
+                    vn_alpha_map = {
+                        "vn_street_outdoor": 0.05,
+                        "vn_mature_aging": 0.25,
+                        "vn_occlusion_glasses_mask": 0.05,
+                        "vn_selfie_lifestyle": 0.05,
+                        "vn_id_official": 0.05,
+                        "standard_portrait": 0.60,
+                    }
+                    alpha_human = vn_alpha_map.get(vn_cohort, 0.05)
                 weight_general = round(1.0 - alpha_human, 2)
                 weight_human = round(alpha_human, 2)
 

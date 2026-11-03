@@ -225,9 +225,13 @@ socket.on('analysis_result', (data) => {
         clearTimeout(analysisTimeoutTimer);
         analysisTimeoutTimer = null;
     }
+    if (analysisComplete) {
+        console.log('[Deduplication] Analysis already handled by REST fallback. Skipping duplicate socket event.');
+        return;
+    }
+    analysisComplete = true;
     displayExplanation(data.explanation);
     hideAgentStatus();
-    analysisComplete = true;
     chatInput.disabled = false;
     sendBtn.disabled = false;
 });
@@ -446,6 +450,9 @@ async function optimizeImageIfNeeded(file) {
 analyzeBtn.addEventListener('click', async () => {
     if (!uploadedFile && (!urlInput || !urlInput.value.trim())) return;
 
+    analysisComplete = false;
+    lastRenderedCertId = null;
+
     if (analysisTimeoutTimer) {
         clearTimeout(analysisTimeoutTimer);
         analysisTimeoutTimer = null;
@@ -515,10 +522,10 @@ analyzeBtn.addEventListener('click', async () => {
                 language: currentLang
             });
 
-            // Resilience Guard - If WebSocket doesn't finish within 12s, fallback to direct REST API
+            // Resilience Guard - If WebSocket doesn't finish within 45s (due to Triad Council 3 LLM deliberation), fallback to direct REST API
             analysisTimeoutTimer = setTimeout(async () => {
                 if (!analysisComplete && uploadedFilePath) {
-                    console.warn('[Resilience Guard] WebSocket took longer than 12s. Initiating secure REST fallback...');
+                    console.warn('[Resilience Guard] WebSocket took longer than 45s. Initiating secure REST fallback...');
                     showAgentStatus(currentLang === 'vi' ? 'Đang đồng bộ kết quả qua kênh REST dự phòng...' : 'Syncing results via Secure REST Channel...');
                     try {
                         const res = await fetch('/api/analyze', {
@@ -542,10 +549,14 @@ analyzeBtn.addEventListener('click', async () => {
                         }
 
                         if (resData && resData.success) {
+                            if (analysisComplete) {
+                                console.log('[Deduplication] WebSocket already completed. Skipping duplicate REST response.');
+                                return;
+                            }
+                            analysisComplete = true;
                             if (resData.detection_result) displayResults(resData.detection_result);
                             if (resData.explanation) displayExplanation(resData.explanation);
                             hideAgentStatus();
-                            analysisComplete = true;
                             chatInput.disabled = false;
                             sendBtn.disabled = false;
                         } else {
@@ -1266,7 +1277,18 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     `;
 }
 
+let lastRenderedCertId = null;
+
 function displayExplanation(text) {
+    const certId = (latestDetectionResult && latestDetectionResult.forensic_certificate && latestDetectionResult.forensic_certificate.certificate_id) || null;
+    if (certId && certId === lastRenderedCertId) {
+        console.log('[Deduplication] Certificate', certId, 'already rendered in chat. Skipping duplicate card.');
+        return;
+    }
+    if (certId) {
+        lastRenderedCertId = certId;
+    }
+
     const explanationSection = document.getElementById('explanationSection');
     const explanationText = document.getElementById('explanationText');
 
