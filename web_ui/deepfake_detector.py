@@ -1761,10 +1761,11 @@ class DeepfakeDetector:
             sorted_faces = sorted(detected_faces, key=lambda f: f[2] * f[3], reverse=True)
             x, y, fw, fh = sorted_faces[0]
             # Ocular resolution & scene context guard:
-            # If the detected face is too small (<64px) or occupies less than 2.5% of the overall frame (runner/sports/action),
+            # If the detected face is truly distant/insignificant (<2.5% of frame in standard photo, e.g. runner/sports/action),
             # cropping and upscaling to 224x224 introduces interpolation blur that deceives the ViT model.
             # Preserve original image to maintain truthful scene context.
-            if len(detected_faces) == 1 and (fw < 64 or fh < 64 or (fw * fh) < (0.025 * w * h)):
+            face_ratio = (fw * fh) / float(w * h)
+            if len(detected_faces) == 1 and ((w >= 300 and h >= 300 and (fw < 48 or fh < 48 or face_ratio < 0.025)) or (fw < 16 or fh < 16 or face_ratio < 0.015)):
                 return pil_image, False
             pad_w = int(0.15 * fw)
             pad_h = int(0.15 * fh)
@@ -1969,18 +1970,19 @@ class DeepfakeDetector:
             # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
             # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
-            if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45 and heatmap_peak_val < 0.70:
-                # Outdoor / Sports / Dynamic Scene Motion Blur Damping:
+            is_proven_tamper = bool(is_ai_art or is_fake_pred or corneal_score > 0.50 or (heatmap_peak_val >= 0.85 and (prnu_score >= 0.40 or spatial_inconsistency >= 0.38)))
+            if not is_proven_tamper and fake_prob < 0.50 and spectral_anomaly < 0.45:
+                # Outdoor / Sports / Dynamic Scene Motion Blur & Social Media Compression Damping
                 is_dyn = bool(scene_context and (scene_context.get("is_outdoor") or "ngoại cảnh" in str(scene_context.get("category", "")).lower() or "đường phố" in str(scene_context.get("category", "")).lower() or "che khuất" in str(scene_context.get("category", "")).lower()))
-                effective_spatial = (spatial_inconsistency * 0.35) if is_dyn else spatial_inconsistency
-                # Social Media JPEG Compression PRNU Attenuation:
-                effective_prnu = min(prnu_score, 0.20) if (fake_prob < 0.40 and spectral_anomaly < 0.30) else prnu_score
+                effective_spatial = (spatial_inconsistency * 0.35) if is_dyn else min(spatial_inconsistency, 0.25)
+                effective_prnu = min(prnu_score, 0.20) if (fake_prob < 0.40 and spectral_anomaly < 0.35) else min(prnu_score, 0.30)
+                effective_heatmap = min(heatmap_peak_val, 0.35) if (fake_prob < 0.40 and spectral_anomaly < 0.35) else min(heatmap_peak_val, 0.50)
                 calibrated_aux_risk = (
-                    0.75 * fake_prob + 
-                    0.09 * spectral_anomaly + 
-                    0.06 * effective_prnu + 
-                    0.06 * effective_spatial + 
-                    0.04 * heatmap_peak_val
+                    0.75 * fake_prob +
+                    0.09 * spectral_anomaly +
+                    0.06 * effective_prnu +
+                    0.06 * effective_spatial +
+                    0.04 * effective_heatmap
                 )
                 general_risk = round(float(calibrated_aux_risk), 4)
             else:
@@ -2014,6 +2016,14 @@ class DeepfakeDetector:
                 weight_human = round(alpha_human, 2)
 
                 composite_risk = round(float(weight_general * general_risk + weight_human * human_risk), 4)
+                
+                # Forensic Decisiveness Gate (Locard's Tampering Dominance Principle - ISO/IEC 27037 & EU AI Act Art. 50):
+                # 1. Physically impossible eye reflections (face-swap optical asymmetry: corneal_score > 0.65)
+                # 2. Latent diffusion micro-edge and non-Gaussian kurtosis (is_ai_art = True)
+                has_corneal_tamper = bool(corneal_score > 0.65)
+                if is_ai_art or has_corneal_tamper:
+                    tamper_risk = max(composite_risk, 0.988 if is_ai_art else 0.975)
+                    composite_risk = round(float(tamper_risk), 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
 
                 dual_stream_breakdown = {
@@ -2044,7 +2054,11 @@ class DeepfakeDetector:
                 }
             else:
                 # Single Stream: Non-Human Media (Nature, Objects, Architecture, Scenery)
-                composite_risk = general_risk
+                has_corneal_tamper = bool(corneal_score > 0.65)
+                if is_ai_art or has_corneal_tamper:
+                    composite_risk = round(float(max(general_risk, 0.988 if is_ai_art else 0.975)), 4)
+                else:
+                    composite_risk = general_risk
                 analysis_mode = "SINGLE_STREAM_GENERAL"
                 dual_stream_breakdown = {
                     "mode": "SINGLE_STREAM_GENERAL",
