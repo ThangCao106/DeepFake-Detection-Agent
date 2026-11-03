@@ -1516,6 +1516,7 @@ function handleBenchmarkModeChange() {
 function handleImportSourceChange() {
     const sel = document.getElementById('customImportSourceSelect');
     const urlGroup = document.getElementById('customImportUrlGroup');
+    const hfPresetSel = document.getElementById('customHfPresetSelect');
     const urlInput = document.getElementById('customImportUrlInput');
     const feedback = document.getElementById('customImportFeedback');
     const dsSel = document.getElementById('benchmarkDatasetSelect');
@@ -1526,13 +1527,25 @@ function handleImportSourceChange() {
 
     if (src === 'huggingface') {
         urlGroup.style.display = 'flex';
-        if (urlInput) {
-            urlInput.placeholder = 'Nhập HF Repo ID (VD: prithivMLmods/Deepfake-vs-Real-60K)';
-            if (!urlInput.value || urlInput.value.includes('drive.google') || urlInput.value.startsWith('http://') || urlInput.value.startsWith('https://')) {
-                urlInput.value = 'prithivMLmods/Deepfake-vs-Real-60K';
+        if (hfPresetSel) {
+            hfPresetSel.style.display = 'block';
+            if (hfPresetSel.value === 'custom_manual') {
+                if (urlInput) {
+                    urlInput.style.display = 'block';
+                    urlInput.placeholder = 'Nhập HF Repo ID (VD: username/dataset-name)...';
+                }
+            } else {
+                if (urlInput) {
+                    urlInput.style.display = 'none';
+                    urlInput.value = hfPresetSel.value;
+                }
             }
+        } else if (urlInput) {
+            urlInput.style.display = 'block';
+            if (!urlInput.value) urlInput.value = 'prithivMLmods/Deepfake-vs-Real-60K';
         }
-        if (feedback) feedback.innerHTML = '<span style="color:#2563eb;">🤗 Kết nối Hugging Face Datasets Hub (~60,000 mẫu [30K Fake / 30K Real])</span>';
+
+        if (feedback) feedback.innerHTML = '<span style="color:#2563eb;">🤗 Kết nối Hugging Face Datasets Hub (13 Presets Sẵn Sàng)</span>';
 
         if (dsSel) {
             if (!extOpt) {
@@ -1540,7 +1553,8 @@ function handleImportSourceChange() {
                 extOpt.id = 'extDatasetOpt';
                 dsSel.insertBefore(extOpt, dsSel.firstChild);
             }
-            const labelText = `📥 Ngoại Vi (Hugging Face): ${urlInput?.value || 'prithivMLmods/Deepfake-vs-Real-60K'}`;
+            const activeRepo = (hfPresetSel && hfPresetSel.value !== 'custom_manual') ? hfPresetSel.value : (urlInput?.value || 'prithivMLmods/Deepfake-vs-Real-60K');
+            const labelText = `📥 Ngoại Vi (Hugging Face): ${activeRepo}`;
             extOpt.value = labelText;
             extOpt.textContent = labelText;
             extOpt.selected = true;
@@ -1549,7 +1563,9 @@ function handleImportSourceChange() {
         validateImportDatasetSource();
     } else if (src === 'gdrive') {
         urlGroup.style.display = 'flex';
+        if (hfPresetSel) hfPresetSel.style.display = 'none';
         if (urlInput) {
+            urlInput.style.display = 'block';
             urlInput.placeholder = 'Dán link Google Drive Folder hoặc Folder ID...';
             if (!urlInput.value || !urlInput.value.includes('drive.google')) {
                 urlInput.value = 'https://drive.google.com/drive/folders/1e1G7r-Xv4e8_Threads_Pentest_Vault';
@@ -1572,7 +1588,9 @@ function handleImportSourceChange() {
         validateImportDatasetSource();
     } else if (src === 'direct_url') {
         urlGroup.style.display = 'flex';
+        if (hfPresetSel) hfPresetSel.style.display = 'none';
         if (urlInput) {
+            urlInput.style.display = 'block';
             urlInput.placeholder = 'https://example.com/dataset.zip hoặc URL ảnh/video...';
             if (!urlInput.value || !urlInput.value.startsWith('http')) urlInput.value = 'https://';
         }
@@ -1598,6 +1616,56 @@ function handleImportSourceChange() {
     }
 }
 
+function handleHfPresetChange() {
+    const hfPresetSel = document.getElementById('customHfPresetSelect');
+    const urlInput = document.getElementById('customImportUrlInput');
+    const dsSel = document.getElementById('benchmarkDatasetSelect');
+    if (!hfPresetSel || !urlInput) return;
+
+    if (hfPresetSel.value === 'custom_manual') {
+        urlInput.style.display = 'block';
+        urlInput.placeholder = 'Nhập HF Repo ID (VD: username/dataset-name)...';
+        urlInput.value = '';
+        urlInput.focus();
+    } else {
+        urlInput.style.display = 'none';
+        urlInput.value = hfPresetSel.value;
+        validateImportDatasetSource();
+    }
+}
+
+function handleDatasetSelectChange() {
+    const dsSel = document.getElementById('benchmarkDatasetSelect');
+    if (!dsSel) return;
+    const val = dsSel.value;
+    if (val.startsWith('[HF: ')) {
+        const parts = val.split('] ');
+        if (parts.length > 1) {
+            const repo = parts[1].split(' (')[0].trim();
+            const modeSelect = document.getElementById('benchmarkModeSelect');
+            const customWrap = document.getElementById('customCountWrapper');
+            const importWrap = document.getElementById('customDataImportWrapper');
+            const importSrcSel = document.getElementById('customImportSourceSelect');
+            const hfPresetSel = document.getElementById('customHfPresetSelect');
+            const urlInput = document.getElementById('customImportUrlInput');
+
+            if (modeSelect) modeSelect.value = 'custom';
+            if (customWrap) customWrap.style.display = 'flex';
+            if (importWrap) importWrap.style.display = 'flex';
+            if (importSrcSel) importSrcSel.value = 'huggingface';
+            handleImportSourceChange();
+
+            if (hfPresetSel) {
+                hfPresetSel.value = repo;
+                handleHfPresetChange();
+            } else if (urlInput) {
+                urlInput.value = repo;
+                validateImportDatasetSource();
+            }
+        }
+    }
+}
+
 async function validateImportDatasetSource() {
     const sel = document.getElementById('customImportSourceSelect');
     const urlInput = document.getElementById('customImportUrlInput');
@@ -1606,7 +1674,12 @@ async function validateImportDatasetSource() {
     if (!sel) return;
 
     const src = sel.value;
-    const url = urlInput ? urlInput.value.trim() : '';
+    const hfPresetSel = document.getElementById('customHfPresetSelect');
+    let url = urlInput ? urlInput.value.trim() : '';
+    if (src === 'huggingface' && hfPresetSel && hfPresetSel.value !== 'custom_manual') {
+        url = hfPresetSel.value;
+        if (urlInput) urlInput.value = url;
+    }
 
     if (feedback) feedback.innerHTML = '<span style="color:#6366f1;">⏳ Đang kiểm tra kết nối nguồn dữ liệu...</span>';
 
@@ -1697,9 +1770,13 @@ function startBenchmark() {
         appendTerminalLogLine('INFO', `📡 [REST Trigger] Đang gửi yêu cầu POST tới: ${startEndpoint}...`);
 
         const importSourceSel = document.getElementById('customImportSourceSelect');
+        const hfPresetSel = document.getElementById('customHfPresetSelect');
         const importUrlInput = document.getElementById('customImportUrlInput');
         const importSource = (modeVal === 'custom' && importSourceSel) ? importSourceSel.value : 'default';
-        const importUrl = (modeVal === 'custom' && importUrlInput) ? importUrlInput.value.trim() : '';
+        let importUrl = (modeVal === 'custom' && importUrlInput) ? importUrlInput.value.trim() : '';
+        if (importSource === 'huggingface' && hfPresetSel && hfPresetSel.value !== 'custom_manual') {
+            importUrl = hfPresetSel.value;
+        }
 
         let targetDataset = dataset;
         if (modeVal === 'custom' && importSource !== 'default') {
