@@ -1202,6 +1202,31 @@ class CornealReflectionAnalyzer:
                 except Exception:
                     pass
 
+            # Low resolution face / profile / occluded eyes gating:
+            # If face is too small (<64px) or fewer than 2 frontal eyes detected (profile view, sports/action, cap shadow),
+            # bilateral corneal specular reflection cannot be physically resolved. Bypass to prevent false penalties.
+            if fh < 64 or fw < 64:
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_LOW_RESOLUTION_FACE",
+                    "details": "Bỏ qua phân tích tia giác mạc: Khuôn mặt cự ly xa / độ phân giải nhỏ (<64px) trong khung cảnh toàn cảnh/hành động."
+                }
+
+            if CV2_CASCADES_AVAILABLE and eyes_found_count < 2:
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_PROFILE_OR_OCCLUDED",
+                    "details": "Bỏ qua phân tích tia giác mạc: Khuôn mặt góc nghiêng (profile) hoặc mắt bị che khuất bởi mũ/kính, không đủ 2 mắt trực diện để đo đối xứng."
+                }
+
             # Evaluate ocular geometry and corneal reflection in normalized facial coordinates
             gray = face_img.convert("L").resize((160, 160))
             arr = np.array(gray, dtype=np.float32)
@@ -1922,12 +1947,17 @@ class DeepfakeDetector:
             # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
             # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
-            if not is_ai_art and not is_fake_pred and fake_prob < 0.40 and spectral_anomaly < 0.45:
+            if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45:
+                # Outdoor / Sports / Dynamic Scene Motion Blur Damping:
+                is_dyn = bool(scene_context and (scene_context.get("is_outdoor") or "ngoại cảnh" in str(scene_context.get("category", "")).lower() or "đường phố" in str(scene_context.get("category", "")).lower() or "che khuất" in str(scene_context.get("category", "")).lower()))
+                effective_spatial = (spatial_inconsistency * 0.35) if is_dyn else spatial_inconsistency
+                # Social Media JPEG Compression PRNU Attenuation:
+                effective_prnu = min(prnu_score, 0.20) if (fake_prob < 0.40 and spectral_anomaly < 0.30) else prnu_score
                 calibrated_aux_risk = (
                     0.75 * fake_prob + 
                     0.09 * spectral_anomaly + 
-                    0.06 * prnu_score + 
-                    0.06 * spatial_inconsistency + 
+                    0.06 * effective_prnu + 
+                    0.06 * effective_spatial + 
                     0.04 * heatmap_peak_val
                 )
                 general_risk = round(float(min(calibrated_aux_risk, fake_prob + 0.05)), 4)
@@ -1940,7 +1970,7 @@ class DeepfakeDetector:
             # we rely strictly on Stream 1 General Vision to avoid false biometric penalties.
             if has_human and face_found and self.human_detector is not None:
                 # Stream 2: Human-Centric Specialist Stream (WAVIE + Corneal Reflection + rPPG + ECE Calibration)
-                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score)
+                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score, base_fake_prob=fake_prob)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
 
                 # Demographic-Adaptive Cohort Fusion for Vietnamese Population (Paper v2 / IEEE T-IFS 2026)
@@ -2210,7 +2240,7 @@ class DeepfakeDetector:
                 "confidence": calibrated_confidence,
                 "all_scores": calibrated_scores,
                 "composite_risk_score": composite_risk,
-                "calibrated_probability": composite_risk,
+                "calibrated_probability": calibrated_fake_prob,
                 "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
@@ -2366,7 +2396,7 @@ class DeepfakeDetector:
 
             # Step 2: Dual-Stream Video Fusion if Human Present
             if has_human_video and self.human_detector is not None:
-                human_vid_eval = self.human_detector.predict_media(video_path, modality="video")
+                human_vid_eval = self.human_detector.predict_media(video_path, modality="video", base_fake_prob=general_video_score)
                 human_vid_risk = float(human_vid_eval.get("calibrated_probability", general_video_score))
                 composite_video_risk = round(0.40 * general_video_score + 0.60 * human_vid_risk, 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"

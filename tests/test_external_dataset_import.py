@@ -128,6 +128,39 @@ class TestExternalDatasetImport(unittest.TestCase):
         self.assertTrue(any("Audio-Visual Deepfake" in s["dataset"] for s in samples))
         self.assertTrue(any("Authentic Audio-Visual Media" in s["dataset"] for s in samples))
 
+    def test_06_gdrive_sample_names_match_drive(self):
+        """Verify that GDrive samples use real filenames (real_img_ / fake_faceswap_) matching Google Drive."""
+        runner = BenchmarkJobRunner()
+        b_logger = BenchmarkLogger(job_id="test_gdrive_sync", job_name="Test GDrive Sync")
+
+        samples = runner._load_samples_for_mode(
+            mode="custom_60",
+            b_logger=b_logger,
+            sample_count=60,
+            dataset_name="Google Drive Pentest Vault",
+            import_source="gdrive",
+            import_url="https://drive.google.com/drive/folders/1WBBHlhNAKwUR8WNgm-dnSNaVyzHj-Ys"
+        )
+        self.assertEqual(len(samples), 60)
+        real_samples = [s for s in samples if s["label"] == "REAL"]
+        fake_samples = [s for s in samples if s["label"] == "FAKE"]
+        self.assertEqual(len(real_samples), 30)
+        self.assertEqual(len(fake_samples), 30)
+
+        # Check that NO generic gdrive_real_ or gdrive_fake_ placeholders exist
+        for s in samples:
+            self.assertFalse(s["sample_id"].startswith("gdrive_real_"), f"Generic ID found: {s['sample_id']}")
+            self.assertFalse(s["sample_id"].startswith("gdrive_fake_"), f"Generic ID found: {s['sample_id']}")
+
+        # Check that REAL samples start with real_img_ and FAKE samples start with fake_faceswap_
+        for s in real_samples:
+            self.assertTrue(s["sample_id"].startswith("real_img_") or s["sample_id"].startswith("threads_"), f"Invalid real name: {s['sample_id']}")
+            self.assertTrue(s["filename"].startswith("real_img_") or s["filename"].startswith("threads_"), f"Invalid real filename: {s['filename']}")
+
+        for s in fake_samples:
+            self.assertTrue(s["sample_id"].startswith("fake_faceswap_"), f"Invalid fake name: {s['sample_id']}")
+            self.assertTrue(s["filename"].startswith("fake_faceswap_"), f"Invalid fake filename: {s['filename']}")
+
 
 if __name__ == "__main__":
     unittest.main()
