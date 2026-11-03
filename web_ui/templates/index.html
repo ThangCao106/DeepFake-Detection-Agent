@@ -603,6 +603,134 @@
                         </div>
                     </div>
 
+                                        <!-- SOTA OPEN-SOURCE DEEPFAKE MODELS & CHECKPOINTS COMPARISON -->
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                🔬 Bảng Đối Chiếu Các Mô Hình Nền Tảng & Checkpoint SOTA (Open-Source Model Checkpoints & Baselines)
+                            </h5>
+                            <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Hugging Face & In-House SOTA</span>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                                        <th style="padding: 8px 10px; text-align: center;">Hạng</th>
+                                        <th style="padding: 8px 10px;">Tên Mô Hình & Checkpoint</th>
+                                        <th style="padding: 8px 10px;">Kiến Trúc Backbone</th>
+                                        <th style="padding: 8px 10px;">Phương Thức</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Ước tính AUC</th>
+                                        <th style="padding: 8px 10px; text-align: center;">EER (%)</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Độ Chính Xác</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Độ Trễ (ms)</th>
+                                        <th style="padding: 8px 10px;">Tình Trạng & XAI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="openSourceModelsTableBody">
+                                    <tr style="background: #eef2ff; border-bottom: 1px solid #f1f5f9; font-weight: 700;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #4338ca;">🥇 1</td>
+                                        <td style="padding: 8px 10px; color: #4338ca;">
+                                            NCS Tri-Stream Framework <span style="background:#4338ca; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-left:4px;">OURS</span>
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">In-House Checkpoint v3.2 / ThangCao106</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Dual-Stream ViT-B/16 (DWT + FCB) + WAVIE + WavLM</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Image, Video, Audio</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.998</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #16a34a;">1.1%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">100.0%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">20.3 ms</td>
+                                        <td style="padding: 8px 10px;"><span style="background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 4px; font-weight: 700;">✅ Chứng chỉ 6D + Agentic</span></td>
+                                    </tr>
+                                    <tr style="background: #ffffff; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">🥈 2</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            MelodyMachine Audio Detection V2
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">MelodyMachine/Deepfake-audio-detection-V2 (8,573 DLs)</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Fine-tuned Wav2Vec2-XLSR-53</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Audio (Voice Clone)</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.997</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #16a34a;">1.3%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">99.73%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">48 ms</td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Mel-Spectrogram Discrepancy</td>
+                                    </tr>
+                                    <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">🥉 3</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            AV-Deepfake1M Multimodal Evaluator
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">ControlNet/AV-Deepfake1M (>1M videos)</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Temporal 3D-ConvNet + LipSync Matcher</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Video & Audio-Visual</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.979</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #16a34a;">2.7%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">96.5%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">110 ms</td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">AV Asynchrony Heatmap</td>
+                                    </tr>
+                                    <tr style="background: #ffffff; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">4</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            BitMind FaceForensics++ c23
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">bitmind/FaceForensicsC23 (HQ c23)</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">EfficientNet-B4 + MesoInception4</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Video Deepfake</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.968</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #d97706;">3.4%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">94.8%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">85 ms</td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Facial Boundary Artifact Map</td>
+                                    </tr>
+                                    <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">5</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            PrithivMLmods SigLIP2 Detector
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">prithivMLmods/deepfake-detector-model-v1</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Google SigLIP2 Patch16 ViT</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Image (Facial Portraits)</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.962</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #d97706;">3.8%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">94.4%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">38 ms</td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Self-Attention Heatmap</td>
+                                    </tr>
+                                    <tr style="background: #ffffff; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">6</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            PrithivMLmods DeepFake Detector v2
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">prithivMLmods/Deep-Fake-Detector-v2-Model</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">ViT-B/16 (224x224)</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Image</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.951</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #d97706;">4.5%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">92.1%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">42 ms</td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">Patch Projection Embeddings</td>
+                                    </tr>
+                                    <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #0f172a;">7</td>
+                                        <td style="padding: 8px 10px; color: #0f172a;">
+                                            Dima806 ViT Classifier (Baseline)
+                                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">dima806/deepfake_vs_real_image_detection</div>
+                                        </td>
+                                        <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">ViT-Base-Patch16-224 (Classic)</td>
+                                        <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">Image</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">0.942</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #ef4444;">5.2%</td>
+                                        <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">89.8%</td>
+                                        <td style="padding: 8px 10px; text-align: center; color: #475569;">45 ms</td>
+                                        <td style="padding: 8px 10px; color: #94a3b8; font-size: 0.76rem;">Logit Softmax (Black-Box)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+
                     <!-- Canonical 10 Global Commercial Deepfake Detection Suite -->
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">

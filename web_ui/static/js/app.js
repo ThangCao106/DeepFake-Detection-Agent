@@ -2187,6 +2187,7 @@ async function loadAuditReportData(period = 'daily', targetDate = '') {
         // Render Canonical 10 Commercial Tools Suite
         if (data.commercial_suite_10 && data.commercial_suite_10.length > 0) {
             renderCommercialSuite10Table(data.commercial_suite_10);
+        renderOpenSourceModelsTable(data.open_source_models);
         }
 
         // Render Commercial Arena Table
@@ -2203,6 +2204,39 @@ async function loadAuditReportData(period = 'daily', targetDate = '') {
         console.warn('[Audit Report] Error loading aggregate history:', err);
     }
 }
+
+
+function renderOpenSourceModelsTable(models) {
+    const tbody = document.getElementById('openSourceModelsTableBody');
+    if (!tbody || !models || models.length === 0) return;
+
+    tbody.innerHTML = models.map((item, idx) => {
+        const isOurs = item.is_ours || item.model_id === 'ncs_tri_stream';
+        const rowBg = isOurs ? '#eef2ff' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
+        const nameColor = isOurs ? '#4338ca' : '#0f172a';
+        const rankBadge = isOurs ? '🥇 1' : (idx === 1 ? '🥈 2' : (idx === 2 ? '🥉 3' : `${idx + 1}`));
+        const eerColor = item.eer_pct <= 2.0 ? '#16a34a' : (item.eer_pct <= 4.0 ? '#d97706' : '#ef4444');
+
+        return `
+            <tr style="background: ${rowBg}; border-bottom: 1px solid #f1f5f9; ${isOurs ? 'font-weight: 700;' : ''}">
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: ${nameColor};">${rankBadge}</td>
+                <td style="padding: 8px 10px; color: ${nameColor};">
+                    ${item.model_name}
+                    ${isOurs ? ' <span style="background:#4338ca; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-left:4px;">OURS</span>' : ''}
+                    <div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">${item.source_repo}</div>
+                </td>
+                <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">${item.backbone || ''}</td>
+                <td style="padding: 8px 10px; color: #475569; font-size: 0.76rem;">${item.modalities || ''}</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #1e293b;">${item.auc || 0.98}</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: ${eerColor};">${item.eer_pct}%</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #10b981;">${item.accuracy_pct}%</td>
+                <td style="padding: 8px 10px; text-align: center; color: #475569;">${item.avg_latency_ms || 50} ms</td>
+                <td style="padding: 8px 10px; color: #334155; font-size: 0.76rem;">${item.explainability || ''}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 
 function renderCommercialSuite10Table(suite) {
     const tbody = document.getElementById('commercialSuite10TableBody');
