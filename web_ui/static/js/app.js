@@ -1518,18 +1518,35 @@ function handleImportSourceChange() {
     const urlGroup = document.getElementById('customImportUrlGroup');
     const urlInput = document.getElementById('customImportUrlInput');
     const feedback = document.getElementById('customImportFeedback');
+    const dsSel = document.getElementById('benchmarkDatasetSelect');
     if (!sel || !urlGroup) return;
 
     const src = sel.value;
+    let extOpt = document.getElementById('extDatasetOpt');
+
     if (src === 'huggingface') {
         urlGroup.style.display = 'flex';
         if (urlInput) {
-            urlInput.placeholder = 'Nhập HF Repo ID (VD: ThangCao106/Threads-DFBench-Vietnamese)';
+            urlInput.placeholder = 'Nhập HF Repo ID (VD: prithivMLmods/Deepfake-vs-Real-60K)';
             if (!urlInput.value || urlInput.value.includes('drive.google') || urlInput.value.startsWith('http://') || urlInput.value.startsWith('https://')) {
-                urlInput.value = 'ThangCao106/Threads-DFBench-Vietnamese';
+                urlInput.value = 'prithivMLmods/Deepfake-vs-Real-60K';
             }
         }
-        if (feedback) feedback.innerHTML = '<span style="color:#2563eb;">🤗 Kết nối Hugging Face Datasets Hub (~999 mẫu)</span>';
+        if (feedback) feedback.innerHTML = '<span style="color:#2563eb;">🤗 Kết nối Hugging Face Datasets Hub (~60,000 mẫu [30K Fake / 30K Real])</span>';
+
+        if (dsSel) {
+            if (!extOpt) {
+                extOpt = document.createElement('option');
+                extOpt.id = 'extDatasetOpt';
+                dsSel.insertBefore(extOpt, dsSel.firstChild);
+            }
+            const labelText = `📥 Ngoại Vi (Hugging Face): ${urlInput?.value || 'prithivMLmods/Deepfake-vs-Real-60K'}`;
+            extOpt.value = labelText;
+            extOpt.textContent = labelText;
+            extOpt.selected = true;
+            dsSel.value = labelText;
+        }
+        validateImportDatasetSource();
     } else if (src === 'gdrive') {
         urlGroup.style.display = 'flex';
         if (urlInput) {
@@ -1539,6 +1556,20 @@ function handleImportSourceChange() {
             }
         }
         if (feedback) feedback.innerHTML = '<span style="color:#16a34a;">📁 Kết nối Google Drive Cloud Vault</span>';
+
+        if (dsSel) {
+            if (!extOpt) {
+                extOpt = document.createElement('option');
+                extOpt.id = 'extDatasetOpt';
+                dsSel.insertBefore(extOpt, dsSel.firstChild);
+            }
+            const labelText = `📥 Ngoại Vi (Google Drive): Pentest Vault`;
+            extOpt.value = labelText;
+            extOpt.textContent = labelText;
+            extOpt.selected = true;
+            dsSel.value = labelText;
+        }
+        validateImportDatasetSource();
     } else if (src === 'direct_url') {
         urlGroup.style.display = 'flex';
         if (urlInput) {
@@ -1546,9 +1577,24 @@ function handleImportSourceChange() {
             if (!urlInput.value || !urlInput.value.startsWith('http')) urlInput.value = 'https://';
         }
         if (feedback) feedback.innerHTML = '<span style="color:#d97706;">🔗 Kết nối Web Stream / Media Feed</span>';
+
+        if (dsSel) {
+            if (!extOpt) {
+                extOpt = document.createElement('option');
+                extOpt.id = 'extDatasetOpt';
+                dsSel.insertBefore(extOpt, dsSel.firstChild);
+            }
+            const labelText = `📥 Ngoại Vi: Web Media Stream`;
+            extOpt.value = labelText;
+            extOpt.textContent = labelText;
+            extOpt.selected = true;
+            dsSel.value = labelText;
+        }
     } else {
         urlGroup.style.display = 'none';
         if (feedback) feedback.innerHTML = '<span style="color:#64748b;">📦 Kho hạt giống kiểm thử nội bộ & 14 Benchmarks Quốc Tế</span>';
+        if (extOpt) extOpt.remove();
+        if (dsSel) dsSel.value = '14 Benchmark Suite';
     }
 }
 
@@ -1556,6 +1602,7 @@ async function validateImportDatasetSource() {
     const sel = document.getElementById('customImportSourceSelect');
     const urlInput = document.getElementById('customImportUrlInput');
     const feedback = document.getElementById('customImportFeedback');
+    const dsSel = document.getElementById('benchmarkDatasetSelect');
     if (!sel) return;
 
     const src = sel.value;
@@ -1572,7 +1619,20 @@ async function validateImportDatasetSource() {
         });
         const data = await res.json();
         if (data.status === 'ok') {
-            if (feedback) feedback.innerHTML = `<span style="color:#16a34a;">✅ ${data.message} (${data.estimated_samples || 'Đa dạng'} mẫu khả dụng)</span>`;
+            if (feedback) feedback.innerHTML = `<span style="color:#16a34a;">✅ ${data.message}</span>`;
+            if (dsSel && data.repo_id) {
+                let extOpt = document.getElementById('extDatasetOpt');
+                if (!extOpt) {
+                    extOpt = document.createElement('option');
+                    extOpt.id = 'extDatasetOpt';
+                    dsSel.insertBefore(extOpt, dsSel.firstChild);
+                }
+                const optVal = `📥 Ngoại Vi (Hugging Face): ${data.repo_id}`;
+                extOpt.value = optVal;
+                extOpt.textContent = optVal;
+                extOpt.selected = true;
+                dsSel.value = optVal;
+            }
         } else {
             if (feedback) feedback.innerHTML = `<span style="color:#dc2626;">❌ ${data.message || 'Không thể kết nối nguồn'}</span>`;
         }
@@ -1641,8 +1701,13 @@ function startBenchmark() {
         const importSource = (modeVal === 'custom' && importSourceSel) ? importSourceSel.value : 'default';
         const importUrl = (modeVal === 'custom' && importUrlInput) ? importUrlInput.value.trim() : '';
 
+        let targetDataset = dataset;
+        if (modeVal === 'custom' && importSource !== 'default') {
+            targetDataset = `[${importSource.toUpperCase()}] ${importUrl || 'External Dataset'}`;
+        }
+
         if (importSource !== 'default') {
-            appendTerminalLogLine('INFO', `📥 [DATA IMPORT] Nguồn: ${importSource.toUpperCase()} [${importUrl || 'Mặc định'}] | Quy mô: ${countDesc}`);
+            appendTerminalLogLine('INFO', `📥 [DATA IMPORT] Nguồn: ${importSource.toUpperCase()} [${importUrl || 'Mặc định'}] | Dataset: '${targetDataset}' | Quy mô: ${countDesc}`);
         }
 
         fetch(startEndpoint, {
@@ -1651,7 +1716,7 @@ function startBenchmark() {
             body: JSON.stringify({
                 mode: displayMode,
                 sample_count: sampleCount,
-                dataset: dataset,
+                dataset: targetDataset,
                 import_source: importSource,
                 import_url: importUrl
             })

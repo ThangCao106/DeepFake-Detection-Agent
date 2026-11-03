@@ -869,6 +869,13 @@ def start_benchmark_api():
 
 
 
+
+try:
+    from web_ui.hf_inspector import inspect_hf_dataset_metadata
+except ImportError:
+    from hf_inspector import inspect_hf_dataset_metadata
+
+
 @app.route('/api/benchmark/validate_import_source', methods=['POST', 'GET'])
 @app.route('/benchmark/api/benchmark/validate_import_source', methods=['POST', 'GET'])
 def validate_import_source_api():
@@ -879,16 +886,9 @@ def validate_import_source_api():
         url = data.get("url", "").strip()
 
         if source == "huggingface":
-            repo_id = url or "ThangCao106/Threads-DFBench-Vietnamese"
-            if "huggingface.co/datasets/" in repo_id:
-                repo_id = repo_id.split("huggingface.co/datasets/")[-1].split("?")[0].strip("/")
-            return jsonify({
-                "status": "ok",
-                "source": "huggingface",
-                "repo_id": repo_id,
-                "message": f"Hugging Face Repo hợp lệ: '{repo_id}'",
-                "estimated_samples": 999
-            }), 200
+            repo_id = url or "prithivMLmods/Deepfake-vs-Real-60K"
+            info = inspect_hf_dataset_metadata(repo_id)
+            return jsonify(info), 200
         elif source == "gdrive":
             import re
             match = re.search(r"(?:folders/|id=)([a-zA-Z0-9_-]{25,})", url)
