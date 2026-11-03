@@ -1,27 +1,30 @@
 {
   "population": "Vietnamese In-The-Wild (Threads-DFBench-VN)",
-  "benchmark_date": "2026-11-02",
-  "timestamp_utc": "2026-11-02T07:29:38Z",
+  "benchmark_date": "2026-11-03",
+  "timestamp_utc": "2026-11-03T04:50:28Z",
   "total_samples_evaluated": 30,
-  "optimal_decision_threshold_tau_star": 0.315,
+  "optimal_decision_threshold_tau_star": 0.37,
   "optimal_platt_temperature_T_star": 2.5,
   "demographic_cohort_weights": {
-    "Threads_vn_id_official": {
-      "alpha_human": 0.4,
-      "weight_general": 0.6
+    "vn_id_official": {
+      "alpha_human": 0.05,
+      "weight_general": 0.95,
+      "description": "Adaptive blending: ViT 95% / Biometrics 5%"
     },
     "vn_selfie_lifestyle": {
       "alpha_human": 0.05,
       "weight_general": 0.95,
       "description": "Adaptive blending: ViT 95% / Biometrics 5%"
     },
-    "Threads_vn_street_outdoor": {
-      "alpha_human": 0.4,
-      "weight_general": 0.6
+    "vn_street_outdoor": {
+      "alpha_human": 0.05,
+      "weight_general": 0.95,
+      "description": "Adaptive blending: ViT 95% / Biometrics 5%"
     },
-    "Threads_vn_occlusion_glasses_mask": {
-      "alpha_human": 0.4,
-      "weight_general": 0.6
+    "vn_occlusion_glasses_mask": {
+      "alpha_human": 0.05,
+      "weight_general": 0.95,
+      "description": "Adaptive blending: ViT 95% / Biometrics 5%"
     },
     "Threads_vn_mature_aging": {
       "alpha_human": 0.4,
@@ -34,8 +37,8 @@
     }
   },
   "fairness_metrics": {
-    "demographic_parity_gap": 0.05,
-    "equalized_odds_gap": 0.08,
+    "demographic_parity_gap": 0.0,
+    "equalized_odds_gap": 0.0,
     "overall_accuracy_pct": 100.0,
     "auc": 1.0
   }
