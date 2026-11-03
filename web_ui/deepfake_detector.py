@@ -1202,6 +1202,31 @@ class CornealReflectionAnalyzer:
                 except Exception:
                     pass
 
+            # Low resolution face / profile / occluded eyes gating:
+            # If face is too small (<64px) or fewer than 2 frontal eyes detected (profile view, sports/action, cap shadow),
+            # bilateral corneal specular reflection cannot be physically resolved. Bypass to prevent false penalties.
+            if fh < 64 or fw < 64:
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_LOW_RESOLUTION_FACE",
+                    "details": "Bỏ qua phân tích tia giác mạc: Khuôn mặt cự ly xa / độ phân giải nhỏ (<64px) trong khung cảnh toàn cảnh/hành động."
+                }
+
+            if CV2_CASCADES_AVAILABLE and eyes_found_count < 2:
+                return {
+                    "corneal_asymmetry_score": 0.0,
+                    "corneal_reflection_symmetry": 1.0,
+                    "optical_gaze_consistent": True,
+                    "specular_glints_detected": False,
+                    "glints_count": 0,
+                    "status": "BYPASS_PROFILE_OR_OCCLUDED",
+                    "details": "Bỏ qua phân tích tia giác mạc: Khuôn mặt góc nghiêng (profile) hoặc mắt bị che khuất bởi mũ/kính, không đủ 2 mắt trực diện để đo đối xứng."
+                }
+
             # Evaluate ocular geometry and corneal reflection in normalized facial coordinates
             gray = face_img.convert("L").resize((160, 160))
             arr = np.array(gray, dtype=np.float32)
@@ -1922,12 +1947,15 @@ class DeepfakeDetector:
             # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
             # Natural low-light night scenes, high ISO, stage lights, or outdoor landscapes (sky/fog/mist)
             # create natural optical variances that falsely inflate PRNU and 2D-FFT.
-            if not is_ai_art and not is_fake_pred and fake_prob < 0.40 and spectral_anomaly < 0.45:
+            if not is_ai_art and not is_fake_pred and fake_prob < 0.50 and spectral_anomaly < 0.45:
+                # Outdoor / Sports / Dynamic Scene Motion Blur Damping:
+                # Natural motion blur on runner/moving limbs vs static background elevates spatial inconsistency.
+                effective_spatial = (spatial_inconsistency * 0.35) if (scene_context and scene_context.get("is_outdoor")) else spatial_inconsistency
                 calibrated_aux_risk = (
                     0.75 * fake_prob + 
                     0.09 * spectral_anomaly + 
                     0.06 * prnu_score + 
-                    0.06 * spatial_inconsistency + 
+                    0.06 * effective_spatial + 
                     0.04 * heatmap_peak_val
                 )
                 general_risk = round(float(min(calibrated_aux_risk, fake_prob + 0.05)), 4)
@@ -2210,7 +2238,7 @@ class DeepfakeDetector:
                 "confidence": calibrated_confidence,
                 "all_scores": calibrated_scores,
                 "composite_risk_score": composite_risk,
-                "calibrated_probability": composite_risk,
+                "calibrated_probability": calibrated_fake_prob,
                 "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
