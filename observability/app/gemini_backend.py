@@ -15,38 +15,31 @@ from typing import AsyncIterator, Optional, Dict, Any, List
 
 _CACHED_ACTIVE_MODELS: list[str] = []
 
-DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
 
 SUPPORTED_GEMINI_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.8-flash-cyber",
-    "gemini-3.5-flash",
-    "gemini-3-flash-preview",
-    "gemini-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
     "gemini-2.0-flash",
-    "gemini-1.5-flash"
+    "gemini-1.5-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.5-pro"
 ]
 
 def get_gemini_api_key() -> str:
-    """Retrieve Gemini API key from environment, falling back to persistent credentials store."""
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not key:
-        try:
-            from app.credentials_manager import load_persistent_credentials
-            load_persistent_credentials()
-            key = os.environ.get("GEMINI_API_KEY", "").strip()
-        except Exception:
-            pass
-    return key
+    """Retrieve Gemini API key from persistent credentials store or environment."""
+    try:
+        from app.credentials_manager import load_persistent_credentials
+        load_persistent_credentials(force=False)
+    except Exception:
+        pass
+    return os.environ.get("GEMINI_API_KEY", "").strip()
 
 def is_gemini_configured() -> bool:
     """Check if a valid Gemini API key is configured."""
     return bool(get_gemini_api_key())
 
 async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
-    """Pre-check Google Gemini API Key validity upfront by inspecting format and checking models endpoint."""
+    """Pre-check Google Gemini API Key validity upfront supporting AI Studio keys (AIzaSy...) and Bearer tokens (AQ...)."""
     key = (api_key or get_gemini_api_key()).strip()
     if not key:
         return {
@@ -58,25 +51,32 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
 
     masked = (key[:8] + "...") if len(key) > 8 else "***"
 
-    # AQ. and AIzaSy keys (Google Cloud Express & AI Studio) are both supported
-
-    if len(key) < 20:
+    if len(key) < 15:
         return {
             "valid": False,
             "status": "INVALID_FORMAT",
-            "message": "Độ dài GEMINI_API_KEY không hợp lệ (< 20 ký tự)",
+            "message": "Độ dài GEMINI_API_KEY không hợp lệ (< 15 ký tự)",
             "masked": masked
         }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+    is_bearer = key.startswith("AQ.") or key.startswith("ya29.")
+    if is_bearer:
+        url = "https://generativelanguage.googleapis.com/v1beta/models"
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+
     loop = asyncio.get_running_loop()
 
     def _sync_check():
         try:
             headers = {
-                "User-Agent": "Deepfake-Forensic-Agent/3.0",
-                "x-goog-api-key": key
+                "User-Agent": "Deepfake-Forensic-Agent/3.0"
             }
+            if is_bearer:
+                headers["Authorization"] = f"Bearer {key}"
+            else:
+                headers["x-goog-api-key"] = key
+
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=8) as resp:
                 if resp.status == 200:
@@ -101,10 +101,11 @@ async def verify_gemini_api_key(api_key: Optional[str] = None) -> dict:
                     }
         except urllib.error.HTTPError as e:
             if e.code in [400, 401, 403]:
+                hint = "Token tạm thời (AQ.../OAuth) đã hết hạn (thời hạn 60 phút)." if is_bearer else "Khuyến nghị lấy API Key vĩnh viễn (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey"
                 return {
                     "valid": False,
                     "status": "INVALID_KEY",
-                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code}). Vui lòng tạo API key chuẩn (bắt đầu bằng AIzaSy...) tại https://aistudio.google.com/apikey",
+                    "message": f"API Key không hợp lệ hoặc bị từ chối (HTTP {e.code}). {hint}",
                     "masked": masked
                 }
             return {
@@ -166,16 +167,21 @@ async def run_gemini_generate(
         }
 
     data_bytes = json.dumps(payload).encode("utf-8")
+    is_bearer = key.startswith("AQ.") or key.startswith("ya29.")
     req_headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": key,
         "User-Agent": "Deepfake-Forensic-Agent/3.0"
     }
+    if is_bearer:
+        req_headers["Authorization"] = f"Bearer {key}"
+        primary_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    else:
+        req_headers["x-goog-api-key"] = key
+        primary_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
     loop = asyncio.get_running_loop()
 
     def _sync_post():
-        primary_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
         primary_req = urllib.request.Request(primary_url, data=data_bytes, headers=req_headers, method="POST")
 
         try:

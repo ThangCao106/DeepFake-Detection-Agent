@@ -1028,9 +1028,9 @@
         <span class="dot"></span>
         <span>Claude Sonnet 5.5: <strong id="claudeStatusText">Active (PKCE)</strong></span>
       </div>
-      <div class="engine-badge" id="geminiStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Google Gemini 3.8 Flash: Chủ Trì Thẩm Định Đa Phương Thức (Nhấn để cấu hình Key)">
+      <div class="engine-badge" id="geminiStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Google Gemini 2.0 Flash: Chủ Trì Thẩm Định Đa Phương Thức (Nhấn để cấu hình Key)">
         <span class="dot"></span>
-        <span>Gemini 3.8 Flash: <strong id="geminiStatusText">Checking...</strong></span>
+        <span>Gemini: <strong id="geminiStatusText">Checking...</strong></span>
       </div>
       <div class="engine-badge active" id="museStatusBadge" onclick="switchTab('settings'); checkAuthStatus(true);" style="cursor: pointer;" title="Meta Muse AI: Tác thể Điều tra Kháng chứng & Dấu vết Mô hình Trọng số Mở (Nhấn để vào Cài đặt)">
         <span class="dot" style="background: #c084fc; box-shadow: 0 0 8px #c084fc;"></span>
@@ -1992,25 +1992,22 @@
               </p>
 
               <div class="form-group">
-                <label class="form-label">Google Gemini API Key (AIzaSy... hoặc AQ...)</label>
-                <input type="password" id="geminiApiKeyInput" class="form-input mono" placeholder="Nhập Google Gemini API Key (AIzaSy... hoặc AQ...)">
+                <label class="form-label">Google Gemini API Key (Khuyến nghị: AIzaSy...)</label>
+                <input type="password" id="geminiApiKeyInput" class="form-input mono" placeholder="Nhập API Key Google Gemini (AIzaSy...)">
                 <small style="display: block; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; line-height: 1.4;">
-                  ✅ Hỗ trợ toàn diện cả Google AI Studio (<code>AIzaSy...</code>) và Google Cloud Express Mode (<code>AQ...</code>).<br/>
-                  Lấy API Key tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">Google AI Studio ↗</a>
+                  🔑 <strong>Khuyến nghị:</strong> Sử dụng API Key chuẩn Google AI Studio (bắt đầu bằng <code>AIzaSy...</code>) để hoạt động vĩnh viễn không bị hết hạn.<br/>
+                  👉 Lấy API Key miễn phí ngay tại: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">Google AI Studio API Keys ↗</a><br/>
+                  <em>(Ghi chú: Token tạm thời <code>AQ...</code> hoặc <code>ya29...</code> từ gcloud chỉ có thời hạn 60 phút sẽ tự động hết hiệu lực).</em>
                 </small>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Mô hình phục vụ (Serving Model)</label>
                 <select id="geminiDefaultModel" class="form-input">
-                  <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Mới nhất 2026 - Long-horizon Reasoning, tốc độ cao)</option>
-                  <option value="gemini-3-flash-preview">gemini-3-flash-preview (Tốc độ phản hồi cực nhanh, 2026 flagship)</option>
-                  <option value="gemini-3.5-flash">gemini-3.5-flash (Cân bằng hiệu năng cao)</option>
-                  <option value="gemini-3.8-flash-cyber">gemini-3.8-flash-cyber (Chuyên sâu an ninh mạng & Pentest)</option>
-                  <option value="gemini-2.5-flash">gemini-2.5-flash (Flash Thinking)</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro (Tư duy suy luận chuyên sâu)</option>
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (Thế hệ 2.0 đa phương thức)</option>
-                  <option value="gemini-1.5-flash">gemini-1.5-flash (Production ổn định cao)</option>
+                  <option value="gemini-2.0-flash" selected>gemini-2.0-flash (Mới nhất 2026 - Đa phương thức tốc độ cao - Khuyến nghị)</option>
+                  <option value="gemini-1.5-flash">gemini-1.5-flash (Production chuẩn ổn định cao)</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash (Flash Thinking reasoning)</option>
+                  <option value="gemini-1.5-pro">gemini-1.5-pro (Suy luận tư duy chuyên sâu)</option>
                 </select>
               </div>
             </div>
@@ -2164,6 +2161,14 @@
 
     // INITIALIZATION
     window.addEventListener('DOMContentLoaded', () => {
+      // Auto pre-populate cached Gemini Key if available
+      try {
+        const cachedKey = localStorage.getItem('df_gemini_api_key');
+        const keyInput = document.getElementById('geminiApiKeyInput');
+        if (cachedKey && keyInput && !keyInput.value) {
+          keyInput.value = cachedKey;
+        }
+      } catch (e) {}
       renderAllMath();
       checkAuthStatus();
       loadLiveAgentLifecycle();
@@ -2307,9 +2312,34 @@
         const geminiBadge = document.getElementById('geminiStatusBadge');
         const geminiText = document.getElementById('geminiStatusText');
         const geminiCardTag = document.getElementById('geminiCardAuthTag');
+
+        // Auto-heal / Auto-sync: If server has invalid/missing key, but localStorage has user saved key, auto-sync!
+        try {
+          const cachedKey = localStorage.getItem('df_gemini_api_key');
+          if (cachedKey && (!geminiData.authenticated || geminiData.gemini_status === 'INVALID_KEY' || !geminiData.has_key)) {
+            const cachedModel = localStorage.getItem('df_gemini_model') || 'gemini-2.0-flash';
+            console.info('[Auto-Sync] Auto-restoring saved Gemini API Key from browser localStorage...');
+            fetch(getApiUrl('api/gemini/key'), {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({api_key: cachedKey, gemini_api_key: cachedKey, default_model: cachedModel})
+            }).then(r => r.json()).then(resJson => {
+              if (resJson && resJson.authenticated) {
+                console.log('[Auto-Sync] Gemini Key auto-synced and authenticated successfully!');
+                if (geminiBadge && geminiText) {
+                  geminiBadge.className = 'engine-badge active';
+                  geminiText.innerText = `Online (${resJson.active_model || '2.0 Flash'})`;
+                }
+              }
+            }).catch(e => console.warn('Auto-sync notice:', e));
+          }
+        } catch (storageErr) {
+          console.warn('LocalStorage access warning:', storageErr);
+        }
+
         if (geminiData.authenticated) {
           geminiBadge.className = 'engine-badge active';
-          geminiText.innerText = `Online (${geminiData.active_model || '3.8 Flash'})`;
+          geminiText.innerText = `Online (${geminiData.active_model || '2.0 Flash'})`;
           geminiBadge.title = `Google Gemini SDK: ${geminiData.message || 'Token hợp lệ'} (${geminiData.masked_key || ''})`;
           if (geminiData.masked_key) {
             document.getElementById('geminiApiKeyInput').placeholder = `Đã cấu hình: ${geminiData.masked_key}`;
@@ -3402,11 +3432,20 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
 
     async function saveGeminiKey() {
       const key = document.getElementById('geminiApiKeyInput').value.trim();
-      const model = document.getElementById('geminiDefaultModel').value;
+      const model = document.getElementById('geminiDefaultModel') ? document.getElementById('geminiDefaultModel').value : 'gemini-2.0-flash';
       if (!key) {
         alert('Vui lòng nhập Google Gemini API Key!');
         return;
       }
+
+      // Auto-save key permanently in browser localStorage across tabs & reloads
+      try {
+        localStorage.setItem('df_gemini_api_key', key);
+        localStorage.setItem('df_gemini_model', model);
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+
       try {
         const res = await fetch(getApiUrl('api/gemini/key'), {
           method: 'POST',
@@ -3419,8 +3458,12 @@ ${(cad?.model_metrics || []).map(m => `- **${m.model} (${m.metric_name})**: ${m.
           return;
         }
         const json = await res.json();
-        alert('Lưu Gemini Key thành công!');
-        checkAuthStatus();
+        if (json.authenticated) {
+          alert('✅ Đã lưu và kích hoạt Google Gemini Key thành công!');
+        } else {
+          alert('⚠️ Key đã lưu vào máy chủ. Google thông báo: ' + (json.verification_message || json.message || 'Chưa thể xác thực'));
+        }
+        checkAuthStatus(true);
       } catch (err) {
         alert('Lỗi lưu Gemini Key: ' + err.message);
       }

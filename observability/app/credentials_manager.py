@@ -26,7 +26,7 @@ def _get_candidate_paths():
         base.parent / ".env",
     ]
 
-def load_persistent_credentials() -> Dict[str, str]:
+def load_persistent_credentials(force: bool = False) -> Dict[str, str]:
     """Load credentials from persistent volume or bind-mount storage into os.environ."""
     loaded = {}
     for p in _get_candidate_paths():
@@ -35,7 +35,7 @@ def load_persistent_credentials() -> Dict[str, str]:
                 data = json.loads(p.read_text(encoding="utf-8"))
                 for k, v in data.items():
                     val = str(v).strip()
-                    if val and not os.environ.get(k):
+                    if val and (force or not os.environ.get(k)):
                         os.environ[k] = val
                         loaded[k] = val
             elif p.name == ".env" and p.exists():
@@ -44,7 +44,7 @@ def load_persistent_credentials() -> Dict[str, str]:
                     if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
                         k, v = k.strip(), v.strip().strip('"\'')
-                        if v and not os.environ.get(k):
+                        if v and (force or not os.environ.get(k)):
                             os.environ[k] = v
                             loaded[k] = v
         except Exception:
