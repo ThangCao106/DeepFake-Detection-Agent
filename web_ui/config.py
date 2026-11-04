@@ -41,8 +41,8 @@ class Config:
     DEEPFAKE_MODEL_NAME_VIT = "prithivMLmods/Deep-Fake-Detector-v2-Model"
     DEEPFAKE_MODEL_NAME_SIGLIP = "prithivMLmods/deepfake-detector-model-v1"
     DEEPFAKE_MODEL_NAME = os.getenv("DEEPFAKE_MODEL_NAME", DEEPFAKE_MODEL_NAME_VIT)
-    GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3.8-flash")
-    CLAUDE_MODEL_NAME = os.getenv("CLAUDE_MODEL_NAME", "claude-sonnet-5.5")
+    GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
+    CLAUDE_MODEL_NAME = os.getenv("CLAUDE_MODEL_NAME", "claude-3-5-sonnet-20241022")
     
     # Logging
     LOG_LEVEL = "INFO"

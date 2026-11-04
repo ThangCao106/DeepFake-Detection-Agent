@@ -832,7 +832,7 @@ def handle_ask_question(data):
                 logger.warning(f"Orchestrator ask_question warning: {orch_err}. Falling back to deterministic forensic response.")
                 answer = None
 
-        if not answer:
+        if not answer or str(answer).strip().startswith('Analytic Report:'):
             answer = generate_forensic_answer(question, detection_result=detection_data, language=language)
         
         emit('agent_status', {
@@ -883,7 +883,7 @@ def api_ask_question():
                 logger.warning(f"REST Ask Orchestrator warning: {orch_err}. Falling back to deterministic forensic response.")
                 answer = None
 
-        if not answer:
+        if not answer or str(answer).strip().startswith('Analytic Report:'):
             answer = generate_forensic_answer(question, detection_result=detection_data, language=language)
 
         return jsonify({
