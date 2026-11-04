@@ -244,6 +244,7 @@ socket.on('question_answer', (data) => {
 
 socket.on('error', (data) => {
     console.error('Error:', data);
+    removeAgentThinking();
     if (analysisTimeoutTimer) {
         clearTimeout(analysisTimeoutTimer);
         analysisTimeoutTimer = null;
@@ -251,6 +252,8 @@ socket.on('error', (data) => {
     addSystemMessage(`Error: ${data.message}`, 'error');
     hideAgentStatus();
     analyzeBtn.disabled = false;
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
     analyzeBtn.innerHTML = `<span class="btn-icon">🔍</span> ${TRANSLATIONS[currentLang].analyze_btn}`;
 });
 
@@ -595,6 +598,28 @@ chatInput.addEventListener('keypress', (e) => {
     }
 });
 
+function addAgentThinking() {
+    removeAgentThinking();
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.id = 'agentThinkingIndicator';
+    thinkingDiv.className = 'message agent thinking';
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.vi;
+    const label = t.chat_thinking || 'Chuyên gia AI đang phân tích dữ liệu pháp y...';
+    thinkingDiv.innerHTML = `
+        <div class="message-content" style="display: flex; align-items: center; gap: 8px; color: #64748b; font-style: italic;">
+            <div class="typing-spinner" style="width: 14px; height: 14px; border: 2px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <span>${label}</span>
+        </div>
+    `;
+    chatMessages.appendChild(thinkingDiv);
+    scrollToBottom();
+}
+
+function removeAgentThinking() {
+    const el = document.getElementById('agentThinkingIndicator');
+    if (el) el.remove();
+}
+
 function sendMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
@@ -604,7 +629,88 @@ function sendMessage() {
     chatInput.disabled = true;
     sendBtn.disabled = true;
 
-    socket.emit('ask_question', { question: message, language: currentLang });
+    addAgentThinking();
+
+    const payload = {
+        question: message,
+        language: currentLang,
+        detection_data: latestDetectionResult || window.currentDetectionData || null
+    };
+
+    let answered = false;
+
+    // Resilient Dual-Path Fallback: If WebSocket takes > 8s, query REST /api/ask_question
+    const fallbackTimer = setTimeout(async () => {
+        if (!answered) {
+            console.warn('[Chat] WebSocket response timeout (8s). Invoking REST fallback /api/ask_question...');
+            try {
+                const res = await fetch('/api/ask_question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const resData = await res.json();
+                if (!answered) {
+                    answered = true;
+                    removeAgentThinking();
+                    if (resData.success && resData.answer) {
+                        addAgentMessage(resData.answer);
+                    } else {
+                        addAgentMessage(resData.error || 'Hệ thống đã ghi nhận câu hỏi.');
+                    }
+                    hideAgentStatus();
+                }
+            } catch (err) {
+                console.error('[Chat REST Fallback Error]:', err);
+                if (!answered) {
+                    answered = true;
+                    removeAgentThinking();
+                    addSystemMessage(`Lỗi kết nối: ${err.message}`, 'error');
+                    chatInput.disabled = false;
+                    sendBtn.disabled = false;
+                    hideAgentStatus();
+                }
+            }
+        }
+    }, 8000);
+
+    if (socket && socket.connected) {
+        const onAnswer = (data) => {
+            if (!answered && data && (data.question === message || !data.question)) {
+                answered = true;
+                clearTimeout(fallbackTimer);
+            }
+        };
+        socket.once('question_answer', onAnswer);
+        socket.emit('ask_question', payload);
+    } else {
+        console.info('[Chat] Socket not connected. Directly calling REST /api/ask_question...');
+        clearTimeout(fallbackTimer);
+        fetch('/api/ask_question', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            answered = true;
+            removeAgentThinking();
+            if (resData.success && resData.answer) {
+                addAgentMessage(resData.answer);
+            } else {
+                addAgentMessage(resData.error || 'Hệ thống đã ghi nhận câu hỏi.');
+            }
+            hideAgentStatus();
+        })
+        .catch(err => {
+            answered = true;
+            removeAgentThinking();
+            addSystemMessage(`Lỗi kết nối: ${err.message}`, 'error');
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            hideAgentStatus();
+        });
+    }
 }
 
 // ===== Message Display =====
@@ -632,6 +738,7 @@ function renderMarkdown(text) {
 }
 
 function addAgentMessage(text) {
+    removeAgentThinking();
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message agent';
     messageDiv.innerHTML = `<div class="message-content markdown-body">${renderMarkdown(text)}</div>`;
@@ -934,15 +1041,42 @@ displayResults = function(data) {
 };
 
 function sendDisputeQuery(queryText) {
+    // 1. Immediately dismiss all open dispute dropdown menus
+    document.querySelectorAll('.chat-dispute-dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
-    if (chatInput && sendBtn) {
+    
+    // 2. Ensure inputs are unlocked
+    if (chatInput) {
+        chatInput.disabled = false;
         chatInput.value = queryText;
-        chatInput.focus();
-        sendBtn.click();
     }
+    if (sendBtn) {
+        sendBtn.disabled = false;
+    }
+
+    // 3. Scroll to chat container
+    const chatContainer = document.getElementById('chatContainer') || document.querySelector('.chat-card') || document.getElementById('chatMessages');
+    if (chatContainer) {
+        chatContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 4. Send directly
+    sendMessage();
 }
 window.sendDisputeQuery = sendDisputeQuery;
+
+// Click outside listener to dismiss dispute menu
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.chat-dispute-wrapper')) {
+        document.querySelectorAll('.chat-dispute-dropdown-menu').forEach(m => {
+            m.style.display = 'none';
+        });
+    }
+});
 
 // ===== Jump to Forensic Certificate with Pulsing Glow Animation =====
 function jumpToForensicCertificate() {
