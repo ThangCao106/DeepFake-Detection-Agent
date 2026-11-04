@@ -134,7 +134,13 @@ def sync_local_samples_to_drive(dest_drive_root, date_str=None, job_batch="auto"
     local_daily_dir = DEFAULT_LOCAL_STORAGE / date_str
     pentest_dir = PROJECT_ROOT / "report_colab" / "pentest"
     
-    subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
+    subfolders = [
+        "01_raw_originals",
+        "02_manipulated_faceswap",
+        "03_manipulated_openweight",
+        "04_manipulated_commercial_frontier",
+        "05_manipulated_autoregressive"
+    ]
     copied_count = 0
     sub_counts = {}
     

@@ -14,6 +14,8 @@ SUPPORTED_FACESWAP_MODELS = [
     "InsightFace-InSwapper128",
     "SimSwap-512",
     "ReActor-Roop-v2.1",
+    "InstantID-SDXL-v1.0",
+    "LivePortrait-HighRes",
     "DeepFaceLab-Quick96"
 ]
 

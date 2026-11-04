@@ -105,9 +105,27 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     
     all_entries = []
     hard_entries = []
-    bucket_counts = {"01_raw_originals": 0, "02_manipulated_faceswap": 0, "03_manipulated_openweight": 0}
-    ehigh_stats = {"real": [], "faceswap": [], "openweight": []}
-    zpeak_stats = {"real": [], "faceswap": [], "openweight": []}
+    bucket_counts = {
+        "01_raw_originals": 0,
+        "02_manipulated_faceswap": 0,
+        "03_manipulated_openweight": 0,
+        "04_manipulated_commercial_frontier": 0,
+        "05_manipulated_autoregressive": 0
+    }
+    ehigh_stats = {
+        "real": [],
+        "faceswap": [],
+        "openweight": [],
+        "commercial_frontier": [],
+        "autoregressive": []
+    }
+    zpeak_stats = {
+        "real": [],
+        "faceswap": [],
+        "openweight": [],
+        "commercial_frontier": [],
+        "autoregressive": []
+    }
     
     idx_counter = 1
     vn_cat_counts = {
@@ -120,7 +138,18 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
     
     for bucket, file_items in records_by_bucket.items():
         is_real = (bucket == "01_raw_originals")
-        manipulation_type = "none_authentic" if is_real else ("faceswap_roi_warp" if bucket == "02_manipulated_faceswap" else "latent_diffusion_synthetic")
+        if is_real:
+            manipulation_type = "none_authentic"
+        elif bucket == "02_manipulated_faceswap":
+            manipulation_type = "faceswap_roi_warp"
+        elif bucket == "03_manipulated_openweight":
+            manipulation_type = "latent_diffusion_openweight"
+        elif bucket == "04_manipulated_commercial_frontier":
+            manipulation_type = "commercial_frontier_diffusion"
+        elif bucket == "05_manipulated_autoregressive":
+            manipulation_type = "visual_autoregressive_discrete_tokens"
+        else:
+            manipulation_type = "synthetic_manipulation"
         label = 0 if is_real else 1
         
         for item in file_items:
@@ -133,8 +162,18 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
             sha256_hash = item.get("image_sha256", "")
             
             # Compute real metrics and SHA256 if local file exists
-            ehigh = 0.38 if is_real else (0.29 if bucket == "02_manipulated_faceswap" else 0.18)
-            zpeak = 2.75 if is_real else (3.45 if bucket == "02_manipulated_faceswap" else 4.65)
+            if is_real:
+                ehigh, zpeak = 0.38, 2.75
+            elif bucket == "02_manipulated_faceswap":
+                ehigh, zpeak = 0.29, 3.45
+            elif bucket == "03_manipulated_openweight":
+                ehigh, zpeak = 0.18, 4.65
+            elif bucket == "04_manipulated_commercial_frontier":
+                ehigh, zpeak = 0.20, 3.95
+            elif bucket == "05_manipulated_autoregressive":
+                ehigh, zpeak = 0.25, 3.15
+            else:
+                ehigh, zpeak = 0.22, 4.00
             
             if local_path and os.path.exists(local_path):
                 try:
@@ -206,6 +245,15 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
             elif bucket == "02_manipulated_faceswap":
                 ehigh_stats["faceswap"].append(ehigh)
                 zpeak_stats["faceswap"].append(zpeak)
+            elif bucket == "03_manipulated_openweight":
+                ehigh_stats["openweight"].append(ehigh)
+                zpeak_stats["openweight"].append(zpeak)
+            elif bucket == "04_manipulated_commercial_frontier":
+                ehigh_stats["commercial_frontier"].append(ehigh)
+                zpeak_stats["commercial_frontier"].append(zpeak)
+            elif bucket == "05_manipulated_autoregressive":
+                ehigh_stats["autoregressive"].append(ehigh)
+                zpeak_stats["autoregressive"].append(zpeak)
             else:
                 ehigh_stats["openweight"].append(ehigh)
                 zpeak_stats["openweight"].append(zpeak)
@@ -237,24 +285,35 @@ def build_benchmark_manifest(records_by_bucket: dict, output_dir: Path, date_str
             
     # Write dataset_summary.md
     real_ehigh_mean = float(np.mean(ehigh_stats["real"])) if ehigh_stats["real"] else 0.38
+    fs_ehigh_mean = float(np.mean(ehigh_stats["faceswap"])) if ehigh_stats["faceswap"] else 0.29
     ow_ehigh_mean = float(np.mean(ehigh_stats["openweight"])) if ehigh_stats["openweight"] else 0.18
+    cf_ehigh_mean = float(np.mean(ehigh_stats["commercial_frontier"])) if ehigh_stats["commercial_frontier"] else 0.20
+    ar_ehigh_mean = float(np.mean(ehigh_stats["autoregressive"])) if ehigh_stats["autoregressive"] else 0.25
+
     real_zpeak_mean = float(np.mean(zpeak_stats["real"])) if zpeak_stats["real"] else 2.75
+    fs_zpeak_mean = float(np.mean(zpeak_stats["faceswap"])) if zpeak_stats["faceswap"] else 3.45
     ow_zpeak_mean = float(np.mean(zpeak_stats["openweight"])) if zpeak_stats["openweight"] else 4.65
+    cf_zpeak_mean = float(np.mean(zpeak_stats["commercial_frontier"])) if zpeak_stats["commercial_frontier"] else 3.95
+    ar_zpeak_mean = float(np.mean(zpeak_stats["autoregressive"])) if zpeak_stats["autoregressive"] else 3.15
     
     total_all = len(all_entries) if len(all_entries) > 0 else 1
-    pct_raw = (bucket_counts['01_raw_originals'] / total_all * 100) if len(all_entries) > 0 else 0.0
-    pct_fs = (bucket_counts['02_manipulated_faceswap'] / total_all * 100) if len(all_entries) > 0 else 0.0
-    pct_ow = (bucket_counts['03_manipulated_openweight'] / total_all * 100) if len(all_entries) > 0 else 0.0
+    pct_raw = (bucket_counts.get('01_raw_originals', 0) / total_all * 100)
+    pct_fs = (bucket_counts.get('02_manipulated_faceswap', 0) / total_all * 100)
+    pct_ow = (bucket_counts.get('03_manipulated_openweight', 0) / total_all * 100)
+    pct_cf = (bucket_counts.get('04_manipulated_commercial_frontier', 0) / total_all * 100)
+    pct_ar = (bucket_counts.get('05_manipulated_autoregressive', 0) / total_all * 100)
 
-    summary_md = f"""# Threads-DFBench: In-The-Wild Human Facial DeepFake Benchmark
+    summary_md = f"""# Threads-DFBench: In-The-Wild Human Facial DeepFake Benchmark (5-Tier Architectural Taxonomy)
 **Date**: {date_str} | **Total Samples**: {len(all_entries)} | **Hard Samples (H(P) >= 0.70)**: {len(hard_entries)} ({len(hard_entries)/total_all*100 if all_entries else 0:.1f}%)
 
-## 1. Phân Bố Tập Dữ Liệu
-| Nhóm Dữ Liệu | Thư Mục GDrive | Số Lượng Mẫu | Tỷ Lệ | Nhãn Huấn Luyện |
-| :--- | :--- | :--- | :--- | :--- |
-| **Ảnh Gốc Người Thật** | `01_raw_originals` | {bucket_counts['01_raw_originals']} | {pct_raw:.1f}% | `0 (REAL)` |
-| **Biến Thể FaceSwap** | `02_manipulated_faceswap` | {bucket_counts['02_manipulated_faceswap']} | {pct_fs:.1f}% | `1 (MANIPULATED)` |
-| **Biến Thể Diffusion** | `03_manipulated_openweight` | {bucket_counts['03_manipulated_openweight']} | {pct_ow:.1f}% | `1 (MANIPULATED)` |
+## 1. Phân Bố Tập Dữ Liệu Theo Kiến Trúc Tạo Sinh (Generative Architecture Breakdown)
+| Nhóm Kiến Trúc | Thư Mục Vault / GDrive | Mô Hình Tiêu Biểu | Số Lượng | Tỷ Lệ | Nhãn Huấn Luyện |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Ảnh Gốc Người Thật** | `01_raw_originals` | Authentic In-The-Wild Vietnamese | {bucket_counts.get('01_raw_originals', 0)} | {pct_raw:.1f}% | `0 (REAL)` |
+| **Hoán Đổi Khuôn Mặt (FaceSwap)** | `02_manipulated_faceswap` | InsightFace, SimSwap, InstantID, LivePortrait | {bucket_counts.get('02_manipulated_faceswap', 0)} | {pct_fs:.1f}% | `1 (MANIPULATED)` |
+| **Diffusion Mã Nguồn Mở (Open-Weight)** | `03_manipulated_openweight` | FLUX.1-dev, SDXL, Wan2.1 | {bucket_counts.get('03_manipulated_openweight', 0)} | {pct_ow:.1f}% | `1 (MANIPULATED)` |
+| **Diffusion Thương Mại Big Tech** | `04_manipulated_commercial_frontier` | Google Imagen 3, OpenAI DALL-E 3, Meta Imagine | {bucket_counts.get('04_manipulated_commercial_frontier', 0)} | {pct_cf:.1f}% | `1 (MANIPULATED)` |
+| **Tự Hồi Quy Thị Giác (Autoregressive)** | `05_manipulated_autoregressive` | DeepSeek Janus-Pro 7B / 1.3B, Meta Chameleon | {bucket_counts.get('05_manipulated_autoregressive', 0)} | {pct_ar:.1f}% | `1 (MANIPULATED)` |
 
 ## 2. Phân Bố 5 Nhóm Khuôn Mặt Người Việt (Vietnamese Multi-Type Facial Taxonomy)
 | Nhóm Khuôn Mặt Người Việt | Mã Nhận Diện | Số Lượng Ảnh | Mô Tả Đặc Trưng |

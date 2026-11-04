@@ -358,10 +358,12 @@ Where $z_i$ represents raw logits from the Vision Transformer / EfficientNet bac
 ### 5.3. Threads-DFBench: Vietnamese In-The-Wild Facial Benchmark Dataset
 To benchmark and adapt the detector against emerging in-the-wild social threats, the system features an autonomous crawler and academic benchmark generator (**Threads-DFBench**):
 - **Target Platform**: Meta Threads with Vietnamese locale targeting (`Accept-Language: vi-VN`) and localized query topics (`chan_dung_vietnam`, `anh_the_cccd`, `selfie_vietnam`, `duong_pho_vietnam`, `kinh_can_khau_trang`).
-- **Paired Counterfactual Architecture**: Generates triplets on the identical human identity:
-  1. `01_raw_originals`: Authentic human photographic portrait ($E_{high} \ge 0.30$).
-  2. `02_manipulated_faceswap`: Counterfactual identity swap with boundary seam blending.
-  3. `03_manipulated_openweight`: Latent diffusion synthesis with pore over-smoothing ($E_{high} < 0.22$) and high-frequency latent checkerboard spikes ($Z_{peak} > 4.20$).
+- **Paired Counterfactual Architecture**: Generates paired vectors across 5 generative architectures on the identical human identity:
+  1. `01_raw_originals`: Authentic human photographic portrait ($E_{high} \ge 0.30$, natural $1/f^\alpha$ spectral decay).
+  2. `02_manipulated_faceswap`: Counterfactual identity swap (InsightFace, InstantID, LivePortrait) with boundary seam and corneal light vector mismatch.
+  3. `03_manipulated_openweight`: Open-weight latent diffusion synthesis (FLUX.1-dev, SDXL, Wan2.1) with pore over-smoothing ($E_{high} < 0.22$) and high-frequency latent checkerboard spikes ($Z_{peak} > 4.20$).
+  4. `04_manipulated_commercial_frontier`: Closed-source proprietary Big Tech diffusion (Google Imagen 3, OpenAI DALL-E 3, Meta Imagine) with aesthetic smoothing, simulated single-point corneal key-light, and SynthID/C2PA watermark carrier wave traces.
+  5. `05_manipulated_autoregressive`: Visual Autoregressive & Discrete Tokenizer models (DeepSeek Janus-Pro 7B / 1.3B, Meta Chameleon) exhibiting discrete token quantization step boundaries without continuous Gaussian diffusion noise.
 
 #### 5-Category Vietnamese Facial Taxonomy
 | Category Key | Vietnamese Facial Taxonomy | Ratio | Academic Focus & Stress Testing |

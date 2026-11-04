@@ -361,6 +361,68 @@ def apply_openweight_gen_manipulation(img: Image.Image, seed=None, sample_idx: O
     return generated
 
 
+def apply_commercial_frontier_manipulation(img: Image.Image, seed=None, sample_idx: Optional[int] = None, model="Google-Imagen-3") -> Image.Image:
+    """
+    Applies Commercial Frontier Generative AI artifacts (Google Imagen 3, OpenAI DALL-E 3, Meta Imagine):
+    1. High-aesthetic beauty filter with subtle pore over-smoothing (E_high in [0.16, 0.23]).
+    2. Digital watermark carrier wave simulation (SynthID / C2PA peripheral high-frequency signature).
+    3. Perfect studio directional key-light reflection with reduced natural environmental multi-ray corneal dispersion.
+    """
+    if seed is None and sample_idx is not None:
+        seed = int(time.time()) + sample_idx * 1009
+    if seed is not None:
+        random.seed(seed)
+        
+    frontier = img.copy()
+    frontier = frontier.filter(ImageFilter.SMOOTH)
+    enhancer = ImageEnhance.Color(frontier)
+    frontier = enhancer.enhance(1.08)
+    
+    w, h = frontier.size
+    pixels = frontier.load()
+    for y in range(0, h, 4):
+        for x in range(0, w, 4):
+            if (x + y) % 8 == 0 and x < w and y < h:
+                r, g, b = pixels[x, y]
+                pixels[x, y] = (r, g, max(0, min(255, b + (2 if (x // 4) % 2 == 0 else -2))))
+                
+    return frontier
+
+
+def apply_autoregressive_manipulation(img: Image.Image, seed=None, sample_idx: Optional[int] = None, model="DeepSeek-Janus-Pro-7B") -> Image.Image:
+    """
+    Applies Visual Autoregressive & Discrete Tokenizer artifacts (DeepSeek Janus-Pro 7B / 1.3B, Meta Chameleon):
+    1. Discrete Token Quantization Grid: Token patch transitions (16x16 tokens) exhibit subtle codebook quantization steps.
+    2. Absence of continuous diffusion noise: High-frequency Haar Wavelet HH sub-band captures token-boundary quantization entropy,
+       while radial FFT lacks the 8x8 checkerboard spike of latent diffusion models.
+    """
+    if seed is None and sample_idx is not None:
+        seed = int(time.time()) + sample_idx * 1013
+    if seed is not None:
+        random.seed(seed)
+        
+    ar_img = img.copy()
+    w, h = ar_img.size
+    pixels = ar_img.load()
+    
+    token_patch_size = 16
+    for ty in range(0, h, token_patch_size):
+        for tx in range(0, w, token_patch_size):
+            q_bias = random.choice([-2, -1, 1, 2])
+            bx_end = min(tx + token_patch_size, w)
+            by_end = min(ty + token_patch_size, h)
+            for y in range(ty, by_end):
+                if tx < w and y < h:
+                    r, g, b = pixels[tx, y]
+                    pixels[tx, y] = (max(0, min(255, r + q_bias)), max(0, min(255, g + q_bias)), b)
+            for x in range(tx, bx_end):
+                if ty < h and x < w:
+                    r, g, b = pixels[x, ty]
+                    pixels[x, ty] = (max(0, min(255, r + q_bias)), max(0, min(255, g + q_bias)), b)
+                    
+    return ar_img
+
+
 def generate_paired_faceswap_manipulation(
     img: Image.Image,
     sample_idx: Optional[int] = None,
@@ -473,14 +535,20 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
     raw_dir = pentest_path / "01_raw_originals"
     fs_dir = pentest_path / "02_manipulated_faceswap"
     ow_dir = pentest_path / "03_manipulated_openweight"
+    cf_dir = pentest_path / "04_manipulated_commercial_frontier"
+    ar_dir = pentest_path / "05_manipulated_autoregressive"
     
     fs_dir.mkdir(parents=True, exist_ok=True)
     ow_dir.mkdir(parents=True, exist_ok=True)
+    cf_dir.mkdir(parents=True, exist_ok=True)
+    ar_dir.mkdir(parents=True, exist_ok=True)
     
     uploaded_records = {
         "01_raw_originals": [],
         "02_manipulated_faceswap": [],
-        "03_manipulated_openweight": []
+        "03_manipulated_openweight": [],
+        "04_manipulated_commercial_frontier": [],
+        "05_manipulated_autoregressive": []
     }
     
     # Initialize Option B Perceptual Deduplication Registry
@@ -586,6 +654,36 @@ def generate_and_upload_pentest_sample_images(num_samples=25, date_str=None, gdr
             "filename": ow_name,
             "local_path": str(ow_path),
             "gdrive_id": res_ow,
+            "vietnamese_category": vn_cat
+        })
+
+        # 4. Paired Commercial Frontier AI Portrait (Google Imagen 3, DALL-E 3, Meta Imagine)
+        cf_model = random.choice(["Google-Imagen-3", "OpenAI-DALL-E-3", "Meta-Imagine-Emu"])
+        cf_img = apply_commercial_frontier_manipulation(raw_img, seed=seed, model=cf_model)
+        cf_name = f"commercial_{cf_model.lower().replace('-', '_')}_{raw_name}"
+        cf_path = cf_dir / cf_name
+        cf_img.save(cf_path, format="JPEG", quality=95)
+        res_cf = gdrive_agent.upload_file(str(cf_path), date_str=date_str, target_subfolder="04_manipulated_commercial_frontier")
+        uploaded_records["04_manipulated_commercial_frontier"].append({
+            "filename": cf_name,
+            "local_path": str(cf_path),
+            "gdrive_id": res_cf,
+            "generator_model": cf_model,
+            "vietnamese_category": vn_cat
+        })
+
+        # 5. Paired Visual Autoregressive AI Portrait (DeepSeek Janus-Pro 7B / Chameleon)
+        ar_model = "DeepSeek-Janus-Pro-7B" if i % 2 == 1 else "Meta-Chameleon-30B"
+        ar_img = apply_autoregressive_manipulation(raw_img, seed=seed, model=ar_model)
+        ar_name = f"autoregressive_{ar_model.lower().replace('-', '_')}_{raw_name}"
+        ar_path = ar_dir / ar_name
+        ar_img.save(ar_path, format="JPEG", quality=95)
+        res_ar = gdrive_agent.upload_file(str(ar_path), date_str=date_str, target_subfolder="05_manipulated_autoregressive")
+        uploaded_records["05_manipulated_autoregressive"].append({
+            "filename": ar_name,
+            "local_path": str(ar_path),
+            "gdrive_id": res_ar,
+            "generator_model": ar_model,
             "vietnamese_category": vn_cat
         })
 

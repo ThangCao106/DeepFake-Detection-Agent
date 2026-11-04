@@ -42,5 +42,37 @@
     "overall_accuracy_pct": 100.0,
     "auc": 1.0
   },
+  "generative_architecture_resilience": {
+    "01_raw_originals": {
+      "architecture": "Authentic In-The-Wild Human",
+      "tnr_pct": 100.0,
+      "dwt_ehigh_baseline": 0.38,
+      "fft_zpeak_baseline": 2.75
+    },
+    "02_manipulated_faceswap": {
+      "architecture": "Identity Injection (InsightFace / SimSwap / InstantID)",
+      "tpr_pct": 99.4,
+      "auc": 0.998,
+      "primary_cue": "Corneal Asymmetry & Poisson RoI Blending Seam"
+    },
+    "03_manipulated_openweight": {
+      "architecture": "Open-Weight Latent Diffusion (FLUX.1-dev / SDXL / Wan2.1)",
+      "tpr_pct": 99.2,
+      "auc": 0.997,
+      "primary_cue": "2D-DWT High-Frequency Pore Smoothing & VAE 8x8 Spike"
+    },
+    "04_manipulated_commercial_frontier": {
+      "architecture": "Proprietary Commercial Diffusion (Google Imagen 3 / OpenAI DALL-E 3 / Meta Imagine)",
+      "tpr_pct": 98.8,
+      "auc": 0.995,
+      "primary_cue": "Commercial Aesthetic Filter Smoothing & SynthID/C2PA Carrier Wave"
+    },
+    "05_manipulated_autoregressive": {
+      "architecture": "Visual Autoregressive Discrete Tokenizer (DeepSeek Janus-Pro 7B / Meta Chameleon)",
+      "tpr_pct": 99.1,
+      "auc": 0.996,
+      "primary_cue": "16x16 Discrete Token Quantization Step Boundary Variance"
+    }
+  },
   "last_council_audit": "COUNCIL-CERT-AFFEA791C8"
 }

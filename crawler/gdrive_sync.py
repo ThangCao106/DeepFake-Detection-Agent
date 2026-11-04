@@ -245,7 +245,13 @@ class GDriveSyncAgent:
             if date_str in self._cached_daily_folders:
                 return self._cached_daily_folders[date_str]
         
-        subfolders = ["01_raw_originals", "02_manipulated_faceswap", "03_manipulated_openweight"]
+        subfolders = [
+            "01_raw_originals",
+            "02_manipulated_faceswap",
+            "03_manipulated_openweight",
+            "04_manipulated_commercial_frontier",
+            "05_manipulated_autoregressive"
+        ]
         paths = {}
 
         # Mode 1: Google Colab Direct Mount

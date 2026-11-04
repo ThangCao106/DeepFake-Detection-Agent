@@ -307,10 +307,12 @@ Trong đó $z_i$ là giá trị Logits đầu ra của mô hình ViT/EfficientNe
 ### 5.3. Threads-DFBench: Tập Dữ liệu Đánh giá Chuẩn Thực chiến Khuôn mặt Người Việt
 Để đánh giá toàn diện và giúp mô hình thích ứng liên tục trước các biến thể Deepfake trên mạng xã hội, hệ thống tích hợp bộ sinh dữ liệu và benchmark học thuật (**Threads-DFBench**):
 - **Nền tảng Thu thập**: Meta Threads với cấu hình ngôn ngữ bản địa (`Accept-Language: vi-VN`) cùng hệ thống hashtag tiếng Việt (`chan_dung_vietnam`, `anh_the_cccd`, `selfie_vietnam`, `duong_pho_vietnam`, `kinh_can_khau_trang`).
-- **Mô hình Đối chứng Cặp (Paired Counterfactual)**: Tạo 3 tệp dữ liệu trên cùng một nhân vật khuôn mặt:
-  1. `01_raw_originals`: Ảnh chân dung thật 100% của người Việt Nam / Đông Á ($E_{high} \ge 0.30$).
-  2. `02_manipulated_faceswap`: Biến thể ghép mặt với đường biên làm mờ vi mô (Poisson blending seam).
-  3. `03_manipulated_openweight`: Biến thể sinh bởi mô hình khuếch tán làm mịn lỗ chân lông ($E_{high} < 0.22$) và xuất hiện gai phổ ẩn ($Z_{peak} > 4.20$).
+- **Mô hình Đối chứng Cặp (Paired Counterfactual Architecture)**: Tạo 5 tệp dữ liệu tương ứng 5 nhóm kiến trúc tạo sinh trên cùng một nhân vật khuôn mặt:
+  1. `01_raw_originals`: Ảnh chân dung thật 100% của người Việt Nam / Đông Á ($E_{high} \ge 0.30$, phân rã quang phổ $1/f^\alpha$ tự nhiên).
+  2. `02_manipulated_faceswap`: Biến thể hoán đổi khuôn mặt (InsightFace, InstantID, LivePortrait) với đường biên làm mờ vi mô (Poisson blending seam) và lệch góc phản xạ giác mạc.
+  3. `03_manipulated_openweight`: Biến thể sinh bởi mô hình khuếch tán mã nguồn mở (FLUX.1-dev, SDXL, Wan2.1) làm mịn lỗ chân lông ($E_{high} < 0.22$) và xuất hiện gai phổ ẩn VAE 8x8 ($Z_{peak} > 4.20$).
+  4. `04_manipulated_commercial_frontier`: Biến thể sinh bởi mô hình thương mại Big Tech (Google Imagen 3, OpenAI DALL-E 3, Meta Imagine) áp dụng bộ lọc làm đẹp làm mờ lỗ chân lông và chứa dấu vết sóng mang watermark SynthID/C2PA.
+  5. `05_manipulated_autoregressive`: Biến thể sinh bởi mô hình tự hồi quy thị giác (DeepSeek Janus-Pro 7B / 1.3B, Meta Chameleon) với các bước nhảy lượng tử hóa rời rạc token 16x16 thay vì nhiễu Gaussian liên tục.
 
 #### Bảng Phân loại 5 Nhóm Khuôn mặt Người Việt (Vietnamese Facial Taxonomy)
 | Mã Phân loại | Nhóm Khuôn mặt Người Việt | Tỷ lệ | Mục tiêu Kiểm thử Thực nghiệm |
