@@ -89,3 +89,4 @@ class AutoregressiveGenerativeEngine:
 if __name__ == "__main__":
     engine = AutoregressiveGenerativeEngine()
     engine.process_batch("report_colab/pentest/crawled_registry_2026-09-16_15h.json")
+
