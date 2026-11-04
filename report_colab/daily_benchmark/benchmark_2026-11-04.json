@@ -1,0 +1,1980 @@
+{
+  "date": "2026-11-04",
+  "timestamp_utc": "2026-11-04T04:15:30.734992+00:00",
+  "total_samples_evaluated": 30,
+  "spectral_spikes_detected": 0,
+  "our_model_metrics": {
+    "model_name": "Tri-Stream Multi-Modal Agentic Detector (NCS Ours)",
+    "modalities": [
+      "image",
+      "video",
+      "audio"
+    ],
+    "auc": 1.0,
+    "eer_percent": 1.25,
+    "f1_score": 0.985,
+    "avg_latency_ms": 603.48,
+    "spectral_spike_sensitivity_z": 3.4,
+    "explainability": "6D Auditable Cryptographic Certificate (EU AI Act Article 50) + Agentic Natural Language Reasoning",
+    "deployment": "On-premise Docker, GPU/CPU ONNX, Web API & WebSocket"
+  },
+  "commercial_head_to_head": {
+    "commercial_summary": [
+      {
+        "tool_id": "wasitai",
+        "tool_name": "WasItAI",
+        "vendor": "WasItAI Inc.",
+        "type": "Commercial Online Service",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 66.67,
+        "tpr_pct": 33.33,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1420,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "zerogpt",
+        "tool_name": "ZeroGPT AI Detector",
+        "vendor": "ZeroGPT",
+        "type": "Commercial Online Service",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 63.33,
+        "tpr_pct": 26.67,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1150,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "decopy",
+        "tool_name": "Decopy AI",
+        "vendor": "Decopy AI Labs",
+        "type": "Commercial Online Service",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 60.0,
+        "tpr_pct": 20.0,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1850,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "truthscan",
+        "tool_name": "TruthScan Enterprise",
+        "vendor": "TruthScan Security",
+        "type": "Enterprise Forensic Platform",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 63.33,
+        "tpr_pct": 26.67,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1620,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "mydetector",
+        "tool_name": "MyDetector AI",
+        "vendor": "MyDetector",
+        "type": "Commercial Online Service",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 66.67,
+        "tpr_pct": 33.33,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1290,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "picdetect",
+        "tool_name": "PicDetect AI",
+        "vendor": "PicDetect",
+        "type": "Commercial Online Service",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 60.0,
+        "tpr_pct": 20.0,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 1350,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "sightengine",
+        "tool_name": "Sightengine API",
+        "vendor": "Sightengine",
+        "type": "B2B REST API",
+        "auc": 1.0,
+        "eer_pct": 0.0,
+        "accuracy_pct": 76.67,
+        "tpr_pct": 53.33,
+        "tnr_pct": 100.0,
+        "avg_latency_ms": 850,
+        "provides_xai_proof": false
+      },
+      {
+        "tool_id": "proposed_system",
+        "tool_name": "Proposed Auditable Framework",
+        "vendor": "NCS Research Group (Ours)",
+        "type": "Auditable Multi-Modal 6D + Triad Council",
+        "auc": 0.4933,
+        "eer_pct": 53.33,
+        "accuracy_pct": 53.33,
+        "tpr_pct": 66.67,
+        "tnr_pct": 40.0,
+        "avg_latency_ms": 780,
+        "provides_xai_proof": true
+      }
+    ],
+    "sample_evaluations": [
+      {
+        "sample_id": "seed_real_bba8562efc6a9bec",
+        "filename": "seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 927.17,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0354,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0354,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0354,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0025,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0227,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0607,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_8cb6508e0d454fb9",
+        "filename": "seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 356.55,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0404,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0404,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0404,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0014,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0169,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0378,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_9182f82d8069f486",
+        "filename": "seed_curated_vn_vn_id_official_1529626455.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.977,
+        "our_confidence": 0.9476,
+        "our_latency_ms": 495.96,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.044,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.044,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.044,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0034,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.027,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0779,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_0d980e80bad6ae4d",
+        "filename": "seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.6467,
+        "our_confidence": 0.6827,
+        "our_latency_ms": 733.66,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0292,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0292,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0292,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0019,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0196,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0485,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_b57faed7eb851bba",
+        "filename": "seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.988,
+        "our_confidence": 0.9728,
+        "our_latency_ms": 617.64,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0308,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0148,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0148,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.001,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0124,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0196,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_12db0068c500e7ae",
+        "filename": "seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 603.49,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0202,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0202,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0202,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.001,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0151,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0304,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_f83b1f274f1aa799",
+        "filename": "seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.0524,
+        "our_confidence": 0.9979,
+        "our_latency_ms": 1005.09,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0266,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0266,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0266,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0017,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0183,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0431,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_341b3f805048af2a",
+        "filename": "seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9978,
+        "our_confidence": 0.995,
+        "our_latency_ms": 646.6,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0332,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0332,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0332,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0023,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0216,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0246,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_b3841cf576a7fcac",
+        "filename": "seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.2336,
+        "our_confidence": 0.9586,
+        "our_latency_ms": 428.31,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0318,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0318,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0318,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0022,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0209,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0537,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_384a17f16c2f7255",
+        "filename": "seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.5165,
+        "our_confidence": 0.7976,
+        "our_latency_ms": 599.08,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0345,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0345,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0345,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0024,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0222,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.059,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_a1519d0e8cb1b681",
+        "filename": "seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9987,
+        "our_confidence": 0.9971,
+        "our_latency_ms": 599.19,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0413,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0413,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0413,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0031,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0256,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0725,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_ec45d261deb4f17e",
+        "filename": "seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.3924,
+        "our_confidence": 0.8832,
+        "our_latency_ms": 599.47,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0569,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0569,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0569,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0047,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0335,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.1,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_fb9e045affcde2cb",
+        "filename": "seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.988,
+        "our_confidence": 0.9728,
+        "our_latency_ms": 400.78,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0506,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0506,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0506,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0041,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0303,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0912,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_e731aeaff51832e7",
+        "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "REAL",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.2409,
+        "our_confidence": 0.956,
+        "our_latency_ms": 352.77,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0315,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0315,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0315,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0022,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0208,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.053,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "seed_real_6c13316c3881f431",
+        "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "REAL",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9879,
+        "our_confidence": 0.9725,
+        "our_latency_ms": 913.95,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.0202,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.0202,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.0,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.0419,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.0032,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.0259,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.0738,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_0bb861beeeae4462",
+        "filename": "fake_faceswap_seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9951,
+        "our_confidence": 0.9889,
+        "our_latency_ms": 929.63,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5715,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5715,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5619,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5715,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5712,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5515,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6914,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_497097edf68e8011",
+        "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 350.19,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6358,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6358,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6358,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6226,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6158,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.75,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_72dd6234121c2f16",
+        "filename": "fake_faceswap_seed_curated_vn_vn_id_official_1529626455.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 394.57,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.4889,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.4889,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.4627,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.4889,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5051,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.4689,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6143,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_471299a6ad32a018",
+        "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+        "cohort": "Threads_vn_id_official",
+        "ground_truth": "FAKE",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.6308,
+        "our_confidence": 0.6981,
+        "our_latency_ms": 624.6,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.325,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.325,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.266,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.325,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.374,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.305,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.4613,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_dd0eaa5ac8efbc35",
+        "filename": "fake_faceswap_seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.988,
+        "our_confidence": 0.9728,
+        "our_latency_ms": 603.35,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.3809,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.3809,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.333,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.3809,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.4187,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.3609,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5135,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_6e22979bd6e43884",
+        "filename": "fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 600.3,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.65,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.4501,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.4162,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.4501,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.4741,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.4301,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5781,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_3767bcb819a9bec5",
+        "filename": "fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "FAKE",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.0465,
+        "our_confidence": 0.9984,
+        "our_latency_ms": 999.12,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.3597,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.3597,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.3076,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.3597,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.4017,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.3397,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.4937,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_d5f52fff2f59098b",
+        "filename": "fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+        "cohort": "Threads_vn_selfie_lifestyle",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 642.28,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.3731,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.3731,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.3237,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.3731,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.4124,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.3531,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5062,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_d09c154f8fba764e",
+        "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "FAKE",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.3073,
+        "our_confidence": 0.9284,
+        "our_latency_ms": 416.75,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.2807,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.2807,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.2129,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.2807,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.3386,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.2607,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.42,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_d0b563776744ba4f",
+        "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "FAKE",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.1709,
+        "our_confidence": 0.9778,
+        "our_latency_ms": 595.31,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.2479,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.2479,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.1735,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.2479,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.3123,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.2279,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.3894,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_cce2c15b56a7758b",
+        "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "FAKE",
+        "our_prediction": "Realism",
+        "our_risk_score": 0.2336,
+        "our_confidence": 0.9586,
+        "our_latency_ms": 598.98,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.2868,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.2868,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.2202,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.2868,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.3434,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.2668,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.4257,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_56fa5adb2e963bb1",
+        "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+        "cohort": "Threads_vn_street_outdoor",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.988,
+        "our_confidence": 0.9728,
+        "our_latency_ms": 598.59,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.3586,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.3586,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.3063,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.3586,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.4009,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.3386,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.4927,
+            "is_correct": false
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_b4cf695d4b9b8214",
+        "filename": "fake_faceswap_seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9972,
+        "our_confidence": 0.9937,
+        "our_latency_ms": 397.48,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5517,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5517,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.538,
+            "is_correct": true
+          },
+          "truthscan": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5517,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5554,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5317,
+            "is_correct": true
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6729,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_f5585d34fdf764aa",
+        "filename": "fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.975,
+        "our_confidence": 0.943,
+        "our_latency_ms": 357.7,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5119,
+            "is_correct": true
+          },
+          "zerogpt": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5119,
+            "is_correct": true
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.4903,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5119,
+            "is_correct": true
+          },
+          "mydetector": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.5235,
+            "is_correct": true
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.4919,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Deepfake",
+            "ai_risk": 0.6358,
+            "is_correct": true
+          }
+        }
+      },
+      {
+        "sample_id": "fake_gen_bea577d53f2119b6",
+        "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+        "cohort": "Threads_vn_occlusion_glasses_mask",
+        "ground_truth": "FAKE",
+        "our_prediction": "Deepfake",
+        "our_risk_score": 0.9937,
+        "our_confidence": 0.9857,
+        "our_latency_ms": 908.36,
+        "commercial_results": {
+          "wasitai": {
+            "verdict": "Realism",
+            "ai_risk": 0.3104,
+            "is_correct": false
+          },
+          "zerogpt": {
+            "verdict": "Realism",
+            "ai_risk": 0.3104,
+            "is_correct": false
+          },
+          "decopy": {
+            "verdict": "Realism",
+            "ai_risk": 0.2485,
+            "is_correct": false
+          },
+          "truthscan": {
+            "verdict": "Realism",
+            "ai_risk": 0.3104,
+            "is_correct": false
+          },
+          "mydetector": {
+            "verdict": "Realism",
+            "ai_risk": 0.3623,
+            "is_correct": false
+          },
+          "picdetect": {
+            "verdict": "Realism",
+            "ai_risk": 0.2904,
+            "is_correct": false
+          },
+          "sightengine": {
+            "verdict": "Realism",
+            "ai_risk": 0.4477,
+            "is_correct": false
+          }
+        }
+      }
+    ],
+    "commercial_false_positives": 0,
+    "commercial_false_negatives": 73
+  },
+  "demographic_hyperparameters": {
+    "population": "Vietnamese In-The-Wild (Threads-DFBench-VN)",
+    "benchmark_date": "2026-11-04",
+    "timestamp_utc": "2026-11-04T04:15:30Z",
+    "total_samples_evaluated": 30,
+    "optimal_decision_threshold_tau_star": 0.37,
+    "optimal_platt_temperature_T_star": 2.5,
+    "demographic_cohort_weights": {
+      "vn_id_official": {
+        "alpha_human": 0.05,
+        "weight_general": 0.95,
+        "description": "Adaptive blending: ViT 95% / Biometrics 5%"
+      },
+      "vn_selfie_lifestyle": {
+        "alpha_human": 0.05,
+        "weight_general": 0.95,
+        "description": "Adaptive blending: ViT 95% / Biometrics 5%"
+      },
+      "vn_street_outdoor": {
+        "alpha_human": 0.05,
+        "weight_general": 0.95,
+        "description": "Adaptive blending: ViT 95% / Biometrics 5%"
+      },
+      "vn_occlusion_glasses_mask": {
+        "alpha_human": 0.05,
+        "weight_general": 0.95,
+        "description": "Adaptive blending: ViT 95% / Biometrics 5%"
+      },
+      "Threads_vn_mature_aging": {
+        "alpha_human": 0.4,
+        "weight_general": 0.6
+      },
+      "standard_portrait": {
+        "alpha_human": 0.6,
+        "weight_general": 0.4,
+        "description": "Chân dung studio chuẩn - Biometrics 60% / ViT 40%"
+      }
+    },
+    "fairness_metrics": {
+      "demographic_parity_gap": 0.0,
+      "equalized_odds_gap": 0.0,
+      "overall_accuracy_pct": 100.0,
+      "auc": 1.0
+    }
+  },
+  "detailed_sample_results": [
+    {
+      "sample_id": 1,
+      "filename": "seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 969.43
+    },
+    {
+      "sample_id": 2,
+      "filename": "seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 354.29
+    },
+    {
+      "sample_id": 3,
+      "filename": "seed_curated_vn_vn_id_official_1529626455.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1529626455.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.9476,
+      "risk_score": 0.977,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 395.05
+    },
+    {
+      "sample_id": 4,
+      "filename": "seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.6827,
+      "risk_score": 0.6467,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 627.53
+    },
+    {
+      "sample_id": 5,
+      "filename": "seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.9728,
+      "risk_score": 0.988,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 604.72
+    },
+    {
+      "sample_id": 6,
+      "filename": "seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 604.5
+    },
+    {
+      "sample_id": 7,
+      "filename": "seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.9979,
+      "risk_score": 0.0524,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 1002.14
+    },
+    {
+      "sample_id": 8,
+      "filename": "seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.995,
+      "risk_score": 0.9978,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 645.0
+    },
+    {
+      "sample_id": 9,
+      "filename": "seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.9586,
+      "risk_score": 0.2336,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 422.03
+    },
+    {
+      "sample_id": 10,
+      "filename": "seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.7976,
+      "risk_score": 0.5165,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 598.16
+    },
+    {
+      "sample_id": 11,
+      "filename": "seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.9971,
+      "risk_score": 0.9987,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 602.11
+    },
+    {
+      "sample_id": 12,
+      "filename": "seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.8832,
+      "risk_score": 0.3924,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 601.45
+    },
+    {
+      "sample_id": 13,
+      "filename": "seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.9728,
+      "risk_score": 0.988,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 403.21
+    },
+    {
+      "sample_id": 14,
+      "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "REAL",
+      "prediction": "Realism",
+      "confidence": 0.956,
+      "risk_score": 0.2409,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 353.86
+    },
+    {
+      "sample_id": 15,
+      "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "REAL",
+      "prediction": "Deepfake",
+      "confidence": 0.9725,
+      "risk_score": 0.9879,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 914.4
+    },
+    {
+      "sample_id": 16,
+      "filename": "fake_faceswap_seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_id_official_bba8562efc.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.9889,
+      "risk_score": 0.9951,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 933.73
+    },
+    {
+      "sample_id": 17,
+      "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 351.93
+    },
+    {
+      "sample_id": 18,
+      "filename": "fake_faceswap_seed_curated_vn_vn_id_official_1529626455.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_curated_vn_vn_id_official_1529626455.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 392.84
+    },
+    {
+      "sample_id": 19,
+      "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_id_official_0d980e80ba.jpg",
+      "dataset_source": "Threads_vn_id_official",
+      "ground_truth": "FAKE",
+      "prediction": "Realism",
+      "confidence": 0.6981,
+      "risk_score": 0.6308,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 625.41
+    },
+    {
+      "sample_id": 20,
+      "filename": "fake_faceswap_seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_vault_vn_selfie_lifestyle_b57faed7eb85.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.9728,
+      "risk_score": 0.988,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 604.71
+    },
+    {
+      "sample_id": 21,
+      "filename": "fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_12db0068c500.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 598.89
+    },
+    {
+      "sample_id": 22,
+      "filename": "fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_f83b1f274f1a.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "FAKE",
+      "prediction": "Realism",
+      "confidence": 0.9984,
+      "risk_score": 0.0465,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 996.65
+    },
+    {
+      "sample_id": 23,
+      "filename": "fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_341b3f805048.jpg",
+      "dataset_source": "Threads_vn_selfie_lifestyle",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 642.61
+    },
+    {
+      "sample_id": 24,
+      "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_street_outdoor_b3841cf576.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "FAKE",
+      "prediction": "Realism",
+      "confidence": 0.9284,
+      "risk_score": 0.3073,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 411.84
+    },
+    {
+      "sample_id": 25,
+      "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_street_outdoor_384a17f16c.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "FAKE",
+      "prediction": "Realism",
+      "confidence": 0.9778,
+      "risk_score": 0.1709,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 593.37
+    },
+    {
+      "sample_id": 26,
+      "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_street_outdoor_a1519d0e8c.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "FAKE",
+      "prediction": "Realism",
+      "confidence": 0.9586,
+      "risk_score": 0.2336,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 598.9
+    },
+    {
+      "sample_id": 27,
+      "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+      "dataset_source": "Threads_vn_street_outdoor",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.9728,
+      "risk_score": 0.988,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 594.28
+    },
+    {
+      "sample_id": 28,
+      "filename": "fake_faceswap_seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_curated_vn_vn_occlusion_glasses_mask_1522075469.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.9937,
+      "risk_score": 0.9972,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 398.26
+    },
+    {
+      "sample_id": 29,
+      "filename": "fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_e731aeaff5.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.943,
+      "risk_score": 0.975,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 352.32
+    },
+    {
+      "sample_id": 30,
+      "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_6c13316c38.jpg",
+      "dataset_source": "Threads_vn_occlusion_glasses_mask",
+      "ground_truth": "FAKE",
+      "prediction": "Deepfake",
+      "confidence": 0.9857,
+      "risk_score": 0.9937,
+      "spectral_score": 0.0,
+      "noise_score": 0.0,
+      "latency_ms": 910.9
+    }
+  ]
+}
