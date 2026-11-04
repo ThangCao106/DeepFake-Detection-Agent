@@ -492,6 +492,11 @@ async def get_live_gemini_models_api() -> dict:
 @app.get("/api/gemini/status")
 async def get_gemini_status_api() -> dict:
     """Return status and configuration of Google Gemini SDK engine with upfront token check."""
+    try:
+        from app.credentials_manager import load_persistent_credentials
+        load_persistent_credentials(force=False)
+    except Exception:
+        pass
     from app.gemini_backend import verify_gemini_api_key
     gemini_info = await verify_gemini_api_key()
     model = os.environ.get("GEMINI_DEFAULT_MODEL", "gemini-3.8-flash")
@@ -618,11 +623,18 @@ async def set_gemini_api_key(req: SetGeminiKeyRequest) -> dict:
     except Exception as e_p:
         _LOGIN_LOGS.append(f"⚠️ Warning saving persistent credentials: {e_p}")
     _LOGIN_LOGS.append("✅ [SUCCESS] GEMINI_API_KEY updated dynamically in environment and persistent volumes!")
+
+    from app.gemini_backend import verify_gemini_api_key
+    gemini_info = await verify_gemini_api_key(key)
     return {
         "status": "SUCCESS",
-        "message": "Đã lưu GEMINI_API_KEY thành công vào hệ thống!",
+        "message": "Đã lưu và đồng bộ GEMINI_API_KEY thành công!",
         "has_key": True,
-        "authenticated": True,
+        "authenticated": gemini_info["valid"],
+        "gemini_status": gemini_info["status"],
+        "verification_message": gemini_info.get("message", ""),
+        "masked_key": gemini_info.get("masked", ""),
+        "active_model": req.default_model or "gemini-3.8-flash"
     }
 
 
