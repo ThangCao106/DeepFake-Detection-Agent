@@ -6,10 +6,10 @@
   "optimal_threshold_tau": 0.8118,
   "focal_loss_gamma": 2.25,
   "focal_loss_alpha": 0.25,
-  "council_deliberation_id": "COUNCIL-CERT-0E5AD3FB07",
-  "council_decision_hash": "f6e3b3066934f6303ac228d051da8ee3c3d36dd0f762344b3aaa8be046d93fef",
+  "council_deliberation_id": "COUNCIL-CERT-5A40A92D12",
+  "council_decision_hash": "78442816accff2633df544f9ead61fc6c74e86f82953e15b8eafbbbabdd18ba1",
   "authorized_by_council": true,
   "approved_by_user": "test_suite",
-  "timestamp_utc": "2026-11-03T10:44:56Z",
+  "timestamp_utc": "2026-11-04T02:00:20Z",
   "calibration_status": "COUNCIL_AUDITED_AND_CALIBRATED"
 }

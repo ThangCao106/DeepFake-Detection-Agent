@@ -1615,7 +1615,8 @@ class GenerativeAIDiffusionDetector:
                 (lap_var > 1600.0 and res_kurtosis > 9.5) or
                 (lap_var > 2200.0 and res_kurtosis > 6.0) or
                 (lap_var > 2800.0) or
-                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
+                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20) or
+                (lap_var > 300.0 and res_kurtosis > 6.0)
             )
 
             if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait:
@@ -2021,8 +2022,9 @@ class DeepfakeDetector:
                 # 1. Physically impossible eye reflections (face-swap optical asymmetry: corneal_score > 0.65)
                 # 2. Latent diffusion micro-edge and non-Gaussian kurtosis (is_ai_art = True)
                 has_corneal_tamper = bool(corneal_score > 0.65)
-                if is_ai_art or has_corneal_tamper:
-                    tamper_risk = max(composite_risk, 0.988 if is_ai_art else 0.975)
+                has_biometric_tamper = bool(human_risk >= 0.80 or (human_eval and human_eval.get("is_deepfake", False)))
+                if is_ai_art or has_corneal_tamper or has_biometric_tamper:
+                    tamper_risk = max(composite_risk, human_risk, 0.988 if is_ai_art else 0.975)
                     composite_risk = round(float(tamper_risk), 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
 
