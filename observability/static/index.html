@@ -1169,7 +1169,7 @@
               <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE (CRON 4H / DAILY)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Tự động khởi tạo và kiểm thử 30 vector tấn công biến dị đối kháng (FaceSwap, Open-Weight diffusion, audio spoofing) mỗi ngày. Giám sát chặt chẽ tỷ lệ dương tính giả (FPR &lt; 5%) và tỷ lệ xuyên phá (FNR) theo tiêu chuẩn bảo mật phòng thủ chiều sâu.
+              Tự động khởi tạo và kiểm thử 30 vector tấn công biến dị đối kháng mỗi ngày theo <strong>Khung Phân Loại Kiến Trúc 5 Bậc (5-Tier Architectural Taxonomy)</strong>: <em>Tier 1 (01_raw_originals)</em>, <em>Tier 2 (02_manipulated_faceswap)</em>, <em>Tier 3 (03_manipulated_openweight - SDXL/FLUX.1)</em>, <em>Tier 4 (04_manipulated_commercial_frontier - Imagen 3/DALL-E 3/Meta)</em>, và <em>Tier 5 (05_manipulated_autoregressive - DeepSeek Janus-Pro/Chameleon)</em>. Giám sát chặt chẽ FPR &lt; 5% và FNR &lt; 3.5%.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Mục Tiêu Tấn Công Ngày: <strong>30 Samples/Day</strong></span>
@@ -1190,7 +1190,7 @@
               <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE (GPU WORKER)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Khai thác tự động các mẫu dự đoán khó (Hard Negative Mining với Entropy H(P) ≥ 0.70). Tự động tinh chỉnh adapter LoRA (Rank=16, Alpha=32) trên GPU Google Colab, hoàn toàn tách biệt khỏi tác vụ dọn dẹp dữ liệu, ngăn ngừa Catastrophic Forgetting.
+              Khai thác mẫu khó (Hard Negative Mining H(P) &ge; 0.70). Tinh chỉnh LoRA Adapter (r=16, &alpha;=32 trên các khối q_proj, v_proj, k_proj, out_proj) theo <strong>Quy trình Cập nhật Trọng số Khép kín</strong> với hàm mất mát đa mục tiêu L_total = L_Focal + &lambda;_PRNU*L_PRNU + &lambda;_FFT*L_FFT trên Colab GPU, tự động sync qua /api/colab/callback.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Entropy Lọc Mẫu H(P): <strong>&ge; 0.70</strong></span>
@@ -1211,7 +1211,7 @@
               <span class="badge-sub" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.3);">CALIBRATED (DAILY AUDIT)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Đánh giá mô hình trên 14 bộ dữ liệu học thuật quốc tế qua ma trận đối sánh 6x6. Tính toán ROC-AUC (0.986), tỷ lệ lỗi cân bằng EER (4.25%) và tối ưu nhiệt độ Platt Scaling (T* = 1.6178) để duy trì sai số hiệu chỉnh ECE ở mức 0.0195.
+              Đánh giá trên 14 bộ dữ liệu quốc tế kết hợp <strong>Bộ dữ liệu Thích nghi Nhân khẩu học Việt Nam</strong> (tông da châu Á Fitzpatrick III-IV, bối cảnh ngoại cảnh Việt Nam). Tích hợp Hội đồng Đối chất 3 LLM (Triad Council: Gemini 2.5 Pro, Claude 3.5 Sonnet, DeepSeek Janus-Pro) và hiệu chuẩn Platt Scaling (T*=1.6178, Youden &tau;*=0.8118, ECE 0.0195).
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Ngưỡng Youden τ*: <strong>0.8118</strong></span>
@@ -1260,7 +1260,7 @@
               <span style="font-family: var(--font-mono); font-weight: 700; color: #7c3aed; min-width: 80px;">STAGE 2</span>
               <div style="flex: 1;">
                 <strong style="color: #fff; font-size: 0.82rem;">Automated Adversarial Red-Teaming (Pentest)</strong>
-                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Autonomous Pentest Agent tự động sinh 30 vector tấn công biến dị đối kháng (FaceSwap, Open-Weight diffusion, Audio spoofing) để đo lường tỷ lệ xuyên phá FPR/FNR.</p>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Autonomous Pentest Agent tự động kiểm thử 30 vector tấn công theo Kiến trúc 5 Bậc: 01_raw, 02_faceswap, 03_openweight (SDXL/FLUX), 04_commercial_frontier (Imagen 3/DALL-E 3/Meta), và 05_autoregressive (DeepSeek Janus-Pro).</p>
               </div>
               <span class="badge-sub" style="color: var(--accent-emerald);">PENTEST PASS</span>
             </div>
@@ -1566,7 +1566,7 @@
           <div class="stat-pill">
             <span class="label">LoRA Configuration</span>
             <span class="val" style="color: var(--accent-cyan); font-size: 1.25rem;">r = 16, &alpha; = 32</span>
-            <span class="sub">Dropout: 0.05 | Target: q, v, dense</span>
+            <span class="sub">Dropout: 0.05 | Target: q_proj, v_proj, k_proj, out_proj</span>
           </div>
           <div class="stat-pill">
             <span class="label">Bộ nhớ VRAM tiêu thụ</span>

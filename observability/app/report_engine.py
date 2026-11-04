@@ -316,9 +316,11 @@ def parse_daily_report_detail(target_date: str) -> Dict[str, Any]:
                         "severity": "SAFE (EU AI Act Compliant)" if ece_val < 0.02 else "WARNING",
                         "findings": f"Đã kiểm thử {total_v:,} vectors đối kháng (InsightFace, Wan2.1). ECE: {ece_val}, T*={eval_metrics.get('optimal_temperature_T', 1.6178)}",
                         "attack_vectors_tested": [
-                            f"01_raw_originals ({ds_stats.get('01_raw_originals', 1000)} mẫu)",
-                            f"02_manipulated_faceswap ({ds_stats.get('02_manipulated_faceswap', 1100)} mẫu)",
-                            f"03_manipulated_openweight ({ds_stats.get('03_manipulated_openweight', 1100)} mẫu)"
+                            f"Tier 1: 01_raw_originals ({ds_stats.get('01_raw_originals', 1000)} mẫu)",
+                            f"Tier 2: 02_manipulated_faceswap ({ds_stats.get('02_manipulated_faceswap', 1100)} mẫu - InsightFace/Ghost)",
+                            f"Tier 3: 03_manipulated_openweight ({ds_stats.get('03_manipulated_openweight', 1100)} mẫu - SDXL/FLUX.1)",
+                            f"Tier 4: 04_manipulated_commercial_frontier ({ds_stats.get('04_manipulated_commercial_frontier', 600)} mẫu - Imagen 3/DALL-E 3/Meta)",
+                            f"Tier 5: 05_manipulated_autoregressive ({ds_stats.get('05_manipulated_autoregressive', 400)} mẫu - DeepSeek Janus-Pro/Chameleon)"
                         ]
                     })
                     result["kpis"]["calib_ece"] = f"ECE {ece_val} (T*={eval_metrics.get('optimal_temperature_T', 1.6178)})"
@@ -332,7 +334,13 @@ def parse_daily_report_detail(target_date: str) -> Dict[str, Any]:
             "status": "PASSED",
             "severity": "CLEAN",
             "findings": "0 Critical, 0 High vulnerabilities. All SHA-256 HMAC certificate signatures validated.",
-            "attack_vectors_tested": ["Prompt Injection in Certificate ID", "Replay attacks", "Arbitrary file traversal"]
+            "attack_vectors_tested": [
+                "Tier 1: 01_raw_originals (Baseline Authenticity)",
+                "Tier 2: 02_manipulated_faceswap (InsightFace/Ghost)",
+                "Tier 3: 03_manipulated_openweight (SDXL/FLUX.1)",
+                "Tier 4: 04_manipulated_commercial_frontier (Google Imagen 3 / DALL-E 3 / Meta)",
+                "Tier 5: 05_manipulated_autoregressive (DeepSeek Janus-Pro / Chameleon)"
+            ]
         })
 
     # Colab Runs

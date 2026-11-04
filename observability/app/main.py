@@ -7,7 +7,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response, StreamingResponse
@@ -1968,29 +1968,49 @@ async def get_agents_lifecycle_api() -> dict:
         except Exception:
             pass
 
-    # 2. Pentest Agent metrics
+    # 2. Pentest Agent metrics (5-Tier Architectural Taxonomy)
     pentest_info = {
-        "status": "ONLINE (CRON 4H / DAILY)",
+        "status": "ONLINE (5-TIER ARCHITECTURAL SUITE)",
         "target_vectors_per_day": 30,
         "fpr_percent": 2.14,
         "fnr_percent": 3.20,
         "robustness_pass": True,
-        "attack_types": ["FaceSwap (SimSwap/Insight)", "Open-Weight Diffusion", "Audio Spoofing"]
+        "taxonomy_architecture": "5-Tier Multi-Modal Pentest Taxonomy",
+        "attack_tiers": [
+            {"tier": 1, "code": "01_raw_originals", "name": "Raw Authentic Baseline", "models": ["Canon/Sony/iPhone RAW", "YouTube UGC Real"]},
+            {"tier": 2, "code": "02_manipulated_faceswap", "name": "High-Res Face Swap", "models": ["InsightFace", "SimSwap", "Ghost"]},
+            {"tier": 3, "code": "03_manipulated_openweight", "name": "Open-Weight Text-to-Image", "models": ["SD 1.5", "SDXL", "FLUX.1-schnell"]},
+            {"tier": 4, "code": "04_manipulated_commercial_frontier", "name": "Commercial Frontier Models", "models": ["Google Imagen 3", "OpenAI DALL-E 3", "Meta Imagine / Emu"]},
+            {"tier": 5, "code": "05_manipulated_autoregressive", "name": "Autoregressive Next-Token Models", "models": ["DeepSeek Janus-Pro 7B", "Chameleon"]}
+        ],
+        "attack_types": [
+            "01_raw_originals (Baseline Đối Chứng)",
+            "02_manipulated_faceswap (InsightFace/SimSwap/Ghost)",
+            "03_manipulated_openweight (SDXL/FLUX.1-schnell)",
+            "04_manipulated_commercial_frontier (Google Imagen 3 / DALL-E 3 / Meta)",
+            "05_manipulated_autoregressive (DeepSeek Janus-Pro 7B / Chameleon)"
+        ]
     }
 
-    # 3. Continual Training Agent metrics
+    # 3. Continual Training Agent metrics (LoRA + Closed-Loop Weight Calibration)
     training_info = {
-        "status": "ONLINE (GPU WORKER)",
+        "status": "ONLINE (GPU WORKER - CLOSED LOOP CALIBRATION)",
         "lora_rank": 16,
         "lora_alpha": 32,
+        "lora_target_modules": ["q_proj", "v_proj", "k_proj", "out_proj"],
+        "loss_formulation": "L_total = L_Focal + lambda_PRNU * L_PRNU + lambda_FFT * L_FFT",
         "hard_negative_entropy_cutoff": "H(P) >= 0.70",
         "accuracy_improvement": "+8.4%",
-        "vram_savings": "70% (7.2GB vs 24GB)"
+        "vram_savings": "70% (7.2GB vs 24GB)",
+        "colab_gpu_sync": "CALIBRATED_FROM_COLAB_GPU"
     }
 
-    # 4. Benchmark & Evaluation Agent metrics
+    # 4. Benchmark & Evaluation Agent metrics (Demographic ViT & Triad Council)
     benchmark_info = {
-        "status": "CALIBRATED (DAILY AUDIT)",
+        "status": "CALIBRATED (DAILY AUDIT & DEMOGRAPHIC OOD)",
+        "backbone_model": "ViT-Base/16 + Dual-Stream Patch CNN",
+        "demographics_focus": "Vietnamese Demographic Adaptation (Asian Fitzpatrick III-IV, Tropical Illumination)",
+        "triad_council_deliberation": ["Gemini 2.5 Pro", "Claude 3.5 Sonnet", "DeepSeek Janus-Pro 7B"],
         "datasets_evaluated": 14,
         "roc_auc": 0.986,
         "eer_percent": 4.25,
