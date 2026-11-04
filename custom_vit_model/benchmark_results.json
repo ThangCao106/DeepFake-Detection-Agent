@@ -64,10 +64,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_1.jpg",
       "ground_truth": "FAKE",
       "predicted": "Realism",
-      "confidence": 0.969,
+      "confidence": 0.9731,
       "all_scores": {
-        "Deepfake": 0.031,
-        "Realism": 0.969
+        "Deepfake": 0.0269,
+        "Realism": 0.9731
       },
       "spectral_anomaly": null,
       "match": false
@@ -76,10 +76,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_2.jpg",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9778,
+      "confidence": 0.9812,
       "all_scores": {
-        "Deepfake": 0.0222,
-        "Realism": 0.9778
+        "Deepfake": 0.0188,
+        "Realism": 0.9812
       },
       "spectral_anomaly": null,
       "match": true
@@ -88,10 +88,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_3.jpg",
       "ground_truth": "FAKE",
       "predicted": "Realism",
-      "confidence": 0.9799,
+      "confidence": 0.9832,
       "all_scores": {
-        "Deepfake": 0.0201,
-        "Realism": 0.9799
+        "Deepfake": 0.0168,
+        "Realism": 0.9832
       },
       "spectral_anomaly": null,
       "match": false
@@ -100,10 +100,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_4.jpg",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9803,
+      "confidence": 0.9835,
       "all_scores": {
-        "Deepfake": 0.0197,
-        "Realism": 0.9803
+        "Deepfake": 0.0165,
+        "Realism": 0.9835
       },
       "spectral_anomaly": null,
       "match": true
@@ -112,10 +112,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_5.jpg",
       "ground_truth": "FAKE",
       "predicted": "Realism",
-      "confidence": 0.9821,
+      "confidence": 0.9852,
       "all_scores": {
-        "Deepfake": 0.0179,
-        "Realism": 0.9821
+        "Deepfake": 0.0148,
+        "Realism": 0.9852
       },
       "spectral_anomaly": null,
       "match": false
@@ -124,10 +124,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_6.jpg",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9833,
+      "confidence": 0.9863,
       "all_scores": {
-        "Deepfake": 0.0167,
-        "Realism": 0.9833
+        "Deepfake": 0.0137,
+        "Realism": 0.9863
       },
       "spectral_anomaly": null,
       "match": true
@@ -136,10 +136,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_7.jpg",
       "ground_truth": "FAKE",
       "predicted": "Realism",
-      "confidence": 0.9822,
+      "confidence": 0.9852,
       "all_scores": {
-        "Deepfake": 0.0178,
-        "Realism": 0.9822
+        "Deepfake": 0.0148,
+        "Realism": 0.9852
       },
       "spectral_anomaly": null,
       "match": false
@@ -148,10 +148,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_8.jpg",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9817,
+      "confidence": 0.9849,
       "all_scores": {
-        "Deepfake": 0.0183,
-        "Realism": 0.9817
+        "Deepfake": 0.0151,
+        "Realism": 0.9849
       },
       "spectral_anomaly": null,
       "match": true
@@ -160,10 +160,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_9.jpg",
       "ground_truth": "FAKE",
       "predicted": "Realism",
-      "confidence": 0.9836,
+      "confidence": 0.9865,
       "all_scores": {
-        "Deepfake": 0.0164,
-        "Realism": 0.9836
+        "Deepfake": 0.0135,
+        "Realism": 0.9865
       },
       "spectral_anomaly": null,
       "match": false
@@ -172,10 +172,10 @@
       "path": "/tmp/synth_eval_samples/eval_synth_10.jpg",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9842,
+      "confidence": 0.9871,
       "all_scores": {
-        "Deepfake": 0.0158,
-        "Realism": 0.9842
+        "Deepfake": 0.0129,
+        "Realism": 0.9871
       },
       "spectral_anomaly": null,
       "match": true
