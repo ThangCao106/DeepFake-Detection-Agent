@@ -341,7 +341,10 @@ def get_recent_forensic_certificates(limit: int = 15, db_path=None) -> list:
         cid = data.get("certificate_id") or full_cert.get("certificate_id", "CERT-DF-UNKNOWN")
         ts = data.get("created_at") or full_cert.get("timestamp", "")
         verdict = data.get("auditable_verdict") or full_cert.get("auditable_verdict", "AUTHENTIC_MEDIA_LIKELY")
-        is_real = "SUSPECTED" not in verdict and "DETECTED" not in verdict and "FAKE" not in verdict
+        is_real = ("SUSPECTED" not in verdict and 
+                   "DETECTED" not in verdict and 
+                   "FAKE" not in verdict and 
+                   "SYNTHETIC" not in verdict)
         risk = float(data.get("composite_risk_score") or full_cert.get("composite_risk_score") or 0.0)
 
         # Image references

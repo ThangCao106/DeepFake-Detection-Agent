@@ -1612,11 +1612,9 @@ class GenerativeAIDiffusionDetector:
             # and heavy-tailed non-Gaussian sensor residual noise (kurtosis > 9.5)
             # where real camera optics exhibit natural roll-off and Gaussian PRNU (kurtosis ~ 3.0).
             is_diffusion_portrait = bool(
-                (lap_var > 1600.0 and res_kurtosis > 9.5) or
-                (lap_var > 2200.0 and res_kurtosis > 6.0) or
-                (lap_var > 2800.0) or
-                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20) or
-                (lap_var > 300.0 and res_kurtosis > 6.0)
+                (220.0 <= lap_var <= 650.0 and res_kurtosis > 7.5 and overall_res_energy > 0.55) or
+                (lap_var > 1600.0 and res_kurtosis > 9.5 and overall_res_energy > 0.60 and skin_pct < 10.0) or
+                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
             )
 
             if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait:
@@ -2023,8 +2021,9 @@ class DeepfakeDetector:
                 # 2. Latent diffusion micro-edge and non-Gaussian kurtosis (is_ai_art = True)
                 has_corneal_tamper = bool(corneal_score > 0.65)
                 has_biometric_tamper = bool(human_risk >= 0.80 or (human_eval and human_eval.get("is_deepfake", False)))
-                if is_ai_art or has_corneal_tamper or has_biometric_tamper:
-                    tamper_risk = max(composite_risk, human_risk, 0.988 if is_ai_art else 0.975)
+                has_neural_tamper = bool(is_fake_pred and fake_prob >= 0.88)
+                if is_ai_art or has_corneal_tamper or has_biometric_tamper or has_neural_tamper:
+                    tamper_risk = max(composite_risk, human_risk, fake_prob, 0.988 if is_ai_art else 0.975)
                     composite_risk = round(float(tamper_risk), 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
 
@@ -2057,8 +2056,9 @@ class DeepfakeDetector:
             else:
                 # Single Stream: Non-Human Media (Nature, Objects, Architecture, Scenery)
                 has_corneal_tamper = bool(corneal_score > 0.65)
-                if is_ai_art or has_corneal_tamper:
-                    composite_risk = round(float(max(general_risk, 0.988 if is_ai_art else 0.975)), 4)
+                has_neural_tamper = bool(is_fake_pred and fake_prob >= 0.88)
+                if is_ai_art or has_corneal_tamper or has_neural_tamper:
+                    composite_risk = round(float(max(general_risk, fake_prob, 0.988 if is_ai_art else 0.975)), 4)
                 else:
                     composite_risk = general_risk
                 analysis_mode = "SINGLE_STREAM_GENERAL"
