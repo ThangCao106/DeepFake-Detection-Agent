@@ -1,7 +1,7 @@
 {
   "population": "Vietnamese In-The-Wild (Threads-DFBench-VN)",
-  "benchmark_date": "2026-11-07",
-  "timestamp_utc": "2026-11-07T03:59:20Z",
+  "benchmark_date": "2026-11-08",
+  "timestamp_utc": "2026-11-08T03:43:58Z",
   "total_samples_evaluated": 30,
   "optimal_decision_threshold_tau_star": 0.37,
   "optimal_platt_temperature_T_star": 2.5,
