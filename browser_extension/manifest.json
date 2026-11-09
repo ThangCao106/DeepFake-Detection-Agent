@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "Deepfake Forensic Shield - AI Social Media Inspector",
+  "short_name": "DF-Shield",
+  "version": "1.0.0",
+  "description": "Client-Server Hybrid Deepfake & Synthetic Media Detection Extension for TikTok, Instagram Reels, Threads, YouTube Shorts, and Web Media.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://detection.dtpsoft.vn/*",
+    "http://localhost:5000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Deepfake Forensic Shield",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.tiktok.com/*",
+        "*://*.instagram.com/*",
+        "*://*.threads.net/*",
+        "*://*.youtube.com/*",
+        "*://*.facebook.com/*",
+        "*://*.twitter.com/*",
+        "*://*.x.com/*",
+        "<all_urls>"
+      ],
+      "js": ["content_script.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay.css", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

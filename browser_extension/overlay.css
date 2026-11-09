@@ -1,0 +1,192 @@
+/* overlay.css - Clinical Cyberpunk Forensic Styling for DF-Shield Extension */
+
+#df-shield-float-btn {
+    position: absolute;
+    z-index: 2147483646;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+#df-shield-float-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+}
+
+/* Toast Notifications */
+#df-shield-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    z-index: 2147483647;
+    background: rgba(15, 23, 42, 0.95);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#df-shield-toast.df-toast-show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#df-shield-toast.df-toast-success {
+    border-color: #10b981;
+}
+
+#df-shield-toast.df-toast-error {
+    border-color: #ef4444;
+}
+
+/* In-Situ Forensic Overlay Card */
+.df-shield-overlay-card {
+    position: absolute;
+    z-index: 2147483646;
+    width: 280px;
+    background: rgba(11, 15, 25, 0.94);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #f8fafc;
+    animation: dfFadeIn 0.25s ease-out;
+}
+
+@keyframes dfFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.df-shield-overlay-card.df-card-fake {
+    border: 1.5px solid #ef4444;
+}
+
+.df-shield-overlay-card.df-card-real {
+    border: 1.5px solid #10b981;
+}
+
+.df-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.df-card-badge-seal {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #f59e0b;
+}
+
+.df-card-close-btn {
+    cursor: pointer;
+    font-size: 14px;
+    color: #94a3b8;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.df-card-close-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.df-card-verdict {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.df-verdict-icon {
+    font-size: 26px;
+}
+
+.df-verdict-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.df-card-fake .df-verdict-title {
+    color: #ef4444;
+}
+
+.df-card-real .df-verdict-title {
+    color: #10b981;
+}
+
+.df-verdict-sub {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.df-card-meta {
+    font-size: 11px;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.df-card-meta code {
+    font-family: monospace;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+.df-card-actions {
+    display: flex;
+    justify-content: stretch;
+}
+
+.df-btn-cert {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: #4f46e5;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.df-btn-cert:hover {
+    background: #4338ca;
+}

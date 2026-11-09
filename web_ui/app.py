@@ -264,7 +264,37 @@ def upload_file():
             logger.error(f"[URL Ingestion] Error processing {url}: {e}", exc_info=True)
             return jsonify({'error': f'Lỗi bóc tách luồng media: {str(e)}'}), 500
 
-    # Route B: Traditional Direct File Upload
+    # Route B: Direct Base64 Image Capture (from Browser Extension)
+    base64_data = (request.form.get('image_base64') or req_json.get('image_base64') or '').strip()
+    if base64_data:
+        try:
+            import base64
+            import uuid
+            if ',' in base64_data:
+                base64_data = base64_data.split(',', 1)[1]
+            raw_bytes = base64.b64decode(base64_data)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            rand_id = uuid.uuid4().hex[:6]
+            filename = f"ext_capture_{timestamp}_{rand_id}.png"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            with open(filepath, 'wb') as f:
+                f.write(raw_bytes)
+            
+            source_link = (request.form.get('source_url') or req_json.get('source_url') or '').strip()
+            logger.info(f"[Extension Ingestion] Base64 image saved: {filename}")
+            return jsonify({
+                'success': True,
+                'filename': filename,
+                'filepath': filepath,
+                'media_type': 'image',
+                'source_url': source_link,
+                'platform': 'BrowserExtension'
+            })
+        except Exception as e:
+            logger.error(f"[Extension Ingestion] Error decoding base64: {e}", exc_info=True)
+            return jsonify({'error': f'Lỗi giải mã ảnh từ Browser Extension: {str(e)}'}), 500
+
+    # Route C: Traditional Direct File Upload
     if 'file' not in request.files:
         return jsonify({'error': 'No file or media URL provided'}), 400
     

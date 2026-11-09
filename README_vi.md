@@ -24,6 +24,11 @@ Nhằm xóa bỏ rào cản thao tác tải tệp thủ công đối với ngư�
 2. **Khử Ghép Kênh & Giới Hạn Phòng Thủ (Rate & Size Limiting)**: Sử dụng động cơ headless `yt-dlp` và HTTP streaming có kiểm soát trần an toàn tài nguyên ($M_{\max} = 100\text{ MB}$, timeout 30s) nhằm ngăn ngừa tấn công làm cạn kiệt bộ nhớ hoặc từ chối dịch vụ (DoS).
 3. **PWA Web Share Target 1-Chạm Trên Di Động**: Khai báo cấu hình `share_target` trong `manifest.json`. Khi người dùng duyệt video trên TikTok hoặc Instagram trên thiết bị di động, chỉ cần nhấn nút **"Chia sẻ" (Share)** và chọn ứng dụng **Deepfake Forensic Agent**, liên kết sẽ tự động được điều hướng vào buồng lái giám định mà không cần lưu video về máy.
 4. **Đóng Dấu Mật Mã & Liên Kết Nguồn Gốc (Cryptographic Provenance Linking)**: Luồng dữ liệu sau khi tải về được sinh mã băm SHA-256 duy nhất, ghi nhận URL nguồn gốc vào Chứng thư Giám định Pháp y Số (`CERT-DF-...`) và lập chỉ mục SSR Google Search công khai (`/certificate/<id>`).
+5. **Tiện Ích Mở Rộng Trình Duyệt Lai Ghép (Client-Server Hybrid Browser Extension)**:
+   - Thư mục mã nguồn: [browser_extension/](file:///d:/DATA/TC/Py_Ex/NCS/DeepFake-Detection-Agent/browser_extension) (Google Chrome & Microsoft Edge Manifest V3).
+   - Tự động bắt khung hình video và hình ảnh trên TikTok, Instagram Reels, Threads, YouTube Shorts, Facebook qua API đặc quyền `chrome.tabs.captureVisibleTab`, triệt tiêu hoàn toàn lỗi CORS Tainted Canvas.
+   - Nút bấm nổi `🛡️ Scan AI` tự động xuất hiện khi di chuột vào khung video trên mạng xã hội.
+   - Chèn thẻ chứng thư nổi (*In-Situ Forensic Overlay*) đè lên video kèm mã chứng thư số `CERT-DF-...` và đường dẫn mở trang kiểm tra pháp lý công khai của Googlebot (`https://detection.dtpsoft.vn/certificate/<id>`).
 
 ---
 

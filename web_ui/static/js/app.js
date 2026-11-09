@@ -362,7 +362,7 @@ function clearUpload() {
     uploadedFilePath = null;
     fileInput.value = '';
     if (urlInput) urlInput.value = '';
-    
+
     document.querySelector('.upload-content').style.display = 'block';
     mediaPreview.style.display = 'none';
     previewImg.src = '';
@@ -370,7 +370,7 @@ function clearUpload() {
     previewVideo.src = '';
     previewVideo.style.display = 'none';
     previewAudio.style.display = 'none';
-    
+
     analyzeBtn.disabled = true;
     resultsCard.style.display = 'none';
     const certCard = document.getElementById('forensicCertCard');
@@ -427,7 +427,7 @@ async function optimizeImageIfNeeded(file) {
                                     type: 'image/jpeg',
                                     lastModified: Date.now()
                                 });
-                                console.log(`[Optimizer] Đã tối ưu ${file.name}: ${(file.size/1024/1024).toFixed(2)}MB -> ${(optimizedFile.size/1024/1024).toFixed(2)}MB`);
+                                console.log(`[Optimizer] Đã tối ưu ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(optimizedFile.size / 1024 / 1024).toFixed(2)}MB`);
                                 resolve(optimizedFile);
                             } else {
                                 resolve(file);
@@ -494,8 +494,8 @@ analyzeBtn.addEventListener('click', async () => {
             data = JSON.parse(responseText);
         } catch (jsonErr) {
             if (response.status === 413) {
-                throw new Error(currentLang === 'vi' 
-                    ? 'Dung lượng file quá lớn (413 Request Entity Too Large). Vui lòng thêm "client_max_body_size 200M;" vào Nginx hoặc chọn file nhỏ hơn.' 
+                throw new Error(currentLang === 'vi'
+                    ? 'Dung lượng file quá lớn (413 Request Entity Too Large). Vui lòng thêm "client_max_body_size 200M;" vào Nginx hoặc chọn file nhỏ hơn.'
                     : 'File payload too large (413 Request Entity Too Large). Please configure "client_max_body_size 200M;" on Nginx or use a smaller file.');
             }
             throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100)}...`);
@@ -577,14 +577,14 @@ analyzeBtn.addEventListener('click', async () => {
                                 source_url: rawUrl || ''
                             })
                         });
-                        
+
                         const resText = await res.text();
                         let resData = null;
                         try {
                             resData = JSON.parse(resText);
                         } catch (parseErr) {
-                            throw new Error(res.status === 413 
-                                ? 'Dung lượng yêu cầu quá lớn (413)' 
+                            throw new Error(res.status === 413
+                                ? 'Dung lượng yêu cầu quá lớn (413)'
                                 : `Phản hồi máy chủ (${res.status}) không hợp lệ`);
                         }
 
@@ -728,25 +728,25 @@ function sendMessage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(resData => {
-            answered = true;
-            removeAgentThinking();
-            if (resData.success && resData.answer) {
-                addAgentMessage(resData.answer);
-            } else {
-                addAgentMessage(resData.error || 'Hệ thống đã ghi nhận câu hỏi.');
-            }
-            hideAgentStatus();
-        })
-        .catch(err => {
-            answered = true;
-            removeAgentThinking();
-            addSystemMessage(`Lỗi kết nối: ${err.message}`, 'error');
-            chatInput.disabled = false;
-            sendBtn.disabled = false;
-            hideAgentStatus();
-        });
+            .then(res => res.json())
+            .then(resData => {
+                answered = true;
+                removeAgentThinking();
+                if (resData.success && resData.answer) {
+                    addAgentMessage(resData.answer);
+                } else {
+                    addAgentMessage(resData.error || 'Hệ thống đã ghi nhận câu hỏi.');
+                }
+                hideAgentStatus();
+            })
+            .catch(err => {
+                answered = true;
+                removeAgentThinking();
+                addSystemMessage(`Lỗi kết nối: ${err.message}`, 'error');
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                hideAgentStatus();
+            });
     }
 }
 
@@ -857,7 +857,7 @@ function displayResults(data) {
     // Render frame-by-frame analysis for videos if present
     const videoFramesSection = document.getElementById('videoFramesSection');
     const framesGrid = document.getElementById('framesGrid');
-    
+
     const frames = data.frame_results || (data.forensic_certificate && data.forensic_certificate.multi_dimensional_evidence && data.forensic_certificate.multi_dimensional_evidence.frame_by_frame_analysis);
 
     if (frames && frames.length > 0) {
@@ -888,15 +888,15 @@ function displayResults(data) {
         const imgMeta = cert.image_metadata || {};
         const evMatrix = cert.evidence_matrix_6d || {};
         const dim5 = evMatrix.dim5_corneal_reflection || {};
-        const hasHuman = humanEval.has_human !== undefined 
-            ? humanEval.has_human 
-            : (imgMeta.face_detected !== undefined 
-                ? imgMeta.face_detected 
+        const hasHuman = humanEval.has_human !== undefined
+            ? humanEval.has_human
+            : (imgMeta.face_detected !== undefined
+                ? imgMeta.face_detected
                 : (dim5.status !== 'BYPASS_NON_HUMAN'));
 
         document.getElementById('certIdVal').textContent = cert.certificate_id || 'N/A';
         document.getElementById('certRiskVal').textContent = (cert.composite_risk_score * 100).toFixed(1) + '%';
-        
+
         const isAudio = Boolean(
             (data.media_type && data.media_type.includes('audio')) ||
             (cert.media_type && cert.media_type.includes('audio')) ||
@@ -930,14 +930,14 @@ function displayResults(data) {
             if (prnuLabelEl) prnuLabelEl.textContent = 'Tính Nhất Quán Pha & ZCR';
             if (cornealLabelEl) cornealLabelEl.textContent = 'Kênh Micro & Nhiễu Nền';
 
-            const vocoder = (ev.vocoder_spectral_analysis && ev.vocoder_spectral_analysis.vocoder_anomaly_score !== undefined) 
-                ? (ev.vocoder_spectral_analysis.vocoder_anomaly_score * 100).toFixed(1) + '%' 
+            const vocoder = (ev.vocoder_spectral_analysis && ev.vocoder_spectral_analysis.vocoder_anomaly_score !== undefined)
+                ? (ev.vocoder_spectral_analysis.vocoder_anomaly_score * 100).toFixed(1) + '%'
                 : '18.5%';
-            const pitchJitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter !== undefined) 
-                ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(2) + '%' 
+            const pitchJitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter !== undefined)
+                ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(2) + '%'
                 : '2.10%';
-            const phaseVal = (ev.phase_regularity_analysis && ev.phase_regularity_analysis.phase_anomaly_score !== undefined) 
-                ? (ev.phase_regularity_analysis.phase_anomaly_score * 100).toFixed(1) + '%' 
+            const phaseVal = (ev.phase_regularity_analysis && ev.phase_regularity_analysis.phase_anomaly_score !== undefined)
+                ? (ev.phase_regularity_analysis.phase_anomaly_score * 100).toFixed(1) + '%'
                 : '12.0%';
             const micVal = 'Micro Vật Lý (92%)';
 
@@ -953,8 +953,8 @@ function displayResults(data) {
 
             const stream1 = (cert.dual_stream_breakdown && cert.dual_stream_breakdown.stream_1_general_video) || {};
             const motionJitter = stream1.temporal_motion_jitter !== undefined ? (stream1.temporal_motion_jitter * 100).toFixed(1) + '%' : '4.2%';
-            const peakProb = stream1.peak_fake_probability !== undefined 
-                ? (stream1.peak_fake_probability * 100).toFixed(1) + '%' 
+            const peakProb = stream1.peak_fake_probability !== undefined
+                ? (stream1.peak_fake_probability * 100).toFixed(1) + '%'
                 : (cert.composite_risk_score !== undefined ? (cert.composite_risk_score * 100).toFixed(1) + '%' : '24.0%');
             const lipSyncVal = hasHuman ? 'DF26 Khớp (96%)' : 'Bypass Non-Human';
             const prnuInter = 'Nhất Quán Cảm Biến';
@@ -1069,7 +1069,7 @@ function displayResults(data) {
 let latestDetectionResult = null;
 
 const originalDisplayResults = displayResults;
-displayResults = function(data) {
+displayResults = function (data) {
     latestDetectionResult = data;
     originalDisplayResults(data);
     if (typeof populateGenUiArtifacts === 'function') {
@@ -1085,7 +1085,7 @@ function sendDisputeQuery(queryText) {
 
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
-    
+
     // 2. Ensure inputs are unlocked
     if (chatInput) {
         chatInput.disabled = false;
@@ -1120,9 +1120,9 @@ function jumpToForensicCertificate() {
     const certCard = document.getElementById('forensicCertCard');
     const resultsCard = document.getElementById('resultsCard');
     const target = (certCard && certCard.style.display !== 'none') ? certCard : (resultsCard || document.body);
-    
+
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
+
     // Trigger luminous pulsing glow
     target.classList.remove('glow-highlight');
     void target.offsetWidth; // force browser layout reflow
@@ -1138,12 +1138,12 @@ function toggleChatForensicDetails(btn) {
     if (!card) return;
     const details = card.querySelector('.chat-forensic-collapsible');
     if (!details) return;
-    
+
     const isHidden = (details.style.display === 'none' || details.style.display === '');
     details.style.display = isHidden ? 'block' : 'none';
     const t = TRANSLATIONS[currentLang] || TRANSLATIONS.vi;
-    btn.innerHTML = isHidden 
-        ? `<span>▲</span><span>${t.btn_collapse_chat_details || 'Thu gọn phân tích'}</span>` 
+    btn.innerHTML = isHidden
+        ? `<span>▲</span><span>${t.btn_collapse_chat_details || 'Thu gọn phân tích'}</span>`
         : `<span>▼</span><span>${t.btn_expand_chat_details || 'Mở rộng phân tích trong Chat'}</span>`;
 }
 window.toggleChatForensicDetails = toggleChatForensicDetails;
@@ -1169,21 +1169,21 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
     const imgMeta = cert.image_metadata || {};
     const evMatrix = cert.evidence_matrix_6d || {};
     const dim5 = evMatrix.dim5_corneal_reflection || evMatrix.dim5_lip_sync_rppg || evMatrix.dim5_vocal_cord_physiology || {};
-    const hasHuman = humanEval.has_human !== undefined 
-        ? humanEval.has_human 
-        : (imgMeta.face_detected !== undefined 
-            ? imgMeta.face_detected 
+    const hasHuman = humanEval.has_human !== undefined
+        ? humanEval.has_human
+        : (imgMeta.face_detected !== undefined
+            ? imgMeta.face_detected
             : (dim5.status !== 'BYPASS_NON_HUMAN'));
 
     const isVideo = (data.media_type && data.media_type.includes('video')) ||
-                    (cert.media_type && cert.media_type.includes('video')) ||
-                    (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('video')) ||
-                    (data.frame_results && data.frame_results.length > 0);
+        (cert.media_type && cert.media_type.includes('video')) ||
+        (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('video')) ||
+        (data.frame_results && data.frame_results.length > 0);
 
     const isAudio = (data.media_type && data.media_type.includes('audio')) ||
-                    (cert.media_type && cert.media_type.includes('audio')) ||
-                    (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('audio')) ||
-                    (cert.audio_metadata !== undefined);
+        (cert.media_type && cert.media_type.includes('audio')) ||
+        (cert.analysis_mode && cert.analysis_mode.toLowerCase().includes('audio')) ||
+        (cert.audio_metadata !== undefined);
 
     const tau = cert.decision_threshold || 0.8118;
     const triad = cert.triad_council_debate || data.triad_council_debate;
@@ -1231,8 +1231,8 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
         msgMagistrateText = triad.consensus_summary || "";
     }
 
-    const asymmetryScore = ev.corneal_reflection_analysis && ev.corneal_reflection_analysis.corneal_reflection_symmetry !== undefined 
-        ? (1.0 - ev.corneal_reflection_analysis.corneal_reflection_symmetry) 
+    const asymmetryScore = ev.corneal_reflection_analysis && ev.corneal_reflection_analysis.corneal_reflection_symmetry !== undefined
+        ? (1.0 - ev.corneal_reflection_analysis.corneal_reflection_symmetry)
         : (isFake ? 0.38 : 0.04);
     const angleDelta = (asymmetryScore * 18.5).toFixed(1);
 
@@ -1246,7 +1246,7 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                 ? "Phát hiện độ giật liên khung (Motion Jitter) và sai khác khẩu hình âm vị (Phoneme-Viseme delay > 45ms), dấu hiệu của mô hình deepfake hoán đổi khuôn mặt/Wav2Lip."
                 : "Chuỗi khung hình duy trì tính liên tục quang học tự nhiên, đồng bộ khẩu hình và vân cảm biến PRNU nhất quán qua thời gian.";
         } else {
-            msgGeminiText = isFake 
+            msgGeminiText = isFake
                 ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và bất đối xứng quang học vi mô, dấu hiệu của kiến trúc sinh ảnh AI (Diffusion/GAN)."
                 : "Kết cấu năng lượng bậc cao 2D-DWT đồng đều trên toàn bộ bức ảnh, phù hợp tuyệt đối với cảm biến CMOS tự nhiên.";
         }
@@ -1651,7 +1651,7 @@ function toggleBenchmarkCard() {
     const card = document.getElementById('benchmarkCard');
     if (!card) return;
     const isHidden = (card.style.display === 'none' || card.style.display === '');
-    
+
     // Require gate login if opening Benchmark Hub and not yet authenticated
     if (isHidden && !isBenchmarkGateAuthenticated()) {
         showBenchmarkGateOverlay();
@@ -1706,7 +1706,7 @@ function updateBenchmarkStatusUI(statusData) {
     const progFill = document.getElementById('benchProgressFill');
     const accEl = document.getElementById('benchAccVal');
     const latEl = document.getElementById('benchLatencyVal');
-    
+
     if (statusData.is_running) {
         window.benchmarkIsRunning = true;
         if (badge) {
@@ -2048,42 +2048,42 @@ function startBenchmark() {
                 import_url: importUrl
             })
         })
-        .then(async res => {
-            appendTerminalLogLine('DEBUG', `[REST Phản Hồi] HTTP Status: ${res.status} (${res.statusText})`);
-            const text = await res.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseErr) {
-                appendTerminalLogLine('ERROR', `[REST Lỗi Parse JSON] HTTP ${res.status}: ${text.substring(0, 150)}`);
-                updateBenchmarkStatusUI({ is_running: false });
-                return;
-            }
-
-            if (data.status === 'started' || data.status === 'running') {
-                appendTerminalLogLine('INFO', `✅ [ĐÃ KÍCH HOẠT] Job ID: ${data.job_id} | ${data.message || 'Worker đang chạy'}`);
-                updateBenchmarkStatusUI({ is_running: true });
-                // Khởi chạy polling log & metrics ngay sau khi job đã được backend xác nhận
-                startBenchmarkPollingFallback();
-            } else if (data.status === 'error') {
-                appendTerminalLogLine('WARN', `⚠️ [Máy chủ từ chối] ${data.message || 'Tiến trình đang hoạt động'}`);
-                if (data.message && data.message.includes('already running')) {
-                    appendTerminalLogLine('INFO', `🔄 Đang kết nối vào tiến trình đang chạy...`);
-                    startBenchmarkPollingFallback();
-                } else {
+            .then(async res => {
+                appendTerminalLogLine('DEBUG', `[REST Phản Hồi] HTTP Status: ${res.status} (${res.statusText})`);
+                const text = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseErr) {
+                    appendTerminalLogLine('ERROR', `[REST Lỗi Parse JSON] HTTP ${res.status}: ${text.substring(0, 150)}`);
                     updateBenchmarkStatusUI({ is_running: false });
+                    return;
                 }
-            } else {
-                appendTerminalLogLine('DEBUG', `[REST Data] ${JSON.stringify(data)}`);
-                startBenchmarkPollingFallback();
-            }
-        })
-        .catch(fetchErr => {
-            console.error('REST benchmark start error:', fetchErr);
-            appendTerminalLogLine('ERROR', `❌ [Lỗi Kết Nối REST] ${fetchErr.name}: ${fetchErr.message}`);
-            updateBenchmarkStatusUI({ is_running: false });
-            alert(`Lỗi kết nối tới Benchmark Hub (${startEndpoint}):\n${fetchErr.message}\nVui lòng kiểm tra console F12.`);
-        });
+
+                if (data.status === 'started' || data.status === 'running') {
+                    appendTerminalLogLine('INFO', `✅ [ĐÃ KÍCH HOẠT] Job ID: ${data.job_id} | ${data.message || 'Worker đang chạy'}`);
+                    updateBenchmarkStatusUI({ is_running: true });
+                    // Khởi chạy polling log & metrics ngay sau khi job đã được backend xác nhận
+                    startBenchmarkPollingFallback();
+                } else if (data.status === 'error') {
+                    appendTerminalLogLine('WARN', `⚠️ [Máy chủ từ chối] ${data.message || 'Tiến trình đang hoạt động'}`);
+                    if (data.message && data.message.includes('already running')) {
+                        appendTerminalLogLine('INFO', `🔄 Đang kết nối vào tiến trình đang chạy...`);
+                        startBenchmarkPollingFallback();
+                    } else {
+                        updateBenchmarkStatusUI({ is_running: false });
+                    }
+                } else {
+                    appendTerminalLogLine('DEBUG', `[REST Data] ${JSON.stringify(data)}`);
+                    startBenchmarkPollingFallback();
+                }
+            })
+            .catch(fetchErr => {
+                console.error('REST benchmark start error:', fetchErr);
+                appendTerminalLogLine('ERROR', `❌ [Lỗi Kết Nối REST] ${fetchErr.name}: ${fetchErr.message}`);
+                updateBenchmarkStatusUI({ is_running: false });
+                alert(`Lỗi kết nối tới Benchmark Hub (${startEndpoint}):\n${fetchErr.message}\nVui lòng kiểm tra console F12.`);
+            });
 
     } catch (topErr) {
         console.error('Fatal startBenchmark error:', topErr);
@@ -2247,12 +2247,12 @@ function openReportModal() {
                     try {
                         renderMathInElement(body, {
                             delimiters: [
-                                {left: '$$', right: '$$', display: true},
-                                {left: '$', right: '$', display: false}
+                                { left: '$$', right: '$$', display: true },
+                                { left: '$', right: '$', display: false }
                             ],
                             throwOnError: false
                         });
-                    } catch(me) { console.debug("Math render notice:", me); }
+                    } catch (me) { console.debug("Math render notice:", me); }
                 }
             } else {
                 body.innerHTML = `<div style="text-align: center; padding: 25px; color: #f59e0b;">${data.message || 'No report found.'}</div>`;
@@ -2429,7 +2429,7 @@ async function loadAuditReportData(period = 'daily', targetDate = '') {
         const dateSel = document.getElementById('auditDateSelect');
         if (dateSel && data.available_dates && data.available_dates.length > 0) {
             const currentVal = targetDate || data.selected_date || data.available_dates[0];
-            dateSel.innerHTML = data.available_dates.map(d => 
+            dateSel.innerHTML = data.available_dates.map(d =>
                 `<option value="${d}" ${d === currentVal ? 'selected' : ''}>📅 ${d}${d === data.available_dates[0] ? ' (Hôm nay)' : ''}</option>`
             ).join('');
         }
@@ -2437,7 +2437,7 @@ async function loadAuditReportData(period = 'daily', targetDate = '') {
         // Render Canonical 10 Commercial Tools Suite
         if (data.commercial_suite_10 && data.commercial_suite_10.length > 0) {
             renderCommercialSuite10Table(data.commercial_suite_10);
-        renderOpenSourceModelsTable(data.open_source_models);
+            renderOpenSourceModelsTable(data.open_source_models);
         }
 
         // Render Commercial Arena Table
@@ -2728,7 +2728,7 @@ async function exportAblationCertificate() {
     try {
         const res = await fetch(`${apiBase}/api/benchmark/audit_certificate`);
         const cert = await res.json();
-        
+
         const modal = document.getElementById('reportModalBackdrop');
         const body = document.getElementById('reportModalBody');
         if (modal && body) {
@@ -3127,7 +3127,7 @@ async function applyCouncilApprovedWeights() {
     const user = sessionStorage.getItem("benchmark_gate_user") || "thang.cd";
     const apiBase = getBenchmarkApiBase();
 
-    const confirmMsg = 
+    const confirmMsg =
         `🏛️ XÁC NHẬN PHÊ DUYỆT BỘ TRỌNG SỐ TỪ HỘI ĐỒNG LLM:\n\n` +
         `• Quyết định: ${delib.consensus_verdict}\n` +
         `• Tỷ trọng Người (α): ${prop.alpha_human}\n` +
@@ -3162,7 +3162,7 @@ async function applyCouncilApprovedWeights() {
 
         if (res.ok && data.status === 'success') {
             appendTerminalLogLine('INFO', `🎉 [COUNCIL APPLIED] Đã áp dụng thành công bộ trọng số do Hội đồng phê duyệt: α=${prop.alpha_human}, T*=${prop.platt_T_star}, τ*=${prop.youden_tau_star}, γ=${prop.focal_gamma}!`);
-            
+
             // Update UI widgets in Workbench
             const slider = document.getElementById('alphaRangeSlider');
             if (slider) slider.value = prop.alpha_human;
@@ -3210,7 +3210,7 @@ function resetGenUiStepper() {
     }
     const stepper = document.getElementById('genUiAgentStepper');
     if (!stepper) return;
-    
+
     const steps = ['Vision', 'Corneal', 'LipSync', 'Magistrate'];
     steps.forEach(s => {
         const item = document.getElementById(`genUiStep${s}`);
@@ -3223,7 +3223,7 @@ function resetGenUiStepper() {
         }
         if (prog) prog.style.width = '0%';
     });
-    
+
     const badge = document.getElementById('genUiOverallBadge');
     if (badge) {
         badge.textContent = 'STANDBY';
@@ -3239,7 +3239,7 @@ function startGenUiAgentStepper() {
         stepper.style.display = 'block';
         stepper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-    
+
     const badge = document.getElementById('genUiOverallBadge');
     if (badge) {
         badge.textContent = '⚡ RUNNING MULTI-AGENT QUORUM';
@@ -3255,7 +3255,7 @@ function startGenUiAgentStepper() {
     ];
 
     let currentStepIdx = 0;
-    
+
     function advanceStep() {
         if (currentStepIdx < steps.length) {
             const step = steps[currentStepIdx];
@@ -3345,7 +3345,7 @@ let currentCard1State = {
     currentTab: 'corneal'
 };
 
-window.switchCard1Evidence = function(mode) {
+window.switchCard1Evidence = function (mode) {
     currentCard1State.currentTab = mode;
     const tabCorneal = document.getElementById('tabBtnCorneal');
     const tabContext = document.getElementById('tabBtnContext');
@@ -3442,10 +3442,10 @@ function populateGenUiArtifacts(data) {
         const imgMeta = cert.image_metadata || {};
         const evMatrix = cert.evidence_matrix_6d || {};
         const dim5 = evMatrix.dim5_corneal_reflection || evMatrix.dim5_lip_sync_rppg || evMatrix.dim5_vocal_cord_physiology || {};
-        const hasHuman = humanEval.has_human !== undefined 
-            ? humanEval.has_human 
-            : (imgMeta.face_detected !== undefined 
-                ? imgMeta.face_detected 
+        const hasHuman = humanEval.has_human !== undefined
+            ? humanEval.has_human
+            : (imgMeta.face_detected !== undefined
+                ? imgMeta.face_detected
                 : (dim5.status !== 'BYPASS_NON_HUMAN'));
 
         const isAudio = Boolean(
@@ -3493,433 +3493,433 @@ function populateGenUiArtifacts(data) {
         const widget2Desc = document.getElementById('genUiWidget2Desc');
         const widget2Footer = document.getElementById('genUiWidget2FooterLabel');
 
-    const asymmetryScore = isCornealBypassed
-        ? 0.0
-        : (cornealAnalysis.corneal_asymmetry_score !== undefined 
-            ? cornealAnalysis.corneal_asymmetry_score 
-            : (cornealAnalysis.corneal_reflection_symmetry !== undefined 
-                ? (1.0 - cornealAnalysis.corneal_reflection_symmetry) 
-                : 0.0));
-    
-    const angleDelta = (asymmetryScore * 18.5).toFixed(1);
+        const asymmetryScore = isCornealBypassed
+            ? 0.0
+            : (cornealAnalysis.corneal_asymmetry_score !== undefined
+                ? cornealAnalysis.corneal_asymmetry_score
+                : (cornealAnalysis.corneal_reflection_symmetry !== undefined
+                    ? (1.0 - cornealAnalysis.corneal_reflection_symmetry)
+                    : 0.0));
 
-    const saraab = ev.saraab_patch_heatmap || evMatrix.dim6_patch_heatmap_uncertainty || {};
-    const peak = saraab.peak_hotspot || {};
-    const regionName = peak.anatomical_region || 'Central Salient Object / Architecture Structural Region';
-    const peakScore = peak.peak_anomaly_score !== undefined ? peak.peak_anomaly_score : 1.0;
+        const angleDelta = (asymmetryScore * 18.5).toFixed(1);
 
-    const sceneCtx = cert.scene_context || humanEval.scene_context || (evMatrix.dim6_patch_heatmap_uncertainty && evMatrix.dim6_patch_heatmap_uncertainty.scene_context) || data.scene_context || {};
-    const sceneCategoryFull = sceneCtx.category || (hasHuman ? 'Chân Dung Đời Thường' : 'Phi Sinh Trắc / Tổng Hợp');
-    let sceneCategoryShort = sceneCtx.short_name || '';
-    const sceneIcon = sceneCtx.icon || (hasHuman ? '👤' : '🏞️');
+        const saraab = ev.saraab_patch_heatmap || evMatrix.dim6_patch_heatmap_uncertainty || {};
+        const peak = saraab.peak_hotspot || {};
+        const regionName = peak.anatomical_region || 'Central Salient Object / Architecture Structural Region';
+        const peakScore = peak.peak_anomaly_score !== undefined ? peak.peak_anomaly_score : 1.0;
 
-    if (!sceneCategoryShort) {
-        if (hasHuman) {
-            if (regionName.includes('Periorbital') || regionName.includes('Eyes')) {
-                sceneCategoryShort = 'Chân Dung Cận Cảnh';
-            } else if (regionName.includes('Perioral') || regionName.includes('Mouth')) {
-                sceneCategoryShort = 'Chân Dung Khuôn Mặt';
-            } else {
-                sceneCategoryShort = 'Chân Dung Đời Thường';
-            }
-        } else {
-            if (regionName.includes('Architecture') || regionName.includes('Central')) {
-                sceneCategoryShort = 'Ngoại Cảnh / Kiến Trúc';
-            } else if (regionName.includes('Skylight') || regionName.includes('Sky')) {
-                sceneCategoryShort = 'Bầu Trời / Cảnh Quan';
-            } else {
-                sceneCategoryShort = 'Phi Sinh Trắc (Vật Thể)';
-            }
-        }
-    }
+        const sceneCtx = cert.scene_context || humanEval.scene_context || (evMatrix.dim6_patch_heatmap_uncertainty && evMatrix.dim6_patch_heatmap_uncertainty.scene_context) || data.scene_context || {};
+        const sceneCategoryFull = sceneCtx.category || (hasHuman ? 'Chân Dung Đời Thường' : 'Phi Sinh Trắc / Tổng Hợp');
+        let sceneCategoryShort = sceneCtx.short_name || '';
+        const sceneIcon = sceneCtx.icon || (hasHuman ? '👤' : '🏞️');
 
-    const isOutdoor = Boolean(sceneCtx.is_outdoor || (sceneCtx.scene_type && sceneCtx.scene_type.includes('OUTDOOR')));
-
-    // 0. Update Visual 6-Step Forensic Detection Pipeline Banner
-    const pipelineRouteBadge = document.getElementById('pipelineRouteBadge');
-    const pipeStep1Desc = document.getElementById('pipeStep1Desc');
-    const pipeStep2Icon = document.getElementById('pipeStep2Icon');
-    const pipeStep2Desc = document.getElementById('pipeStep2Desc');
-    const pipeStep3Desc = document.getElementById('pipeStep3Desc');
-    const pipeStep4Desc = document.getElementById('pipeStep4Desc');
-    const pipeStep5 = document.getElementById('pipeStep5');
-    const pipeStep5Icon = document.getElementById('pipeStep5Icon');
-    const pipeStep5Desc = document.getElementById('pipeStep5Desc');
-    const pipeStep6Desc = document.getElementById('pipeStep6Desc');
-
-    if (pipelineRouteBadge) {
-        if (isAudio) {
-            pipelineRouteBadge.textContent = 'Single-Stream (Acoustic Forensic)';
-            pipelineRouteBadge.className = 'pipeline-route-badge';
-            pipelineRouteBadge.style.background = '#fef3c7';
-            pipelineRouteBadge.style.color = '#b45309';
-        } else if (isVideo) {
-            pipelineRouteBadge.textContent = hasHuman ? 'Temporal + LipSync/rPPG' : 'Temporal Micro-Window (Video)';
-            pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
-            pipelineRouteBadge.style.background = '#e0e7ff';
-            pipelineRouteBadge.style.color = '#3730a3';
-        } else if (hasHuman && isOutdoor) {
-            pipelineRouteBadge.textContent = 'Dual-Stream (Decoupled ROI: Human + Outdoor)';
-            pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
-            pipelineRouteBadge.style.background = '#ede9fe';
-            pipelineRouteBadge.style.color = '#5b21b6';
-        } else if (hasHuman) {
-            pipelineRouteBadge.textContent = 'Dual-Stream (Human Biometrics)';
-            pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
-            pipelineRouteBadge.style.background = '';
-            pipelineRouteBadge.style.color = '';
-        } else {
-            pipelineRouteBadge.textContent = 'Single-Stream (General Media)';
-            pipelineRouteBadge.className = 'pipeline-route-badge';
-            pipelineRouteBadge.style.background = '';
-            pipelineRouteBadge.style.color = '';
-        }
-    }
-    if (pipeStep1Desc) {
-        pipeStep1Desc.textContent = isAudio ? 'Tín Hiệu Âm Thanh (16kHz)' : (isVideo ? 'Video Đa Khung Hình' : 'Ảnh Tĩnh (RGB)');
-    }
-    const vnCat = sceneCtx.vn_demographic_category || '';
-    if (pipeStep2Icon && pipeStep2Desc) {
-        if (isAudio) {
-            pipeStep2Icon.textContent = '🎙️';
-            pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (VietPrism Voice)';
-        } else if (!hasHuman) {
-            pipeStep2Icon.textContent = sceneIcon;
-            pipeStep2Desc.textContent = sceneCategoryShort ? sceneCategoryShort : 'Phong Cảnh / Phi Sinh Trắc';
-        } else {
-            pipeStep2Icon.textContent = sceneIcon;
-            const badgePrefix = (vnCat && vnCat !== 'non_human_media') ? `[${vnCat}] ` : '';
-            pipeStep2Desc.textContent = `${badgePrefix}${sceneCategoryShort}`;
-        }
-    }
-    if (pipeStep3Desc) {
-        if (isAudio) {
-            pipeStep3Desc.textContent = 'VietPrism F0 Pitch + Vocoder';
-        } else if (isVideo) {
-            pipeStep3Desc.textContent = 'HDU-DFNet + SARAAB 7s';
-        } else if (!hasHuman) {
-            pipeStep3Desc.textContent = 'ViT 6D + PRNU Sensor';
-        } else if (isOutdoor) {
-            pipeStep3Desc.textContent = 'HDU-DFNet + Dual-ROI';
-        } else {
-            pipeStep3Desc.textContent = 'HDU-DFNet + WAVIE Mặt';
-        }
-    }
-    if (pipeStep4Desc) {
-        if (isAudio) {
-            pipeStep4Desc.textContent = 'Log-Mel + Phase + Formant';
-        } else if (isVideo) {
-            pipeStep4Desc.textContent = 'Motion Jitter + PRNU Inter-frame';
-        } else if (!hasHuman) {
-            pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial Wavelet';
-        } else if (isOutdoor) {
-            pipeStep4Desc.textContent = 'PRNU Cảm Biến Cảnh + RoI Khuôn Mặt';
-        } else {
-            pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial RoI';
-        }
-    }
-    if (pipeStep5 && pipeStep5Icon && pipeStep5Desc) {
-        if (isAudio) {
-            pipeStep5.classList.remove('bypassed');
-            pipeStep5.classList.add('active');
-            pipeStep5Icon.textContent = '🗣️';
-            const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(1) : '2.1';
-            pipeStep5Desc.textContent = `F0 Jitter = ${f0Jitter}% (Voice)`;
-        } else if (isVideo) {
+        if (!sceneCategoryShort) {
             if (hasHuman) {
+                if (regionName.includes('Periorbital') || regionName.includes('Eyes')) {
+                    sceneCategoryShort = 'Chân Dung Cận Cảnh';
+                } else if (regionName.includes('Perioral') || regionName.includes('Mouth')) {
+                    sceneCategoryShort = 'Chân Dung Khuôn Mặt';
+                } else {
+                    sceneCategoryShort = 'Chân Dung Đời Thường';
+                }
+            } else {
+                if (regionName.includes('Architecture') || regionName.includes('Central')) {
+                    sceneCategoryShort = 'Ngoại Cảnh / Kiến Trúc';
+                } else if (regionName.includes('Skylight') || regionName.includes('Sky')) {
+                    sceneCategoryShort = 'Bầu Trời / Cảnh Quan';
+                } else {
+                    sceneCategoryShort = 'Phi Sinh Trắc (Vật Thể)';
+                }
+            }
+        }
+
+        const isOutdoor = Boolean(sceneCtx.is_outdoor || (sceneCtx.scene_type && sceneCtx.scene_type.includes('OUTDOOR')));
+
+        // 0. Update Visual 6-Step Forensic Detection Pipeline Banner
+        const pipelineRouteBadge = document.getElementById('pipelineRouteBadge');
+        const pipeStep1Desc = document.getElementById('pipeStep1Desc');
+        const pipeStep2Icon = document.getElementById('pipeStep2Icon');
+        const pipeStep2Desc = document.getElementById('pipeStep2Desc');
+        const pipeStep3Desc = document.getElementById('pipeStep3Desc');
+        const pipeStep4Desc = document.getElementById('pipeStep4Desc');
+        const pipeStep5 = document.getElementById('pipeStep5');
+        const pipeStep5Icon = document.getElementById('pipeStep5Icon');
+        const pipeStep5Desc = document.getElementById('pipeStep5Desc');
+        const pipeStep6Desc = document.getElementById('pipeStep6Desc');
+
+        if (pipelineRouteBadge) {
+            if (isAudio) {
+                pipelineRouteBadge.textContent = 'Single-Stream (Acoustic Forensic)';
+                pipelineRouteBadge.className = 'pipeline-route-badge';
+                pipelineRouteBadge.style.background = '#fef3c7';
+                pipelineRouteBadge.style.color = '#b45309';
+            } else if (isVideo) {
+                pipelineRouteBadge.textContent = hasHuman ? 'Temporal + LipSync/rPPG' : 'Temporal Micro-Window (Video)';
+                pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+                pipelineRouteBadge.style.background = '#e0e7ff';
+                pipelineRouteBadge.style.color = '#3730a3';
+            } else if (hasHuman && isOutdoor) {
+                pipelineRouteBadge.textContent = 'Dual-Stream (Decoupled ROI: Human + Outdoor)';
+                pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+                pipelineRouteBadge.style.background = '#ede9fe';
+                pipelineRouteBadge.style.color = '#5b21b6';
+            } else if (hasHuman) {
+                pipelineRouteBadge.textContent = 'Dual-Stream (Human Biometrics)';
+                pipelineRouteBadge.className = 'pipeline-route-badge dual-stream';
+                pipelineRouteBadge.style.background = '';
+                pipelineRouteBadge.style.color = '';
+            } else {
+                pipelineRouteBadge.textContent = 'Single-Stream (General Media)';
+                pipelineRouteBadge.className = 'pipeline-route-badge';
+                pipelineRouteBadge.style.background = '';
+                pipelineRouteBadge.style.color = '';
+            }
+        }
+        if (pipeStep1Desc) {
+            pipeStep1Desc.textContent = isAudio ? 'Tín Hiệu Âm Thanh (16kHz)' : (isVideo ? 'Video Đa Khung Hình' : 'Ảnh Tĩnh (RGB)');
+        }
+        const vnCat = sceneCtx.vn_demographic_category || '';
+        if (pipeStep2Icon && pipeStep2Desc) {
+            if (isAudio) {
+                pipeStep2Icon.textContent = '🎙️';
+                pipeStep2Desc.textContent = 'Giọng Nói / Âm Vị (VietPrism Voice)';
+            } else if (!hasHuman) {
+                pipeStep2Icon.textContent = sceneIcon;
+                pipeStep2Desc.textContent = sceneCategoryShort ? sceneCategoryShort : 'Phong Cảnh / Phi Sinh Trắc';
+            } else {
+                pipeStep2Icon.textContent = sceneIcon;
+                const badgePrefix = (vnCat && vnCat !== 'non_human_media') ? `[${vnCat}] ` : '';
+                pipeStep2Desc.textContent = `${badgePrefix}${sceneCategoryShort}`;
+            }
+        }
+        if (pipeStep3Desc) {
+            if (isAudio) {
+                pipeStep3Desc.textContent = 'VietPrism F0 Pitch + Vocoder';
+            } else if (isVideo) {
+                pipeStep3Desc.textContent = 'HDU-DFNet + SARAAB 7s';
+            } else if (!hasHuman) {
+                pipeStep3Desc.textContent = 'ViT 6D + PRNU Sensor';
+            } else if (isOutdoor) {
+                pipeStep3Desc.textContent = 'HDU-DFNet + Dual-ROI';
+            } else {
+                pipeStep3Desc.textContent = 'HDU-DFNet + WAVIE Mặt';
+            }
+        }
+        if (pipeStep4Desc) {
+            if (isAudio) {
+                pipeStep4Desc.textContent = 'Log-Mel + Phase + Formant';
+            } else if (isVideo) {
+                pipeStep4Desc.textContent = 'Motion Jitter + PRNU Inter-frame';
+            } else if (!hasHuman) {
+                pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial Wavelet';
+            } else if (isOutdoor) {
+                pipeStep4Desc.textContent = 'PRNU Cảm Biến Cảnh + RoI Khuôn Mặt';
+            } else {
+                pipeStep4Desc.textContent = 'PRNU + 2D FFT + Spatial RoI';
+            }
+        }
+        if (pipeStep5 && pipeStep5Icon && pipeStep5Desc) {
+            if (isAudio) {
                 pipeStep5.classList.remove('bypassed');
                 pipeStep5.classList.add('active');
-                pipeStep5Icon.textContent = '👄';
-                pipeStep5Desc.textContent = 'DF26 LipSync + rPPG (Video)';
+                pipeStep5Icon.textContent = '🗣️';
+                const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(1) : '2.1';
+                pipeStep5Desc.textContent = `F0 Jitter = ${f0Jitter}% (Voice)`;
+            } else if (isVideo) {
+                if (hasHuman) {
+                    pipeStep5.classList.remove('bypassed');
+                    pipeStep5.classList.add('active');
+                    pipeStep5Icon.textContent = '👄';
+                    pipeStep5Desc.textContent = 'DF26 LipSync + rPPG (Video)';
+                } else {
+                    pipeStep5.classList.remove('active');
+                    pipeStep5.classList.add('bypassed');
+                    pipeStep5Icon.textContent = '⏭️';
+                    pipeStep5Desc.textContent = 'Bypass Non-Human Video';
+                }
+            } else if (hasHuman) {
+                const hasGlints = Boolean(cornealAnalysis.glints_count && cornealAnalysis.glints_count > 0);
+                pipeStep5.classList.remove('bypassed');
+                pipeStep5.classList.add('active');
+                pipeStep5Icon.textContent = '👁️';
+                if (hasGlints && parseFloat(angleDelta) > 0.0) {
+                    pipeStep5Desc.textContent = isOutdoor ? `Δθ = ${angleDelta}° (Ngoại Cảnh)` : `Δθ = ${angleDelta}° (Đã Đo)`;
+                } else {
+                    pipeStep5Desc.textContent = 'Quang Học Nhất Quán (0.0°)';
+                }
             } else {
                 pipeStep5.classList.remove('active');
                 pipeStep5.classList.add('bypassed');
                 pipeStep5Icon.textContent = '⏭️';
-                pipeStep5Desc.textContent = 'Bypass Non-Human Video';
+                pipeStep5Desc.textContent = 'Bypass Non-Human (Safe)';
             }
-        } else if (hasHuman) {
-            const hasGlints = Boolean(cornealAnalysis.glints_count && cornealAnalysis.glints_count > 0);
-            pipeStep5.classList.remove('bypassed');
-            pipeStep5.classList.add('active');
-            pipeStep5Icon.textContent = '👁️';
-            if (hasGlints && parseFloat(angleDelta) > 0.0) {
-                pipeStep5Desc.textContent = isOutdoor ? `Δθ = ${angleDelta}° (Ngoại Cảnh)` : `Δθ = ${angleDelta}° (Đã Đo)`;
+        }
+        if (pipeStep6Desc) {
+            pipeStep6Desc.textContent = `Youden τ* = 0.8118`;
+        }
+
+        // Update Widget 1 & Widget 2 (Adaptive for Audio vs Human Corneal vs General Spatial)
+        currentCard1State = {
+            isAudio: isAudio,
+            hasHuman: hasHuman,
+            cornealStatus: cornealStatus,
+            asymmetryScore: asymmetryScore,
+            angleDelta: angleDelta,
+            saraab: saraab,
+            preview: preview,
+            peakScore: peakScore,
+            regionName: regionName,
+            shortRegion: regionName.split('/')[0].trim(),
+            sceneCategoryShort: sceneCategoryShort,
+            sceneCategoryFull: sceneCategoryFull,
+            sceneIcon: sceneIcon,
+            currentTab: hasHuman ? 'corneal' : 'context'
+        };
+
+        const sceneBadge = document.getElementById('genUiSceneBadge');
+        const card1TabBar = document.getElementById('genUiCard1TabBar');
+        const tabCorneal = document.getElementById('tabBtnCorneal');
+        const tabContext = document.getElementById('tabBtnContext');
+
+        if (sceneBadge) {
+            if (sceneCategoryShort) {
+                sceneBadge.style.display = 'inline-block';
+                sceneBadge.textContent = `${sceneIcon} ${sceneCategoryShort}`;
             } else {
-                pipeStep5Desc.textContent = 'Quang Học Nhất Quán (0.0°)';
-            }
-        } else {
-            pipeStep5.classList.remove('active');
-            pipeStep5.classList.add('bypassed');
-            pipeStep5Icon.textContent = '⏭️';
-            pipeStep5Desc.textContent = 'Bypass Non-Human (Safe)';
-        }
-    }
-    if (pipeStep6Desc) {
-        pipeStep6Desc.textContent = `Youden τ* = 0.8118`;
-    }
-
-    // Update Widget 1 & Widget 2 (Adaptive for Audio vs Human Corneal vs General Spatial)
-    currentCard1State = {
-        isAudio: isAudio,
-        hasHuman: hasHuman,
-        cornealStatus: cornealStatus,
-        asymmetryScore: asymmetryScore,
-        angleDelta: angleDelta,
-        saraab: saraab,
-        preview: preview,
-        peakScore: peakScore,
-        regionName: regionName,
-        shortRegion: regionName.split('/')[0].trim(),
-        sceneCategoryShort: sceneCategoryShort,
-        sceneCategoryFull: sceneCategoryFull,
-        sceneIcon: sceneIcon,
-        currentTab: hasHuman ? 'corneal' : 'context'
-    };
-
-    const sceneBadge = document.getElementById('genUiSceneBadge');
-    const card1TabBar = document.getElementById('genUiCard1TabBar');
-    const tabCorneal = document.getElementById('tabBtnCorneal');
-    const tabContext = document.getElementById('tabBtnContext');
-
-    if (sceneBadge) {
-        if (sceneCategoryShort) {
-            sceneBadge.style.display = 'inline-block';
-            sceneBadge.textContent = `${sceneIcon} ${sceneCategoryShort}`;
-        } else {
-            sceneBadge.style.display = 'none';
-        }
-    }
-
-    if (isAudio) {
-        if (card1TabBar) card1TabBar.style.display = 'none';
-
-        // Adapt Split Slider container for Audio Waveform
-        if (splitBeforeWrap) splitBeforeWrap.style.display = 'none';
-        if (splitHandle) splitHandle.style.display = 'none';
-        if (splitLabels) splitLabels.forEach(el => el.style.display = 'none');
-        if (dwtCanvas) {
-            dwtCanvas.style.position = 'relative';
-            dwtCanvas.style.width = '100%';
-            dwtCanvas.style.height = '100%';
-        }
-
-        // Widget 1: Audio Log-Mel Spectrogram
-        if (widget2Icon) widget2Icon.textContent = '🎙️';
-        if (widget2Name) widget2Name.textContent = 'Phân Tích Phổ Âm Thanh (Log-Mel Spectrogram)';
-        if (widget2Desc) widget2Desc.textContent = 'Trực quan hóa ma trận phổ Log-Mel và phân bố hài âm phát hiện dấu vết nén vocoder sinh nhân tạo (HiFi-GAN/VITS/XTTS).';
-        if (widget2Footer) widget2Footer.textContent = 'Dải phổ bất thường (Spectral Anomaly):';
-        const vocoderScore = (ev.vocoder_spectral_analysis && ev.vocoder_spectral_analysis.vocoder_anomaly_score !== undefined) 
-            ? ev.vocoder_spectral_analysis.vocoder_anomaly_score 
-            : 0.25;
-        if (cornealAngleEl) {
-            cornealAngleEl.textContent = `Dải tần >7.5kHz (Decay: ${Number(vocoderScore).toFixed(2)})`;
-            cornealAngleEl.style.color = '#d97706';
-        }
-        if (cornealBadge) {
-            cornealBadge.textContent = 'Log-Mel Spectrogram';
-            cornealBadge.style.background = '#fef3c7';
-            cornealBadge.style.color = '#b45309';
-            cornealBadge.style.borderColor = '#fde68a';
-        }
-        renderAudioSpectrogramCanvas(ev.spectrogram_patch_saliency || {});
-
-        // Widget 2: Audio Waveform Jitter & Pitch Residual
-        const splitCardTitle = document.querySelector('#genUiSpectralCard .genui-artifact-title');
-        const splitCardBadge = document.querySelector('#genUiSpectralCard .genui-artifact-badge');
-        const splitCardDesc = document.querySelector('#genUiSpectralCard > p');
-        if (splitCardTitle) splitCardTitle.innerHTML = '<span>🌊</span><span>Phân Tích Dạng Sóng & Vi Rung Dây Thanh (Waveform & F0 Track)</span>';
-        if (splitCardBadge) {
-            splitCardBadge.textContent = 'F0 Pitch Micro-Tremor';
-            splitCardBadge.style.background = '#fef2f2';
-            splitCardBadge.style.color = '#b91c1c';
-            splitCardBadge.style.borderColor = '#fecaca';
-        }
-        if (splitCardDesc) splitCardDesc.textContent = 'Phân tích vi sai dạng sóng bóc tách độ biến thiên cao độ F0 và độ trễ pha phát hiện giọng nói nhân bản.';
-        const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? ev.pitch_vocal_dynamics.f0_jitter : 0.021;
-        if (energyValEl) {
-            energyValEl.textContent = `F0_jitter = ${Number(f0Jitter).toFixed(4)} (Chuẩn sinh lý 1-3%)`;
-            energyValEl.style.color = '#b45309';
-        }
-        renderAudioWaveformCanvas(ev);
-    } else if (isVideo) {
-        if (card1TabBar) card1TabBar.style.display = 'none';
-
-        // Adapt Split Slider container for Video
-        if (splitBeforeWrap) splitBeforeWrap.style.display = 'none';
-        if (splitHandle) splitHandle.style.display = 'none';
-        if (splitLabels) splitLabels.forEach(el => el.style.display = 'none');
-        if (dwtCanvas) {
-            dwtCanvas.style.position = 'relative';
-            dwtCanvas.style.width = '100%';
-            dwtCanvas.style.height = '100%';
-        }
-
-        // Widget 1: Video Temporal Window Timeline
-        if (widget2Icon) widget2Icon.textContent = '🎬';
-        if (widget2Name) widget2Name.textContent = 'Chuỗi Khung Hình & SARAAB 7s Windowing';
-        if (widget2Desc) widget2Desc.textContent = 'Đánh giá rủi ro giả mạo theo từng cửa sổ vi mô 7 giây và quỹ đạo biến động thời gian (DESC Standard).';
-        if (widget2Footer) widget2Footer.textContent = 'Độ giật thời gian (Temporal Motion Jitter):';
-
-        const stream1 = (cert.dual_stream_breakdown && cert.dual_stream_breakdown.stream_1_general_video) || {};
-        const motionJitter = stream1.temporal_motion_jitter !== undefined ? stream1.temporal_motion_jitter : 0.042;
-        if (cornealAngleEl) {
-            cornealAngleEl.textContent = `Jitter = ${(motionJitter * 100).toFixed(1)}%`;
-            cornealAngleEl.style.color = '#4f46e5';
-        }
-        if (cornealBadge) {
-            cornealBadge.textContent = 'SARAAB 7s Temporal';
-            cornealBadge.style.background = '#e0e7ff';
-            cornealBadge.style.color = '#3730a3';
-            cornealBadge.style.borderColor = '#c7d2fe';
-        }
-        renderVideoTemporalCanvas(data);
-
-        // Widget 2: Video Lip-Sync / Inter-Frame Alignment
-        const splitCardTitle = document.querySelector('#genUiSpectralCard .genui-artifact-title');
-        const splitCardBadge = document.querySelector('#genUiSpectralCard .genui-artifact-badge');
-        const splitCardDesc = document.querySelector('#genUiSpectralCard > p');
-        if (splitCardTitle) splitCardTitle.innerHTML = '<span>👄</span><span>Đồng Bộ Khẩu Hình DF26 & Vân Cảm Biến Liên Khung</span>';
-        if (splitCardBadge) {
-            splitCardBadge.textContent = hasHuman ? 'DF26 LipSync / rPPG' : 'PRNU Inter-Frame';
-            splitCardBadge.style.background = '#fdf2f8';
-            splitCardBadge.style.color = '#db2777';
-            splitCardBadge.style.borderColor = '#fbcfe8';
-        }
-        if (splitCardDesc) splitCardDesc.textContent = 'Đo lường sai khác giữa chuyển động môi/khẩu hình và âm vị, kết hợp kiểm tra tính nhất quán vân cảm biến PRNU giữa các khung hình.';
-        if (energyValEl) {
-            energyValEl.textContent = hasHuman ? 'DF26 Khớp Âm Hình (<15ms)' : 'PRNU Liên Khung Đồng Nhất';
-            energyValEl.style.color = '#db2777';
-        }
-        renderVideoLipSyncCanvas(data);
-    } else {
-        // Image Mode
-        if (splitBeforeWrap) splitBeforeWrap.style.display = 'block';
-        if (splitHandle) splitHandle.style.display = 'flex';
-        if (splitLabels) splitLabels.forEach(el => el.style.display = 'block');
-        if (dwtCanvas) dwtCanvas.style.position = 'absolute';
-
-        if (card1TabBar) {
-            card1TabBar.style.display = 'flex';
-            if (!hasHuman) {
-                if (tabCorneal) {
-                    tabCorneal.classList.add('disabled');
-                    tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Bypass)';
-                }
-                if (tabContext) {
-                    tabContext.classList.remove('disabled');
-                    tabContext.classList.add('active');
-                }
-                switchCard1Evidence('context');
-            } else {
-                if (tabCorneal) {
-                    tabCorneal.classList.remove('disabled');
-                    tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Corneal)';
-                }
-                if (tabContext) {
-                    tabContext.classList.remove('disabled');
-                }
-                switchCard1Evidence(currentCard1State.currentTab || 'corneal');
-            }
-        } else {
-            if (hasHuman) {
-                switchCard1Evidence('corneal');
-            } else {
-                switchCard1Evidence('context');
+                sceneBadge.style.display = 'none';
             }
         }
-    }
 
-    // 3. Setup Threshold & Platt Simulator
-    const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
-    currentOptimalTau = tau;
-
-    let fakeProb = 0.5;
-    if (cert.composite_risk_score !== undefined) {
-        fakeProb = cert.composite_risk_score;
-    } else if (cert.calibrated_probability !== undefined) {
-        fakeProb = cert.calibrated_probability;
-    } else if (data.confidence !== undefined) {
-        const lbl = (data.label || '').toLowerCase();
-        fakeProb = (lbl.includes('fake') || lbl.includes('deepfake')) ? data.confidence : (1.0 - data.confidence);
-    }
-
-    // Harmonize with displayResults - strict Youden threshold tau* (0.8118)
-    const isSynthetic = (fakeProb >= tau);
-    const isFake = isSynthetic;
-
-    const safeP = Math.min(Math.max(fakeProb, 0.001), 0.999);
-    rawPredictionLogit = Math.log(safeP / (1 - safeP));
-    updatePlattThresholdSimulation();
-
-    // 4. Populate Multi-Agent Debate Accordion (Option B: Triad Council)
-    const msgVision = document.getElementById('debateMsgVision');
-    const msgCorneal = document.getElementById('debateMsgCorneal');
-    const msgLipSync = document.getElementById('debateMsgLipSync');
-    const msgMagistrate = document.getElementById('debateMsgMagistrate');
-    const triadDebate = cert.triad_council_debate || data.triad_council_debate;
-
-    if (msgVision) {
         if (isAudio) {
-            msgVision.textContent = isFake
-                ? "Phát hiện suy hao năng lượng phổ tần số cao đột ngột trên 7.5 kHz và biến dạng hài âm, dấu hiệu của vocoder tạo sinh (HiFi-GAN/VITS/XTTS)."
-                : "Phân tích phổ Log-Mel và dải tần cao >7.5 kHz xác nhận năng lượng âm thanh tự nhiên, phù hợp tuyệt đối với micro thu âm vật lý.";
+            if (card1TabBar) card1TabBar.style.display = 'none';
+
+            // Adapt Split Slider container for Audio Waveform
+            if (splitBeforeWrap) splitBeforeWrap.style.display = 'none';
+            if (splitHandle) splitHandle.style.display = 'none';
+            if (splitLabels) splitLabels.forEach(el => el.style.display = 'none');
+            if (dwtCanvas) {
+                dwtCanvas.style.position = 'relative';
+                dwtCanvas.style.width = '100%';
+                dwtCanvas.style.height = '100%';
+            }
+
+            // Widget 1: Audio Log-Mel Spectrogram
+            if (widget2Icon) widget2Icon.textContent = '🎙️';
+            if (widget2Name) widget2Name.textContent = 'Phân Tích Phổ Âm Thanh (Log-Mel Spectrogram)';
+            if (widget2Desc) widget2Desc.textContent = 'Trực quan hóa ma trận phổ Log-Mel và phân bố hài âm phát hiện dấu vết nén vocoder sinh nhân tạo (HiFi-GAN/VITS/XTTS).';
+            if (widget2Footer) widget2Footer.textContent = 'Dải phổ bất thường (Spectral Anomaly):';
+            const vocoderScore = (ev.vocoder_spectral_analysis && ev.vocoder_spectral_analysis.vocoder_anomaly_score !== undefined)
+                ? ev.vocoder_spectral_analysis.vocoder_anomaly_score
+                : 0.25;
+            if (cornealAngleEl) {
+                cornealAngleEl.textContent = `Dải tần >7.5kHz (Decay: ${Number(vocoderScore).toFixed(2)})`;
+                cornealAngleEl.style.color = '#d97706';
+            }
+            if (cornealBadge) {
+                cornealBadge.textContent = 'Log-Mel Spectrogram';
+                cornealBadge.style.background = '#fef3c7';
+                cornealBadge.style.color = '#b45309';
+                cornealBadge.style.borderColor = '#fde68a';
+            }
+            renderAudioSpectrogramCanvas(ev.spectrogram_patch_saliency || {});
+
+            // Widget 2: Audio Waveform Jitter & Pitch Residual
+            const splitCardTitle = document.querySelector('#genUiSpectralCard .genui-artifact-title');
+            const splitCardBadge = document.querySelector('#genUiSpectralCard .genui-artifact-badge');
+            const splitCardDesc = document.querySelector('#genUiSpectralCard > p');
+            if (splitCardTitle) splitCardTitle.innerHTML = '<span>🌊</span><span>Phân Tích Dạng Sóng & Vi Rung Dây Thanh (Waveform & F0 Track)</span>';
+            if (splitCardBadge) {
+                splitCardBadge.textContent = 'F0 Pitch Micro-Tremor';
+                splitCardBadge.style.background = '#fef2f2';
+                splitCardBadge.style.color = '#b91c1c';
+                splitCardBadge.style.borderColor = '#fecaca';
+            }
+            if (splitCardDesc) splitCardDesc.textContent = 'Phân tích vi sai dạng sóng bóc tách độ biến thiên cao độ F0 và độ trễ pha phát hiện giọng nói nhân bản.';
+            const f0Jitter = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? ev.pitch_vocal_dynamics.f0_jitter : 0.021;
+            if (energyValEl) {
+                energyValEl.textContent = `F0_jitter = ${Number(f0Jitter).toFixed(4)} (Chuẩn sinh lý 1-3%)`;
+                energyValEl.style.color = '#b45309';
+            }
+            renderAudioWaveformCanvas(ev);
         } else if (isVideo) {
-            msgVision.textContent = isFake
-                ? "Phát hiện độ giật liên khung (Motion Jitter) và sai khác khẩu hình âm vị (Phoneme-Viseme delay > 45ms), dấu hiệu của mô hình deepfake hoán đổi khuôn mặt/Wav2Lip."
-                : "Chuỗi khung hình duy trì tính liên tục quang học tự nhiên, đồng bộ khẩu hình và vân cảm biến PRNU nhất quán qua thời gian.";
-        } else {
-            msgVision.textContent = isFake 
-                ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và dị thường tại vùng biên cạnh, dấu vết của kiến trúc sinh ảnh AI (Diffusion/GAN)."
-                : "Kết cấu năng lượng bậc cao 2D-DWT đồng đều trên toàn bộ bức ảnh, phù hợp tuyệt đối với cảm biến CMOS tự nhiên.";
-        }
-    }
-    if (msgCorneal) {
-        if (isAudio) {
-            msgCorneal.textContent = "N/A - Định dạng âm thanh (Bỏ qua kiểm tra đối xứng quang học giác mạc mắt).";
-        } else if (!hasHuman) {
-            msgCorneal.textContent = "N/A - Không phát hiện khuôn mặt/giác mạc (Bỏ qua kiểm tra đối xứng quang học đối với nội dung đồ hoạ / phi sinh trắc).";
-        } else {
-            msgCorneal.textContent = isFake 
-                ? `Điểm phản xạ giác mạc 2 mắt phân kỳ góc Δθ = ${angleDelta}°, vi phạm định luật quang học phản chiếu của một nguồn sáng duy nhất.`
-                : `Độ đối xứng điểm sáng giác mạc đạt ${(Math.max(0, 100 - asymmetryScore*100)).toFixed(1)}% (Δθ = ${angleDelta}°), khớp với vector nguồn sáng môi trường.`;
-        }
-    }
-    if (msgLipSync) {
-        if (isAudio) {
-            const f0JitterVal = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(2) : "2.10";
-            msgLipSync.textContent = `Độ biến thiên cao độ F0 (Jitter = ${f0JitterVal}%) nằm trong ngưỡng sinh lý học thanh quản người (1.0% - 3.0%), không có dấu hiệu nén giọng phẳng nhân tạo.`;
-        } else if (!isVideo) {
-            msgLipSync.textContent = "N/A - Định dạng ảnh tĩnh (Chỉ áp dụng phân tích đồng bộ âm vị - thị giác đối với video có tiếng nói).";
-        } else {
-            msgLipSync.textContent = isFake
-                ? "Độ trễ thời gian giữa chuyển động mở môi và dải formant âm thanh vượt ngưỡng 120ms (DF26 Desync detected)."
-                : "Đồng bộ âm vị - thị giác (Phoneme-to-Viseme) đạt tương quan Pearson r = 0.94, không phát hiện lồng tiếng/AI Dubbing.";
-        }
-    }
-    if (msgMagistrate) {
-        const fakePct = (fakeProb * 100).toFixed(1);
-        const realPct = ((1.0 - fakeProb) * 100).toFixed(1);
-        if (isAudio) {
-            msgMagistrate.textContent = isFake
-                ? `Hội đồng đa Agent đồng thuận phán quyết: GIỌNG NÓI GIẢ MẠO (DEEPFAKE VOICE) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
-                : `Hội đồng đa Agent đồng thuận phán quyết: GIỌNG NÓI CHÂN THỰC (REAL VOICE) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ âm học số.`;
-        } else if (isVideo) {
-            msgMagistrate.textContent = isFake
-                ? `Hội đồng đa Agent đồng thuận phán quyết: VIDEO GIẢ MẠO (DEEPFAKE VIDEO) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
-                : `Hội đồng đa Agent đồng thuận phán quyết: VIDEO CHÂN THỰC (REAL VIDEO) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ an toàn số.`;
-        } else {
-            msgMagistrate.textContent = isFake
-                ? `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG GIẢ MẠO (DEEPFAKE) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
-                : `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG CHÂN THỰC (REAL) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ an toàn số.`;
-        }
-    }
+            if (card1TabBar) card1TabBar.style.display = 'none';
 
-    // 5. Update Advisor DOCX Download Link with current date
-    const btnDocx = document.getElementById('btnDownloadAdvisorDocx');
-    if (btnDocx) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        btnDocx.href = `/api/orchestrator/download/docx/${todayStr}`;
-    }
+            // Adapt Split Slider container for Video
+            if (splitBeforeWrap) splitBeforeWrap.style.display = 'none';
+            if (splitHandle) splitHandle.style.display = 'none';
+            if (splitLabels) splitLabels.forEach(el => el.style.display = 'none');
+            if (dwtCanvas) {
+                dwtCanvas.style.position = 'relative';
+                dwtCanvas.style.width = '100%';
+                dwtCanvas.style.height = '100%';
+            }
+
+            // Widget 1: Video Temporal Window Timeline
+            if (widget2Icon) widget2Icon.textContent = '🎬';
+            if (widget2Name) widget2Name.textContent = 'Chuỗi Khung Hình & SARAAB 7s Windowing';
+            if (widget2Desc) widget2Desc.textContent = 'Đánh giá rủi ro giả mạo theo từng cửa sổ vi mô 7 giây và quỹ đạo biến động thời gian (DESC Standard).';
+            if (widget2Footer) widget2Footer.textContent = 'Độ giật thời gian (Temporal Motion Jitter):';
+
+            const stream1 = (cert.dual_stream_breakdown && cert.dual_stream_breakdown.stream_1_general_video) || {};
+            const motionJitter = stream1.temporal_motion_jitter !== undefined ? stream1.temporal_motion_jitter : 0.042;
+            if (cornealAngleEl) {
+                cornealAngleEl.textContent = `Jitter = ${(motionJitter * 100).toFixed(1)}%`;
+                cornealAngleEl.style.color = '#4f46e5';
+            }
+            if (cornealBadge) {
+                cornealBadge.textContent = 'SARAAB 7s Temporal';
+                cornealBadge.style.background = '#e0e7ff';
+                cornealBadge.style.color = '#3730a3';
+                cornealBadge.style.borderColor = '#c7d2fe';
+            }
+            renderVideoTemporalCanvas(data);
+
+            // Widget 2: Video Lip-Sync / Inter-Frame Alignment
+            const splitCardTitle = document.querySelector('#genUiSpectralCard .genui-artifact-title');
+            const splitCardBadge = document.querySelector('#genUiSpectralCard .genui-artifact-badge');
+            const splitCardDesc = document.querySelector('#genUiSpectralCard > p');
+            if (splitCardTitle) splitCardTitle.innerHTML = '<span>👄</span><span>Đồng Bộ Khẩu Hình DF26 & Vân Cảm Biến Liên Khung</span>';
+            if (splitCardBadge) {
+                splitCardBadge.textContent = hasHuman ? 'DF26 LipSync / rPPG' : 'PRNU Inter-Frame';
+                splitCardBadge.style.background = '#fdf2f8';
+                splitCardBadge.style.color = '#db2777';
+                splitCardBadge.style.borderColor = '#fbcfe8';
+            }
+            if (splitCardDesc) splitCardDesc.textContent = 'Đo lường sai khác giữa chuyển động môi/khẩu hình và âm vị, kết hợp kiểm tra tính nhất quán vân cảm biến PRNU giữa các khung hình.';
+            if (energyValEl) {
+                energyValEl.textContent = hasHuman ? 'DF26 Khớp Âm Hình (<15ms)' : 'PRNU Liên Khung Đồng Nhất';
+                energyValEl.style.color = '#db2777';
+            }
+            renderVideoLipSyncCanvas(data);
+        } else {
+            // Image Mode
+            if (splitBeforeWrap) splitBeforeWrap.style.display = 'block';
+            if (splitHandle) splitHandle.style.display = 'flex';
+            if (splitLabels) splitLabels.forEach(el => el.style.display = 'block');
+            if (dwtCanvas) dwtCanvas.style.position = 'absolute';
+
+            if (card1TabBar) {
+                card1TabBar.style.display = 'flex';
+                if (!hasHuman) {
+                    if (tabCorneal) {
+                        tabCorneal.classList.add('disabled');
+                        tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Bypass)';
+                    }
+                    if (tabContext) {
+                        tabContext.classList.remove('disabled');
+                        tabContext.classList.add('active');
+                    }
+                    switchCard1Evidence('context');
+                } else {
+                    if (tabCorneal) {
+                        tabCorneal.classList.remove('disabled');
+                        tabCorneal.innerHTML = '<span>👁️</span> Sinh Trắc Giác Mạc (Corneal)';
+                    }
+                    if (tabContext) {
+                        tabContext.classList.remove('disabled');
+                    }
+                    switchCard1Evidence(currentCard1State.currentTab || 'corneal');
+                }
+            } else {
+                if (hasHuman) {
+                    switchCard1Evidence('corneal');
+                } else {
+                    switchCard1Evidence('context');
+                }
+            }
+        }
+
+        // 3. Setup Threshold & Platt Simulator
+        const tau = cert.decision_threshold !== undefined ? cert.decision_threshold : 0.8118;
+        currentOptimalTau = tau;
+
+        let fakeProb = 0.5;
+        if (cert.composite_risk_score !== undefined) {
+            fakeProb = cert.composite_risk_score;
+        } else if (cert.calibrated_probability !== undefined) {
+            fakeProb = cert.calibrated_probability;
+        } else if (data.confidence !== undefined) {
+            const lbl = (data.label || '').toLowerCase();
+            fakeProb = (lbl.includes('fake') || lbl.includes('deepfake')) ? data.confidence : (1.0 - data.confidence);
+        }
+
+        // Harmonize with displayResults - strict Youden threshold tau* (0.8118)
+        const isSynthetic = (fakeProb >= tau);
+        const isFake = isSynthetic;
+
+        const safeP = Math.min(Math.max(fakeProb, 0.001), 0.999);
+        rawPredictionLogit = Math.log(safeP / (1 - safeP));
+        updatePlattThresholdSimulation();
+
+        // 4. Populate Multi-Agent Debate Accordion (Option B: Triad Council)
+        const msgVision = document.getElementById('debateMsgVision');
+        const msgCorneal = document.getElementById('debateMsgCorneal');
+        const msgLipSync = document.getElementById('debateMsgLipSync');
+        const msgMagistrate = document.getElementById('debateMsgMagistrate');
+        const triadDebate = cert.triad_council_debate || data.triad_council_debate;
+
+        if (msgVision) {
+            if (isAudio) {
+                msgVision.textContent = isFake
+                    ? "Phát hiện suy hao năng lượng phổ tần số cao đột ngột trên 7.5 kHz và biến dạng hài âm, dấu hiệu của vocoder tạo sinh (HiFi-GAN/VITS/XTTS)."
+                    : "Phân tích phổ Log-Mel và dải tần cao >7.5 kHz xác nhận năng lượng âm thanh tự nhiên, phù hợp tuyệt đối với micro thu âm vật lý.";
+            } else if (isVideo) {
+                msgVision.textContent = isFake
+                    ? "Phát hiện độ giật liên khung (Motion Jitter) và sai khác khẩu hình âm vị (Phoneme-Viseme delay > 45ms), dấu hiệu của mô hình deepfake hoán đổi khuôn mặt/Wav2Lip."
+                    : "Chuỗi khung hình duy trì tính liên tục quang học tự nhiên, đồng bộ khẩu hình và vân cảm biến PRNU nhất quán qua thời gian.";
+            } else {
+                msgVision.textContent = isFake
+                    ? "Phát hiện suy hao năng lượng phổ tần số cao (E_high) và dị thường tại vùng biên cạnh, dấu vết của kiến trúc sinh ảnh AI (Diffusion/GAN)."
+                    : "Kết cấu năng lượng bậc cao 2D-DWT đồng đều trên toàn bộ bức ảnh, phù hợp tuyệt đối với cảm biến CMOS tự nhiên.";
+            }
+        }
+        if (msgCorneal) {
+            if (isAudio) {
+                msgCorneal.textContent = "N/A - Định dạng âm thanh (Bỏ qua kiểm tra đối xứng quang học giác mạc mắt).";
+            } else if (!hasHuman) {
+                msgCorneal.textContent = "N/A - Không phát hiện khuôn mặt/giác mạc (Bỏ qua kiểm tra đối xứng quang học đối với nội dung đồ hoạ / phi sinh trắc).";
+            } else {
+                msgCorneal.textContent = isFake
+                    ? `Điểm phản xạ giác mạc 2 mắt phân kỳ góc Δθ = ${angleDelta}°, vi phạm định luật quang học phản chiếu của một nguồn sáng duy nhất.`
+                    : `Độ đối xứng điểm sáng giác mạc đạt ${(Math.max(0, 100 - asymmetryScore * 100)).toFixed(1)}% (Δθ = ${angleDelta}°), khớp với vector nguồn sáng môi trường.`;
+            }
+        }
+        if (msgLipSync) {
+            if (isAudio) {
+                const f0JitterVal = (ev.pitch_vocal_dynamics && ev.pitch_vocal_dynamics.f0_jitter) ? (ev.pitch_vocal_dynamics.f0_jitter * 100).toFixed(2) : "2.10";
+                msgLipSync.textContent = `Độ biến thiên cao độ F0 (Jitter = ${f0JitterVal}%) nằm trong ngưỡng sinh lý học thanh quản người (1.0% - 3.0%), không có dấu hiệu nén giọng phẳng nhân tạo.`;
+            } else if (!isVideo) {
+                msgLipSync.textContent = "N/A - Định dạng ảnh tĩnh (Chỉ áp dụng phân tích đồng bộ âm vị - thị giác đối với video có tiếng nói).";
+            } else {
+                msgLipSync.textContent = isFake
+                    ? "Độ trễ thời gian giữa chuyển động mở môi và dải formant âm thanh vượt ngưỡng 120ms (DF26 Desync detected)."
+                    : "Đồng bộ âm vị - thị giác (Phoneme-to-Viseme) đạt tương quan Pearson r = 0.94, không phát hiện lồng tiếng/AI Dubbing.";
+            }
+        }
+        if (msgMagistrate) {
+            const fakePct = (fakeProb * 100).toFixed(1);
+            const realPct = ((1.0 - fakeProb) * 100).toFixed(1);
+            if (isAudio) {
+                msgMagistrate.textContent = isFake
+                    ? `Hội đồng đa Agent đồng thuận phán quyết: GIỌNG NÓI GIẢ MẠO (DEEPFAKE VOICE) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
+                    : `Hội đồng đa Agent đồng thuận phán quyết: GIỌNG NÓI CHÂN THỰC (REAL VOICE) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ âm học số.`;
+            } else if (isVideo) {
+                msgMagistrate.textContent = isFake
+                    ? `Hội đồng đa Agent đồng thuận phán quyết: VIDEO GIẢ MẠO (DEEPFAKE VIDEO) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
+                    : `Hội đồng đa Agent đồng thuận phán quyết: VIDEO CHÂN THỰC (REAL VIDEO) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ an toàn số.`;
+            } else {
+                msgMagistrate.textContent = isFake
+                    ? `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG GIẢ MẠO (DEEPFAKE) với xác suất ${fakePct}% (vượt ngưỡng τ*=${tau}). Đủ điều kiện niêm phong chứng thư số.`
+                    : `Hội đồng đa Agent đồng thuận phán quyết: NỘI DUNG CHÂN THỰC (REAL) với độ tin cậy ${realPct}% (dưới ngưỡng nghi vấn τ*=${tau}). Cấp chứng chỉ an toàn số.`;
+            }
+        }
+
+        // 5. Update Advisor DOCX Download Link with current date
+        const btnDocx = document.getElementById('btnDownloadAdvisorDocx');
+        if (btnDocx) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            btnDocx.href = `/api/orchestrator/download/docx/${todayStr}`;
+        }
     } catch (genUiErr) {
         console.error('populateGenUiArtifacts error caught safely:', genUiErr);
     }

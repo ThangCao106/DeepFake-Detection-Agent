@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DF-Shield Popup</title>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --card-bg: #131b2e;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.12);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            width: 320px;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+        .header-icon { font-size: 24px; }
+        .header h3 { font-size: 15px; font-weight: 800; }
+        .header p { font-size: 11px; color: var(--text-muted); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 10px;
+        }
+        .btn-action:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            color: #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background: #334155;
+            color: #fff;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin: 14px 0 6px 0;
+        }
+
+        .endpoint-select {
+            width: 100%;
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+            margin-bottom: 14px;
+        }
+
+        .footer {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .footer a {
+            color: #818cf8;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="header-icon">🛡️</span>
+        <div>
+            <h3>Deepfake Forensic Shield</h3>
+            <p>NCS PhD Lab • EU AI Act Art. 50</p>
+        </div>
+    </div>
+
+    <div class="status-badge" id="gatewayStatus">
+        <span class="status-dot"></span>
+        <span>Gateway: detection.dtpsoft.vn</span>
+    </div>
+
+    <button class="btn-action" id="scanCurrentBtn">
+        <span>🔍</span> Quét Video / Ảnh Tab Hiện Tại
+    </button>
+
+    <button class="btn-action btn-secondary" id="openCockpitBtn">
+        <span>🚀</span> Mở Multi-Agent Cockpit
+    </button>
+
+    <div class="section-title">Cấu hình Cổng Forensic Gateway</div>
+    <select class="endpoint-select" id="apiEndpointSelect">
+        <option value="https://detection.dtpsoft.vn">Cloud Gateway (detection.dtpsoft.vn)</option>
+        <option value="http://localhost:5000">Local Development (localhost:5000)</option>
+    </select>
+
+    <div class="footer">
+        Client-Server Hybrid In-the-Wild Stream Defense<br>
+        <a href="https://detection.dtpsoft.vn" target="_blank">Cổng Tra Cứu Chứng Thư Số</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
