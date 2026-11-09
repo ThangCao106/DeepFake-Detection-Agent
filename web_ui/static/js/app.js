@@ -451,7 +451,8 @@ async function optimizeImageIfNeeded(file) {
 
 // ===== Analyze Media =====
 analyzeBtn.addEventListener('click', async () => {
-    if (!uploadedFile && (!urlInput || !urlInput.value.trim())) return;
+    const rawUrl = urlInput ? urlInput.value.trim() : '';
+    if (!uploadedFile && !rawUrl) return;
 
     analysisComplete = false;
     lastRenderedCertId = null;
@@ -462,7 +463,6 @@ analyzeBtn.addEventListener('click', async () => {
     }
 
     analyzeBtn.disabled = true;
-    analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span> Uploading...';
 
     // Tự động tối ưu ảnh dung lượng lớn phía client nếu cần
     let fileToSend = uploadedFile;
@@ -474,7 +474,12 @@ analyzeBtn.addEventListener('click', async () => {
 
     const formData = new FormData();
     if (fileToSend) {
+        analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span> Uploading...';
         formData.append('file', fileToSend);
+    } else if (rawUrl) {
+        analyzeBtn.innerHTML = '<span class="btn-icon">🌐</span> Ingesting Link...';
+        showAgentStatus(currentLang === 'vi' ? 'Đang kết nối và bóc tách luồng media từ liên kết...' : 'Extracting and ingesting media stream from link...');
+        formData.append('url', rawUrl);
     }
 
     try {
@@ -501,16 +506,46 @@ analyzeBtn.addEventListener('click', async () => {
             analyzeBtn.innerHTML = '<span class="btn-icon">🔍</span> Analyzing...';
             resultsCard.style.display = 'none';
 
+            // Cập nhật xem trước nếu tải từ URL mạng xã hội (TikTok, Shorts, Reels, Threads, etc.)
+            if (!uploadedFile && data.filename) {
+                const isVideo = data.media_type === 'video' || /\.(mp4|avi|mov|mkv|webm|flv)$/i.test(data.filename);
+                const isAudio = data.media_type === 'audio' || /\.(wav|mp3|flac|ogg|aac|m4a|wma)$/i.test(data.filename);
+                const uploadContent = document.querySelector('.upload-content');
+                if (uploadContent) uploadContent.style.display = 'none';
+                if (mediaPreview) mediaPreview.style.display = 'block';
+
+                if (isVideo && previewVideo) {
+                    previewVideo.src = '/uploads/' + data.filename;
+                    previewVideo.style.display = 'block';
+                    if (previewImg) previewImg.style.display = 'none';
+                    if (previewAudio) previewAudio.style.display = 'none';
+                } else if (isAudio && previewAudio) {
+                    if (audioFileName) audioFileName.textContent = data.title || data.filename;
+                    previewAudio.style.display = 'flex';
+                    if (previewImg) previewImg.style.display = 'none';
+                    if (previewVideo) previewVideo.style.display = 'none';
+                } else if (previewImg) {
+                    previewImg.src = '/uploads/' + data.filename;
+                    previewImg.style.display = 'block';
+                    if (previewVideo) previewVideo.style.display = 'none';
+                    if (previewAudio) previewAudio.style.display = 'none';
+                }
+            }
+
             // Kích hoạt Generative UI Multi-Agent Stepper trực quan thời gian thực
             if (typeof startGenUiAgentStepper === 'function') {
                 startGenUiAgentStepper();
             }
 
-            const mediaName = uploadedFile ? uploadedFile.name : (urlInput.value || 'Media');
+            const mediaName = uploadedFile ? uploadedFile.name : (data.title || rawUrl || 'Media');
             let modalityTag = '';
             if (uploadedFile && uploadedFile.type) {
                 if (uploadedFile.type.startsWith('audio/')) modalityTag = '🎙️ [Audio] ';
                 else if (uploadedFile.type.startsWith('video/')) modalityTag = '🎬 [Video] ';
+                else modalityTag = '🖼️ [Image] ';
+            } else if (data.media_type) {
+                if (data.media_type === 'audio') modalityTag = '🎙️ [Audio] ';
+                else if (data.media_type === 'video') modalityTag = '🎬 [Video] ';
                 else modalityTag = '🖼️ [Image] ';
             } else if (uploadedFilePath) {
                 if (/\.(wav|mp3|flac|ogg|aac|m4a|wma)$/i.test(uploadedFilePath)) modalityTag = '🎙️ [Audio] ';
@@ -522,7 +557,8 @@ analyzeBtn.addEventListener('click', async () => {
             socket.emit('analyze_image', {
                 filepath: uploadedFilePath,
                 query: '',
-                language: currentLang
+                language: currentLang,
+                source_url: rawUrl || ''
             });
 
             // Resilience Guard - If WebSocket doesn't finish within 45s (due to Triad Council 3 LLM deliberation), fallback to direct REST API
@@ -537,7 +573,8 @@ analyzeBtn.addEventListener('click', async () => {
                             body: JSON.stringify({
                                 filepath: uploadedFilePath,
                                 query: '',
-                                language: currentLang
+                                language: currentLang,
+                                source_url: rawUrl || ''
                             })
                         });
                         
@@ -4666,9 +4703,32 @@ function renderClientDwtFilter(imgElement, canvasElement, energyEl) {
     }
 }
 
+function initWebShareTarget() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedUrl = urlParams.get('url') || urlParams.get('text');
+        if (sharedUrl && urlInput) {
+            const match = sharedUrl.match(/https?:\/\/[^\s"']+/);
+            const targetUrl = match ? match[0] : sharedUrl.trim();
+            if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+                urlInput.value = targetUrl;
+                if (analyzeBtn) analyzeBtn.disabled = false;
+                const msgVi = `📥 Đã nhận liên kết chia sẻ từ mạng xã hội: "${targetUrl}". Nhấn "Phân tích" để bắt đầu giám định pháp y.`;
+                const msgEn = `📥 Received shared social media link: "${targetUrl}". Click "Analyze Media" to execute forensic audit.`;
+                if (typeof addSystemMessage === 'function') {
+                    addSystemMessage(currentLang === 'vi' ? msgVi : msgEn, 'info');
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[WebShareTarget] Could not parse share query params:', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     switchLanguage(currentLang);
     checkSubsystemGateOnLoad();
+    initWebShareTarget();
     if (isBenchmarkModeActive()) {
         fetchBenchmarkStatus();
         loadAuditReportData('daily');

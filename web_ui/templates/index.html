@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="AI Deepfake Multi-Agent Detection & In-the-wild Social Media Digital Forensic Certification.">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>Deepfake Detection AI - Multi-Agent Forensic System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.3.0&t=20261027_155000">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1093,7 +1096,14 @@
                     <!-- Media URL Input Field -->
                     <div class="url-input-group">
                         <span class="url-icon">🔗</span>
-                        <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL..." data-i18n-ph="url_placeholder">
+                        <input type="text" id="urlInput" class="url-input" placeholder="Enter Media URL (TikTok, Reels, Shorts, Threads, FB, Direct)..." data-i18n-ph="url_placeholder">
+                    </div>
+                    <div class="url-support-badges" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; margin-bottom: 10px; font-size: 0.72rem; color: #64748b;">
+                        <span style="background: rgba(99, 102, 241, 0.08); color: #4f46e5; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2); font-weight: 600;">⚡ TikTok</span>
+                        <span style="background: rgba(236, 72, 153, 0.08); color: #db2777; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(236, 72, 153, 0.2); font-weight: 600;">📸 IG Reels</span>
+                        <span style="background: rgba(239, 68, 68, 0.08); color: #dc2626; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 600;">▶️ YT Shorts</span>
+                        <span style="background: rgba(16, 185, 129, 0.08); color: #059669; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 600;">🧵 Threads</span>
+                        <span style="background: rgba(100, 116, 139, 0.08); color: #475569; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(100, 116, 139, 0.2); font-weight: 600;">🌐 Direct Media</span>
                     </div>
 
                     <!-- Analyze Button -->
