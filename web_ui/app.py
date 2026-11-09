@@ -728,7 +728,7 @@ Allow: /verify/
 Allow: /api/verify/
 Sitemap: https://detection.dtpsoft.vn/sitemap.xml
 """
-    return Response(content, mimetype='text/plain; charset=utf-8')
+    return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @app.route('/sitemap.xml', methods=['GET'])
