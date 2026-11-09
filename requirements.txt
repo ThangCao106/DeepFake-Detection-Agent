@@ -36,3 +36,5 @@ google-auth-oauthlib
 # Network & Web Scraping Dependencies
 playwright
 httpx
+yt-dlp
+requests

@@ -12,13 +12,14 @@ ENV PYTHONUNBUFFERED=1 \
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies required for OpenCV, PIL, and native tools
+# Install system dependencies required for OpenCV, PIL, ffmpeg, and native tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1 \
     libglib2.0-0 \
     curl \
     git \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first for layer caching

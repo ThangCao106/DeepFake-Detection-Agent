@@ -36,6 +36,14 @@ if project_root not in sys.path:
 from agent_system import DeepfakeDetectionOrchestrator
 from config import Config
 
+try:
+    from url_downloader import download_media_from_url
+except ImportError:
+    try:
+        from web_ui.url_downloader import download_media_from_url
+    except ImportError:
+        download_media_from_url = None
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -222,9 +230,43 @@ def download_orchestrator_report(file_type, date_str):
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle image upload."""
+    """
+    Handle unified media upload and in-the-wild social stream ingestion.
+    Accepts:
+      - Multipart file upload ('file')
+      - Form or JSON payload with media URL ('url') from TikTok, IG Reels, YT Shorts, Threads, etc.
+    """
+    req_json = request.get_json(silent=True) or {}
+    url = (request.form.get('url') or req_json.get('url') or '').strip()
+
+    # Route A: Ingestion via Social Media / Direct Web URL
+    if url:
+        if not download_media_from_url:
+            return jsonify({'error': 'URL Ingestion module is not initialized on server.'}), 500
+        try:
+            logger.info(f"[URL Ingestion] Fetching media from: {url}")
+            res = download_media_from_url(url, app.config['UPLOAD_FOLDER'])
+            if not res.get('success'):
+                return jsonify({'error': res.get('error', 'Failed to extract media from link')}), 400
+            
+            return jsonify({
+                'success': True,
+                'filename': res['filename'],
+                'filepath': res['filepath'],
+                'media_type': res.get('media_type', 'image'),
+                'source_url': url,
+                'platform': res.get('platform', 'WebMedia'),
+                'title': res.get('title'),
+                'author': res.get('author'),
+                'duration': res.get('duration')
+            })
+        except Exception as e:
+            logger.error(f"[URL Ingestion] Error processing {url}: {e}", exc_info=True)
+            return jsonify({'error': f'Lỗi bóc tách luồng media: {str(e)}'}), 500
+
+    # Route B: Traditional Direct File Upload
     if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
+        return jsonify({'error': 'No file or media URL provided'}), 400
     
     file = request.files['file']
     
@@ -253,6 +295,12 @@ def upload_file():
     except Exception as e:
         logger.error(f"Upload error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/upload-url', methods=['POST'])
+def upload_url():
+    """Explicit dedicated endpoint for Social Media & Web Stream URL Ingestion."""
+    return upload_file()
 
 
 @app.route('/uploads/<filename>')
@@ -429,7 +477,7 @@ def generate_forensic_answer(question: str, detection_result: dict = None, langu
         )
 
 
-def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str = "en", routing_mode: str = "auto"):
+def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str = "en", routing_mode: str = "auto", source_url: str = ""):
     """
     Core detection & analysis engine supporting both WebSocket background tasks and REST API fallback.
     Returns: (detection_result_dict, explanation_str)
@@ -458,6 +506,20 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
         detection_result = detector.predict_media(filepath, routing_mode=routing_mode)
         if 'error' in detection_result:
             return detection_result, f"Detection error: {detection_result['error']}"
+
+    # Attach in-the-wild source URL provenance if ingested via link
+    if source_url and detection_result and isinstance(detection_result, dict):
+        detection_result['source_url'] = source_url
+        if 'forensic_certificate' in detection_result and isinstance(detection_result['forensic_certificate'], dict):
+            cert = detection_result['forensic_certificate']
+            cert['source_url'] = source_url
+            if 'media_integrity' in cert and isinstance(cert['media_integrity'], dict):
+                cert['media_integrity']['source_url'] = source_url
+            try:
+                from benchmark.deepfake_memory import save_forensic_certificate
+                save_forensic_certificate(cert)
+            except Exception as se:
+                logger.warning(f"Failed to persist certificate source_url: {se}")
 
     if not explanation:
         conf = detection_result.get('confidence', 0.95)
@@ -547,19 +609,20 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
 def api_analyze():
     """
     REST API endpoint for media analysis (Fail-safe / Fallback).
-    Accepts JSON: { "filepath": "...", "query": "...", "language": "vi"|"en" }
+    Accepts JSON: { "filepath": "...", "query": "...", "language": "vi"|"en", "source_url": "..." }
     """
     data = request.get_json(silent=True) or {}
     filepath = data.get('filepath')
     user_query = data.get('query', '')
     language = data.get('language', 'en')
     routing_mode = data.get('routing_mode', 'auto')
+    source_url = data.get('source_url', '')
 
     if not filepath or not os.path.exists(filepath):
         return jsonify({'error': 'Media file not found on server'}), 404
 
     try:
-        detection_result, explanation = execute_analysis_pipeline(filepath, user_query=user_query, language=language, routing_mode=routing_mode)
+        detection_result, explanation = execute_analysis_pipeline(filepath, user_query=user_query, language=language, routing_mode=routing_mode, source_url=source_url)
         return jsonify({
             'success': True,
             'detection_result': detection_result,
@@ -710,6 +773,12 @@ def view_certificate_page(cert_id):
         ent_s = ev.get("model_uncertainty_entropy", {})
         html_content = html_content.replace("{{ENTROPY_SCORE}}", str(ent_s.get("entropy", "0.0")))
 
+        source_url = cert.get("source_url") or cert.get("media_integrity", {}).get("source_url") or ""
+        if source_url:
+            html_content = html_content.replace("{{SOURCE_URL}}", str(source_url)).replace("{{SOURCE_URL_STYLE}}", "")
+        else:
+            html_content = html_content.replace("{{SOURCE_URL}}", "").replace("{{SOURCE_URL_STYLE}}", "display: none;")
+
         html_content = html_content.replace("{{COMPLIANCE_STANDARD}}", str(cert.get("compliance_standard", "EU AI Act Article 50 & DSA Auditable Media")))
 
         return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
@@ -791,6 +860,7 @@ def handle_analyze_image(data):
         user_query = data.get('query', '')
         language = data.get('language', 'en')
         routing_mode = data.get('routing_mode', 'auto')
+        source_url = data.get('source_url', '')
         client_sid = request.sid
         
         if not filepath or not os.path.exists(filepath):
@@ -804,9 +874,9 @@ def handle_analyze_image(data):
             'message': 'Analyzing media with Dual-Stream Vision models...'
         })
         
-        def background_analysis_task(sid, fpath, q, lang, rmode):
+        def background_analysis_task(sid, fpath, q, lang, rmode, surl):
             try:
-                detection_result, explanation = execute_analysis_pipeline(fpath, user_query=q, language=lang, routing_mode=rmode)
+                detection_result, explanation = execute_analysis_pipeline(fpath, user_query=q, language=lang, routing_mode=rmode, source_url=surl)
                 if detection_result:
                     socketio.emit('detection_result', detection_result, to=sid)
                 socketio.emit('agent_status', {
@@ -820,7 +890,7 @@ def handle_analyze_image(data):
                 logger.error(f"Background analysis error: {task_err}", exc_info=True)
                 socketio.emit('error', {'message': f'Analysis failed: {str(task_err)}'}, to=sid)
 
-        socketio.start_background_task(background_analysis_task, client_sid, filepath, user_query, language, routing_mode)
+        socketio.start_background_task(background_analysis_task, client_sid, filepath, user_query, language, routing_mode, source_url)
         
     except Exception as e:
         logger.error(f"Analysis trigger error: {e}", exc_info=True)

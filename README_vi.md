@@ -16,6 +16,17 @@ Hệ thống tích hợp **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng
 
 ---
 
+## 🌐 1.0. Cơ Chế Bóc Tách Luồng Liên Kết Mạng Xã Hội In-The-Wild & PWA Web Share Target
+
+Nhằm xóa bỏ rào cản thao tác tải tệp thủ công đối với người dùng cuối khi phát hiện nội dung nghi vấn trên không gian mạng, hệ thống trang bị **Module Tiếp Nhận & Bóc Tách Luồng Liên Kết Tự Động (In-The-Wild URL Stream Ingestion)** kết hợp chuẩn W3C **PWA Web Share Target API**:
+
+1. **Hỗ Trợ Toàn Diện Các Nền Tảng Mạng Xã Hội**: Tự động nhận diện và bóc tách luồng dữ liệu từ các nền tảng video ngắn phổ biến bao gồm **TikTok**, **Instagram Reels**, **YouTube Shorts**, **Threads**, **Facebook Watch**, **X (Twitter)**, cùng mọi liên kết tệp phương tiện trực tiếp (`.mp4`, `.webm`, `.jpg`, `.png`, `.wav`, `.mp3`).
+2. **Khử Ghép Kênh & Giới Hạn Phòng Thủ (Rate & Size Limiting)**: Sử dụng động cơ headless `yt-dlp` và HTTP streaming có kiểm soát trần an toàn tài nguyên ($M_{\max} = 100\text{ MB}$, timeout 30s) nhằm ngăn ngừa tấn công làm cạn kiệt bộ nhớ hoặc từ chối dịch vụ (DoS).
+3. **PWA Web Share Target 1-Chạm Trên Di Động**: Khai báo cấu hình `share_target` trong `manifest.json`. Khi người dùng duyệt video trên TikTok hoặc Instagram trên thiết bị di động, chỉ cần nhấn nút **"Chia sẻ" (Share)** và chọn ứng dụng **Deepfake Forensic Agent**, liên kết sẽ tự động được điều hướng vào buồng lái giám định mà không cần lưu video về máy.
+4. **Đóng Dấu Mật Mã & Liên Kết Nguồn Gốc (Cryptographic Provenance Linking)**: Luồng dữ liệu sau khi tải về được sinh mã băm SHA-256 duy nhất, ghi nhận URL nguồn gốc vào Chứng thư Giám định Pháp y Số (`CERT-DF-...`) và lập chỉ mục SSR Google Search công khai (`/certificate/<id>`).
+
+---
+
 ## 🔬 1. Cơ Chế Định Tuyến Phân Tuyến Đa Phương Tiện (Tri-Stream Agentic Dispatcher)
 
 Nhằm đáp ứng yêu cầu giám định toàn diện trong kỷ nguyên truyền thông tạo sinh đa phương thức (hình ảnh, video, âm thanh giọng nói), hệ thống thiết lập **Cơ chế Phân tuyến Hướng Tác tử Ba Luồng**. Khi người dùng tải tệp lên (qua giao diện Web hoặc API), bộ tiền xử lý sẽ kiểm tra MIME type và Magic Byte Header để tự động điều hướng sang 1 trong 3 động cơ chuyên sâu tương ứng:
