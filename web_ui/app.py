@@ -573,7 +573,10 @@ def api_analyze():
 @app.route('/api/verify/<cert_id>', methods=['GET'])
 @app.route('/verify/<cert_id>', methods=['GET'])
 def verify_certificate(cert_id):
-    """Public API endpoint to query and verify Digital Forensic Certificates by ID."""
+    """Public endpoint to query and verify Digital Forensic Certificates by ID."""
+    # If requested from a browser or Googlebot (Accept: text/html) and not an explicit API path, render the SSR HTML page
+    if 'text/html' in request.headers.get('Accept', '') and not request.path.startswith('/api/'):
+        return view_certificate_page(cert_id)
     try:
         import sys
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -659,8 +662,14 @@ def view_certificate_page(cert_id):
             save_forensic_certificate(synth_cert)
             cert = synth_cert
 
-        template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "observability", "static", "certificate.html"))
-        if not os.path.exists(template_path):
+        template_candidates = [
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "templates", "certificate.html")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "observability", "static", "certificate.html")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static", "certificate.html")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "certificate.html"))
+        ]
+        template_path = next((p for p in template_candidates if os.path.exists(p)), None)
+        if not template_path:
             return verify_certificate(cert_id)
 
         with open(template_path, "r", encoding="utf-8") as f:
@@ -709,6 +718,19 @@ def view_certificate_page(cert_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/robots.txt', methods=['GET'])
+def get_robots_txt():
+    """Serve robots.txt allowing Googlebot to crawl and index certificate verification pages."""
+    content = """User-agent: *
+Allow: /
+Allow: /certificate/
+Allow: /verify/
+Allow: /api/verify/
+Sitemap: https://detection.dtpsoft.vn/sitemap.xml
+"""
+    return Response(content, mimetype='text/plain; charset=utf-8')
+
+
 @app.route('/sitemap.xml', methods=['GET'])
 def get_sitemap_xml():
     """Generate dynamic XML sitemap listing all published certificates for Googlebot."""
@@ -732,7 +754,9 @@ def get_sitemap_xml():
             created_at = (c.get("created_at") or today_iso)[:10]
             if cid:
                 loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
+                verify_url = f"https://detection.dtpsoft.vn/verify/{cid}"
                 xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+                xml_lines.append(f"  <url><loc>{verify_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
 
         xml_lines.append('</urlset>')
         xml_content = "\n".join(xml_lines)

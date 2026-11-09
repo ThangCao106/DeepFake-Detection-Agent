@@ -1344,6 +1344,18 @@ async def view_certificate_page(cert_id: str):
         raise HTTPException(status_code=500, detail=f"SSR certificate error: {str(e)}") from e
 
 
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def get_robots_txt_api():
+    """Serve robots.txt allowing Googlebot to crawl and index certificate verification pages."""
+    return """User-agent: *
+Allow: /
+Allow: /certificate/
+Allow: /verify/
+Allow: /api/verify/
+Sitemap: https://detection.dtpsoft.vn/sitemap.xml
+"""
+
+
 @app.get("/sitemap.xml")
 async def get_sitemap_xml():
     """Generate dynamic XML sitemap listing all published certificates for Googlebot."""
@@ -1367,7 +1379,9 @@ async def get_sitemap_xml():
             created_at = (c.get("created_at") or today_iso)[:10]
             if cid:
                 loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
+                verify_url = f"https://detection.dtpsoft.vn/verify/{cid}"
                 xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
+                xml_lines.append(f"  <url><loc>{verify_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
 
         xml_lines.append('</urlset>')
         xml_content = "\n".join(xml_lines)
