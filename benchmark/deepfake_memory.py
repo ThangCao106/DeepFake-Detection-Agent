@@ -77,6 +77,69 @@ def init_db(db_path=None):
     )
     """)
 
+    # Table 5: User / Pentest Feedback Events (Closed-Loop Active Learning)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_feedback_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        feedback_id TEXT UNIQUE NOT NULL,
+        certificate_id TEXT,
+        platform TEXT DEFAULT 'unknown',
+        media_type TEXT DEFAULT 'video',
+        file_path TEXT,
+        source_url TEXT,
+        predicted_label TEXT NOT NULL,
+        true_label TEXT NOT NULL,
+        feedback_type TEXT NOT NULL,
+        composite_risk_score REAL DEFAULT 0.0,
+        feature_telemetry_json TEXT,
+        user_note TEXT,
+        vault_sample_ids_json TEXT,
+        calibration_applied INTEGER DEFAULT 0,
+        lora_trained INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Table 6: Multi-Platform Short-Video Pentest Runs (Threads / IG Reels / YT Shorts / TikTok)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS short_video_pentest_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id TEXT UNIQUE NOT NULL,
+        platform TEXT NOT NULL,
+        attack_vector TEXT DEFAULT 'all',
+        sample_count INTEGER DEFAULT 0,
+        accuracy REAL DEFAULT 0.0,
+        tpr REAL DEFAULT 0.0,
+        fpr REAL DEFAULT 0.0,
+        fnr REAL DEFAULT 0.0,
+        roc_auc REAL DEFAULT 0.0,
+        eer_percent REAL DEFAULT 0.0,
+        ece REAL DEFAULT 0.0,
+        mean_latency_ms REAL DEFAULT 0.0,
+        mean_duration_error_sec REAL DEFAULT 0.0,
+        report_json_path TEXT,
+        report_md_path TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Table 7: Audit Trail of Automated Weight & Calibration Updates
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS calibration_weight_updates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        update_id TEXT UNIQUE NOT NULL,
+        trigger_source TEXT NOT NULL,
+        feedback_count INTEGER DEFAULT 0,
+        before_params_json TEXT,
+        after_params_json TEXT,
+        before_metrics_json TEXT,
+        after_metrics_json TEXT,
+        accepted INTEGER DEFAULT 1,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Table 4: Auditable Forensic Certificates
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS forensic_certificates (
@@ -404,6 +467,157 @@ def get_all_certificates(limit: int = 1000, db_path=None) -> list:
     for r in rows:
         result.append(dict(r))
     return result
+
+
+def save_user_feedback(event: dict, db_path=None) -> str:
+    """Persist user/pentest misclassification feedback for active weight updating."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    feedback_id = event.get("feedback_id") or f"FB-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    telemetry_str = json.dumps(event.get("feature_telemetry") or {}, ensure_ascii=False)
+    vault_ids_str = json.dumps(event.get("vault_sample_ids") or [], ensure_ascii=False)
+
+    cursor.execute("""
+    INSERT INTO user_feedback_events (
+        feedback_id, certificate_id, platform, media_type, file_path, source_url,
+        predicted_label, true_label, feedback_type, composite_risk_score,
+        feature_telemetry_json, user_note, vault_sample_ids_json,
+        calibration_applied, lora_trained
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(feedback_id) DO UPDATE SET
+        calibration_applied = excluded.calibration_applied,
+        lora_trained = excluded.lora_trained,
+        vault_sample_ids_json = excluded.vault_sample_ids_json,
+        feature_telemetry_json = excluded.feature_telemetry_json
+    """, (
+        feedback_id,
+        event.get("certificate_id"),
+        event.get("platform", "unknown"),
+        event.get("media_type", "video"),
+        event.get("file_path"),
+        event.get("source_url"),
+        event.get("predicted_label", "Unknown"),
+        event.get("true_label", "Unknown"),
+        event.get("feedback_type", "CORRECTION"),
+        float(event.get("composite_risk_score", 0.0)),
+        telemetry_str,
+        event.get("user_note", ""),
+        vault_ids_str,
+        1 if event.get("calibration_applied") else 0,
+        1 if event.get("lora_trained") else 0,
+    ))
+    conn.commit()
+    conn.close()
+    return feedback_id
+
+
+def get_recent_feedback(limit: int = 100, media_type: str = None, db_path=None) -> list:
+    """Fetch recent feedback reflection events from SQLite."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    if media_type:
+        cursor.execute(
+            "SELECT * FROM user_feedback_events WHERE media_type = ? ORDER BY id DESC LIMIT ?",
+            (media_type, limit),
+        )
+    else:
+        cursor.execute("SELECT * FROM user_feedback_events ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    items = []
+    for row in rows:
+        d = dict(row)
+        for j_col, out_col in [("feature_telemetry_json", "feature_telemetry"), ("vault_sample_ids_json", "vault_sample_ids")]:
+            try:
+                d[out_col] = json.loads(d.get(j_col) or ("{}" if out_col == "feature_telemetry" else "[]"))
+            except Exception:
+                d[out_col] = {} if out_col == "feature_telemetry" else []
+        items.append(d)
+    return items
+
+
+def save_short_video_pentest_run(row_data: dict, db_path=None) -> str:
+    """Save platform/attack metrics from Multi-Platform Short-Video Pentest."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    run_id = row_data.get("run_id") or f"SVP-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    cursor.execute("""
+    INSERT INTO short_video_pentest_runs (
+        run_id, platform, attack_vector, sample_count, accuracy, tpr, fpr, fnr,
+        roc_auc, eer_percent, ece, mean_latency_ms, mean_duration_error_sec,
+        report_json_path, report_md_path
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(run_id) DO UPDATE SET
+        accuracy = excluded.accuracy,
+        tpr = excluded.tpr,
+        fpr = excluded.fpr,
+        fnr = excluded.fnr,
+        roc_auc = excluded.roc_auc,
+        eer_percent = excluded.eer_percent,
+        ece = excluded.ece
+    """, (
+        run_id,
+        row_data.get("platform", "all"),
+        row_data.get("attack_vector", "all"),
+        int(row_data.get("sample_count", 0)),
+        float(row_data.get("accuracy", 0.0)),
+        float(row_data.get("tpr", 0.0)),
+        float(row_data.get("fpr", 0.0)),
+        float(row_data.get("fnr", 0.0)),
+        float(row_data.get("roc_auc", 0.0)),
+        float(row_data.get("eer_percent", 0.0)),
+        float(row_data.get("ece", 0.0)),
+        float(row_data.get("mean_latency_ms", 0.0)),
+        float(row_data.get("mean_duration_error_sec", 0.0)),
+        row_data.get("report_json_path", ""),
+        row_data.get("report_md_path", ""),
+    ))
+    conn.commit()
+    conn.close()
+    return run_id
+
+
+def get_latest_short_video_pentest(limit: int = 20, db_path=None) -> list:
+    """Return latest Multi-Platform Short-Video Pentest runs."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM short_video_pentest_runs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def save_weight_update_audit(audit: dict, db_path=None) -> str:
+    """Record an automated feedback-driven parameter/LoRA weight update event."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    update_id = audit.get("update_id") or f"WU-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    cursor.execute("""
+    INSERT INTO calibration_weight_updates (
+        update_id, trigger_source, feedback_count, before_params_json, after_params_json,
+        before_metrics_json, after_metrics_json, accepted, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(update_id) DO NOTHING
+    """, (
+        update_id,
+        audit.get("trigger_source", "user_feedback"),
+        int(audit.get("feedback_count", 0)),
+        json.dumps(audit.get("before_params") or {}, ensure_ascii=False),
+        json.dumps(audit.get("after_params") or {}, ensure_ascii=False),
+        json.dumps(audit.get("before_metrics") or {}, ensure_ascii=False),
+        json.dumps(audit.get("after_metrics") or {}, ensure_ascii=False),
+        1 if audit.get("accepted", True) else 0,
+        audit.get("notes", ""),
+    ))
+    conn.commit()
+    conn.close()
+    return update_id
 
 
 if __name__ == "__main__":

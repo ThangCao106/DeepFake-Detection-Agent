@@ -1,0 +1,38 @@
+{
+  "description": "Multi-Platform Short-Video Benchmark & Pentest Manifest (Threads, Instagram Reels, YouTube Shorts, TikTok). Pass --download-urls to short_video_pentest.py to fetch live platform URLs or populate local file_path entries.",
+  "samples": [
+    {
+      "sample_id": "yt_shorts_u9mfCqxxrJo_ai_short",
+      "platform": "youtube_shorts",
+      "attack_vector": "ai_generative_short",
+      "url": "https://www.youtube.com/shorts/u9mfCqxxrJo",
+      "true_label": "Deepfake",
+      "notes": "AI-generated short animation clip reported as historical False Negative regression anchor"
+    },
+    {
+      "sample_id": "threads_real_roadwork_template",
+      "platform": "threads",
+      "attack_vector": "h264_heavy_reencode",
+      "file_path": "",
+      "true_label": "Realism",
+      "notes": "Populate with local H.264 heavily compressed real clip (e.g. CERT-VID-7CBF6267 case) for anti-FP regression"
+    },
+    {
+      "sample_id": "ig_reels_sample_template",
+      "platform": "instagram_reels",
+      "attack_vector": "caption_sticker",
+      "file_path": "",
+      "true_label": "Realism",
+      "notes": "Populate with Instagram Reels URL or local MP4 path"
+    },
+    {
+      "sample_id": "tiktok_sample_template",
+      "platform": "tiktok",
+      "attack_vector": "vfr_fps_mismatch",
+      "file_path": "",
+      "true_label": "Realism",
+      "notes": "Populate with TikTok URL or local MP4 path"
+    }
+  ]
+}
+

@@ -1763,31 +1763,23 @@ class DeepfakeDetector:
             else:
                 raise e
 
-        # Load calibration parameters if present
-        calib_file = os.path.join(custom_dir, "calibration_params.json")
-        if os.path.exists(calib_file):
-            import json
+        # Hot-load merged continual-feedback weights if promoted from FeedbackWeightUpdater
+        merged_fb_weights = os.path.join(custom_dir, "feedback_merged_weights.pt")
+        if os.path.exists(merged_fb_weights):
             try:
-                with open(calib_file, "r") as f:
-                    self.calibration_params = json.load(f)
-                print(f"[info] Calibration parameters loaded: T={self.calibration_params.get('temperature_scaling_T')}, tau={self.calibration_params.get('optimal_threshold_tau')}")
-            except Exception as e:
-                print(f"[warning] Could not parse calibration_params.json: {e}")
-                self.calibration_params = None
-        else:
-            self.calibration_params = None
+                fb_state = torch.load(merged_fb_weights, map_location=self.device)
+                self.model.load_state_dict(fb_state, strict=False)
+                self.model.eval()
+                print(f"[info] Loaded continual feedback merged weights from: {merged_fb_weights}")
+            except Exception as fb_err:
+                print(f"[warning] Could not load feedback_merged_weights.pt: {fb_err}")
 
-        # Load Vietnamese demographic adaptive parameters if present
-        vn_param_file = os.path.join(custom_dir, "vietnamese_demographic_params.json")
+        # Load calibration & adaptive video parameters
+        self.custom_dir = custom_dir
+        self.calibration_params = None
         self.vn_demographic_params = None
-        if os.path.exists(vn_param_file):
-            import json
-            try:
-                with open(vn_param_file, "r", encoding="utf-8") as f:
-                    self.vn_demographic_params = json.load(f)
-                print(f"[info] Vietnamese Demographic Parameters loaded: tau*={self.vn_demographic_params.get('optimal_decision_threshold_tau_star')}")
-            except Exception as e:
-                pass
+        self.video_calibration_params = {}
+        self.reload_calibration_params()
 
         # Initialize Human-Centric Multi-Modal Detector (Model 2) for Dual-Stream Execution
         if HumanMultiModalDetector is not None:
@@ -1801,6 +1793,67 @@ class DeepfakeDetector:
             self.human_detector = None
 
         print("[info] DeepfakeDetector initialized successfully.")
+
+    def reload_calibration_params(self):
+        """
+        Hot-reload calibration_params.json, vietnamese_demographic_params.json,
+        and video_calibration_params.json without restarting the detector.
+        """
+        import json
+        custom_dir = getattr(self, "custom_dir", None)
+        if not custom_dir:
+            root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
+            local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
+            custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
+            self.custom_dir = custom_dir
+
+        calib_file = os.path.join(custom_dir, "calibration_params.json")
+        if os.path.exists(calib_file):
+            try:
+                with open(calib_file, "r", encoding="utf-8") as f:
+                    self.calibration_params = json.load(f)
+                print(f"[info] Calibration parameters loaded: T={self.calibration_params.get('temperature_scaling_T')}, tau={self.calibration_params.get('optimal_threshold_tau')}")
+            except Exception as e:
+                print(f"[warning] Could not parse calibration_params.json: {e}")
+
+        vn_param_file = os.path.join(custom_dir, "vietnamese_demographic_params.json")
+        if os.path.exists(vn_param_file):
+            try:
+                with open(vn_param_file, "r", encoding="utf-8") as f:
+                    self.vn_demographic_params = json.load(f)
+                print(f"[info] Vietnamese Demographic Parameters loaded: tau*={self.vn_demographic_params.get('optimal_decision_threshold_tau_star')}")
+            except Exception:
+                pass
+
+        default_video_params = {
+            "w_peak": 0.50,
+            "w_avg": 0.35,
+            "w_jitter": 0.15,
+            "weight_general_video": 0.40,
+            "weight_human_video": 0.60,
+            "tau_video": float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118,
+            "temperature_T": float(self.calibration_params.get("temperature_scaling_T", 1.6178)) if self.calibration_params else 1.6178,
+            "min_corroborated_ratio": 0.30,
+            "multi_frame_max_prob_gate": 0.85,
+            "deepfake_frame_ratio_gate": 0.45,
+            "ai_art_avg_comp_gate": 0.45,
+        }
+        vid_param_file = os.path.join(custom_dir, "video_calibration_params.json")
+        if os.path.exists(vid_param_file):
+            try:
+                with open(vid_param_file, "r", encoding="utf-8") as f:
+                    loaded_vp = json.load(f)
+                default_video_params.update(loaded_vp)
+                print(
+                    f"[info] Video Calibration Parameters loaded: "
+                    f"w=({default_video_params['w_peak']}, {default_video_params['w_avg']}, {default_video_params['w_jitter']}), "
+                    f"fusion=({default_video_params['weight_general_video']}/{default_video_params['weight_human_video']}), "
+                    f"tau_video={default_video_params['tau_video']}"
+                )
+            except Exception as e:
+                print(f"[warning] Could not parse video_calibration_params.json: {e}")
+        self.video_calibration_params = default_video_params
+        return self.video_calibration_params
 
 
     def _crop_face_if_possible(self, pil_image, detected_faces=None):
@@ -2580,22 +2633,41 @@ class DeepfakeDetector:
             except Exception:
                 video_audio_metrics = None
 
-            # SARAAB Weighted General Risk: 50% Peak Window, 35% Average, 15% Motion Jitter
-            general_video_score = round(0.50 * max_fake_prob + 0.35 * avg_fake_prob + 0.15 * min(1.0, motion_jitter * 2.0), 4)
+            # Load dynamic short-video calibration parameters (updated via feedback loop)
+            vp = getattr(self, "video_calibration_params", None) or {}
+            w_peak = float(vp.get("w_peak", 0.50))
+            w_avg = float(vp.get("w_avg", 0.35))
+            w_jitter = float(vp.get("w_jitter", 0.15))
+            w_sum = max(1e-6, w_peak + w_avg + w_jitter)
+            w_peak, w_avg, w_jitter = w_peak / w_sum, w_avg / w_sum, w_jitter / w_sum
+
+            w_gen_vid = float(vp.get("weight_general_video", 0.40))
+            w_hum_vid = float(vp.get("weight_human_video", 0.60))
+            w_vid_sum = max(1e-6, w_gen_vid + w_hum_vid)
+            w_gen_vid, w_hum_vid = round(w_gen_vid / w_vid_sum, 4), round(w_hum_vid / w_vid_sum, 4)
+
+            min_corr_ratio = float(vp.get("min_corroborated_ratio", 0.30))
+            gate_max_prob = float(vp.get("multi_frame_max_prob_gate", 0.85))
+            gate_df_ratio = float(vp.get("deepfake_frame_ratio_gate", 0.45))
+            gate_ai_avg_comp = float(vp.get("ai_art_avg_comp_gate", 0.45))
+
+            # SARAAB Weighted General Risk
+            general_video_score = round(w_peak * max_fake_prob + w_avg * avg_fake_prob + w_jitter * min(1.0, motion_jitter * 2.0), 4)
 
             # Step 2: Dual-Stream Video Fusion if Human Present
+            human_vid_risk = None
             if has_human_video and self.human_detector is not None:
                 human_vid_eval = self.human_detector.predict_media(video_path, modality="video", base_fake_prob=general_video_score)
                 human_vid_risk = float(human_vid_eval.get("calibrated_probability", general_video_score))
-                composite_video_risk = round(0.40 * general_video_score + 0.60 * human_vid_risk, 4)
+                composite_video_risk = round(w_gen_vid * general_video_score + w_hum_vid * human_vid_risk, 4)
                 analysis_mode = "DUAL_STREAM_PARALLEL"
                 dual_stream_breakdown = {
                     "mode": "DUAL_STREAM_PARALLEL",
                     "human_gate_triggered": True,
-                    "fusion_formula": "Risk_composite = 0.40 * Risk_general + 0.60 * Risk_human_video",
+                    "fusion_formula": f"Risk_composite = {w_gen_vid:.2f} * Risk_general + {w_hum_vid:.2f} * Risk_human_video",
                     "stream_1_general_video": {
                         "model_name": "General Vision Transformer Frame Aggregator (SARAAB 7s Windowing)",
-                        "weight": 0.40,
+                        "weight": w_gen_vid,
                         "stream_risk_score": round(general_video_score, 4),
                         "peak_fake_probability": round(max_fake_prob, 4),
                         "aggregate_fake_probability": round(avg_fake_prob, 4),
@@ -2604,7 +2676,7 @@ class DeepfakeDetector:
                     },
                     "stream_2_human_biometrics": {
                         "model_name": "Human Multi-Modal Detector (LipSync + DF26 + ECE)",
-                        "weight": 0.60,
+                        "weight": w_hum_vid,
                         "stream_risk_score": round(human_vid_risk, 4),
                         "forensic_indicators": human_vid_eval.get("forensic_indicators", {})
                     }
@@ -2627,17 +2699,17 @@ class DeepfakeDetector:
                 }
 
             # Video Forensic Decisiveness Gates (Locard's Tampering Dominance Principle):
-            # Require consistent multi-frame (>=25%-45%) corroboration so 1-2 compressed/text outlier frames
+            # Require consistent multi-frame corroboration so 1-2 compressed/text outlier frames
             # (like real news captions or roadwork motion blur) cannot hijack an authentic video.
-            min_corroborated_frames = max(3, int(math.ceil(0.30 * len(frame_results))))
+            min_corroborated_frames = max(3, int(math.ceil(min_corr_ratio * len(frame_results))))
             has_multi_frame_neural_tamper = bool(
-                (max_fake_prob >= 0.85 and frames_ge_060 >= 3) or
-                (deepfake_frame_ratio >= 0.45 and max_fake_prob >= 0.78) or
+                (max_fake_prob >= gate_max_prob and frames_ge_060 >= 3) or
+                (deepfake_frame_ratio >= gate_df_ratio and max_fake_prob >= 0.78) or
                 (flagged_segments_ratio >= 0.40 and avg_fake_prob >= 0.45)
             )
             has_ai_art_video_tamper = bool(
                 ai_art_frame_count >= min_corroborated_frames or
-                (high_comp_frames >= min_corroborated_frames and avg_comp_prob >= 0.45)
+                (high_comp_frames >= min_corroborated_frames and avg_comp_prob >= gate_ai_avg_comp)
             )
             has_audio_corroboration = bool(
                 video_audio_metrics is not None and
@@ -2655,12 +2727,28 @@ class DeepfakeDetector:
                 )
                 composite_video_risk = round(float(min(0.995, max(composite_video_risk, dominant_floor))), 4)
 
-            # Post-hoc Platt Scaling & Youden Optimal Threshold (tau* = 0.8118)
-            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+            # Post-hoc Platt Scaling & Youden Optimal Threshold
+            tau_star = float(vp.get("tau_video", self.calibration_params.get("optimal_threshold_tau", 0.8118) if self.calibration_params else 0.8118))
             is_synthetic_vid, verdict_label, confidence, all_scores = self.calibrate_posterior_probability(
                 composite_risk=composite_video_risk,
                 tau_star=tau_star
             )
+            saraab_feature_telemetry = {
+                "max_fake_prob": round(max_fake_prob, 4),
+                "avg_fake_prob": round(avg_fake_prob, 4),
+                "motion_jitter": round(motion_jitter, 4),
+                "avg_comp_prob": round(avg_comp_prob, 4),
+                "max_comp_prob": round(max_comp_prob, 4),
+                "deepfake_frame_ratio": round(deepfake_frame_ratio, 4),
+                "ai_art_frame_ratio": round(ai_art_frame_count / max(1, len(frame_results)), 4),
+                "high_comp_frame_ratio": round(high_comp_frames / max(1, len(frame_results)), 4),
+                "has_human_video": bool(has_human_video),
+                "general_video_score": round(general_video_score, 4),
+                "human_vid_risk": round(human_vid_risk, 4) if human_vid_risk is not None else None,
+                "audio_acoustic_risk": round(float(video_audio_metrics.get("acoustic_risk", 0.0)), 4) if video_audio_metrics else None,
+                "duration_sec": round(duration_sec, 3),
+                "sampled_frames": len(frame_results),
+            }
 
             cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -2835,7 +2923,8 @@ class DeepfakeDetector:
                         "partial_manipulation_detected": len(flagged_partial_segments) > 0,
                         "flagged_segments": flagged_partial_segments,
                         "window_evaluations": window_evaluations
-                    }
+                    },
+                    "saraab_feature_telemetry": saraab_feature_telemetry
                 },
                 "composite_risk_score": composite_video_risk,
                 "calibrated_probability": composite_video_risk,
@@ -2865,7 +2954,13 @@ class DeepfakeDetector:
                 "scene_context": scene_context_vid,
                 "triad_council_debate": triad_debate_video,
                 "forensic_certificate": forensic_certificate,
-                "frame_results": frame_results
+                "frame_results": frame_results,
+                "saraab_feature_telemetry": saraab_feature_telemetry,
+                "video_metadata": {
+                    "duration_sec": round(duration_sec, 3),
+                    "sampled_frames": len(frame_results),
+                    "file_path": str(video_path),
+                }
             }
         except Exception as e:
             return {"error": f"Video processing error: {str(e)}"}

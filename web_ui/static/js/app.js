@@ -1106,6 +1106,58 @@ function sendDisputeQuery(queryText) {
 }
 window.sendDisputeQuery = sendDisputeQuery;
 
+async function submitForensicFeedback(certId, trueLabel, triggerLora = false) {
+    document.querySelectorAll('.chat-dispute-dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+
+    const urlInput = document.getElementById('urlInput');
+    const sourceUrl = urlInput ? (urlInput.value || '').trim() : '';
+    const note = prompt(
+        `Xác nhận phản ánh kết quả (${certId}) là "${trueLabel === 'Deepfake' ? 'DEEPFAKE / AI' : 'THẬT / REALISM'}" để trích xuất hard-frames & cập nhật trọng số mô hình.\nGhi chú thêm (tùy chọn):`,
+        ''
+    );
+    if (note === null) return;
+
+    const latest = window.latestDetectionResult || (typeof latestDetectionResult !== 'undefined' ? latestDetectionResult : {}) || {};
+    try {
+        const res = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                certificate_id: certId && certId !== 'N/A' ? certId : null,
+                true_label: trueLabel,
+                media_type: latest.media_type || 'video',
+                file_path: typeof uploadedFilePath !== 'undefined' ? uploadedFilePath : null,
+                source_url: sourceUrl || null,
+                predicted_label: latest.label || null,
+                composite_risk_score: latest.composite_risk_score,
+                feature_telemetry: latest.saraab_feature_telemetry || null,
+                user_note: note,
+                auto_update_calibration: true,
+                trigger_lora_update: Boolean(triggerLora),
+            }),
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            const after = (data.calibration_update && data.calibration_update.after_params) || {};
+            const msg = `✅ **Đã ghi nhận phản ánh (${data.feedback_id})** [${data.feedback_type} | nền tảng: \`${data.platform}\`]\n` +
+                `- Hard frames lưu Vault: **${data.extracted_frames_count}** khung hình\n` +
+                `- Calibration Video cập nhật: \`τ_video=${after.tau_video || 'N/A'}\`, \`w_peak=${after.w_peak || 'N/A'}\`, \`w_avg=${after.w_avg || 'N/A'}\``;
+            if (typeof addMessage === 'function') {
+                addMessage(msg, 'agent');
+            } else {
+                alert(msg.replace(/\*\*/g, '').replace(/`/g, ''));
+            }
+        } else {
+            alert('❌ Lỗi gửi phản ánh: ' + (data.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('❌ Lỗi kết nối /api/feedback: ' + err.message);
+    }
+}
+window.submitForensicFeedback = submitForensicFeedback;
+
 // Click outside listener to dismiss dispute menu
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.chat-dispute-wrapper')) {
@@ -1374,6 +1426,14 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                                 ⚖️ Tôi thấy chưa hợp lý (Yêu cầu thẩm tra lại)
                             </button>
                         `)}
+                        <div style="border-top: 1px dashed #e2e8f0; margin-top: 4px; padding-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+                            <button class="chat-dispute-chip" onclick="submitForensicFeedback('${certId}', 'Realism', false)" style="text-align: left; width: 100%; background: #ecfdf5; color: #065f46; border-color: #a7f3d0;">
+                                ✅ Báo sai (FP): Thực tế là THẬT -> Cập nhật trọng số
+                            </button>
+                            <button class="chat-dispute-chip" onclick="submitForensicFeedback('${certId}', 'Deepfake', false)" style="text-align: left; width: 100%; background: #fef2f2; color: #991b1b; border-color: #fecaca;">
+                                🚨 Báo sai (FN): Thực tế là DEEPFAKE/AI -> Cập nhật trọng số
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

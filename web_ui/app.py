@@ -1598,6 +1598,100 @@ def get_ablation_audit_certificate():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/feedback', methods=['POST'])
+@app.route('/benchmark/api/feedback', methods=['POST'])
+def api_submit_feedback():
+    """
+    Closed-loop user reflection endpoint:
+    Accepts misclassification reports (False Positive / False Negative) for a certificate
+    or video file, extracts hard frames into ZeroDayActiveLearningVault, updates calibration
+    fusion weights + reloads DeepfakeDetector, and optionally runs LoRA continual update.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        true_label = data.get("true_label")
+        if not true_label:
+            return jsonify({"status": "error", "message": "Missing required field: true_label ('Realism' or 'Deepfake')"}), 400
+
+        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
+
+        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+        res = FeedbackWeightUpdater.submit_feedback(
+            true_label=true_label,
+            certificate_id=data.get("certificate_id") or data.get("cert_id"),
+            platform=data.get("platform"),
+            media_type=data.get("media_type", "video"),
+            file_path=data.get("file_path") or data.get("filepath"),
+            source_url=data.get("source_url"),
+            predicted_label=data.get("predicted_label"),
+            composite_risk_score=data.get("composite_risk_score"),
+            feature_telemetry=data.get("feature_telemetry"),
+            user_note=data.get("user_note", ""),
+            auto_update_calibration=bool(data.get("auto_update_calibration", True)),
+            trigger_lora_update=bool(data.get("trigger_lora_update", False)),
+            detector=active_detector,
+        )
+        calib = res.get("calibration_update") or {}
+        if calib.get("accepted") and calib.get("after_params"):
+            socketio.emit('optimal_weights_applied', calib["after_params"])
+        return jsonify(res), 200
+    except Exception as e:
+        logger.error(f"Feedback submission error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/feedback/history', methods=['GET'])
+@app.route('/benchmark/api/feedback/history', methods=['GET'])
+def api_feedback_history():
+    """Return recent user/pentest feedback reflections and calibration weight status."""
+    try:
+        from benchmark.deepfake_memory import get_recent_feedback
+        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
+        limit = int(request.args.get("limit", 50))
+        return jsonify({
+            "status": "success",
+            "events": get_recent_feedback(limit=limit),
+            "active_video_params": FeedbackWeightUpdater.load_video_calibration_params(),
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/pentest/short-video', methods=['GET', 'POST'])
+@app.route('/benchmark/api/pentest/short-video', methods=['GET', 'POST'])
+def api_short_video_pentest():
+    """GET latest 4-platform short-video pentest metrics or POST to run a new pentest."""
+    try:
+        if request.method == 'GET':
+            from benchmark.deepfake_memory import get_latest_short_video_pentest
+            return jsonify({"status": "success", "runs": get_latest_short_video_pentest(limit=20)}), 200
+
+        data = request.get_json(silent=True) or {}
+        from benchmark.short_video_pentest import run_short_video_pentest
+        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+        res = run_short_video_pentest(
+            platforms=data.get("platforms"),
+            attacks=data.get("attacks"),
+            manifest_path=data.get("manifest_path"),
+            download_urls=bool(data.get("download_urls", False)),
+            auto_feedback=bool(data.get("auto_feedback", True)),
+            trigger_lora=bool(data.get("trigger_lora", False)),
+            detector=active_detector,
+        )
+        return jsonify({
+            "status": "success",
+            "run_id": res["run_id"],
+            "overall_metrics": res["overall_metrics"],
+            "by_platform": res["by_platform"],
+            "by_attack_vector": res["by_attack_vector"],
+            "misclassified_count": res["misclassified_count"],
+            "report_md_path": res["report_md_path"],
+        }), 200
+    except Exception as e:
+        logger.error(f"Short-video pentest API error: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @socketio.on('benchmark_start')
 def handle_socket_benchmark_start(data):
     """Start benchmark via WebSocket."""
