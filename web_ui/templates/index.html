@@ -42,13 +42,13 @@
             </div>
             
             <div class="nav-links">
+                {% if is_benchmark_mode %}
                 <a href="orchestrator" id="navOrchestratorLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                     🎛️ <span>Orchestrator</span>
                 </a>
                 <a href="benchmark" id="navBenchmarkLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                     📊 <span>Report &amp; Params</span>
                 </a>
-                {% if is_benchmark_mode %}
                 <button type="button" class="btn-benchmark-nav" id="benchmarkNavBtn" onclick="toggleBenchmarkCard()">
                     ⚡ <span data-i18n="bench_nav_btn">Benchmark Hub</span>
                 </button>
