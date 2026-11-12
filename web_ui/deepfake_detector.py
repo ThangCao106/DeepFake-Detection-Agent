@@ -1356,7 +1356,7 @@ class AudioForensicAnalyzer:
       4. Log-Mel Spectrogram 8x8 Time-Frequency Saliency Grid & Shannon Entropy.
     """
     @staticmethod
-    def load_audio_signal(audio_path, target_sr=16000):
+    def load_audio_signal(audio_path, target_sr=22050):
         import shutil
         import subprocess
         import tempfile
@@ -1533,10 +1533,10 @@ class AudioForensicAnalyzer:
         peak_score = float(sg_norm[max_idx])
         dispersion = float(np.var(sg_norm))
 
-        # 5. Composite Acoustic Risk (corroborate severe >7.5kHz neural vocoder roll-off)
+        # 5. Composite Acoustic Risk (corroborate severe >7.5kHz roll-off when vocal F0 physiology is also unnatural)
         acoustic_risk = 0.45 * vocoder_anomaly + 0.35 * pitch_score + 0.20 * phase_anomaly
-        if vocoder_anomaly >= 0.68 and (phase_anomaly >= 0.40 or pitch_score >= 0.45):
-            acoustic_risk = max(acoustic_risk, 0.72 + 0.20 * vocoder_anomaly)
+        if vocoder_anomaly >= 0.72 and pitch_score >= 0.55:
+            acoustic_risk = max(acoustic_risk, 0.76 + 0.18 * vocoder_anomaly)
         acoustic_risk = float(np.clip(acoustic_risk, 0.02, 0.98))
 
         return {
@@ -1870,7 +1870,7 @@ class DeepfakeDetector:
         # Fallback: No verified human face detected -> return whole image and False
         return pil_image, False
 
-    def predict(self, image_path, use_face_crop=True, routing_mode="auto"):
+    def predict(self, image_path, use_face_crop=True, routing_mode="auto", is_video_frame=False):
         """
         Predict whether an image is Real or Fake and generate an Auditable Forensic Decision Record.
         Applies Dual-Stream Parallel Analysis if human features (face/skin) are detected or requested.
@@ -2002,11 +2002,16 @@ class DeepfakeDetector:
             )
 
             # Step 1b-2: Generative AI Art & Synthetic Graphic Inspection (Midjourney / DALL-E / FLUX / AI Avatars)
+            # Disabled for lossy H.264/HEVC video keyframes where macroblock compression & text overlays
+            # lower residual energy (<0.35) and inflate noise kurtosis, causing false DIFFUSION_GRAPHIC flags.
             img_np_eval = np.array(image.convert("RGB"))
             skin_pct_val = human_presence.get("skin_percentage", 0.0)
-            ai_art_eval = GenerativeAIDiffusionDetector.inspect_generative_art(
-                image, img_np_eval, detected_faces, skin_pct_val, prnu_analysis, spectral_anomaly
-            )
+            if is_video_frame:
+                ai_art_eval = {"is_ai_generative_art": False, "confidence_score": 0.0}
+            else:
+                ai_art_eval = GenerativeAIDiffusionDetector.inspect_generative_art(
+                    image, img_np_eval, detected_faces, skin_pct_val, prnu_analysis, spectral_anomaly
+                )
             is_ai_art = ai_art_eval.get("is_ai_generative_art", False)
             if is_ai_art:
                 synth_type = ai_art_eval.get("synthetic_type", "DIFFUSION_PORTRAIT")
@@ -2049,8 +2054,11 @@ class DeepfakeDetector:
             # If the subject is facing away (back turned) or in the far distance without facial landmarks,
             # we rely strictly on Stream 1 General Vision to avoid false biometric penalties.
             if has_human and face_found and self.human_detector is not None:
+                # For lossy compressed video frames where ViT strongly predicts Real (<0.25),
+                # avoid false corneal specular glint overrides from distant/outdoor motion blur.
+                effective_corneal = 0.0 if (is_video_frame and fake_prob < 0.25) else corneal_score
                 # Stream 2: Human-Centric Specialist Stream (WAVIE + Corneal Reflection + rPPG + ECE Calibration)
-                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=corneal_score, base_fake_prob=fake_prob)
+                human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=effective_corneal, base_fake_prob=fake_prob)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
 
                 # Demographic-Adaptive Cohort Fusion for Vietnamese Population (Paper v2 / IEEE T-IFS 2026)
@@ -2074,9 +2082,9 @@ class DeepfakeDetector:
                 composite_risk = round(float(weight_general * general_risk + weight_human * human_risk), 4)
                 
                 # Forensic Decisiveness Gate (Locard's Tampering Dominance Principle - ISO/IEC 27037 & EU AI Act Art. 50):
-                # 1. Physically impossible eye reflections (face-swap optical asymmetry: corneal_score > 0.65)
+                # 1. Physically impossible eye reflections (face-swap optical asymmetry: effective_corneal > 0.65)
                 # 2. Latent diffusion micro-edge and non-Gaussian kurtosis (is_ai_art = True)
-                has_corneal_tamper = bool(corneal_score > 0.65)
+                has_corneal_tamper = bool(effective_corneal > 0.65)
                 has_biometric_tamper = bool(human_risk >= 0.80 or (human_eval and human_eval.get("is_deepfake", False)))
                 has_neural_tamper = bool(is_fake_pred and fake_prob >= 0.88)
                 if is_ai_art or has_corneal_tamper or has_biometric_tamper or has_neural_tamper:
@@ -2112,7 +2120,7 @@ class DeepfakeDetector:
                 }
             else:
                 # Single Stream: Non-Human Media (Nature, Objects, Architecture, Scenery)
-                has_corneal_tamper = bool(corneal_score > 0.65)
+                has_corneal_tamper = bool(corneal_score > 0.65 and not is_video_frame)
                 has_neural_tamper = bool(is_fake_pred and fake_prob >= 0.88)
                 if is_ai_art or has_corneal_tamper or has_neural_tamper:
                     composite_risk = round(float(max(general_risk, fake_prob, 0.988 if is_ai_art else 0.975)), 4)
@@ -2376,24 +2384,63 @@ class DeepfakeDetector:
 
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-            duration_sec = total_frames / fps if fps > 0 else 0
+            raw_duration = total_frames / fps if fps > 0 else 0
 
             if total_frames <= 0:
                 cap.release()
                 return {"error": "Video contains no readable frames"}
 
-            # Build 7-second Temporal Sliding Windows
-            window_size_frames = int(window_duration_sec * fps)
-            step_frames = max(1, window_size_frames // 2) if duration_sec > window_duration_sec else window_size_frames
-            
+            # Calibrate true playback duration against VFR / OpenCV FPS container mismatches (e.g. 60fps VFR read as 30fps)
+            duration_sec = raw_duration
+            try:
+                import shutil, subprocess
+                ffprobe_bin = shutil.which("ffprobe")
+                if ffprobe_bin:
+                    probe = subprocess.run(
+                        [
+                            ffprobe_bin, "-v", "error",
+                            "-show_entries", "format=duration",
+                            "-of", "default=noprint_wrappers=1:nokey=1",
+                            str(video_path),
+                        ],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=10,
+                    )
+                    if probe.returncode == 0:
+                        probe_dur = float(probe.stdout.decode("utf-8", errors="ignore").strip() or 0.0)
+                        if probe_dur > 0.1:
+                            duration_sec = probe_dur
+            except Exception:
+                pass
+
+            if abs(duration_sec - raw_duration) / max(duration_sec, 1e-3) <= 0.02:
+                # Fallback PTS probe via OpenCV end-frame timestamp when ffprobe is absent
+                try:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, total_frames - 1))
+                    ret_end, _ = cap.read()
+                    end_msec = cap.get(cv2.CAP_PROP_POS_MSEC) if ret_end else 0.0
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    if end_msec > 100.0:
+                        pts_dur = end_msec / 1000.0
+                        if abs(pts_dur - raw_duration) / max(pts_dur, 1e-3) > 0.08:
+                            duration_sec = pts_dur
+                except Exception:
+                    pass
+
+            effective_fps = (total_frames / duration_sec) if duration_sec > 0 else fps
+            fps = effective_fps
+
+            # Build 7-second Temporal Sliding Windows in calibrated seconds
             temporal_windows = []
-            cur_start = 0
-            while cur_start < total_frames:
-                cur_end = min(cur_start + window_size_frames, total_frames)
-                temporal_windows.append((cur_start, cur_end))
-                if cur_end >= total_frames:
+            cur_sec = 0.0
+            win_step = max(1.0, window_duration_sec / 2.0) if duration_sec > window_duration_sec else max(duration_sec, 1.0)
+            while cur_sec < max(duration_sec, 0.1):
+                end_sec = min(cur_sec + window_duration_sec, duration_sec)
+                temporal_windows.append((round(cur_sec, 2), round(end_sec, 2)))
+                if end_sec >= duration_sec - 1e-3:
                     break
-                cur_start += step_frames
+                cur_sec += win_step
 
             # Determine keyframe indices evenly across the ENTIRE video duration (never truncate long clips)
             num_samples = min(max_frames, total_frames)
@@ -2420,14 +2467,18 @@ class DeepfakeDetector:
                 ret, frame = cap.read()
                 if not ret:
                     continue
+                pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
 
                 temp_frame_path = os.path.join(base_dir, f"{base_name}_frame_{idx}.jpg")
                 cv2.imwrite(temp_frame_path, frame)
 
                 try:
-                    res = self.predict(temp_frame_path, use_face_crop=True, routing_mode=routing_mode)
+                    res = self.predict(temp_frame_path, use_face_crop=True, routing_mode=routing_mode, is_video_frame=True)
                     if "error" not in res:
-                        timestamp_sec = round(f_idx / fps, 2)
+                        if pos_msec > 0 and (pos_msec / 1000.0) <= max(duration_sec * 1.05, 1.0):
+                            timestamp_sec = round(pos_msec / 1000.0, 2)
+                        else:
+                            timestamp_sec = round(min(duration_sec, f_idx / effective_fps), 2)
                         cert = res.get("forensic_certificate", {})
                         ev = cert.get("multi_dimensional_evidence", {})
                         fake_p = float(ev.get("passive_model_score", {}).get("fake_probability", 0.5))
@@ -2487,13 +2538,11 @@ class DeepfakeDetector:
             # SARAAB Metric 2: Partial Manipulation Tracking by Window
             window_evaluations = []
             flagged_partial_segments = []
-            for w_idx, (w_start, w_end) in enumerate(temporal_windows):
-                w_start_sec = round(w_start / fps, 2)
-                w_end_sec = round(w_end / fps, 2)
-                w_probs = [f["fake_probability"] for f in frame_results if w_start <= f["frame_index"] <= w_end]
+            for w_idx, (w_start_sec, w_end_sec) in enumerate(temporal_windows):
+                w_probs = [f["fake_probability"] for f in frame_results if w_start_sec <= f["timestamp_sec"] <= w_end_sec]
                 if not w_probs and frame_results:
-                    w_mid = (w_start + w_end) / 2.0
-                    nearest_f = min(frame_results, key=lambda f: abs(f["frame_index"] - w_mid))
+                    w_mid_sec = (w_start_sec + w_end_sec) / 2.0
+                    nearest_f = min(frame_results, key=lambda f: abs(f["timestamp_sec"] - w_mid_sec))
                     w_probs = [nearest_f["fake_probability"]]
                 w_risk = float(np.mean(w_probs)) if w_probs else 0.5
                 is_flagged = bool(w_risk >= 0.60)
@@ -2516,9 +2565,10 @@ class DeepfakeDetector:
             max_fake_prob = float(np.max(fake_probs))
             avg_comp_prob = float(np.mean(comp_probs)) if comp_probs else avg_fake_prob
             max_comp_prob = float(np.max(comp_probs)) if comp_probs else max_fake_prob
-            frames_ge_055 = sum(1 for p in fake_probs if p >= 0.55)
+            frames_ge_060 = sum(1 for p in fake_probs if p >= 0.60)
             high_comp_frames = sum(1 for c in comp_probs if c >= 0.90)
             deepfake_frame_ratio = (sum(1 for flag in deepfake_frame_flags if flag) / len(deepfake_frame_flags)) if deepfake_frame_flags else 0.0
+            flagged_segments_ratio = (len(flagged_partial_segments) / len(window_evaluations)) if window_evaluations else 0.0
             median_kurtosis = float(np.median(kurtosis_vals)) if kurtosis_vals else 3.0
 
             # Optional Embedded Audio Track Forensics (when ffmpeg is installed on server)
@@ -2577,17 +2627,24 @@ class DeepfakeDetector:
                 }
 
             # Video Forensic Decisiveness Gates (Locard's Tampering Dominance Principle):
-            # Prevent multi-stream/temperature averaging from hiding proven AI-generated frames or localized deepfakes.
+            # Require consistent multi-frame (>=25%-45%) corroboration so 1-2 compressed/text outlier frames
+            # (like real news captions or roadwork motion blur) cannot hijack an authentic video.
+            min_corroborated_frames = max(3, int(math.ceil(0.30 * len(frame_results))))
             has_multi_frame_neural_tamper = bool(
-                (max_fake_prob >= 0.84 and (frames_ge_055 >= 2 or len(flagged_partial_segments) >= 1)) or
-                (deepfake_frame_ratio >= 0.45 and max_fake_prob >= 0.78)
+                (max_fake_prob >= 0.85 and frames_ge_060 >= 3) or
+                (deepfake_frame_ratio >= 0.45 and max_fake_prob >= 0.78) or
+                (flagged_segments_ratio >= 0.40 and avg_fake_prob >= 0.45)
             )
-            has_ai_art_video_tamper = bool(ai_art_frame_count >= 2 or high_comp_frames >= 2)
+            has_ai_art_video_tamper = bool(
+                ai_art_frame_count >= min_corroborated_frames or
+                (high_comp_frames >= min_corroborated_frames and avg_comp_prob >= 0.45)
+            )
             has_audio_corroboration = bool(
                 video_audio_metrics is not None and
-                video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.70 and
-                video_audio_metrics.get("acoustic_risk", 0.0) >= 0.65 and
-                (composite_video_risk >= 0.55 or median_kurtosis >= 7.5)
+                video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.72 and
+                video_audio_metrics.get("pitch_score", 0.0) >= 0.45 and
+                video_audio_metrics.get("acoustic_risk", 0.0) >= 0.78 and
+                composite_video_risk >= 0.65
             )
             if has_multi_frame_neural_tamper or has_ai_art_video_tamper or has_audio_corroboration:
                 dominant_floor = max(
@@ -2836,8 +2893,10 @@ class DeepfakeDetector:
 
             # Post-hoc Platt calibration alignment without crushing strong vocoder detections below tau*
             tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
-            if audio_metrics["vocoder_anomaly_score"] >= 0.68 and (
-                audio_metrics["phase_anomaly_score"] >= 0.40 or audio_metrics["pitch_score"] >= 0.45
+            if audio_metrics["vocoder_anomaly_score"] >= 0.72 and (
+                audio_metrics["pitch_score"] >= 0.55 or (
+                    audio_metrics["phase_anomaly_score"] >= 0.45 and audio_metrics["pitch_score"] >= 0.40
+                )
             ):
                 calibrated_prob = round(float(max(raw_risk, 0.84 + 0.12 * audio_metrics["vocoder_anomaly_score"])), 4)
             else:
