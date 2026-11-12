@@ -277,7 +277,11 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
         if (not dry_run) and os.environ.get("ENABLE_SHORT_VIDEO_PENTEST", "1") == "1":
             try:
                 from benchmark.short_video_pentest import run_short_video_pentest
-                svp_res = run_short_video_pentest(auto_feedback=True)
+                svp_res = run_short_video_pentest(
+                    download_urls=(os.environ.get("SHORT_VIDEO_DOWNLOAD_URLS", "1") == "1"),
+                    auto_feedback=True,
+                    trigger_lora=(os.environ.get("SHORT_VIDEO_TRIGGER_LORA", "0") == "1"),
+                )
                 short_vid_summary = {
                     "run_id": svp_res.get("run_id"),
                     "overall": svp_res.get("overall_metrics", {}),

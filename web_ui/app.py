@@ -237,7 +237,101 @@ def orchestrator_status():
         "active_parameters": active_params,
         "short_video_pentest": short_video_pentest,
         "feedback_summary": feedback_summary,
+        "short_video_auto_job": _short_video_job_state,
     })
+
+
+_short_video_job_lock = threading.Lock()
+_short_video_job_state = {
+    "enabled": os.environ.get("ENABLE_AUTO_SHORT_VIDEO_JOB", "1") == "1" and os.environ.get("DISABLE_AUTO_JOBS", "0") != "1",
+    "interval_hours": float(os.environ.get("SHORT_VIDEO_JOB_INTERVAL_HOURS", "6")),
+    "download_urls": os.environ.get("SHORT_VIDEO_DOWNLOAD_URLS", "1") == "1",
+    "auto_feedback": True,
+    "running": False,
+    "last_run_id": None,
+    "last_run_utc": None,
+    "last_status": "idle",
+    "last_error": None,
+    "next_run_utc": None,
+}
+
+
+def _execute_short_video_pentest_job(
+    platforms=None,
+    attacks=None,
+    manifest_path=None,
+    download_urls: bool = True,
+    auto_feedback: bool = True,
+    trigger_lora: bool = False,
+):
+    """Single-flight runner for 4-platform Short-Video Benchmark & Pentest (--download-urls --auto-feedback)."""
+    if not _short_video_job_lock.acquire(blocking=False):
+        return {"skipped": True, "reason": "short_video_pentest_already_running"}
+    _short_video_job_state["running"] = True
+    try:
+        from benchmark.short_video_pentest import run_short_video_pentest
+        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+        res = run_short_video_pentest(
+            platforms=platforms,
+            attacks=attacks,
+            manifest_path=manifest_path,
+            download_urls=download_urls,
+            auto_feedback=auto_feedback,
+            trigger_lora=trigger_lora,
+            detector=active_detector,
+        )
+        _short_video_job_state["last_run_id"] = res.get("run_id")
+        _short_video_job_state["last_run_utc"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        _short_video_job_state["last_status"] = "completed"
+        _short_video_job_state["last_error"] = None
+        return res
+    except Exception as exc:
+        _short_video_job_state["last_run_utc"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        _short_video_job_state["last_status"] = "error"
+        _short_video_job_state["last_error"] = str(exc)
+        raise
+    finally:
+        _short_video_job_state["running"] = False
+        _short_video_job_lock.release()
+
+
+def _start_short_video_auto_scheduler():
+    """Start daemon scheduler running short_video_pentest (--download-urls --auto-feedback) periodically like Image jobs."""
+    if not _short_video_job_state["enabled"]:
+        return
+    if os.environ.get("FLASK_ENV") == "testing" or app.config.get("TESTING"):
+        return
+
+    interval_sec = max(300.0, float(_short_video_job_state["interval_hours"]) * 3600.0)
+    initial_delay_sec = max(15.0, float(os.environ.get("SHORT_VIDEO_JOB_INITIAL_DELAY_SEC", "180")))
+
+    def _scheduler_loop():
+        from datetime import timedelta
+        first_due = datetime.utcnow() + timedelta(seconds=initial_delay_sec)
+        _short_video_job_state["next_run_utc"] = first_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+        time.sleep(initial_delay_sec)
+        while True:
+            try:
+                if _short_video_job_state["enabled"]:
+                    logger.info("[AutoJob] Running scheduled Short-Video Benchmark & Pentest (--download-urls --auto-feedback)...")
+                    _execute_short_video_pentest_job(
+                        download_urls=_short_video_job_state["download_urls"],
+                        auto_feedback=True,
+                        trigger_lora=(os.environ.get("SHORT_VIDEO_TRIGGER_LORA", "0") == "1"),
+                    )
+            except Exception as job_err:
+                logger.warning(f"[AutoJob] Short-video scheduler iteration notice: {job_err}")
+            next_due = datetime.utcnow() + timedelta(seconds=interval_sec)
+            _short_video_job_state["next_run_utc"] = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+            time.sleep(interval_sec)
+
+    threading.Thread(target=_scheduler_loop, daemon=True, name="short_video_auto_pentest").start()
+    logger.info(
+        f"Short-Video Auto Benchmark/Pentest Scheduler active (interval={_short_video_job_state['interval_hours']}h, download_urls={_short_video_job_state['download_urls']})."
+    )
+
+
+_start_short_video_auto_scheduler()
 
 
 @app.route('/api/orchestrator/trigger', methods=['POST'])
@@ -265,16 +359,19 @@ def trigger_orchestrator_short_video_pentest():
     """Run Multi-Platform Short-Video Benchmark & Pentest + Closed-Loop Auto-Feedback."""
     try:
         data = request.get_json(silent=True) or {}
-        from benchmark.short_video_pentest import run_short_video_pentest
-        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
-        res = run_short_video_pentest(
+        res = _execute_short_video_pentest_job(
             platforms=data.get("platforms"),
             attacks=data.get("attacks"),
-            download_urls=bool(data.get("download_urls", False)),
+            download_urls=bool(data.get("download_urls", True)),
             auto_feedback=bool(data.get("auto_feedback", True)),
             trigger_lora=bool(data.get("trigger_lora", False)),
-            detector=active_detector,
         )
+        if res.get("skipped"):
+            return jsonify({
+                "success": True,
+                "skipped": True,
+                "message": "Job Pentest Video Ngắn đang chạy nền, vui lòng đợi hoàn tất.",
+            }), 202
         return jsonify({
             "success": True,
             "run_id": res["run_id"],
@@ -1794,17 +1891,16 @@ def api_short_video_pentest():
             return jsonify({"status": "success", "runs": get_latest_short_video_pentest(limit=20)}), 200
 
         data = request.get_json(silent=True) or {}
-        from benchmark.short_video_pentest import run_short_video_pentest
-        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
-        res = run_short_video_pentest(
+        res = _execute_short_video_pentest_job(
             platforms=data.get("platforms"),
             attacks=data.get("attacks"),
             manifest_path=data.get("manifest_path"),
-            download_urls=bool(data.get("download_urls", False)),
+            download_urls=bool(data.get("download_urls", True)),
             auto_feedback=bool(data.get("auto_feedback", True)),
             trigger_lora=bool(data.get("trigger_lora", False)),
-            detector=active_detector,
         )
+        if res.get("skipped"):
+            return jsonify({"status": "skipped", "message": "Short-video pentest job already running"}), 202
         return jsonify({
             "status": "success",
             "run_id": res["run_id"],

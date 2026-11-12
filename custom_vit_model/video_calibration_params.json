@@ -1,17 +1,17 @@
 {
-  "w_peak": 0.50,
-  "w_avg": 0.35,
+  "w_peak": 0.62,
+  "w_avg": 0.23,
   "w_jitter": 0.15,
-  "weight_general_video": 0.40,
-  "weight_human_video": 0.60,
-  "tau_video": 0.8118,
-  "temperature_T": 1.6178,
-  "min_corroborated_ratio": 0.30,
+  "weight_general_video": 0.4,
+  "weight_human_video": 0.6,
+  "tau_video": 0.7318,
+  "temperature_T": 1.9178,
+  "min_corroborated_ratio": 0.3,
   "multi_frame_max_prob_gate": 0.85,
   "deepfake_frame_ratio_gate": 0.45,
   "ai_art_avg_comp_gate": 0.45,
-  "calibration_status": "INITIALIZED_FROM_SHORT_VIDEO_VALIDATED_BASELINE",
-  "feedback_updates_count": 0,
-  "updated_at": "2026-11-12T00:00:00Z"
+  "calibration_status": "FEEDBACK_CALIBRATED_ACTIVE",
+  "feedback_updates_count": 1,
+  "updated_at": "2026-11-12T04:41:26Z",
+  "last_trigger": "feedback:FB-20261112044112-822C63:FALSE_NEGATIVE"
 }
-
