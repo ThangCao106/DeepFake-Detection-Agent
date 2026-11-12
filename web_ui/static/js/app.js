@@ -985,7 +985,10 @@ function displayResults(data) {
         if (calibEl) calibEl.textContent = calibVal;
 
         const tauEl = document.getElementById('certTauVal');
-        if (tauEl) tauEl.textContent = 'τ* = 0.8118';
+        if (tauEl) {
+            const tauVal = cert.decision_threshold !== undefined ? Number(cert.decision_threshold).toFixed(4) : '0.8118';
+            tauEl.textContent = `τ* = ${tauVal}`;
+        }
 
         // Display EU AI Act Art. 50 White-box XAI Statement
         const xaiContainer = document.getElementById('certXaiContainer');

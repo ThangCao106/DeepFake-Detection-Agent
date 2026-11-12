@@ -2926,6 +2926,17 @@ class DeepfakeDetector:
             except Exception as te:
                 print(f"[warning] Triad Council Debate Video error: {te}")
 
+            video_sha256 = "UNKNOWN_HASH"
+            try:
+                import hashlib as _hashlib
+                h = _hashlib.sha256()
+                with open(video_path, "rb") as vf:
+                    for chunk in iter(lambda: vf.read(65536), b""):
+                        h.update(chunk)
+                video_sha256 = h.hexdigest()
+            except Exception:
+                pass
+
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
@@ -2934,11 +2945,16 @@ class DeepfakeDetector:
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Video",
                 "analysis_mode": analysis_mode,
                 "media_type": "video",
+                "media_integrity": {
+                    "sha256": video_sha256,
+                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
+                },
                 "scene_context": scene_context_vid,
                 "dual_stream_breakdown": dual_stream_breakdown,
                 "evidence_matrix_6d": evidence_matrix_6d_video,
                 "xai_explainability_statement": xai_explanation_vid,
                 "video_metadata": {
+                    "sha256": video_sha256,
                     "total_frames": total_frames,
                     "fps": round(fps, 2),
                     "duration_seconds": round(duration_sec, 2),
@@ -3145,6 +3161,10 @@ class DeepfakeDetector:
                 "compliance_standard": "EU AI Act Article 50 & DSA Acoustic Integrity",
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
                 "media_type": "audio",
+                "media_integrity": {
+                    "sha256": media_sha256,
+                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
+                },
                 "audio_metadata": {
                     "filename": audio_path.name,
                     "sha256": media_sha256,
