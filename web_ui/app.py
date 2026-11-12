@@ -994,8 +994,15 @@ def view_certificate_page(cert_id):
         risk_percent = f"{risk_val * 100:.2f}"
         rating_val = f"{max(1, min(5, int((1.0 - risk_val) * 5)))}"
 
-        ev = cert.get("multi_dimensional_evidence", {})
-        sha256_hash = cert.get("media_integrity", {}).get("sha256") or cert.get("media_sha256") or "UNKNOWN_HASH"
+        import html as _html
+        ev = cert.get("multi_dimensional_evidence") or {}
+        sha256_hash = (
+            cert.get("media_integrity", {}).get("sha256")
+            or cert.get("media_sha256")
+            or cert.get("audio_metadata", {}).get("sha256")
+            or cert.get("video_metadata", {}).get("sha256")
+            or "N/A (Legacy Stream)"
+        )
 
         html_content = html_content.replace("{{CERTIFICATE_ID}}", str(cert.get("certificate_id", cert_id)))
         html_content = html_content.replace("{{VERDICT}}", verdict)
@@ -1004,25 +1011,94 @@ def view_certificate_page(cert_id):
         html_content = html_content.replace("{{RISK_COLOR}}", risk_color)
         html_content = html_content.replace("{{TIMESTAMP}}", str(cert.get("timestamp", "")))
         html_content = html_content.replace("{{TIMESTAMP_ISO}}", datetime.utcnow().isoformat() + "Z")
-        html_content = html_content.replace("{{SHA256_HASH}}", str(sha256_hash))
+        html_content = html_content.replace("{{SHA256_HASH}}", _html.escape(str(sha256_hash)))
         html_content = html_content.replace("{{RATING_VALUE}}", rating_val)
 
-        pass_p = ev.get("passive_model_score", {})
-        html_content = html_content.replace("{{PASSIVE_PRED}}", str(pass_p.get("prediction", "N/A")))
-        html_content = html_content.replace("{{PASSIVE_CONF}}", f"{float(pass_p.get('confidence', 0.0))*100:.1f}%")
+        # Modality-aware evidence mapping (Image 4D vs Video 6D/SARAAB vs Audio Acoustic)
+        cid_upper = str(cert.get("certificate_id", cert_id)).upper()
+        media_type = str(cert.get("media_type") or (
+            "video" if cid_upper.startswith("CERT-VID-")
+            else ("audio" if cid_upper.startswith("CERT-AUD-") else "image")
+        )).lower()
 
-        spec_s = ev.get("spectral_frequency_analysis", {})
-        html_content = html_content.replace("{{SPECTRAL_SCORE}}", str(spec_s.get("high_frequency_anomaly_score", "0.0")))
+        if media_type == "video":
+            saraab = ev.get("saraab_phase1_video_audit") or {}
+            m6d = cert.get("evidence_matrix_6d") or {}
+            vid_meta = cert.get("video_metadata") or {}
+            peak_p = float(ev.get("peak_composite_risk", ev.get("peak_fake_probability", risk_val)) or 0.0)
+            avg_p = float(ev.get("aggregate_composite_risk", ev.get("aggregate_fake_probability", risk_val)) or 0.0)
+            jitter = float(saraab.get("temporal_motion_jitter", (m6d.get("temporal_motion_jitter") or {}).get("score", 0.0)) or 0.0)
+            saraab_risk = float((m6d.get("saraab_micro_window_peak") or {}).get("score", peak_p) or 0.0)
+            flagged_cnt = len(saraab.get("flagged_segments") or [])
+            lip_info = (m6d.get("lip_sync_av_coherence") or {}).get("status") or "DF26 Sync"
+            prnu_info = (m6d.get("sensor_prnu_interframe") or {}).get("status") or "Checked"
+            tau_val = float(cert.get("decision_threshold", 0.7318) or 0.7318)
+            n_frames = vid_meta.get("analyzed_frames_count", len(ev.get("frame_by_frame_analysis") or []))
+            fps_val = vid_meta.get("fps", "N/A")
 
-        spat_s = ev.get("spatial_inconsistency_analysis", {})
-        html_content = html_content.replace("{{SPATIAL_SCORE}}", str(spat_s.get("spatial_inconsistency_score", "0.0")))
+            ev_title = "📊 Bằng chứng Giám định Video 6D & SARAAB (Multi-Dimensional Video Audit)"
+            ev_rows = [
+                ("1. Rủi ro Đỉnh / Trung bình Khung hình:", f"Peak: {peak_p*100:.1f}% | Mean: {avg_p*100:.1f}% ({n_frames} frames @ {fps_val} fps)"),
+                ("2. Độ Giật Thời Gian (Motion Jitter):", f"{jitter*100:.1f}%"),
+                ("3. Rủi Ro Cửa Sổ 7s (SARAAB Window):", f"{saraab_risk*100:.1f}% (Flagged: {flagged_cnt} đoạn)"),
+                ("4. Lip-Sync, PRNU & Ngưỡng Video (τ*):", f"{lip_info} | PRNU: {prnu_info} | τ* = {tau_val:.4f}"),
+            ]
+        elif media_type == "audio":
+            voc = ev.get("vocoder_spectral_analysis") or {}
+            pit = ev.get("pitch_vocal_dynamics") or {}
+            pha = ev.get("phase_regularity_analysis") or {}
+            aud_meta = cert.get("audio_metadata") or {}
+            voc_s = float(voc.get("vocoder_anomaly_score", 0.0) or 0.0)
+            f0_jit = float(pit.get("f0_jitter", 0.0) or 0.0)
+            pit_s = float(pit.get("pitch_discrepancy_score", 0.0) or 0.0)
+            pha_s = float(pha.get("phase_anomaly_score", 0.0) or 0.0)
+            tau_val = float(cert.get("decision_threshold", 0.8118) or 0.8118)
+            dur_s = float(aud_meta.get("duration_seconds", 0.0) or 0.0)
+            sr_val = aud_meta.get("sample_rate", 16000)
 
-        ent_s = ev.get("model_uncertainty_entropy", {})
-        html_content = html_content.replace("{{ENTROPY_SCORE}}", str(ent_s.get("entropy", "0.0")))
+            ev_title = "🎙️ Bằng chứng Giám định Âm Học (Acoustic Forensic Audit)"
+            ev_rows = [
+                ("1. Dị Thường Vocoder (>7.5kHz):", f"{voc_s*100:.1f}% (Cutoff: {'Có' if voc.get('hf_formant_cutoff_flag') else 'Không'})"),
+                ("2. Vi Rung Cao Độ (F0 Pitch Jitter):", f"{f0_jit*100:.2f}% (Discrepancy: {pit_s*100:.1f}%)"),
+                ("3. Tính Nhất Quán Pha & ZCR:", f"{pha_s*100:.1f}%"),
+                ("4. Thời Lượng & Ngưỡng Audio (τ*):", f"{dur_s:.1f}s @ {sr_val}Hz | τ* = {tau_val:.4f}"),
+            ]
+        else:
+            pass_p = ev.get("passive_model_score") or {}
+            spec_s = ev.get("spectral_frequency_analysis") or {}
+            spat_s = ev.get("spatial_inconsistency_analysis") or {}
+            ent_s = ev.get("model_uncertainty_entropy") or {}
+            tau_val = float(cert.get("decision_threshold", 0.8118) or 0.8118)
+
+            ev_title = "📊 Bằng chứng Giám định 4D (4D Multi-Dimensional Evidence)"
+            ev_rows = [
+                ("1. Mô hình Phân loại Thụ động (ViT / CNN):", f"{pass_p.get('prediction', 'N/A')} (Conf: {float(pass_p.get('confidence', 0.0))*100:.1f}%)"),
+                ("2. Dị thường Tần số 2D-FFT (Spectral Anomaly):", f"{spec_s.get('high_frequency_anomaly_score', '0.0')}"),
+                ("3. Bất tương đồng Không gian (Spatial Noise):", f"{spat_s.get('spatial_inconsistency_score', '0.0')}"),
+                ("4. Độ bất định Entropy & Ngưỡng Youden (τ*):", f"{ent_s.get('entropy', '0.0')} | τ* = {tau_val:.4f}"),
+            ]
+
+        html_content = html_content.replace("{{EVIDENCE_TITLE}}", ev_title)
+        for idx, (lbl, val) in enumerate(ev_rows, 1):
+            html_content = html_content.replace(f"{{{{EV_{idx}_LABEL}}}}", _html.escape(str(lbl)))
+            html_content = html_content.replace(f"{{{{EV_{idx}_VAL}}}}", _html.escape(str(val)))
+
+        xai_text = cert.get("xai_explainability_statement") or cert.get("xai_explanation") or ""
+        if xai_text:
+            html_content = html_content.replace("{{XAI_STATEMENT}}", _html.escape(str(xai_text))).replace("{{XAI_STYLE}}", "")
+        else:
+            html_content = html_content.replace("{{XAI_STATEMENT}}", "").replace("{{XAI_STYLE}}", "display: none;")
+
+        triad = cert.get("triad_council_debate") or {}
+        triad_text = triad.get("final_synthesis") or triad.get("consensus_verdict") or ""
+        if triad_text:
+            html_content = html_content.replace("{{TRIAD_SUMMARY}}", _html.escape(str(triad_text))).replace("{{TRIAD_STYLE}}", "")
+        else:
+            html_content = html_content.replace("{{TRIAD_SUMMARY}}", "").replace("{{TRIAD_STYLE}}", "display: none;")
 
         source_url = cert.get("source_url") or cert.get("media_integrity", {}).get("source_url") or ""
         if source_url:
-            html_content = html_content.replace("{{SOURCE_URL}}", str(source_url)).replace("{{SOURCE_URL_STYLE}}", "")
+            html_content = html_content.replace("{{SOURCE_URL}}", _html.escape(str(source_url))).replace("{{SOURCE_URL_STYLE}}", "")
         else:
             html_content = html_content.replace("{{SOURCE_URL}}", "").replace("{{SOURCE_URL_STYLE}}", "display: none;")
 
@@ -1032,6 +1108,16 @@ def view_certificate_page(cert_id):
     except Exception as e:
         logger.error(f"SSR cert error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/sw.js', methods=['GET'])
+def serve_service_worker():
+    """Serve root-scoped PWA Service Worker for Mobile Install & Web Share Target."""
+    sw_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "static", "sw.js"))
+    if not os.path.exists(sw_path):
+        return "// sw not found", 404, {'Content-Type': 'application/javascript'}
+    with open(sw_path, "r", encoding="utf-8") as f:
+        return f.read(), 200, {'Content-Type': 'application/javascript; charset=utf-8', 'Service-Worker-Allowed': '/'}
 
 
 @app.route('/robots.txt', methods=['GET'])

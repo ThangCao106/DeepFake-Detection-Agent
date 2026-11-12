@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="AI Deepfake Multi-Agent Detection & In-the-wild Social Media Digital Forensic Certification.">
+    <meta name="theme-color" content="#04152E">
+    <meta name="description" content="DeepTrace.io.vn - AI Deepfake Multi-Agent Detection &amp; In-the-wild Social Media Digital Forensic Certification.">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <title>Deepfake Detection AI - Multi-Agent Forensic System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.3.0&t=20261027_155000">
+    <title>DeepTrace.io.vn - Multi-Agent Deepfake Forensic System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6.0.0&t=20261112_152000">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,6 +19,11 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.IS_BENCHMARK_PORT = {{ 'true' if is_benchmark_mode else 'false' }};
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
     </script>
 </head>
 <body>
@@ -28,17 +34,21 @@
     <header class="header">
         <div class="container header-container">
             <div class="logo">
-                <h1 class="logo-text">Deepfake Detection AI</h1>
+                <img src="{{ url_for('static', filename='images/deeptrace-logo.jpg') }}" alt="DeepTrace.io.vn Logo" class="logo-img">
+                <div class="logo-brand">
+                    <h1 class="logo-text">DeepTrace<span>.io.vn</span></h1>
+                    <span class="logo-sub">AI Forensic &amp; Deepfake Defense</span>
+                </div>
             </div>
             
             <div class="nav-links">
+                {% if is_benchmark_mode %}
                 <a href="orchestrator" id="navOrchestratorLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                     🎛️ <span>Orchestrator</span>
                 </a>
                 <a href="benchmark" id="navBenchmarkLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                     📊 <span>Report &amp; Params</span>
                 </a>
-                {% if is_benchmark_mode %}
                 <button type="button" class="btn-benchmark-nav" id="benchmarkNavBtn" onclick="toggleBenchmarkCard()">
                     ⚡ <span data-i18n="bench_nav_btn">Benchmark Hub</span>
                 </button>

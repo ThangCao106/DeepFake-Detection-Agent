@@ -20,36 +20,71 @@
         }, 4000);
     }
 
-    // Attach hover listener to video and image elements
-    document.addEventListener("mouseover", (e) => {
-        const target = e.target.closest("video, img");
+    const isMobileTouch = window.matchMedia("(pointer: coarse)").matches || ("ontouchstart" in window);
+
+    // Attach hover (Desktop) & touch/tap (Mobile) listeners to video and image elements
+    function handleMediaFocus(e) {
+        const target = e.target && e.target.closest ? e.target.closest("video, img") : null;
         if (!target) return;
 
         const rect = target.getBoundingClientRect();
-        if (rect.width < 160 || rect.height < 160) return; // Ignore small icons
+        const minSize = isMobileTouch ? 120 : 160;
+        if (rect.width < minSize || rect.height < minSize) return; // Ignore small icons
 
         hoveredMediaTarget = target;
         positionFloatingScanButton(target);
-    }, true);
+    }
 
-    // Position floating scan badge over active video/image
+    document.addEventListener("mouseover", handleMediaFocus, true);
+    document.addEventListener("touchstart", handleMediaFocus, { capture: true, passive: true });
+
+    // On Mobile browsers (Mises/Kiwi/Firefox Android/iOS Safari), auto-attach Scan button to visible videos
+    if (isMobileTouch && typeof IntersectionObserver !== "undefined") {
+        const videoObserver = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+                    const rect = entry.target.getBoundingClientRect();
+                    if (rect.width >= 140 && rect.height >= 140) {
+                        hoveredMediaTarget = entry.target;
+                        positionFloatingScanButton(entry.target);
+                        break;
+                    }
+                }
+            }
+        }, { threshold: [0.55] });
+
+        const observeVideos = () => {
+            document.querySelectorAll("video").forEach((v) => {
+                if (!v.dataset.dtObserved) {
+                    v.dataset.dtObserved = "1";
+                    videoObserver.observe(v);
+                }
+            });
+        };
+        observeVideos();
+        new MutationObserver(observeVideos).observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    // Position floating scan badge over active video/image (clamped to viewport for mobile)
     function positionFloatingScanButton(mediaEl) {
         if (!activeFloatingBtn) {
             activeFloatingBtn = document.createElement("button");
             activeFloatingBtn.id = "df-shield-float-btn";
             activeFloatingBtn.innerHTML = `🛡️ Scan AI`;
-            activeFloatingBtn.title = "Giám định Deepfake / AI với NCS Forensic Agent";
+            activeFloatingBtn.title = "Giám định Deepfake / AI với DeepTrace.io.vn";
             activeFloatingBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                initiateMediaAudit(mediaEl);
+                initiateMediaAudit(hoveredMediaTarget || mediaEl);
             });
             document.body.appendChild(activeFloatingBtn);
         }
 
         const rect = mediaEl.getBoundingClientRect();
-        activeFloatingBtn.style.top = `${window.scrollY + rect.top + 12}px`;
-        activeFloatingBtn.style.left = `${window.scrollX + rect.right - 95}px`;
+        const btnLeft = Math.max(8, Math.min(window.innerWidth - 112, rect.right - 102));
+        const btnTop = Math.max(8, rect.top + 12);
+        activeFloatingBtn.style.top = `${window.scrollY + btnTop}px`;
+        activeFloatingBtn.style.left = `${window.scrollX + btnLeft}px`;
         activeFloatingBtn.style.display = "flex";
     }
 
@@ -233,3 +268,4 @@
 
     console.log("[Deepfake Forensic Shield] Content script active on page:", window.location.hostname);
 })();
+

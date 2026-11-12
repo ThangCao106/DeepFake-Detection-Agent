@@ -95,13 +95,13 @@
 
   <style>
     :root {
-      --primary: #00897b;
-      --primary-hover: #00695c;
-      --bg-main: #f8fafc;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --bg-main: #f0f7ff;
       --card-bg: #ffffff;
-      --text-main: #0f172a;
+      --text-main: #04152e;
       --text-muted: #64748b;
-      --border-color: #e2e8f0;
+      --border-color: #bae6fd;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -277,24 +277,34 @@
       </div>
 
       <div class="evidence-section">
-        <div class="evidence-title">📊 Bằng chứng Giám định 4D (4D Multi-Dimensional Evidence)</div>
+        <div class="evidence-title">{{EVIDENCE_TITLE}}</div>
         
         <div class="evidence-item">
-          <span class="evidence-label">1. Mô hình Phân loại Thụ động (ViT / CNN):</span>
-          <span class="evidence-val">{{PASSIVE_PRED}} (Conf: {{PASSIVE_CONF}})</span>
+          <span class="evidence-label">{{EV_1_LABEL}}</span>
+          <span class="evidence-val">{{EV_1_VAL}}</span>
         </div>
         <div class="evidence-item">
-          <span class="evidence-label">2. Dị thường Tần số 2D-FFT (Spectral Anomaly):</span>
-          <span class="evidence-val">{{SPECTRAL_SCORE}}</span>
+          <span class="evidence-label">{{EV_2_LABEL}}</span>
+          <span class="evidence-val">{{EV_2_VAL}}</span>
         </div>
         <div class="evidence-item">
-          <span class="evidence-label">3. Bất tương đồng Không gian (Spatial Noise):</span>
-          <span class="evidence-val">{{SPATIAL_SCORE}}</span>
+          <span class="evidence-label">{{EV_3_LABEL}}</span>
+          <span class="evidence-val">{{EV_3_VAL}}</span>
         </div>
         <div class="evidence-item">
-          <span class="evidence-label">4. Độ bất định Entropy (Prediction Entropy):</span>
-          <span class="evidence-val">{{ENTROPY_SCORE}}</span>
+          <span class="evidence-label">{{EV_4_LABEL}}</span>
+          <span class="evidence-val">{{EV_4_VAL}}</span>
         </div>
+      </div>
+
+      <div class="evidence-section" style="margin-top: 1.25rem; background: #fffbeb; border-color: #fde68a; {{XAI_STYLE}}">
+        <div class="evidence-title" style="color: #92400e;">⚖️ Giải trình XAI Chuẩn EU AI Act Art. 50</div>
+        <p style="margin: 0; font-size: 0.88rem; color: #78350f; line-height: 1.55;">{{XAI_STATEMENT}}</p>
+      </div>
+
+      <div class="evidence-section" style="margin-top: 1.25rem; background: #eef2ff; border-color: #c7d2fe; {{TRIAD_STYLE}}">
+        <div class="evidence-title" style="color: #312e81;">🏛️ Hội Đồng Ba Tác Thể Thẩm Định &amp; Phản Biện (Triad Council)</div>
+        <p style="margin: 0; font-size: 0.88rem; color: #312e81; line-height: 1.55;">{{TRIAD_SUMMARY}}</p>
       </div>
     </div>
 
