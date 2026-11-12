@@ -2415,6 +2415,7 @@ function switchBenchmarkSubtab(tab) {
         if (ablPane) {
             ablPane.style.display = 'block';
             fetchAblationGridData();
+            loadModalityCalibrationParams();
         }
     } else if (tab === 'audit_report') {
         if (audBtn) {
@@ -2813,13 +2814,117 @@ async function runAblationEvaluation() {
     }
 }
 
+function switchCalibrationModalityTab(modality) {
+    ['image', 'audio', 'video'].forEach(m => {
+        const panel = document.getElementById(`calibPanel_${m}`);
+        const btn = document.getElementById(`calibTabBtn_${m}`);
+        if (panel) panel.style.display = (m === modality) ? 'grid' : 'none';
+        if (btn) {
+            if (m === modality) {
+                btn.style.background = '#4f46e5';
+                btn.style.color = '#ffffff';
+                btn.style.borderColor = '#4f46e5';
+            } else {
+                btn.style.background = '#ffffff';
+                btn.style.color = '#334155';
+                btn.style.borderColor = '#cbd5e1';
+            }
+        }
+    });
+}
+
+async function loadModalityCalibrationParams() {
+    try {
+        const apiBase = getBenchmarkApiBase();
+        const res = await fetch(`${apiBase}/api/benchmark/modality_params`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const img = data.image || {};
+        const aud = data.audio || {};
+        const vid = data.video || {};
+
+        if (img.optimal_alpha !== undefined) setAlphaPreset(parseFloat(img.optimal_alpha));
+        const imgT = document.getElementById('imgPlattTInput');
+        const imgTau = document.getElementById('imgYoudenTauInput');
+        if (imgT && img.temperature_scaling_T !== undefined) imgT.value = Number(img.temperature_scaling_T).toFixed(4);
+        if (imgTau && img.optimal_threshold_tau !== undefined) imgTau.value = Number(img.optimal_threshold_tau).toFixed(4);
+
+        const audVoc = document.getElementById('audWVocoderInput');
+        const audPit = document.getElementById('audWPitchInput');
+        const audPha = document.getElementById('audWPhaseInput');
+        const audT = document.getElementById('audPlattTInput');
+        const audTau = document.getElementById('audTauInput');
+        if (audVoc && aud.w_vocoder !== undefined) audVoc.value = Number(aud.w_vocoder).toFixed(2);
+        if (audPit && aud.w_pitch !== undefined) audPit.value = Number(aud.w_pitch).toFixed(2);
+        if (audPha && aud.w_phase !== undefined) audPha.value = Number(aud.w_phase).toFixed(2);
+        if (audT && aud.temperature_T !== undefined) audT.value = Number(aud.temperature_T).toFixed(4);
+        if (audTau && aud.tau_audio !== undefined) audTau.value = Number(aud.tau_audio).toFixed(4);
+
+        const vidPeak = document.getElementById('vidWPeakInput');
+        const vidAvg = document.getElementById('vidWAvgInput');
+        const vidJit = document.getElementById('vidWJitterInput');
+        const vidAlpha = document.getElementById('vidAlphaInput');
+        const vidT = document.getElementById('vidPlattTInput');
+        const vidTau = document.getElementById('vidTauInput');
+        if (vidPeak && vid.w_peak !== undefined) vidPeak.value = Number(vid.w_peak).toFixed(2);
+        if (vidAvg && vid.w_avg !== undefined) vidAvg.value = Number(vid.w_avg).toFixed(2);
+        if (vidJit && vid.w_jitter !== undefined) vidJit.value = Number(vid.w_jitter).toFixed(2);
+        if (vidAlpha && vid.weight_human_video !== undefined) vidAlpha.value = Number(vid.weight_human_video).toFixed(2);
+        if (vidT && vid.temperature_T !== undefined) vidT.value = Number(vid.temperature_T).toFixed(4);
+        if (vidTau && vid.tau_video !== undefined) vidTau.value = Number(vid.tau_video).toFixed(4);
+    } catch (err) {
+        console.warn('loadModalityCalibrationParams warning:', err);
+    }
+}
+
+async function applyModalityWeights(modality) {
+    const apiBase = getBenchmarkApiBase();
+    const user = sessionStorage.getItem("benchmark_gate_user") || "thang.cd";
+    let payload = { modality, user };
+
+    if (modality === 'audio') {
+        payload.w_vocoder = parseFloat(document.getElementById('audWVocoderInput')?.value || 0.45);
+        payload.w_pitch = parseFloat(document.getElementById('audWPitchInput')?.value || 0.35);
+        payload.w_phase = parseFloat(document.getElementById('audWPhaseInput')?.value || 0.20);
+        payload.temperature_T = parseFloat(document.getElementById('audPlattTInput')?.value || 1.6178);
+        payload.tau_audio = parseFloat(document.getElementById('audTauInput')?.value || 0.8118);
+    } else if (modality === 'video') {
+        payload.w_peak = parseFloat(document.getElementById('vidWPeakInput')?.value || 0.62);
+        payload.w_avg = parseFloat(document.getElementById('vidWAvgInput')?.value || 0.23);
+        payload.w_jitter = parseFloat(document.getElementById('vidWJitterInput')?.value || 0.15);
+        payload.alpha_video = parseFloat(document.getElementById('vidAlphaInput')?.value || 0.60);
+        payload.temperature_T = parseFloat(document.getElementById('vidPlattTInput')?.value || 1.9178);
+        payload.tau_video = parseFloat(document.getElementById('vidTauInput')?.value || 0.7318);
+    }
+
+    try {
+        const res = await fetch(`${apiBase}/api/benchmark/apply_weights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            appendTerminalLogLine('INFO', `✅ ${data.message}`);
+            await loadModalityCalibrationParams();
+            alert(data.message);
+        } else {
+            alert('Lỗi: ' + (data.message || 'Không thể lưu tham số'));
+        }
+    } catch (err) {
+        alert('Lỗi kết nối API: ' + err.message);
+    }
+}
+
 async function applyAblationOptimalWeights() {
     const slider = document.getElementById('alphaRangeSlider');
     const alphaVal = slider ? parseFloat(slider.value) : 0.60;
+    const plattT = parseFloat(document.getElementById('imgPlattTInput')?.value || 1.6178);
+    const youdenTau = parseFloat(document.getElementById('imgYoudenTauInput')?.value || 0.8118);
     const apiBase = getBenchmarkApiBase();
     const user = sessionStorage.getItem("benchmark_gate_user") || "thang.cd";
 
-    if (!confirm(`Xác nhận áp dụng bộ tham số (α = ${alphaVal}, Platt T* = 1.6178, Youden τ* = 0.8118) trực tiếp vào Hệ thống Giám định?`)) {
+    if (!confirm(`Xác nhận áp dụng bộ tham số Image (α = ${alphaVal}, Platt T* = ${plattT}, Youden τ* = ${youdenTau}) trực tiếp vào Hệ thống Giám định?`)) {
         return;
     }
 
@@ -2827,11 +2932,11 @@ async function applyAblationOptimalWeights() {
         const res = await fetch(`${apiBase}/api/benchmark/apply_weights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alpha: alphaVal, platt_T: 1.6178, youden_tau: 0.8118, user: user })
+            body: JSON.stringify({ modality: 'image', alpha: alphaVal, platt_T: plattT, youden_tau: youdenTau, user: user })
         });
         const data = await res.json();
         if (res.ok && data.status === 'success') {
-            appendTerminalLogLine('INFO', `🎉 Đã áp dụng thành công bộ tham số tối ưu (α=${alphaVal}, T*=1.6178, τ*=0.8118) vào Detector!`);
+            appendTerminalLogLine('INFO', `🎉 Đã áp dụng bộ tham số Image (α=${alphaVal}, T*=${plattT}, τ*=${youdenTau}) vào Detector!`);
             alert(data.message || 'Đã áp dụng thành công vào hệ thống!');
         } else {
             alert('Lỗi: ' + (data.message || 'Không thể lưu tham số'));

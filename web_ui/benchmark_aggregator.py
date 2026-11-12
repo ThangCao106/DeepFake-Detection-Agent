@@ -601,14 +601,15 @@ def aggregate_benchmark_history(
         {"cohort_id": "vn_mature_aging", "name": "Người Cao Tuổi & Nếp Nhăn Sinh Học", "samples": 6, "our_tpr": "66.7%", "commercial_tpr": "33.3%", "status": "STABLE"},
     ]
 
-    # Active Calibration Parameters (Image + Short-Video) & Multi-Platform Short-Video Telemetry
-    active_parameters: Dict[str, Any] = {"image": {}, "video": {}, "vn_demographic": {}}
+    # Active Calibration Parameters (Image + Audio + Short-Video) & Multi-Platform Short-Video Telemetry
+    active_parameters: Dict[str, Any] = {"image": {}, "audio": {}, "video": {}, "vn_demographic": {}}
     short_video_summary: Dict[str, Any] = {"overall": {}, "by_platform": {}, "platforms": ["threads", "instagram_reels", "youtube_shorts", "tiktok"]}
     feedback_audit: Dict[str, Any] = {"total_events": 0, "fp_count": 0, "fn_count": 0, "vault_pending_count": 0, "recent_events": []}
     try:
         custom_dir = PROJECT_ROOT / "custom_vit_model"
         for key, fname in [
             ("image", "calibration_params.json"),
+            ("audio", "audio_calibration_params.json"),
             ("video", "video_calibration_params.json"),
             ("vn_demographic", "vietnamese_demographic_params.json"),
         ]:

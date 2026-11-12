@@ -1,0 +1,13 @@
+{
+  "w_vocoder": 0.45,
+  "w_pitch": 0.35,
+  "w_phase": 0.2,
+  "tau_audio": 0.8118,
+  "temperature_T": 1.6178,
+  "vocoder_gate": 0.72,
+  "pitch_gate": 0.55,
+  "calibration_status": "AUDIO_APPLIED_FROM_BENCHMARK_UI",
+  "feedback_updates_count": 0,
+  "updated_at": "2026-11-12T06:40:56Z",
+  "applied_by": "verify_test"
+}

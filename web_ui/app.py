@@ -144,9 +144,10 @@ def orchestrator_dashboard():
 def _collect_orchestrator_telemetry():
     """Collect active calibration params, short-video pentest metrics, and feedback Vault telemetry."""
     custom_dir = Path(project_root) / "custom_vit_model"
-    active_params = {"image": {}, "video": {}, "vn_demographic": {}}
+    active_params = {"image": {}, "audio": {}, "video": {}, "vn_demographic": {}}
     for key, fname in [
         ("image", "calibration_params.json"),
+        ("audio", "audio_calibration_params.json"),
         ("video", "video_calibration_params.json"),
         ("vn_demographic", "vietnamese_demographic_params.json"),
     ]:
@@ -1712,46 +1713,127 @@ def apply_calibrated_weights_council_api():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/benchmark/modality_params', methods=['GET'])
+@app.route('/benchmark/api/benchmark/modality_params', methods=['GET'])
+@app.route('/dfagent/api/benchmark/modality_params', methods=['GET'])
+@app.route('/dfagent/benchmark/api/benchmark/modality_params', methods=['GET'])
+def get_modality_params_api():
+    """Return separated active calibration parameters for Image, Audio, and Video."""
+    active_params, _, _ = _collect_orchestrator_telemetry()
+    return jsonify({
+        "status": "success",
+        "image": active_params.get("image", {}),
+        "audio": active_params.get("audio", {}),
+        "video": active_params.get("video", {}),
+    }), 200
+
+
 @app.route('/api/benchmark/apply_weights', methods=['POST'])
 @app.route('/benchmark/api/benchmark/apply_weights', methods=['POST'])
+@app.route('/dfagent/api/benchmark/apply_weights', methods=['POST'])
+@app.route('/dfagent/benchmark/api/benchmark/apply_weights', methods=['POST'])
 def apply_optimal_weights_api():
-    """Apply calibrated parameters (alpha, T*, tau*) to live detection system."""
+    """Apply calibrated parameters separately for Image, Audio, or Video to live detection system."""
     try:
         data = request.get_json(silent=True) or {}
-        alpha_val = float(data.get("alpha", 0.60))
-        platt_t = float(data.get("platt_T", 1.6178))
-        youden_tau = float(data.get("youden_tau", 0.8118))
-        
+        modality = str(data.get("modality", "image")).lower().strip()
         root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
         local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
         custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
         os.makedirs(custom_dir, exist_ok=True)
-        
-        calib_file = os.path.join(custom_dir, "calibration_params.json")
-        calib_data = {
-            "optimal_alpha": alpha_val,
-            "weight_general": round(1.0 - alpha_val, 4),
-            "weight_human_specialist": round(alpha_val, 4),
-            "temperature_scaling_T": platt_t,
-            "optimal_threshold_tau": youden_tau,
-            "calibration_status": "OPTIMAL_APPLIED_FROM_BENCHMARK_UI",
-            "applied_at": datetime.now().isoformat(),
-            "applied_by": data.get("user", "thang.cd")
-        }
+        now_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if modality == "audio":
+            w_voc = float(data.get("w_vocoder", 0.45))
+            w_pit = float(data.get("w_pitch", 0.35))
+            w_pha = float(data.get("w_phase", 0.20))
+            w_sum = max(1e-6, w_voc + w_pit + w_pha)
+            calib_file = os.path.join(custom_dir, "audio_calibration_params.json")
+            existing = {}
+            if os.path.exists(calib_file):
+                try:
+                    with open(calib_file, "r", encoding="utf-8") as ef:
+                        existing = json.load(ef)
+                except Exception:
+                    pass
+            calib_data = {
+                **existing,
+                "w_vocoder": round(w_voc / w_sum, 4),
+                "w_pitch": round(w_pit / w_sum, 4),
+                "w_phase": round(w_pha / w_sum, 4),
+                "tau_audio": float(data.get("tau_audio", data.get("youden_tau", 0.8118))),
+                "temperature_T": float(data.get("temperature_T", data.get("platt_T", 1.6178))),
+                "calibration_status": "AUDIO_APPLIED_FROM_BENCHMARK_UI",
+                "updated_at": now_iso,
+                "applied_by": data.get("user", "thang.cd"),
+            }
+            msg = f"Đã lưu trọng số Audio (Vocoder={calib_data['w_vocoder']}, Pitch={calib_data['w_pitch']}, Phase={calib_data['w_phase']}, T*={calib_data['temperature_T']}, τ_aud={calib_data['tau_audio']})!"
+        elif modality == "video":
+            w_peak = float(data.get("w_peak", 0.62))
+            w_avg = float(data.get("w_avg", 0.23))
+            w_jit = float(data.get("w_jitter", 0.15))
+            w_sum = max(1e-6, w_peak + w_avg + w_jit)
+            alpha_vid = float(data.get("alpha_video", 0.60))
+            calib_file = os.path.join(custom_dir, "video_calibration_params.json")
+            existing = {}
+            if os.path.exists(calib_file):
+                try:
+                    with open(calib_file, "r", encoding="utf-8") as ef:
+                        existing = json.load(ef)
+                except Exception:
+                    pass
+            calib_data = {
+                **existing,
+                "w_peak": round(w_peak / w_sum, 4),
+                "w_avg": round(w_avg / w_sum, 4),
+                "w_jitter": round(w_jit / w_sum, 4),
+                "weight_general_video": round(1.0 - alpha_vid, 4),
+                "weight_human_video": round(alpha_vid, 4),
+                "tau_video": float(data.get("tau_video", data.get("youden_tau", 0.7318))),
+                "temperature_T": float(data.get("temperature_T", data.get("platt_T", 1.9178))),
+                "calibration_status": "VIDEO_APPLIED_FROM_BENCHMARK_UI",
+                "updated_at": now_iso,
+                "applied_by": data.get("user", "thang.cd"),
+            }
+            msg = f"Đã lưu trọng số Video (SARAAB={calib_data['w_peak']}/{calib_data['w_avg']}/{calib_data['w_jitter']}, α_vid={alpha_vid}, T*={calib_data['temperature_T']}, τ_vid={calib_data['tau_video']})!"
+        else:
+            alpha_val = float(data.get("alpha", 0.60))
+            platt_t = float(data.get("platt_T", 1.6178))
+            youden_tau = float(data.get("youden_tau", 0.8118))
+            calib_file = os.path.join(custom_dir, "calibration_params.json")
+            existing = {}
+            if os.path.exists(calib_file):
+                try:
+                    with open(calib_file, "r", encoding="utf-8") as ef:
+                        existing = json.load(ef)
+                except Exception:
+                    pass
+            calib_data = {
+                **existing,
+                "optimal_alpha": alpha_val,
+                "weight_general": round(1.0 - alpha_val, 4),
+                "weight_human_specialist": round(alpha_val, 4),
+                "temperature_scaling_T": platt_t,
+                "optimal_threshold_tau": youden_tau,
+                "calibration_status": "OPTIMAL_APPLIED_FROM_BENCHMARK_UI",
+                "applied_at": datetime.now().isoformat(),
+                "applied_by": data.get("user", "thang.cd"),
+            }
+            msg = f"Đã lưu trọng số Image (α={alpha_val}, T*={platt_t}, τ*={youden_tau})!"
+
         with open(calib_file, "w", encoding="utf-8") as f:
-            import json
-            json.dump(calib_data, f, indent=2)
+            json.dump(calib_data, f, indent=2, ensure_ascii=False)
 
         global orchestrator
-        if orchestrator and hasattr(orchestrator, "detector"):
-            from deepfake_detector import DeepfakeDetector
-            orchestrator.detector = DeepfakeDetector()
-            logger.info(f"[apply_weights] DeepfakeDetector reloaded with alpha={alpha_val}, T={platt_t}, tau={youden_tau}")
+        if orchestrator and hasattr(orchestrator, "detector") and hasattr(orchestrator.detector, "reload_calibration_params"):
+            orchestrator.detector.reload_calibration_params()
+            logger.info(f"[apply_weights:{modality}] Hot-reloaded calibration params into detector.")
 
-        socketio.emit('optimal_weights_applied', calib_data)
+        socketio.emit('optimal_weights_applied', {"modality": modality, **calib_data})
         return jsonify({
             "status": "success",
-            "message": f"Đã áp dụng thành công bộ tham số tối ưu (α={alpha_val}, T*={platt_t}, τ*={youden_tau}) vào Hệ thống Giám định!",
+            "modality": modality,
+            "message": msg,
             "parameters": calib_data
         }), 200
     except Exception as e:

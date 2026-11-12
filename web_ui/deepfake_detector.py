@@ -1456,7 +1456,7 @@ class AudioForensicAnalyzer:
         )
 
     @staticmethod
-    def analyze_audio(audio_path):
+    def analyze_audio(audio_path, audio_params=None):
         y, sr = AudioForensicAnalyzer.load_audio_signal(audio_path)
         if len(y) < 512:
             y = np.pad(y, (0, 512 - len(y)))
@@ -1533,9 +1533,18 @@ class AudioForensicAnalyzer:
         peak_score = float(sg_norm[max_idx])
         dispersion = float(np.var(sg_norm))
 
-        # 5. Composite Acoustic Risk (corroborate severe >7.5kHz roll-off when vocal F0 physiology is also unnatural)
-        acoustic_risk = 0.45 * vocoder_anomaly + 0.35 * pitch_score + 0.20 * phase_anomaly
-        if vocoder_anomaly >= 0.72 and pitch_score >= 0.55:
+        # 5. Composite Acoustic Risk using separated audio_calibration_params
+        ap = audio_params or {}
+        w_voc = float(ap.get("w_vocoder", 0.45))
+        w_pit = float(ap.get("w_pitch", 0.35))
+        w_pha = float(ap.get("w_phase", 0.20))
+        w_sum = max(1e-6, w_voc + w_pit + w_pha)
+        w_voc, w_pit, w_pha = w_voc / w_sum, w_pit / w_sum, w_pha / w_sum
+        voc_gate = float(ap.get("vocoder_gate", 0.72))
+        pit_gate = float(ap.get("pitch_gate", 0.55))
+
+        acoustic_risk = w_voc * vocoder_anomaly + w_pit * pitch_score + w_pha * phase_anomaly
+        if vocoder_anomaly >= voc_gate and pitch_score >= pit_gate:
             acoustic_risk = max(acoustic_risk, 0.76 + 0.18 * vocoder_anomaly)
         acoustic_risk = float(np.clip(acoustic_risk, 0.02, 0.98))
 
@@ -1779,6 +1788,7 @@ class DeepfakeDetector:
         self.calibration_params = None
         self.vn_demographic_params = None
         self.video_calibration_params = {}
+        self.audio_calibration_params = {}
         self.reload_calibration_params()
 
         # Initialize Human-Centric Multi-Modal Detector (Model 2) for Dual-Stream Execution
@@ -1853,6 +1863,31 @@ class DeepfakeDetector:
             except Exception as e:
                 print(f"[warning] Could not parse video_calibration_params.json: {e}")
         self.video_calibration_params = default_video_params
+
+        default_audio_params = {
+            "w_vocoder": 0.45,
+            "w_pitch": 0.35,
+            "w_phase": 0.20,
+            "tau_audio": 0.8118,
+            "temperature_T": 1.6178,
+            "vocoder_gate": 0.72,
+            "pitch_gate": 0.55,
+            "calibration_status": "DEFAULT_AUDIO",
+        }
+        aud_param_file = os.path.join(custom_dir, "audio_calibration_params.json")
+        if os.path.exists(aud_param_file):
+            try:
+                with open(aud_param_file, "r", encoding="utf-8") as f:
+                    loaded_ap = json.load(f)
+                default_audio_params.update(loaded_ap)
+                print(
+                    f"[info] Audio Calibration Parameters loaded: "
+                    f"w=({default_audio_params['w_vocoder']}, {default_audio_params['w_pitch']}, {default_audio_params['w_phase']}), "
+                    f"tau_audio={default_audio_params['tau_audio']}, T={default_audio_params['temperature_T']}"
+                )
+            except Exception as e:
+                print(f"[warning] Could not parse audio_calibration_params.json: {e}")
+        self.audio_calibration_params = default_audio_params
         return self.video_calibration_params
 
 
@@ -2304,7 +2339,7 @@ class DeepfakeDetector:
                         scene_context=scene_context,
                         evidence_matrix=evidence_matrix_6d,
                         tau_optimal=tau_star,
-                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                        temp_platt=float(self.calibration_params.get("temperature_scaling_T", 1.6178)) if self.calibration_params else 1.6178
                     )
                     triad_debate_result = TriadCouncilEngine.conduct_debate(fact_manifest)
                     if triad_debate_result:
@@ -2874,7 +2909,7 @@ class DeepfakeDetector:
                         scene_context=scene_context_vid,
                         evidence_matrix=evidence_matrix_6d_video,
                         tau_optimal=tau_star,
-                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                        temp_platt=float(vp.get("temperature_T", 1.6178))
                     )
                     triad_debate_video = TriadCouncilEngine.conduct_debate(fact_manifest_vid)
                     if triad_debate_video:
@@ -2983,13 +3018,16 @@ class DeepfakeDetector:
                 audio_bytes = f.read()
             media_sha256 = hashlib.sha256(audio_bytes).hexdigest()
 
-            audio_metrics = AudioForensicAnalyzer.analyze_audio(str(audio_path))
+            ap = getattr(self, "audio_calibration_params", None) or {}
+            audio_metrics = AudioForensicAnalyzer.analyze_audio(str(audio_path), audio_params=ap)
             raw_risk = audio_metrics["acoustic_risk"]
 
-            # Post-hoc Platt calibration alignment without crushing strong vocoder detections below tau*
-            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
-            if audio_metrics["vocoder_anomaly_score"] >= 0.72 and (
-                audio_metrics["pitch_score"] >= 0.55 or (
+            # Post-hoc Platt calibration alignment using separated audio_calibration_params
+            tau_star = float(ap.get("tau_audio", 0.8118))
+            voc_gate = float(ap.get("vocoder_gate", 0.72))
+            pit_gate = float(ap.get("pitch_gate", 0.55))
+            if audio_metrics["vocoder_anomaly_score"] >= voc_gate and (
+                audio_metrics["pitch_score"] >= pit_gate or (
                     audio_metrics["phase_anomaly_score"] >= 0.45 and audio_metrics["pitch_score"] >= 0.40
                 )
             ):
@@ -3093,7 +3131,7 @@ class DeepfakeDetector:
                         },
                         evidence_matrix=evidence_matrix_6d_audio,
                         tau_optimal=tau_star,
-                        temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
+                        temp_platt=float(ap.get("temperature_T", 1.6178))
                     )
                     triad_debate_aud = TriadCouncilEngine.conduct_debate(fact_manifest_aud)
             except Exception as te:

@@ -47,6 +47,7 @@ from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
 
 CUSTOM_VIT_DIR = PROJECT_ROOT / "custom_vit_model"
 VIDEO_CALIB_FILE = CUSTOM_VIT_DIR / "video_calibration_params.json"
+AUDIO_CALIB_FILE = CUSTOM_VIT_DIR / "audio_calibration_params.json"
 CALIB_FILE = CUSTOM_VIT_DIR / "calibration_params.json"
 FEEDBACK_FRAMES_DIR = PROJECT_ROOT / "colab_datasets" / "zero_day_vault" / "feedback_frames"
 LABELED_MANIFEST_FILE = PROJECT_ROOT / "colab_datasets" / "zero_day_vault" / "labeled_feedback_manifest.json"
@@ -119,6 +120,34 @@ class FeedbackWeightUpdater:
         with open(VIDEO_CALIB_FILE, "w", encoding="utf-8") as f:
             json.dump(params, f, indent=2, ensure_ascii=False)
         return VIDEO_CALIB_FILE
+
+    @staticmethod
+    def load_audio_calibration_params() -> Dict[str, Any]:
+        defaults = {
+            "w_vocoder": 0.45,
+            "w_pitch": 0.35,
+            "w_phase": 0.20,
+            "tau_audio": 0.8118,
+            "temperature_T": 1.6178,
+            "vocoder_gate": 0.72,
+            "pitch_gate": 0.55,
+            "calibration_status": "AUDIO_SEPARATED_ACTIVE",
+            "feedback_updates_count": 0,
+        }
+        if AUDIO_CALIB_FILE.exists():
+            try:
+                with open(AUDIO_CALIB_FILE, "r", encoding="utf-8") as f:
+                    defaults.update(json.load(f))
+            except Exception:
+                pass
+        return defaults
+
+    @staticmethod
+    def save_audio_calibration_params(params: Dict[str, Any]) -> Path:
+        CUSTOM_VIT_DIR.mkdir(parents=True, exist_ok=True)
+        with open(AUDIO_CALIB_FILE, "w", encoding="utf-8") as f:
+            json.dump(params, f, indent=2, ensure_ascii=False)
+        return AUDIO_CALIB_FILE
 
     @staticmethod
     def extract_hard_frames(
@@ -431,19 +460,6 @@ class FeedbackWeightUpdater:
             best_params["last_trigger"] = trigger_source
             cls.save_video_calibration_params(best_params)
 
-            # Sync shared threshold & weights to calibration_params.json for consistent inference
-            if CALIB_FILE.exists():
-                try:
-                    with open(CALIB_FILE, "r", encoding="utf-8") as f:
-                        base_calib = json.load(f)
-                    base_calib["temperature_scaling_T"] = best_params["temperature_T"]
-                    base_calib["optimal_threshold_tau"] = best_params["tau_video"]
-                    base_calib["last_feedback_calibration_at"] = best_params["updated_at"]
-                    with open(CALIB_FILE, "w", encoding="utf-8") as f:
-                        json.dump(base_calib, f, indent=2, ensure_ascii=False)
-                except Exception:
-                    pass
-
             if detector is not None and hasattr(detector, "reload_calibration_params"):
                 detector.reload_calibration_params()
 
@@ -681,6 +697,55 @@ class FeedbackWeightUpdater:
         }
 
     @classmethod
+    def run_audio_calibration_update(
+        cls,
+        detector=None,
+        trigger_source: str = "audio_feedback_event",
+        db_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Fast-loop acoustic parameter calibration strictly updating audio_calibration_params.json."""
+        before_params = cls.load_audio_calibration_params()
+        events = [e for e in get_recent_feedback(limit=250, db_path=db_path) if e.get("media_type") == "audio"]
+        if not events:
+            return {
+                "status": "no_audio_feedback_samples",
+                "accepted": False,
+                "before_params": before_params,
+                "after_params": before_params,
+            }
+
+        fp = sum(1 for e in events if e.get("feedback_type") == "FALSE_POSITIVE")
+        fn = sum(1 for e in events if e.get("feedback_type") == "FALSE_NEGATIVE")
+        best_params = dict(before_params)
+        tau_a = float(best_params.get("tau_audio", 0.8118))
+        temp_a = float(best_params.get("temperature_T", 1.6178))
+
+        if fn > fp:
+            tau_a = max(0.55, round(tau_a - 0.03, 4))
+        elif fp > fn:
+            tau_a = min(0.92, round(tau_a + 0.03, 4))
+        temp_a = round(float(np.clip(temp_a + (0.05 if (fp + fn) > 0 else 0.0), 1.0, 2.5)), 4)
+
+        best_params["tau_audio"] = tau_a
+        best_params["temperature_T"] = temp_a
+        best_params["calibration_status"] = "AUDIO_FEEDBACK_CALIBRATED"
+        best_params["feedback_updates_count"] = int(before_params.get("feedback_updates_count", 0)) + 1
+        best_params["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        best_params["last_trigger"] = trigger_source
+        cls.save_audio_calibration_params(best_params)
+
+        if detector is not None and hasattr(detector, "reload_calibration_params"):
+            detector.reload_calibration_params()
+
+        return {
+            "status": "updated",
+            "accepted": True,
+            "feedback_samples_used": len(events),
+            "before_params": before_params,
+            "after_params": best_params,
+        }
+
+    @classmethod
     def submit_feedback(
         cls,
         true_label: str,
@@ -776,11 +841,18 @@ class FeedbackWeightUpdater:
 
         calib_res = None
         if auto_update_calibration:
-            calib_res = cls.run_fast_calibration_update(
-                detector=detector,
-                trigger_source=f"feedback:{feedback_id}:{fb_type}",
-                db_path=db_path,
-            )
+            if str(media_type).lower() == "audio":
+                calib_res = cls.run_audio_calibration_update(
+                    detector=detector,
+                    trigger_source=f"feedback:{feedback_id}:{fb_type}",
+                    db_path=db_path,
+                )
+            else:
+                calib_res = cls.run_fast_calibration_update(
+                    detector=detector,
+                    trigger_source=f"feedback:{feedback_id}:{fb_type}",
+                    db_path=db_path,
+                )
             if calib_res.get("accepted"):
                 event_payload["calibration_applied"] = True
 

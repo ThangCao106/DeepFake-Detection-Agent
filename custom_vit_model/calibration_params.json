@@ -2,8 +2,8 @@
   "optimal_alpha": 0.6,
   "weight_general": 0.4,
   "weight_human_specialist": 0.6,
-  "temperature_scaling_T": 1.9178,
-  "optimal_threshold_tau": 0.7318,
+  "temperature_scaling_T": 1.6178,
+  "optimal_threshold_tau": 0.8118,
   "focal_loss_gamma": 2.25,
   "focal_loss_alpha": 0.25,
   "council_deliberation_id": "COUNCIL-CERT-AFFEA791C8",
@@ -11,6 +11,5 @@
   "authorized_by_council": true,
   "approved_by_user": "test_suite",
   "timestamp_utc": "2026-11-04T02:41:02Z",
-  "calibration_status": "COUNCIL_AUDITED_AND_CALIBRATED",
-  "last_feedback_calibration_at": "2026-11-12T04:41:26Z"
+  "calibration_status": "COUNCIL_AUDITED_AND_CALIBRATED"
 }
