@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DF-Shield Popup</title>
+    <title>DeepTrace.io.vn - Forensic Shield</title>
     <style>
         :root {
-            --bg-dark: #0b0f19;
-            --card-bg: #131b2e;
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.12);
+            --bg-dark: #04152E;
+            --card-bg: #071E3D;
+            --primary: #0A84FF;
+            --primary-hover: #0284C7;
+            --accent-cyan: #00F0FF;
+            --text-main: #f0f9ff;
+            --text-muted: #93c5fd;
+            --border: rgba(0, 240, 255, 0.22);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -128,16 +129,16 @@
 </head>
 <body>
     <div class="header">
-        <span class="header-icon">🛡️</span>
+        <img src="icons/icon-48.png" alt="DeepTrace.io.vn" style="width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid rgba(0, 240, 255, 0.55); box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);">
         <div>
-            <h3>Deepfake Forensic Shield</h3>
-            <p>NCS PhD Lab • EU AI Act Art. 50</p>
+            <h3 style="color: #ffffff;">DeepTrace<span style="color: #00F0FF;">.io.vn</span></h3>
+            <p>AI Forensic Shield • EU AI Act Art. 50</p>
         </div>
     </div>
 
     <div class="status-badge" id="gatewayStatus">
         <span class="status-dot"></span>
-        <span>Gateway: detection.dtpsoft.vn</span>
+        <span>Gateway: deeptrace.io.vn</span>
     </div>
 
     <button class="btn-action" id="scanCurrentBtn">
@@ -150,15 +151,17 @@
 
     <div class="section-title">Cấu hình Cổng Forensic Gateway</div>
     <select class="endpoint-select" id="apiEndpointSelect">
-        <option value="https://detection.dtpsoft.vn">Cloud Gateway (detection.dtpsoft.vn)</option>
+        <option value="https://deeptrace.io.vn">DeepTrace Cloud (deeptrace.io.vn)</option>
+        <option value="https://detection.dtpsoft.vn">Legacy Gateway (detection.dtpsoft.vn)</option>
         <option value="http://localhost:5000">Local Development (localhost:5000)</option>
     </select>
 
     <div class="footer">
-        Client-Server Hybrid In-the-Wild Stream Defense<br>
-        <a href="https://detection.dtpsoft.vn" target="_blank">Cổng Tra Cứu Chứng Thư Số</a>
+        DeepTrace.io.vn • Hybrid In-the-Wild Stream Defense<br>
+        <a href="https://deeptrace.io.vn" target="_blank" style="color: #00F0FF;">Cổng Tra Cứu Chứng Thư Số</a>
     </div>
 
     <script src="popup.js"></script>
 </body>
 </html>
+
