@@ -1357,10 +1357,16 @@ class AudioForensicAnalyzer:
     """
     @staticmethod
     def load_audio_signal(audio_path, target_sr=16000):
+        import shutil
+        import subprocess
+        import tempfile
+
+        audio_path_str = str(audio_path)
+
         # 1. Try scipy.io.wavfile if it's a WAV file
         try:
             import scipy.io.wavfile as wavfile
-            sr, data = wavfile.read(audio_path)
+            sr, data = wavfile.read(audio_path_str)
             if data.dtype == np.int16:
                 y = data.astype(np.float32) / 32768.0
             elif data.dtype == np.int32:
@@ -1376,7 +1382,7 @@ class AudioForensicAnalyzer:
         # 2. Try standard library wave module
         try:
             import wave
-            with wave.open(str(audio_path), 'rb') as wf:
+            with wave.open(audio_path_str, 'rb') as wf:
                 sr = wf.getframerate()
                 n_frames = wf.getnframes()
                 frames = wf.readframes(n_frames)
@@ -1388,17 +1394,66 @@ class AudioForensicAnalyzer:
         except Exception:
             pass
 
-        # 3. Robust fallback: read raw binary byte stream and interpret as audio sample frames
+        # 3. Decode compressed audio/video containers (m4a, mp3, aac, ogg, flac, mp4, webm) via ffmpeg
+        ffmpeg_bin = shutil.which("ffmpeg")
+        if ffmpeg_bin:
+            tmp_wav = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                    tmp_wav = tf.name
+                proc = subprocess.run(
+                    [
+                        ffmpeg_bin, "-y", "-v", "error",
+                        "-i", audio_path_str,
+                        "-vn", "-ac", "1", "-ar", str(target_sr),
+                        "-f", "wav", tmp_wav,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=30,
+                )
+                if proc.returncode == 0 and os.path.exists(tmp_wav) and os.path.getsize(tmp_wav) > 44:
+                    import wave
+                    with wave.open(tmp_wav, 'rb') as wf:
+                        sr = wf.getframerate()
+                        frames = wf.readframes(wf.getnframes())
+                        data = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+                        if len(data) > 0:
+                            return data, sr
+            except Exception:
+                pass
+            finally:
+                if tmp_wav and os.path.exists(tmp_wav):
+                    try:
+                        os.remove(tmp_wav)
+                    except Exception:
+                        pass
+
+        # 4. Try torchaudio / soundfile / av if installed
         try:
-            with open(audio_path, "rb") as f:
+            import soundfile as sf
+            data, sr = sf.read(audio_path_str, dtype="float32")
+            if len(data.shape) > 1:
+                data = np.mean(data, axis=1)
+            return data, sr
+        except Exception:
+            pass
+
+        # 5. Raw PCM fallback ONLY for raw/pcm files (never decode mp4/m4a/mp3 headers as synthetic sine)
+        ext = os.path.splitext(audio_path_str)[1].lower()
+        if ext in (".pcm", ".raw"):
+            with open(audio_path_str, "rb") as f:
                 raw_bytes = f.read()
             offset = min(128, len(raw_bytes))
-            samples = np.frombuffer(raw_bytes[offset:], dtype=np.int16).astype(np.float32) / 32768.0
-            if len(samples) < 1600:
-                samples = np.sin(np.linspace(0, 100 * np.pi, 16000)) * 0.5
-            return samples, target_sr
-        except Exception:
-            return np.sin(np.linspace(0, 100 * np.pi, 16000)) * 0.5, target_sr
+            even_len = ((len(raw_bytes) - offset) // 2) * 2
+            if even_len >= 1024:
+                samples = np.frombuffer(raw_bytes[offset:offset + even_len], dtype=np.int16).astype(np.float32) / 32768.0
+                return samples, target_sr
+
+        raise RuntimeError(
+            f"Không thể giải mã luồng âm thanh '{os.path.basename(audio_path_str)}' "
+            f"(yêu cầu ffmpeg hoặc định dạng WAV/PCM chuẩn)."
+        )
 
     @staticmethod
     def analyze_audio(audio_path):
@@ -1446,7 +1501,7 @@ class AudioForensicAnalyzer:
         else:
             f0_jitter = 0.021
 
-        # Human vocal jitter typically 1-3%. Synthetic TTS either <0.4% or >6.5%
+        # Human vocal jitter typically 1-3%. Synthetic TTS either <0.6% or >6.5%
         if f0_jitter < 0.006 or f0_jitter > 0.065:
             pitch_score = 0.60 + min(0.35, abs(f0_jitter - 0.02) * 5.0)
         else:
@@ -1478,8 +1533,10 @@ class AudioForensicAnalyzer:
         peak_score = float(sg_norm[max_idx])
         dispersion = float(np.var(sg_norm))
 
-        # 5. Composite Acoustic Risk
+        # 5. Composite Acoustic Risk (corroborate severe >7.5kHz neural vocoder roll-off)
         acoustic_risk = 0.45 * vocoder_anomaly + 0.35 * pitch_score + 0.20 * phase_anomaly
+        if vocoder_anomaly >= 0.68 and (phase_anomaly >= 0.40 or pitch_score >= 0.45):
+            acoustic_risk = max(acoustic_risk, 0.72 + 0.20 * vocoder_anomaly)
         acoustic_risk = float(np.clip(acoustic_risk, 0.02, 0.98))
 
         return {
@@ -2338,22 +2395,24 @@ class DeepfakeDetector:
                     break
                 cur_start += step_frames
 
-            # Determine keyframe indices across windows (capped at max_frames)
-            frames_per_window = max(2, max_frames // len(temporal_windows))
-            frame_indices_set = set()
-            for w_start, w_end in temporal_windows:
-                w_step = max(1, (w_end - w_start) // frames_per_window)
-                for i in range(frames_per_window):
-                    f = min(w_start + i * w_step, w_end - 1)
-                    frame_indices_set.add(f)
-            
-            frame_indices = sorted(list(frame_indices_set))[:max_frames]
+            # Determine keyframe indices evenly across the ENTIRE video duration (never truncate long clips)
+            num_samples = min(max_frames, total_frames)
+            if num_samples <= 1:
+                frame_indices = [0]
+            else:
+                raw_idx = np.linspace(0, total_frames - 1, num_samples, dtype=int)
+                frame_indices = sorted(set(int(x) for x in raw_idx))
 
             base_dir = os.path.dirname(video_path)
             base_name = os.path.basename(video_path).rsplit('.', 1)[0]
 
             frame_results = []
             fake_probs = []
+            comp_probs = []
+            deepfake_frame_flags = []
+            ai_art_frame_count = 0
+            kurtosis_vals = []
+            dominant_scene_context = None
             has_human_video = False
 
             for idx, f_idx in enumerate(frame_indices):
@@ -2371,7 +2430,17 @@ class DeepfakeDetector:
                         timestamp_sec = round(f_idx / fps, 2)
                         cert = res.get("forensic_certificate", {})
                         ev = cert.get("multi_dimensional_evidence", {})
-                        fake_p = ev.get("passive_model_score", {}).get("fake_probability", 0.5)
+                        fake_p = float(ev.get("passive_model_score", {}).get("fake_probability", 0.5))
+                        frame_comp_risk = float(res.get("composite_risk_score", fake_p))
+                        frame_is_df = "deepfake" in str(res.get("label", "")).lower()
+                        sc = cert.get("scene_context", {}) or {}
+                        if sc and dominant_scene_context is None:
+                            dominant_scene_context = dict(sc)
+                        if sc.get("is_ai_art", False):
+                            ai_art_frame_count += 1
+                            dominant_scene_context = dict(sc)
+                        prnu_ev = ev.get("sensor_prnu_analysis", {})
+                        kurtosis_vals.append(float(prnu_ev.get("noise_kurtosis", 3.0)))
 
                         mode = str(routing_mode or "auto").lower().strip()
                         if mode in ["human", "dual", "portrait"]:
@@ -2386,15 +2455,20 @@ class DeepfakeDetector:
                             "timestamp_sec": timestamp_sec,
                             "label": res["label"],
                             "confidence": res["confidence"],
-                            "fake_probability": fake_p,
+                            "fake_probability": round(fake_p, 4),
+                            "composite_risk_score": round(frame_comp_risk, 4),
+                            "is_ai_art": bool(sc.get("is_ai_art", False)),
                             "analysis_mode": cert.get("analysis_mode", "SINGLE_STREAM_GENERAL"),
                             "spectral_anomaly": ev.get("spectral_frequency_analysis", {}).get("high_frequency_anomaly_score", 0.0),
-                            "sensor_prnu_discrepancy": ev.get("sensor_prnu_analysis", {}).get("prnu_discrepancy_score", 0.0),
+                            "sensor_prnu_discrepancy": prnu_ev.get("prnu_discrepancy_score", 0.0),
+                            "noise_kurtosis": prnu_ev.get("noise_kurtosis", 3.0),
                             "corneal_asymmetry": ev.get("corneal_reflection_analysis", {}).get("corneal_asymmetry_score", 0.0),
                             "spatial_inconsistency": ev.get("spatial_inconsistency_analysis", {}).get("spatial_inconsistency_score", 0.0),
                             "patch_heatmap_hotspot": ev.get("saraab_patch_heatmap", {}).get("peak_hotspot", {})
                         })
                         fake_probs.append(fake_p)
+                        comp_probs.append(frame_comp_risk)
+                        deepfake_frame_flags.append(frame_is_df)
                 finally:
                     if os.path.exists(temp_frame_path):
                         os.remove(temp_frame_path)
@@ -2417,6 +2491,10 @@ class DeepfakeDetector:
                 w_start_sec = round(w_start / fps, 2)
                 w_end_sec = round(w_end / fps, 2)
                 w_probs = [f["fake_probability"] for f in frame_results if w_start <= f["frame_index"] <= w_end]
+                if not w_probs and frame_results:
+                    w_mid = (w_start + w_end) / 2.0
+                    nearest_f = min(frame_results, key=lambda f: abs(f["frame_index"] - w_mid))
+                    w_probs = [nearest_f["fake_probability"]]
                 w_risk = float(np.mean(w_probs)) if w_probs else 0.5
                 is_flagged = bool(w_risk >= 0.60)
                 if is_flagged:
@@ -2436,7 +2514,22 @@ class DeepfakeDetector:
 
             avg_fake_prob = float(np.mean(fake_probs))
             max_fake_prob = float(np.max(fake_probs))
-            
+            avg_comp_prob = float(np.mean(comp_probs)) if comp_probs else avg_fake_prob
+            max_comp_prob = float(np.max(comp_probs)) if comp_probs else max_fake_prob
+            frames_ge_055 = sum(1 for p in fake_probs if p >= 0.55)
+            high_comp_frames = sum(1 for c in comp_probs if c >= 0.90)
+            deepfake_frame_ratio = (sum(1 for flag in deepfake_frame_flags if flag) / len(deepfake_frame_flags)) if deepfake_frame_flags else 0.0
+            median_kurtosis = float(np.median(kurtosis_vals)) if kurtosis_vals else 3.0
+
+            # Optional Embedded Audio Track Forensics (when ffmpeg is installed on server)
+            video_audio_metrics = None
+            try:
+                import shutil
+                if shutil.which("ffmpeg") is not None:
+                    video_audio_metrics = AudioForensicAnalyzer.analyze_audio(video_path)
+            except Exception:
+                video_audio_metrics = None
+
             # SARAAB Weighted General Risk: 50% Peak Window, 35% Average, 15% Motion Jitter
             general_video_score = round(0.50 * max_fake_prob + 0.35 * avg_fake_prob + 0.15 * min(1.0, motion_jitter * 2.0), 4)
 
@@ -2483,6 +2576,28 @@ class DeepfakeDetector:
                     "stream_2_human_biometrics": None
                 }
 
+            # Video Forensic Decisiveness Gates (Locard's Tampering Dominance Principle):
+            # Prevent multi-stream/temperature averaging from hiding proven AI-generated frames or localized deepfakes.
+            has_multi_frame_neural_tamper = bool(
+                (max_fake_prob >= 0.84 and (frames_ge_055 >= 2 or len(flagged_partial_segments) >= 1)) or
+                (deepfake_frame_ratio >= 0.45 and max_fake_prob >= 0.78)
+            )
+            has_ai_art_video_tamper = bool(ai_art_frame_count >= 2 or high_comp_frames >= 2)
+            has_audio_corroboration = bool(
+                video_audio_metrics is not None and
+                video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.70 and
+                video_audio_metrics.get("acoustic_risk", 0.0) >= 0.65 and
+                (composite_video_risk >= 0.55 or median_kurtosis >= 7.5)
+            )
+            if has_multi_frame_neural_tamper or has_ai_art_video_tamper or has_audio_corroboration:
+                dominant_floor = max(
+                    0.84 + 0.14 * max_fake_prob if has_multi_frame_neural_tamper else 0.0,
+                    max_comp_prob if has_ai_art_video_tamper else 0.0,
+                    0.86 if has_audio_corroboration else 0.0,
+                    0.92 if (has_ai_art_video_tamper and deepfake_frame_ratio >= 0.40) else 0.0
+                )
+                composite_video_risk = round(float(min(0.995, max(composite_video_risk, dominant_floor))), 4)
+
             # Post-hoc Platt Scaling & Youden Optimal Threshold (tau* = 0.8118)
             tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
             is_synthetic_vid, verdict_label, confidence, all_scores = self.calibrate_posterior_probability(
@@ -2492,6 +2607,20 @@ class DeepfakeDetector:
 
             cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+            # Construct Video Scene Context (prevents NameError and preserves context for Triad Council)
+            scene_context_vid = dict(dominant_scene_context) if dominant_scene_context else {
+                "category": "Video Sinh AI / Tổng Hợp" if (ai_art_frame_count > 0 or is_synthetic_vid) else ("Video Chân Dung" if has_human_video else "Video Cảnh Quan / Tổng Hợp"),
+                "short_name": "Video AI" if is_synthetic_vid else "Video Thực Tế",
+                "scene_type": "AI_GENERATED_VIDEO" if is_synthetic_vid else ("VIDEO_PORTRAIT" if has_human_video else "VIDEO_GENERAL"),
+                "vn_demographic_category": "vn_selfie_lifestyle" if has_human_video else "non_human_media",
+                "icon": "🎬",
+                "environment": f"Phân tích chuỗi {len(frame_results)} khung hình ({round(duration_sec, 1)}s) theo chuẩn cửa sổ 7s SARAAB",
+                "is_ai_art": bool(ai_art_frame_count > 0),
+                "confidence": 0.92
+            }
+            if is_synthetic_vid and (ai_art_frame_count > 0 or median_kurtosis >= 7.5):
+                scene_context_vid["is_ai_art"] = True
 
             # Construct Modality-Native 6D Evidence Matrix for Video (Tri-Stream Standard)
             motion_jitter_norm = float(np.clip(motion_jitter * 2.5, 0.0, 1.0))
@@ -2507,7 +2636,8 @@ class DeepfakeDetector:
                     "dimension_name": "1. Aggregated Temporal Frame Logits",
                     "score": round(avg_fake_prob, 4),
                     "peak_score": round(max_fake_prob, 4),
-                    "status": "ANOMALOUS_FRAMES" if avg_fake_prob > 0.50 else "AUTHENTIC_FRAMES"
+                    "deepfake_frame_ratio": round(deepfake_frame_ratio, 4),
+                    "status": "ANOMALOUS_FRAMES" if (avg_fake_prob > 0.50 or has_multi_frame_neural_tamper) else "AUTHENTIC_FRAMES"
                 },
                 "dim2_temporal_motion": {
                     "dimension_name": "2. Frame-to-Frame Temporal Motion Jitter (J_motion)",
@@ -2524,6 +2654,7 @@ class DeepfakeDetector:
                 "dim4_sensor_prnu": {
                     "dimension_name": "4. Inter-Frame Camera PRNU Sensor Consistency",
                     "score": prnu_video_score,
+                    "median_noise_kurtosis": round(median_kurtosis, 4),
                     "status": "SENSOR_NOISE_DISCONTINUITY" if prnu_video_score > 0.40 else "CONSISTENT_SENSOR_TRACE"
                 },
                 "dim5_multimodal_biometrics": {
@@ -2538,34 +2669,48 @@ class DeepfakeDetector:
                     "status": "LOCALIZED_FRAME_ANOMALY" if max_fake_prob > 0.65 else "UNIFORM_VIDEO"
                 }
             }
+            if video_audio_metrics is not None:
+                evidence_matrix_6d_video["audio_evidence"] = {
+                    "f0_variance": video_audio_metrics.get("pitch_jitter", 0.0),
+                    "vocoder_drift": video_audio_metrics.get("vocoder_anomaly_score", 0.0),
+                    "acoustic_risk": video_audio_metrics.get("acoustic_risk", 0.0)
+                }
 
             # Natural Language XAI Statement for Video (EU AI Act Article 50)
             reasons_vid = []
-            if avg_fake_prob > 0.50:
-                reasons_vid.append(f"Điểm số phân loại chuỗi khung hình (Avg fake prob = {avg_fake_prob:.2f}) vượt ngưỡng nghi vấn.")
+            if avg_fake_prob > 0.50 or has_multi_frame_neural_tamper:
+                reasons_vid.append(
+                    f"Phân tích chuỗi khung hình ghi nhận {sum(1 for f in deepfake_frame_flags if f)}/{len(frame_results)} khung hình chính bất thường "
+                    f"(Peak fake prob = {max_fake_prob:.2f}, Avg = {avg_fake_prob:.2f})."
+                )
             else:
                 reasons_vid.append(f"Điểm số trung bình chuỗi khung hình (Avg fake prob = {avg_fake_prob:.2f}) đạt mức chân thực cao.")
 
             if motion_jitter > 0.35:
-                reasons_vid.append(f"Độ rung lắc chuyển động liên khung (J_motion = {motion_jitter:.4f}) ghi nhận hiện tượng nhấp nháy quang học (optical flickering) đặc trưng của video hoán đổi mặt.")
+                reasons_vid.append(f"Độ rung lắc chuyển động liên khung (J_motion = {motion_jitter:.4f}) ghi nhận hiện tượng nhấp nháy quang học (optical flickering) đặc trưng của video tạo sinh AI / hoán đổi mặt.")
             else:
                 reasons_vid.append(f"Chuyển động liên khung hình mượt mà tự nhiên (J_motion = {motion_jitter:.4f}), không có hiện tượng gián đoạn.")
 
             if len(flagged_partial_segments) > 0:
-                reasons_vid.append(f"Kiểm toán SARAAB phát hiện {len(flagged_partial_segments)} phân đoạn vi cửa sổ 7s bị thao túng cục bộ (Partial Manipulation).")
+                reasons_vid.append(f"Kiểm toán SARAAB phát hiện {len(flagged_partial_segments)} phân đoạn vi cửa sổ 7s có dấu hiệu tổng hợp AI / thao túng cục bộ (Partial Manipulation).")
             else:
                 reasons_vid.append("Toàn bộ các vi cửa sổ 7s đồng nhất, không phát hiện chắp vá cục bộ.")
 
-            if prnu_video_score > 0.40:
-                reasons_vid.append(f"Vân cảm biến phần cứng camera liên khung (PRNU score = {prnu_video_score:.2f}) có độ lệch lớn giữa các khung hình.")
+            if prnu_video_score > 0.40 or median_kurtosis >= 7.5:
+                reasons_vid.append(f"Vân cảm biến phần cứng camera liên khung (PRNU score = {prnu_video_score:.2f}, Kurtosis = {median_kurtosis:.2f}) lệch chuẩn nhiễu Gaussian của cảm biến vật lý.")
             else:
                 reasons_vid.append(f"Vân cảm biến phần cứng camera đồng nhất qua các khung hình (PRNU score = {prnu_video_score:.2f}).")
 
+            if video_audio_metrics is not None and video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.65:
+                reasons_vid.append(
+                    f"Luồng âm thanh đi kèm video có suy giảm phổ >7.5kHz (Vocoder Anomaly = {video_audio_metrics['vocoder_anomaly_score']:.2f}), củng cố bằng chứng tổng hợp AI đa phương thức."
+                )
+
             if has_human_video:
                 if lipsync_desync_detected or lipsync_score > 0.50:
-                    reasons_vid.append("Bất đồng bộ âm thanh - khẩu hình môi DF26 (Độ trễ desync vượt ngưỡng 120ms).")
+                    reasons_vid.append("Bất đồng bộ âm thanh - khẩu hình môi DF26 hoặc dấu hiệu sinh trắc học khuôn mặt bất thường.")
                 else:
-                    reasons_vid.append("Khẩu hình môi và dải âm vị âm thanh đồng bộ chính xác.")
+                    reasons_vid.append("Khẩu hình môi và dải âm vị âm thanh đồng bộ cơ bản.")
             else:
                 reasons_vid.append("Chỉ số sinh trắc học cử động môi: Bỏ qua (video phi nhân vật / phong cảnh / đồ vật).")
 
@@ -2581,12 +2726,23 @@ class DeepfakeDetector:
                         filename=os.path.basename(str(video_path)) if video_path else "video_sample.mp4",
                         composite_risk=composite_video_risk,
                         has_human=has_human_video,
-                        scene_context=scene_context,
+                        scene_context=scene_context_vid,
                         evidence_matrix=evidence_matrix_6d_video,
                         tau_optimal=tau_star,
                         temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
                     )
                     triad_debate_video = TriadCouncilEngine.conduct_debate(fact_manifest_vid)
+                    if triad_debate_video:
+                        c_verdict = triad_debate_video.get("consensus_verdict", "")
+                        if "DEEPFAKE" in c_verdict or "SYNTHETIC" in c_verdict or "GIẢ MẠO" in c_verdict:
+                            is_synthetic_vid = True
+                            verdict_label = "Deepfake"
+                            if composite_video_risk < tau_star:
+                                composite_video_risk = round(max(tau_star + 0.05, 0.88), 4)
+                            if confidence < 0.90:
+                                confidence = 0.965
+                                all_scores["Deepfake"] = 0.965
+                                all_scores["Realism"] = 0.035
             except Exception as te:
                 print(f"[warning] Triad Council Debate Video error: {te}")
 
@@ -2597,6 +2753,8 @@ class DeepfakeDetector:
                 "triad_council_debate": triad_debate_video,
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Video",
                 "analysis_mode": analysis_mode,
+                "media_type": "video",
+                "scene_context": scene_context_vid,
                 "dual_stream_breakdown": dual_stream_breakdown,
                 "evidence_matrix_6d": evidence_matrix_6d_video,
                 "xai_explainability_statement": xai_explanation_vid,
@@ -2611,6 +2769,8 @@ class DeepfakeDetector:
                     "frame_by_frame_analysis": frame_results,
                     "aggregate_fake_probability": round(avg_fake_prob, 4),
                     "peak_fake_probability": round(max_fake_prob, 4),
+                    "aggregate_composite_risk": round(avg_comp_prob, 4),
+                    "peak_composite_risk": round(max_comp_prob, 4),
                     "saraab_phase1_video_audit": {
                         "standard": "SARAAB 7-Second Micro-Window Benchmark",
                         "short_clip_window_size_sec": 7.0,
@@ -2644,6 +2804,9 @@ class DeepfakeDetector:
                 "calibrated_probability": composite_video_risk,
                 "decision_threshold": tau_star,
                 "analysis_mode": analysis_mode,
+                "media_type": "video",
+                "scene_context": scene_context_vid,
+                "triad_council_debate": triad_debate_video,
                 "forensic_certificate": forensic_certificate,
                 "frame_results": frame_results
             }
@@ -2671,14 +2834,15 @@ class DeepfakeDetector:
             audio_metrics = AudioForensicAnalyzer.analyze_audio(str(audio_path))
             raw_risk = audio_metrics["acoustic_risk"]
 
-            # Post-hoc Platt Scaling (T* = 1.6178)
-            T_star = 1.6178
-            tau_star = 0.8118
-            
-            p_clamped = max(1e-5, min(1.0 - 1e-5, raw_risk))
-            z = math.log(p_clamped / (1.0 - p_clamped))
-            calibrated_prob = 1.0 / (1.0 + math.exp(-z / T_star))
-            calibrated_prob = round(float(calibrated_prob), 4)
+            # Post-hoc Platt calibration alignment without crushing strong vocoder detections below tau*
+            tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118
+            if audio_metrics["vocoder_anomaly_score"] >= 0.68 and (
+                audio_metrics["phase_anomaly_score"] >= 0.40 or audio_metrics["pitch_score"] >= 0.45
+            ):
+                calibrated_prob = round(float(max(raw_risk, 0.84 + 0.12 * audio_metrics["vocoder_anomaly_score"])), 4)
+            else:
+                calibrated_prob = round(float(raw_risk), 4)
+            calibrated_prob = float(min(0.985, max(0.02, calibrated_prob)))
 
             is_synthetic_aud, verdict_label, confidence, all_scores = self.calibrate_posterior_probability(
                 composite_risk=calibrated_prob,
@@ -2712,7 +2876,54 @@ class DeepfakeDetector:
 
             xai_explanation = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if is_fake else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro âm học: {calibrated_prob*100:.1f}%]. Phân tích ma trận chứng cứ âm học:\n" + "\n".join(f"- {r}" for r in reasons)
 
-            # Option B: Asymmetric Triad Council Debate for Audio
+            evidence_matrix_6d_audio = {
+                "dim1_passive_audio": {
+                    "dimension_name": "1. Passive Acoustic Spectral Classification",
+                    "score": round(calibrated_prob, 4),
+                    "status": "ANOMALY_DETECTED" if is_fake else "NATURAL_SPECTRUM"
+                },
+                "dim2_spectral_frequency": {
+                    "dimension_name": "2. High-Frequency Formant Attenuation (>7.5 kHz)",
+                    "score": audio_metrics["vocoder_anomaly_score"],
+                    "status": "VOCODER_CUTOFF" if audio_metrics["vocoder_anomaly_score"] > 0.50 else "NATURAL_AIR_RESONANCE"
+                },
+                "dim3_spatial_inconsistency": {
+                    "dimension_name": "3. Phase & Waveform Zero-Crossing Consistency",
+                    "score": audio_metrics["phase_anomaly_score"],
+                    "status": "PHASE_DISCONTINUITY" if audio_metrics["phase_anomaly_score"] > 0.50 else "CONSISTENT_PHASE"
+                },
+                "dim4_microphone_channel": {
+                    "dimension_name": "4. Microphone Acoustic Channel Residual & Noise Floor",
+                    "score": 0.15,
+                    "status": "PHYSICAL_MICROPHONE_FINGERPRINT",
+                    "details": {
+                        "channel_uniformity": 0.92,
+                        "ambient_noise_floor": "Consistent natural room acoustics"
+                    }
+                },
+                "dim5_vocal_cord_physiology": {
+                    "dimension_name": "5. Vocal Cord Physiology & Pitch Micro-Tremor (F0 Jitter)",
+                    "score": audio_metrics["pitch_score"],
+                    "status": "UNNATURAL_PITCH_VARIATION" if audio_metrics["pitch_score"] > 0.50 else "PHYSIOLOGICAL_F0_STABILITY",
+                    "details": {
+                        "f0_jitter": audio_metrics["pitch_jitter"],
+                        "vocal_cord_stability": round(1.0 - audio_metrics["pitch_score"], 4),
+                        "interpretation": "Natural human glottal micro-tremor (1.0% - 3.0%)" if audio_metrics["pitch_score"] <= 0.50 else "Synthetic mechanical pitch flattening or unnatural jitter (>6.5%)"
+                    }
+                },
+                "dim6_patch_heatmap_uncertainty": {
+                    "dimension_name": "6. Log-Mel Spectrogram Patch Saliency & Entropy",
+                    "peak_hotspot": audio_metrics["peak_hotspot"],
+                    "spatial_dispersion_var": audio_metrics["spatial_dispersion"],
+                    "status": "LOCALIZED_ACOUSTIC_TAMPERING" if is_fake else "HOMOGENEOUS"
+                },
+                "audio_evidence": {
+                    "f0_variance": audio_metrics["pitch_jitter"],
+                    "vocoder_drift": audio_metrics["vocoder_anomaly_score"]
+                }
+            }
+
+            # Option B: Asymmetric Triad Council Debate for Audio (evidence_matrix built cleanly before manifest)
             triad_debate_aud = None
             try:
                 if TriadCouncilEngine is not None and ForensicFactManifest is not None:
@@ -2726,7 +2937,7 @@ class DeepfakeDetector:
                             "environment": "Bản ghi âm thanh giọng nói tiếng Việt",
                             "vn_demographic_category": "vn_voice_vietnamese"
                         },
-                        evidence_matrix=evidence_matrix_6d,
+                        evidence_matrix=evidence_matrix_6d_audio,
                         tau_optimal=tau_star,
                         temp_platt=float(self.calibration_params.get("temperature_T", 1.6178)) if self.calibration_params else 1.6178
                     )
@@ -2767,48 +2978,7 @@ class DeepfakeDetector:
                         "spatial_dispersion": audio_metrics["spatial_dispersion"]
                     }
                 },
-                "evidence_matrix_6d": {
-                    "dim1_passive_audio": {
-                        "dimension_name": "1. Passive Acoustic Spectral Classification",
-                        "score": round(calibrated_prob, 4),
-                        "status": "ANOMALY_DETECTED" if is_fake else "NATURAL_SPECTRUM"
-                    },
-                    "dim2_spectral_frequency": {
-                        "dimension_name": "2. High-Frequency Formant Attenuation (>7.5 kHz)",
-                        "score": audio_metrics["vocoder_anomaly_score"],
-                        "status": "VOCODER_CUTOFF" if audio_metrics["vocoder_anomaly_score"] > 0.50 else "NATURAL_AIR_RESONANCE"
-                    },
-                    "dim3_spatial_inconsistency": {
-                        "dimension_name": "3. Phase & Waveform Zero-Crossing Consistency",
-                        "score": audio_metrics["phase_anomaly_score"],
-                        "status": "PHASE_DISCONTINUITY" if audio_metrics["phase_anomaly_score"] > 0.50 else "CONSISTENT_PHASE"
-                    },
-                    "dim4_microphone_channel": {
-                        "dimension_name": "4. Microphone Acoustic Channel Residual & Noise Floor",
-                        "score": 0.15,
-                        "status": "PHYSICAL_MICROPHONE_FINGERPRINT",
-                        "details": {
-                            "channel_uniformity": 0.92,
-                            "ambient_noise_floor": "Consistent natural room acoustics"
-                        }
-                    },
-                    "dim5_vocal_cord_physiology": {
-                        "dimension_name": "5. Vocal Cord Physiology & Pitch Micro-Tremor (F0 Jitter)",
-                        "score": audio_metrics["pitch_score"],
-                        "status": "UNNATURAL_PITCH_VARIATION" if audio_metrics["pitch_score"] > 0.50 else "PHYSIOLOGICAL_F0_STABILITY",
-                        "details": {
-                            "f0_jitter": audio_metrics["pitch_jitter"],
-                            "vocal_cord_stability": round(1.0 - audio_metrics["pitch_score"], 4),
-                            "interpretation": "Natural human glottal micro-tremor (1.0% - 3.0%)" if audio_metrics["pitch_score"] <= 0.50 else "Synthetic mechanical pitch flattening or unnatural jitter (>6.5%)"
-                        }
-                    },
-                    "dim6_patch_heatmap_uncertainty": {
-                        "dimension_name": "6. Log-Mel Spectrogram Patch Saliency & Entropy",
-                        "peak_hotspot": audio_metrics["peak_hotspot"],
-                        "spatial_dispersion_var": audio_metrics["spatial_dispersion"],
-                        "status": "LOCALIZED_ACOUSTIC_TAMPERING" if is_fake else "HOMOGENEOUS"
-                    }
-                },
+                "evidence_matrix_6d": evidence_matrix_6d_audio,
                 "calibrated_probability": calibrated_prob,
                 "composite_risk_score": calibrated_prob,
                 "decision_threshold": tau_star,
@@ -2836,17 +3006,27 @@ class DeepfakeDetector:
                 "decision_threshold": tau_star,
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
                 "media_type": "audio",
+                "triad_council_debate": triad_debate_aud,
                 "forensic_certificate": forensic_certificate
             }
         except Exception as e:
             return {"error": f"Audio processing error: {str(e)}"}
 
     def predict_media(self, file_path, routing_mode="auto"):
-        """Predict for image, video, or audio based on file extension (Tri-Stream Dispatcher)."""
+        """Predict for image, video, or audio based on file extension + stream verification (Tri-Stream Dispatcher)."""
         ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else ''
         video_exts = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'}
         audio_exts = {'mp3', 'wav', 'flac', 'ogg', 'aac', 'm4a', 'wma'}
         if ext in video_exts:
+            # Guard against audio-only .mp4/.webm containers (e.g. YouTube audio streams)
+            try:
+                cap = cv2.VideoCapture(str(file_path))
+                frame_cnt = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
+                cap.release()
+                if frame_cnt <= 0:
+                    return self.predict_audio(file_path, routing_mode=routing_mode)
+            except Exception:
+                pass
             return self.predict_video(file_path, routing_mode=routing_mode)
         elif ext in audio_exts:
             return self.predict_audio(file_path, routing_mode=routing_mode)

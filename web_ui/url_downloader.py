@@ -110,6 +110,12 @@ def download_direct_media(url: str, dest_dir: str) -> Dict[str, Any]:
 
             # Determine extension
             content_type = resp.headers.get("content-type", "").lower()
+            if any(non_media in content_type for non_media in ("text/html", "text/plain", "application/json", "application/xml", "application/xhtml")):
+                return {
+                    "success": False,
+                    "error": f"Liên kết trả về trang web ({content_type.split(';')[0]}) thay vì tệp media trực tiếp."
+                }
+
             ext = ""
             parsed_path = urllib.parse.urlparse(resp.url).path
             for candidate in (VIDEO_EXTS | IMAGE_EXTS | AUDIO_EXTS):
@@ -126,7 +132,11 @@ def download_direct_media(url: str, dest_dir: str) -> Dict[str, Any]:
                 elif "image/webp" in content_type: ext = ".webp"
                 elif "audio/mpeg" in content_type or "audio/mp3" in content_type: ext = ".mp3"
                 elif "audio/wav" in content_type or "audio/x-wav" in content_type: ext = ".wav"
-                else: ext = ".jpg"  # default fallback
+                else:
+                    return {
+                        "success": False,
+                        "error": f"Không nhận diện được định dạng media hợp lệ (Content-Type: {content_type or 'unknown'})."
+                    }
 
             filename = f"social_{timestamp}_{platform.lower()}_{rand_id}{ext}"
             filepath = os.path.join(dest_dir, filename)
@@ -185,10 +195,33 @@ def download_with_ytdlp(url: str, dest_dir: str) -> Dict[str, Any]:
     rand_id = uuid.uuid4().hex[:6]
     out_tmpl = os.path.join(dest_dir, f"social_{timestamp}_{platform.lower()}_{rand_id}_%(id)s.%(ext)s")
 
+    import shutil
+    has_ffmpeg = shutil.which("ffmpeg") is not None
+
+    if has_ffmpeg:
+        # Prefer <=1080p H.264/AVC video + m4a audio merged to mp4, never downgrade to audio-only mp4 (e.g. YouTube itag 233/234)
+        format_spec = (
+            "bestvideo[height<=1080][vcodec^=avc]+bestaudio[acodec!=none][ext=m4a]/"
+            "bestvideo[height<=1080][vcodec!=none]+bestaudio[acodec!=none]/"
+            "best[vcodec!=none][acodec!=none][height<=1080]/"
+            "best[vcodec!=none][height<=1080]/"
+            "best[vcodec!=none]"
+        )
+    else:
+        # Without ffmpeg, avoid DASH merge failure: prefer combined progressive video, else <=1080p H.264/MP4 video stream
+        format_spec = (
+            "best[vcodec!=none][acodec!=none][ext=mp4]/"
+            "best[vcodec!=none][acodec!=none]/"
+            "best[vcodec!=none][height<=1080]/"
+            "bestvideo[height<=1080][vcodec^=avc][ext=mp4]/"
+            "bestvideo[height<=1080][vcodec!=none]/"
+            "best[vcodec!=none]"
+        )
+
     ydl_opts = {
         "outtmpl": out_tmpl,
-        # Prefer pre-merged mp4 or best single mp4 file (no mandatory ffmpeg merge needed)
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": format_spec,
+        "format_sort": ["vcodec:h264", "res:1080", "ext:mp4:m4a"],
         "max_filesize": MAX_FILESIZE_BYTES,
         "socket_timeout": SOCKET_TIMEOUT_SECS,
         "noplaylist": True,
@@ -197,6 +230,8 @@ def download_with_ytdlp(url: str, dest_dir: str) -> Dict[str, Any]:
         "extract_flat": False,
         "user_agent": USER_AGENT_DESKTOP,
     }
+    if has_ffmpeg:
+        ydl_opts["merge_output_format"] = "mp4"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -215,11 +250,21 @@ def download_with_ytdlp(url: str, dest_dir: str) -> Dict[str, Any]:
             expected_filename = ydl.prepare_filename(info)
             actual_filepath = expected_filename
 
-            # If expected_filename not on disk (e.g. extension changed to mp4), search directory
+            # Wait/locate merged file if extension changed (e.g. .webm/.mkv -> .mp4)
             if not os.path.exists(actual_filepath):
                 base_part = f"social_{timestamp}_{platform.lower()}_{rand_id}"
-                matches = [f for f in os.listdir(dest_dir) if f.startswith(base_part)]
+                matches = [
+                    f for f in os.listdir(dest_dir)
+                    if f.startswith(base_part) and not f.endswith((".part", ".ytdl"))
+                ]
                 if matches:
+                    # Prioritize video extensions over audio-only remnants
+                    matches.sort(
+                        key=lambda fn: (
+                            0 if os.path.splitext(fn)[1].lower() in VIDEO_EXTS else 1,
+                            -os.path.getsize(os.path.join(dest_dir, fn))
+                        )
+                    )
                     actual_filepath = os.path.join(dest_dir, matches[0])
                 else:
                     return {

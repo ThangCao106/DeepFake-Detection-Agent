@@ -49,20 +49,22 @@ class ForensicFactManifest:
         temp_platt: float = 1.6178
     ) -> Dict[str, Any]:
         ev = evidence_matrix or {}
-        p_vit = ev.get("dim1_passive_vit", {}).get("score", 0.5)
-        fft_score = ev.get("dim2_frequency_fft", {}).get("score", 0.0)
-        prnu_score = ev.get("dim3_sensor_prnu", {}).get("score", 0.0)
-        spatial_score = ev.get("dim4_spatial_inconsistency", {}).get("score", 0.0)
-        corneal_score = ev.get("dim5_corneal_reflection", {}).get("score", 0.0)
-        corneal_meta = ev.get("dim5_corneal_reflection", {})
-        delta_theta = corneal_meta.get("delta_theta_deg", 0.0)
-        bypassed_corneal = corneal_meta.get("status", "") == "BYPASS_NO_EYES" or not has_human
+        p_vit = ev.get("dim1_passive_vit", ev.get("dim1_passive_video", ev.get("dim1_passive_audio", {}))).get("score", 0.5)
+        fft_score = ev.get("dim2_frequency_fft", ev.get("dim2_spectral_frequency", ev.get("dim2_temporal_motion", {}))).get("score", 0.0)
+        prnu_score = ev.get("dim3_sensor_prnu", ev.get("dim4_sensor_prnu", {})).get("score", 0.0)
+        spatial_score = ev.get("dim4_spatial_inconsistency", ev.get("dim3_spatial_inconsistency", ev.get("dim3_saraab_windowing", {}))).get("score", 0.0)
+        corneal_meta = ev.get("dim5_corneal_reflection", ev.get("dim5_multimodal_biometrics", {}))
+        corneal_score = corneal_meta.get("score", 0.0)
+        delta_theta = corneal_meta.get("delta_theta_degrees", corneal_meta.get("delta_theta_deg", 0.0))
+        bypassed_corneal = corneal_meta.get("status", "") in ("BYPASS_NO_EYES", "BYPASS_NON_HUMAN_VIDEO", "BYPASS_2D_ILLUSTRATION") or not has_human
         hotspot = ev.get("dim6_patch_heatmap_uncertainty", {}).get("peak_hotspot", {})
-        
+        if not hotspot and "score" in ev.get("dim6_patch_heatmap_uncertainty", {}):
+            hotspot = {"peak_anomaly_score": ev["dim6_patch_heatmap_uncertainty"]["score"], "anatomical_region": "Peak Frame / Temporal Hotspot"}
+
         # Audio / Video extensions
         audio_evidence = ev.get("audio_evidence", {})
-        f0_variance = audio_evidence.get("f0_variance", 0.0)
-        vocoder_drift = audio_evidence.get("vocoder_drift", 0.0)
+        f0_variance = audio_evidence.get("f0_variance", ev.get("dim5_vocal_cord_physiology", {}).get("details", {}).get("f0_jitter", 0.0))
+        vocoder_drift = audio_evidence.get("vocoder_drift", ev.get("dim2_spectral_frequency", {}).get("score", 0.0))
         lipsync_delay_ms = ev.get("video_evidence", {}).get("lipsync_delay_ms", 0.0)
 
         # Calibrated decision
