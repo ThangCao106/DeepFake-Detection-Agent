@@ -19,6 +19,11 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.IS_BENCHMARK_PORT = {{ 'true' if is_benchmark_mode else 'false' }};
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
     </script>
 </head>
 <body>

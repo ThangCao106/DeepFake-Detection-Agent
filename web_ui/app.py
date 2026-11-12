@@ -1110,6 +1110,16 @@ def view_certificate_page(cert_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/sw.js', methods=['GET'])
+def serve_service_worker():
+    """Serve root-scoped PWA Service Worker for Mobile Install & Web Share Target."""
+    sw_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "static", "sw.js"))
+    if not os.path.exists(sw_path):
+        return "// sw not found", 404, {'Content-Type': 'application/javascript'}
+    with open(sw_path, "r", encoding="utf-8") as f:
+        return f.read(), 200, {'Content-Type': 'application/javascript; charset=utf-8', 'Service-Worker-Allowed': '/'}
+
+
 @app.route('/robots.txt', methods=['GET'])
 def get_robots_txt():
     """Serve robots.txt allowing Googlebot to crawl and index certificate verification pages."""

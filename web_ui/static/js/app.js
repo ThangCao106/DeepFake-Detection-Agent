@@ -4944,6 +4944,12 @@ function initWebShareTarget() {
                 if (typeof addSystemMessage === 'function') {
                     addSystemMessage(currentLang === 'vi' ? msgVi : msgEn, 'info');
                 }
+                // Auto-trigger forensic analysis when opened via Mobile PWA Share Target
+                setTimeout(() => {
+                    if (analyzeBtn && !analyzeBtn.disabled && urlInput.value.trim()) {
+                        analyzeBtn.click();
+                    }
+                }, 700);
             }
         }
     } catch (e) {

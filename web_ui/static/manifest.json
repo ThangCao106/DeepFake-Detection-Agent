@@ -1,17 +1,24 @@
 {
-  "short_name": "DeepfakeAgent",
-  "name": "Deepfake Forensic Agent - Multi-Agent Defense Cockpit",
-  "description": "NCS In-the-Wild Deepfake Detection & Digital Forensic Certification Agent",
+  "short_name": "DeepTrace",
+  "name": "DeepTrace.io.vn - AI Forensic Shield",
+  "description": "DeepTrace.io.vn In-the-Wild Deepfake Detection & Digital Forensic Certification",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f19",
-  "theme_color": "#4f46e5",
+  "background_color": "#04152E",
+  "theme_color": "#0A84FF",
   "orientation": "any",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml"
+      "src": "/static/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "share_target": {
