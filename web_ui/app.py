@@ -106,12 +106,16 @@ def init_orchestrator():
 
 # Routes
 @app.route('/')
+@app.route('/dfagent')
+@app.route('/dfagent/')
 @app.route('/benchmark')
 @app.route('/benchmark/')
+@app.route('/dfagent/benchmark')
+@app.route('/dfagent/benchmark/')
 def index():
     """Serve the web interface with environment-aware port separation."""
     current_port = os.environ.get("PORT", "5000")
-    is_benchmark_mode = (str(current_port) == "5010") or request.path.startswith("/benchmark")
+    is_benchmark_mode = (str(current_port) == "5010") or ("/benchmark" in request.path)
     return render_template('index.html', is_benchmark_mode=is_benchmark_mode, current_port=current_port)
 
 
@@ -131,14 +135,63 @@ def status():
 # ==============================================================================
 
 @app.route('/orchestrator')
+@app.route('/dfagent/orchestrator')
 def orchestrator_dashboard():
     """Serve the Multi-Agent Defense Cockpit & Daily Report Dashboard."""
     return render_template('orchestrator_dashboard.html')
 
 
+def _collect_orchestrator_telemetry():
+    """Collect active calibration params, short-video pentest metrics, and feedback Vault telemetry."""
+    custom_dir = Path(project_root) / "custom_vit_model"
+    active_params = {"image": {}, "video": {}, "vn_demographic": {}}
+    for key, fname in [
+        ("image", "calibration_params.json"),
+        ("video", "video_calibration_params.json"),
+        ("vn_demographic", "vietnamese_demographic_params.json"),
+    ]:
+        fpath = custom_dir / fname
+        if fpath.exists():
+            try:
+                with open(fpath, "r", encoding="utf-8") as cf:
+                    active_params[key] = json.load(cf)
+            except Exception:
+                pass
+
+    short_video_pentest = {"overall": {}, "by_platform": {}, "latest_runs": []}
+    feedback_summary = {"total_events": 0, "fp_count": 0, "fn_count": 0, "vault_pending_count": 0, "recent_events": []}
+    try:
+        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback
+        from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
+
+        svp_rows = get_latest_short_video_pentest(limit=20)
+        short_video_pentest["latest_runs"] = svp_rows
+        for row in svp_rows:
+            pf = row.get("platform")
+            if pf == "all" and not short_video_pentest["overall"]:
+                short_video_pentest["overall"] = row
+            elif pf and pf != "all" and pf not in short_video_pentest["by_platform"]:
+                short_video_pentest["by_platform"][pf] = row
+
+        fb_rows = get_recent_feedback(limit=50)
+        pending_vault = ZeroDayActiveLearningVault.get_instance().get_pending_samples()
+        feedback_summary = {
+            "total_events": len(fb_rows),
+            "fp_count": sum(1 for x in fb_rows if x.get("feedback_type") == "FALSE_POSITIVE"),
+            "fn_count": sum(1 for x in fb_rows if x.get("feedback_type") == "FALSE_NEGATIVE"),
+            "vault_pending_count": len(pending_vault),
+            "recent_events": fb_rows[:12],
+        }
+    except Exception as tel_err:
+        logger.warning(f"Orchestrator telemetry warning: {tel_err}")
+
+    return active_params, short_video_pentest, feedback_summary
+
+
 @app.route('/api/orchestrator/status')
+@app.route('/dfagent/api/orchestrator/status')
 def orchestrator_status():
-    """Returns the latest execution status and historical timeline data."""
+    """Returns the latest execution status, active parameters, short-video pentest, and feedback queue."""
     history_file = Path(project_root) / "report_colab" / "pentest" / "daily_history.json"
     history = []
     if history_file.exists():
@@ -147,16 +200,18 @@ def orchestrator_status():
                 history = json.load(f)
         except Exception:
             history = []
-            
-    # If no history exists yet, provide baseline
+
+    active_params, short_video_pentest, feedback_summary = _collect_orchestrator_telemetry()
+
     if not history:
         today_str = datetime.now().strftime("%Y-%m-%d")
+        overall_svp = short_video_pentest.get("overall") or {}
         history = [{
             "date": today_str,
             "run_id": f"run_{today_str}_init",
-            "auc": 0.9882,
-            "eer": 0.0332,
-            "fpr": 0.0282,
+            "auc": float(overall_svp.get("roc_auc") or 0.9882),
+            "eer": round(float(overall_svp.get("eer_percent") or 3.32) / 100.0, 4),
+            "fpr": float(overall_svp.get("fpr") or 0.0282),
             "loss": 0.142,
             "corneal_asymmetry": 0.118,
             "lipsync_correlation": 0.945,
@@ -164,18 +219,29 @@ def orchestrator_status():
             "harvested_videos": 100,
             "harvested_audios": 50,
             "retrain_attempts": 0,
+            "video_calibration_params": active_params.get("video", {}),
+            "calibration_params": active_params.get("image", {}),
+            "short_video_pentest_summary": short_video_pentest,
+            "feedback_summary": feedback_summary,
             "timestamp": time.time()
         }]
-        
-    latest = history[-1] if history else {}
+
+    latest = dict(history[-1]) if history else {}
+    latest.setdefault("video_calibration_params", active_params.get("video", {}))
+    latest.setdefault("calibration_params", active_params.get("image", {}))
+
     return jsonify({
         "status": "online",
         "latest": latest,
-        "history": history
+        "history": history,
+        "active_parameters": active_params,
+        "short_video_pentest": short_video_pentest,
+        "feedback_summary": feedback_summary,
     })
 
 
 @app.route('/api/orchestrator/trigger', methods=['POST'])
+@app.route('/dfagent/api/orchestrator/trigger', methods=['POST'])
 def trigger_orchestrator():
     """Trigger the autonomous multi-agent pipeline on demand in background thread."""
     def run_job():
@@ -189,11 +255,59 @@ def trigger_orchestrator():
     thread.start()
     return jsonify({
         "success": True,
-        "message": "Chu kỳ Multi-Agent đã được kích hoạt ngầm thành công!"
+        "message": "Chu kỳ Multi-Agent (bao gồm thông số Video & Short-Video Pentest) đã được kích hoạt ngầm thành công!"
     })
 
 
+@app.route('/api/orchestrator/trigger_short_video_pentest', methods=['POST'])
+@app.route('/dfagent/api/orchestrator/trigger_short_video_pentest', methods=['POST'])
+def trigger_orchestrator_short_video_pentest():
+    """Run Multi-Platform Short-Video Benchmark & Pentest + Closed-Loop Auto-Feedback."""
+    try:
+        data = request.get_json(silent=True) or {}
+        from benchmark.short_video_pentest import run_short_video_pentest
+        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+        res = run_short_video_pentest(
+            platforms=data.get("platforms"),
+            attacks=data.get("attacks"),
+            download_urls=bool(data.get("download_urls", False)),
+            auto_feedback=bool(data.get("auto_feedback", True)),
+            trigger_lora=bool(data.get("trigger_lora", False)),
+            detector=active_detector,
+        )
+        return jsonify({
+            "success": True,
+            "run_id": res["run_id"],
+            "overall_metrics": res["overall_metrics"],
+            "by_platform": res["by_platform"],
+            "misclassified_count": res["misclassified_count"],
+            "report_md_path": res["report_md_path"],
+            "message": f"Đã hoàn tất Pentest Video Ngắn 4 nền tảng ({res['run_id']})!",
+        }), 200
+    except Exception as e:
+        logger.error(f"Orchestrator short-video pentest error: {e}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/orchestrator/trigger_lora_update', methods=['POST'])
+@app.route('/dfagent/api/orchestrator/trigger_lora_update', methods=['POST'])
+def trigger_orchestrator_lora_update():
+    """Trigger Slow-Loop LoRA continual ViT weight update from Zero-Day Feedback Vault."""
+    try:
+        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
+        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+        res = FeedbackWeightUpdater.run_slow_lora_weight_update(detector=active_detector)
+        return jsonify({
+            "success": res.get("status") == "updated",
+            **res,
+        }), 200
+    except Exception as e:
+        logger.error(f"Orchestrator LoRA update error: {e}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 @app.route('/api/orchestrator/download/<file_type>/<date_str>')
+@app.route('/dfagent/api/orchestrator/download/<file_type>/<date_str>')
 def download_orchestrator_report(file_type, date_str):
     """Download daily academic Word (.docx) or Markdown (.md) report."""
     report_dir = Path(project_root) / "report_colab" / "pentest"
@@ -201,9 +315,10 @@ def download_orchestrator_report(file_type, date_str):
         filename = f"Bao_cao_tien_do_ngay_{date_str}.docx"
     else:
         filename = f"daily_autonomous_report_{date_str}.md"
-        
+
     filepath = report_dir / filename
     if not filepath.exists():
+        active_params, short_video_pentest, feedback_summary = _collect_orchestrator_telemetry()
         if file_type == "docx":
             try:
                 from agents.report_generator import generate_academic_daily_docx
@@ -217,7 +332,11 @@ def download_orchestrator_report(file_type, date_str):
                     "train_loss": 0.142,
                     "corneal_asymmetry_avg": 0.118,
                     "lipsync_correlation_avg": 0.945,
-                    "retrain_attempts": 0
+                    "retrain_attempts": 0,
+                    "calibration_params": active_params.get("image", {}),
+                    "video_calibration_params": active_params.get("video", {}),
+                    "short_video_pentest_summary": short_video_pentest,
+                    "feedback_summary": feedback_summary,
                 }
                 generate_academic_daily_docx(dummy_state, str(filepath))
             except Exception as e:
@@ -1313,6 +1432,8 @@ def get_latest_benchmark_report():
 
 @app.route('/api/benchmark/aggregate_history', methods=['GET'])
 @app.route('/benchmark/api/benchmark/aggregate_history', methods=['GET'])
+@app.route('/dfagent/api/benchmark/aggregate_history', methods=['GET'])
+@app.route('/dfagent/benchmark/api/benchmark/aggregate_history', methods=['GET'])
 def get_benchmark_aggregate_history_api():
     """Returns aggregated benchmark KPIs and time series across Daily, Weekly, and Monthly periods."""
     try:
@@ -1600,6 +1721,8 @@ def get_ablation_audit_certificate():
 
 @app.route('/api/feedback', methods=['POST'])
 @app.route('/benchmark/api/feedback', methods=['POST'])
+@app.route('/dfagent/api/feedback', methods=['POST'])
+@app.route('/dfagent/benchmark/api/feedback', methods=['POST'])
 def api_submit_feedback():
     """
     Closed-loop user reflection endpoint:
@@ -1642,6 +1765,8 @@ def api_submit_feedback():
 
 @app.route('/api/feedback/history', methods=['GET'])
 @app.route('/benchmark/api/feedback/history', methods=['GET'])
+@app.route('/dfagent/api/feedback/history', methods=['GET'])
+@app.route('/dfagent/benchmark/api/feedback/history', methods=['GET'])
 def api_feedback_history():
     """Return recent user/pentest feedback reflections and calibration weight status."""
     try:
@@ -1659,6 +1784,8 @@ def api_feedback_history():
 
 @app.route('/api/pentest/short-video', methods=['GET', 'POST'])
 @app.route('/benchmark/api/pentest/short-video', methods=['GET', 'POST'])
+@app.route('/dfagent/api/pentest/short-video', methods=['GET', 'POST'])
+@app.route('/dfagent/benchmark/api/pentest/short-video', methods=['GET', 'POST'])
 def api_short_video_pentest():
     """GET latest 4-platform short-video pentest metrics or POST to run a new pentest."""
     try:

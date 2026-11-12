@@ -226,6 +226,32 @@ def generate_academic_daily_docx(state: Dict[str, Any], output_path: str) -> str
     r.bold = True
     bp3.add_run(f"{retrains} lần (Hệ thống tự động phát hiện và vá lỗ hổng nếu phát hiện đòn tấn công xuyên thủng).")
 
+    v_calib = state.get("video_calibration_params") or {}
+    c_calib = state.get("calibration_params") or {}
+    svp = state.get("short_video_pentest_summary") or {}
+    fb_stat = state.get("feedback_summary") or {}
+
+    bp4 = doc.add_paragraph(style='List Bullet')
+    r = bp4.add_run("Tham số hiệu chuẩn đang áp dụng (Image & Short-Video): ")
+    r.bold = True
+    bp4.add_run(
+        f"Image T*={c_calib.get('temperature_scaling_T', 1.6178)}, tau*={c_calib.get('optimal_threshold_tau', 0.8118)} | "
+        f"Video tau_video={v_calib.get('tau_video', 0.8118)}, SARAAB (w_peak={v_calib.get('w_peak', 0.50)}, "
+        f"w_avg={v_calib.get('w_avg', 0.35)}, w_jitter={v_calib.get('w_jitter', 0.15)}) | "
+        f"Feedback Vault: {fb_stat.get('total_events', 0)} phản ánh / {fb_stat.get('vault_pending', 0)} mẫu chờ."
+    )
+
+    svp_pf = svp.get("by_platform") or {}
+    if svp_pf:
+        bp5 = doc.add_paragraph(style='List Bullet')
+        r = bp5.add_run("Kết quả Pentest Video Ngắn 4 Nền tảng (Threads, IG Reels, YT Shorts, TikTok): ")
+        r.bold = True
+        summary_parts = [
+            f"{k}: Acc={float(m.get('accuracy', 0))*100:.1f}% (FPR={float(m.get('fpr', 0))*100:.1f}%)"
+            for k, m in svp_pf.items()
+        ]
+        bp5.add_run("; ".join(summary_parts))
+
     # 6. Section 3: Kế Hoạch Chu Kỳ Tiếp Theo
     h3 = doc.add_paragraph()
     h3.paragraph_format.space_before = Pt(14)

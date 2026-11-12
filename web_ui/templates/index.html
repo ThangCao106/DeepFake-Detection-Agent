@@ -32,6 +32,12 @@
             </div>
             
             <div class="nav-links">
+                <a href="orchestrator" id="navOrchestratorLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                    🎛️ <span>Orchestrator</span>
+                </a>
+                <a href="benchmark" id="navBenchmarkLink" class="btn-benchmark-nav" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                    📊 <span>Report &amp; Params</span>
+                </a>
                 {% if is_benchmark_mode %}
                 <button type="button" class="btn-benchmark-nav" id="benchmarkNavBtn" onclick="toggleBenchmarkCard()">
                     ⚡ <span data-i18n="bench_nav_btn">Benchmark Hub</span>
@@ -1031,6 +1037,41 @@
                                         <td style="padding: 8px 10px; text-align: center; color: #dc2626;">20.0%</td>
                                         <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #4338ca;">+79.5% 🔥</td>
                                         <td style="padding: 8px 10px; text-align: center;"><span style="background: #ecfdf5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 4px;">✅ Đã Tối Ưu</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Platform Short-Video Pentest & Active Video Calibration Parameters -->
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                            <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                🎬 Pentest Video Ngắn 4 Nền Tảng &amp; Trọng Số Phản Hồi (Threads, IG Reels, YT Shorts, TikTok)
+                            </h5>
+                            <span id="activeVideoParamsBadge" style="font-size: 0.74rem; background: #ecfdf5; color: #047857; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-family: monospace;">
+                                τ_video = 0.8118 | SARAAB = 0.50 / 0.35 / 0.15
+                            </span>
+                        </div>
+                        <div id="feedbackAuditSummary" style="font-size: 0.78rem; color: #475569; margin-bottom: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            ⏳ Đang đồng bộ thống kê Phản ánh FP/FN &amp; Zero-Day Vault...
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                                        <th style="padding: 8px 10px;">Nền Tảng Video Ngắn</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Số Mẫu</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Accuracy</th>
+                                        <th style="padding: 8px 10px; text-align: center;">TPR (Recall)</th>
+                                        <th style="padding: 8px 10px; text-align: center;">FPR</th>
+                                        <th style="padding: 8px 10px; text-align: center;">ROC-AUC</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Sai Số Thời Lượng</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shortVideoAuditTableBody">
+                                    <tr>
+                                        <td colspan="7" style="padding: 12px; text-align: center; color: #64748b;">Chưa có phiên Pentest Video Ngắn — bấm nút "Chạy Pentest Video Ngắn" bên dưới hoặc trong Orchestrator.</td>
                                     </tr>
                                 </tbody>
                             </table>

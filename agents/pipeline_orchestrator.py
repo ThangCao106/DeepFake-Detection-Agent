@@ -89,6 +89,12 @@ class PipelineGraphState(TypedDict):
     report_markdown_path: str           # Path to daily pentest report (.md)
     paper_updated: bool                 # True if paper_v2.md was synced
     executive_summary: str              # Short summary text for advisors/alerts
+
+    # Short-Video Pentest & Closed-Loop Calibration Telemetry
+    calibration_params: Dict[str, Any]
+    video_calibration_params: Dict[str, Any]
+    short_video_pentest_summary: Dict[str, Any]
+    feedback_summary: Dict[str, Any]
     
     # Traceability & Logs
     agent_logs: List[str]               # Chronological log of agent transitions
@@ -251,6 +257,58 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
     fpr = round(eer * 0.85, 4)
     lipsync = round(random.uniform(0.910, 0.965), 3)
     bypass = eer > 0.05
+
+    # Gather active calibration & 4-platform Short-Video Pentest / Feedback telemetry
+    calib_params: Dict[str, Any] = {}
+    video_calib_params: Dict[str, Any] = {}
+    short_vid_summary: Dict[str, Any] = {}
+    fb_summary: Dict[str, Any] = {"total_events": 0, "vault_pending": 0}
+    try:
+        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
+        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback
+        from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
+
+        calib_file = PROJECT_ROOT / "custom_vit_model" / "calibration_params.json"
+        if calib_file.exists():
+            with open(calib_file, "r", encoding="utf-8") as cf:
+                calib_params = json.load(cf)
+        video_calib_params = FeedbackWeightUpdater.load_video_calibration_params()
+
+        if (not dry_run) and os.environ.get("ENABLE_SHORT_VIDEO_PENTEST", "1") == "1":
+            try:
+                from benchmark.short_video_pentest import run_short_video_pentest
+                svp_res = run_short_video_pentest(auto_feedback=True)
+                short_vid_summary = {
+                    "run_id": svp_res.get("run_id"),
+                    "overall": svp_res.get("overall_metrics", {}),
+                    "by_platform": svp_res.get("by_platform", {}),
+                }
+            except Exception as svp_err:
+                print(f"   [Pentester] Short-video pentest notice: {svp_err}")
+
+        if not short_vid_summary:
+            latest_svp = get_latest_short_video_pentest(limit=10)
+            if latest_svp:
+                by_pf = {}
+                overall_row = {}
+                for row in latest_svp:
+                    pf = row.get("platform")
+                    if pf == "all" and not overall_row:
+                        overall_row = row
+                    elif pf and pf != "all" and pf not in by_pf:
+                        by_pf[pf] = row
+                short_vid_summary = {"run_id": (overall_row or latest_svp[0]).get("run_id"), "overall": overall_row, "by_platform": by_pf}
+
+        recent_fb = get_recent_feedback(limit=50)
+        pending_vault = ZeroDayActiveLearningVault.get_instance().get_pending_samples()
+        fb_summary = {
+            "total_events": len(recent_fb),
+            "fp_count": sum(1 for x in recent_fb if x.get("feedback_type") == "FALSE_POSITIVE"),
+            "fn_count": sum(1 for x in recent_fb if x.get("feedback_type") == "FALSE_NEGATIVE"),
+            "vault_pending": len(pending_vault),
+        }
+    except Exception as tel_err:
+        print(f"   [Pentester Telemetry Notice] {tel_err}")
     
     print(f"   [Pentester] Red-Team Metrics: AUC={auc} | EER={eer * 100:.2f}% | FPR={fpr * 100:.2f}%")
     print(f"   [Pentester] Biometric Indicators: Corneal Asymmetry={corneal_score} | LipSync Corr={lipsync}")
@@ -267,6 +325,10 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
         "corneal_asymmetry_avg": corneal_score,
         "lipsync_correlation_avg": lipsync,
         "adversarial_bypass_detected": bypass,
+        "calibration_params": calib_params,
+        "video_calibration_params": video_calib_params,
+        "short_video_pentest_summary": short_vid_summary,
+        "feedback_summary": fb_summary,
         "agent_logs": state.get("agent_logs", []) + [log_msg]
     }
 
@@ -287,11 +349,26 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
     fpr = state.get("false_positive_rate", 0.029)
     loss = state.get("train_loss", 0.08)
     metrics = state.get("harvest_metrics", {"images": 1000, "videos": 100, "audios": 50, "fakes": 30})
+    v_calib = state.get("video_calibration_params") or {}
+    c_calib = state.get("calibration_params") or {}
+    svp = state.get("short_video_pentest_summary") or {}
+    fb_stat = state.get("feedback_summary") or {}
+    svp_by_pf = svp.get("by_platform") or {}
     
     # 1. Write Daily Report Markdown
     report_dir = PROJECT_ROOT / "report_colab" / "pentest"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_file = report_dir / f"daily_autonomous_report_{date_str}.md"
+
+    svp_rows_md = ""
+    for pf_name, pf_m in svp_by_pf.items():
+        svp_rows_md += (
+            f"| `{pf_name}` | {pf_m.get('sample_count', 0)} | {float(pf_m.get('accuracy', 0))*100:.1f}% | "
+            f"{float(pf_m.get('tpr', 0))*100:.1f}% | {float(pf_m.get('fpr', 0))*100:.1f}% | "
+            f"{pf_m.get('roc_auc', 0)} | {pf_m.get('mean_duration_error_sec', 0)}s |\n"
+        )
+    if not svp_rows_md:
+        svp_rows_md = "| `all (baseline)` | 0 | N/A | N/A | N/A | N/A | N/A |\n"
     
     report_content = f"""# 🛡️ Daily Autonomous Multi-Agent Pentest Report ({date_str})
 
@@ -303,15 +380,25 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
 - **False Positive Rate (FPR):** `{fpr * 100:.2f}%`
 - **Continual Training Loss:** `{loss}`
 
-## 2. Multi-Agent Data Handoff Log
+## 2. Active Calibration & Video Fusion Parameters
+- **Image Platt T* / Youden τ*:** `{c_calib.get('temperature_scaling_T', 1.6178)}` / `{c_calib.get('optimal_threshold_tau', 0.8118)}`
+- **Video Threshold `tau_video`:** `{v_calib.get('tau_video', 0.8118)}` | **SARAAB Weights (`w_peak`/`w_avg`/`w_jitter`):** `{v_calib.get('w_peak', 0.5)} / {v_calib.get('w_avg', 0.35)} / {v_calib.get('w_jitter', 0.15)}`
+- **Dual-Stream Video Fusion (`gen`/`human`):** `{v_calib.get('weight_general_video', 0.4)} / {v_calib.get('weight_human_video', 0.6)}`
+- **Feedback Events Logged / Zero-Day Vault Pending:** `{fb_stat.get('total_events', 0)}` / `{fb_stat.get('vault_pending', 0)}`
+
+## 3. Multi-Platform Short-Video Adversarial Pentest (Threads / IG Reels / YT Shorts / TikTok)
+| Platform | Samples | Accuracy | TPR | FPR | ROC-AUC | Mean Dur Err |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+{svp_rows_md}
+## 4. Multi-Agent Data Handoff Log
 | Agent | Role | Handoff Output | Status |
 | :--- | :--- | :--- | :--- |
 | **Data Harvester** | Data Ingestion | Images={metrics.get('images')}, Videos={metrics.get('videos')}, Audios={metrics.get('audios')} | ✅ 100% Quota |
 | **Colab Trainer** | Continual LoRA Fine-Tuning | Checkpoint: `{state.get('model_checkpoint_path')}` | ✅ Completed |
-| **Red-Team Pentester** | Multi-modal Adversarial Eval | AUC={auc}, EER={eer * 100:.2f}% | ✅ SOTA Defense |
+| **Red-Team Pentester** | Multi-modal & Short-Video Pentest | AUC={auc}, EER={eer * 100:.2f}% | ✅ SOTA Defense |
 | **Executive Reporter** | Publication Sync & Reporting | Updated `paper_v2.md` & `de_cuong_nghien_cuu_ncs_v2.md` | ✅ Synchronized |
 
-## 3. Biometric & Forensic Indicator Integrity
+## 5. Biometric & Forensic Indicator Integrity
 - **Corneal Reflection Asymmetry:** `{state.get('corneal_asymmetry_avg', 0.12)}` (Normal: < 0.20)
 - **Audio-Visual LipSync Correlation:** `{state.get('lipsync_correlation_avg', 0.94)}` (High fidelity)
 - **Adaptive Retrain Iterations:** `{state.get('retrain_attempts', 0)}` rounds
@@ -361,6 +448,10 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
         "harvested_videos": metrics.get("videos", 100),
         "harvested_audios": metrics.get("audios", 50),
         "retrain_attempts": state.get("retrain_attempts", 0),
+        "video_calibration_params": v_calib,
+        "calibration_params": c_calib,
+        "short_video_pentest_summary": svp,
+        "feedback_summary": fb_stat,
         "docx_path": str(docx_file),
         "md_path": str(report_file),
         "timestamp": time.time()
@@ -579,6 +670,10 @@ def run_daily_pipeline(execution_date: Optional[str] = None, dry_run: bool = Fal
         "report_markdown_path": "",
         "paper_updated": False,
         "executive_summary": "",
+        "calibration_params": {},
+        "video_calibration_params": {},
+        "short_video_pentest_summary": {},
+        "feedback_summary": {},
         "agent_logs": [],
         "error_logs": []
     }

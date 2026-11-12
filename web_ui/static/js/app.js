@@ -1121,7 +1121,8 @@ async function submitForensicFeedback(certId, trueLabel, triggerLora = false) {
 
     const latest = window.latestDetectionResult || (typeof latestDetectionResult !== 'undefined' ? latestDetectionResult : {}) || {};
     try {
-        const res = await fetch('/api/feedback', {
+        const basePrefix = (typeof getAppBasePath === 'function') ? getAppBasePath() : '';
+        const res = await fetch(`${basePrefix}/api/feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1728,9 +1729,26 @@ function toggleBenchmarkCard() {
 // Benchmark Hub State Variables (Declared early to prevent ReferenceError / Hoisting issues)
 // (benchmarkPollingTimer & seenLogKeys declared at benchmark top)
 
-function getBenchmarkApiBase() {
-    return window.location.pathname.startsWith('/benchmark') ? '/benchmark' : '';
+function getAppBasePath() {
+    const p = window.location.pathname || '';
+    return p.startsWith('/dfagent') ? '/dfagent' : '';
 }
+
+function getBenchmarkApiBase() {
+    const p = window.location.pathname || '';
+    if (p.startsWith('/dfagent/benchmark')) return '/dfagent/benchmark';
+    if (p.startsWith('/dfagent')) return '/dfagent';
+    return p.startsWith('/benchmark') ? '/benchmark' : '';
+}
+
+// Keep header links subpath-compatible under both / and /dfagent/
+(function syncHeaderSubpathLinks() {
+    const base = getAppBasePath();
+    const orchLink = document.getElementById('navOrchestratorLink');
+    const benchLink = document.getElementById('navBenchmarkLink');
+    if (orchLink) orchLink.href = `${base}/orchestrator`;
+    if (benchLink) benchLink.href = `${base}/benchmark`;
+})();
 
 function fetchBenchmarkStatus() {
     fetch(`${getBenchmarkApiBase()}/api/benchmark/status`)
@@ -2508,6 +2526,46 @@ async function loadAuditReportData(period = 'daily', targetDate = '') {
         // Render Vietnamese Cohort Table
         if (data.vietnamese_cohort_breakdown && data.vietnamese_cohort_breakdown.length > 0) {
             renderVietnameseCohortTable(data.vietnamese_cohort_breakdown);
+        }
+
+        // Sync Active Image & Video Calibration Parameters + Short-Video 4-Platform Audit
+        const activeP = data.active_parameters || {};
+        const vidP = activeP.video || {};
+        const imgP = activeP.image || {};
+        const benchCalibEl = document.getElementById('benchCalibVal');
+        if (benchCalibEl && (imgP.optimal_threshold_tau !== undefined || vidP.tau_video !== undefined)) {
+            const tauImg = Number(imgP.optimal_threshold_tau ?? 0.8118).toFixed(4);
+            const tImg = Number(imgP.temperature_scaling_T ?? 1.6178).toFixed(4);
+            const tauVid = Number(vidP.tau_video ?? 0.8118).toFixed(4);
+            benchCalibEl.textContent = `τ*=${tauImg} | T*=${tImg} | τ_vid=${tauVid}`;
+        }
+
+        const vidBadge = document.getElementById('activeVideoParamsBadge');
+        if (vidBadge && Object.keys(vidP).length > 0) {
+            vidBadge.textContent = `τ_video=${Number(vidP.tau_video ?? 0.8118).toFixed(4)} | SARAAB=${Number(vidP.w_peak ?? 0.5).toFixed(2)}/${Number(vidP.w_avg ?? 0.35).toFixed(2)}/${Number(vidP.w_jitter ?? 0.15).toFixed(2)} | Gen/Hum=${Number(vidP.weight_general_video ?? 0.4).toFixed(2)}/${Number(vidP.weight_human_video ?? 0.6).toFixed(2)}`;
+        }
+
+        const fbSum = data.feedback_summary || {};
+        const fbSummaryEl = document.getElementById('feedbackAuditSummary');
+        if (fbSummaryEl) {
+            fbSummaryEl.innerHTML = `<strong>Vòng Phản Hồi Trọng Số (Closed-Loop):</strong> Tổng <strong>${fbSum.total_events || 0}</strong> phản ánh (FP: <strong>${fbSum.fp_count || 0}</strong>, FN: <strong>${fbSum.fn_count || 0}</strong>) | Zero-Day Vault chờ fine-tune: <strong>${fbSum.vault_pending_count || 0}</strong> mẫu | Số lần hiệu chuẩn video: <strong>${vidP.feedback_updates_count || 0}</strong>`;
+        }
+
+        const svpBody = document.getElementById('shortVideoAuditTableBody');
+        const svpByPf = (data.short_video_pentest && data.short_video_pentest.by_platform) || {};
+        const svpEntries = Object.entries(svpByPf);
+        if (svpBody && svpEntries.length > 0) {
+            svpBody.innerHTML = svpEntries.map(([pf, m], idx) => `
+                <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px 10px; font-weight: 700; color: #1e293b; font-family: monospace;">${pf}</td>
+                    <td style="padding: 8px 10px; text-align: center;">${m.sample_count || 0}</td>
+                    <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #16a34a;">${(Number(m.accuracy || 0) * 100).toFixed(1)}%</td>
+                    <td style="padding: 8px 10px; text-align: center;">${(Number(m.tpr || 0) * 100).toFixed(1)}%</td>
+                    <td style="padding: 8px 10px; text-align: center;">${(Number(m.fpr || 0) * 100).toFixed(1)}%</td>
+                    <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: #4338ca;">${Number(m.roc_auc || 0).toFixed(4)}</td>
+                    <td style="padding: 8px 10px; text-align: center; font-family: monospace;">${Number(m.mean_duration_error_sec || 0).toFixed(3)}s</td>
+                </tr>
+            `).join('');
         }
 
     } catch (err) {
@@ -3978,7 +4036,7 @@ function populateGenUiArtifacts(data) {
         const btnDocx = document.getElementById('btnDownloadAdvisorDocx');
         if (btnDocx) {
             const todayStr = new Date().toISOString().split('T')[0];
-            btnDocx.href = `/api/orchestrator/download/docx/${todayStr}`;
+            btnDocx.href = `${getAppBasePath()}/api/orchestrator/download/docx/${todayStr}`;
         }
     } catch (genUiErr) {
         console.error('populateGenUiArtifacts error caught safely:', genUiErr);

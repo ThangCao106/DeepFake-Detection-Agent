@@ -601,6 +601,45 @@ def aggregate_benchmark_history(
         {"cohort_id": "vn_mature_aging", "name": "Người Cao Tuổi & Nếp Nhăn Sinh Học", "samples": 6, "our_tpr": "66.7%", "commercial_tpr": "33.3%", "status": "STABLE"},
     ]
 
+    # Active Calibration Parameters (Image + Short-Video) & Multi-Platform Short-Video Telemetry
+    active_parameters: Dict[str, Any] = {"image": {}, "video": {}, "vn_demographic": {}}
+    short_video_summary: Dict[str, Any] = {"overall": {}, "by_platform": {}, "platforms": ["threads", "instagram_reels", "youtube_shorts", "tiktok"]}
+    feedback_audit: Dict[str, Any] = {"total_events": 0, "fp_count": 0, "fn_count": 0, "vault_pending_count": 0, "recent_events": []}
+    try:
+        custom_dir = PROJECT_ROOT / "custom_vit_model"
+        for key, fname in [
+            ("image", "calibration_params.json"),
+            ("video", "video_calibration_params.json"),
+            ("vn_demographic", "vietnamese_demographic_params.json"),
+        ]:
+            fp = custom_dir / fname
+            if fp.exists():
+                with open(fp, "r", encoding="utf-8") as cf:
+                    active_parameters[key] = json.load(cf)
+
+        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback
+        from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
+
+        svp_rows = get_latest_short_video_pentest(limit=15)
+        for row in svp_rows:
+            pf = row.get("platform")
+            if pf == "all" and not short_video_summary["overall"]:
+                short_video_summary["overall"] = row
+            elif pf and pf != "all" and pf not in short_video_summary["by_platform"]:
+                short_video_summary["by_platform"][pf] = row
+
+        fb_rows = get_recent_feedback(limit=25)
+        pending_vault = ZeroDayActiveLearningVault.get_instance().get_pending_samples()
+        feedback_audit = {
+            "total_events": len(fb_rows),
+            "fp_count": sum(1 for x in fb_rows if x.get("feedback_type") == "FALSE_POSITIVE"),
+            "fn_count": sum(1 for x in fb_rows if x.get("feedback_type") == "FALSE_NEGATIVE"),
+            "vault_pending_count": len(pending_vault),
+            "recent_events": fb_rows[:10],
+        }
+    except Exception:
+        pass
+
     return {
         "period": period,
         "selected_date": selected_date,
@@ -628,6 +667,9 @@ def aggregate_benchmark_history(
         "commercial_arena": online_tools_arena,
         "open_source_models": get_canonical_open_source_models(),
         "vietnamese_cohort_breakdown": cohort_breakdown,
+        "active_parameters": active_parameters,
+        "short_video_pentest": short_video_summary,
+        "feedback_summary": feedback_audit,
         "primary_run_metadata": {
             "date": primary_record.get("date"),
             "timestamp_utc": primary_record.get("timestamp_utc"),

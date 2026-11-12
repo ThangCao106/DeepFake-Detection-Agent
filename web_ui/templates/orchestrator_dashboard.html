@@ -446,9 +446,15 @@
                 <div class="status-dot"></div>
                 <span>Autonomous Online</span>
             </div>
-            <a href="/" class="btn btn-outline">
+            <a href="./" id="linkHomeNav" class="btn btn-outline">
                 <i class="fa-solid fa-house"></i> Trang Chủ
             </a>
+            <button id="btnTriggerShortVideo" class="btn btn-outline" onclick="triggerShortVideoPentest()">
+                <i class="fa-solid fa-video"></i> Pentest Video Ngắn (4 Nền Tảng)
+            </button>
+            <button id="btnTriggerLoRA" class="btn btn-outline" onclick="triggerLoRAFeedbackUpdate()">
+                <i class="fa-solid fa-sliders"></i> Cập Nhật LoRA Phản Ánh
+            </button>
             <button id="btnTrigger" class="btn btn-primary" onclick="triggerAutonomousPipeline()">
                 <i class="fa-solid fa-bolt"></i> Kích Hoạt Chu Kỳ Ngay
             </button>
@@ -548,6 +554,98 @@
                     <div class="step-desc">Tự động xuất file Word (.docx) chuẩn Viện/Trường, cập nhật paper_v2.md & GDrive.</div>
                 </div>
             </div>
+        </section>
+
+        <!-- Live Active Parameters (Image + Short-Video + Feedback Vault) -->
+        <section class="stepper-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-sliders" style="color: var(--accent-green);"></i>
+                    Thông Số Hiệu Chuẩn &amp; Trọng Số Đang Áp Dụng (Image + Short-Video Closed-Loop)
+                </div>
+                <span class="mono" style="font-size: 0.8rem; color: var(--accent-cyan);" id="valCalibStatus">CALIBRATION ACTIVE</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 12px;">
+                <div style="background: rgba(15,23,42,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Ngưỡng Image (τ* / Platt T*)</div>
+                    <div class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-cyan); margin-top: 4px;" id="valParamImgTauT">τ*=0.8118 | T*=1.6178</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Ngưỡng Video (τ_video)</div>
+                    <div class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-green); margin-top: 4px;" id="valParamVidTau">τ_video=0.8118</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Trọng Số SARAAB (Peak/Avg/Jitter)</div>
+                    <div class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-purple); margin-top: 4px;" id="valParamSaraab">0.50 / 0.35 / 0.15</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Dual-Stream Video (Gen / Human)</div>
+                    <div class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 4px;" id="valParamDualVid">0.40 / 0.60</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Phản Ánh Sai &amp; Zero-Day Vault</div>
+                    <div class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-amber); margin-top: 4px;" id="valParamVault">0 phản ánh | 0 mẫu chờ</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4-Platform Short-Video Benchmark & Adversarial Pentest Table -->
+        <section class="table-card" style="margin-bottom: 24px;">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-film" style="color: var(--accent-cyan);"></i>
+                    Pentest &amp; Benchmark Video Ngắn Đa Nền Tảng (Threads, IG Reels, YouTube Shorts, TikTok)
+                </div>
+                <span class="mono" style="font-size: 0.78rem; color: var(--text-secondary);" id="valShortVidRunId">Chưa có phiên pentest video ngắn</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nền Tảng</th>
+                        <th>Số Mẫu</th>
+                        <th>Accuracy</th>
+                        <th>TPR (Recall)</th>
+                        <th>FPR</th>
+                        <th>ROC-AUC</th>
+                        <th>EER (%)</th>
+                        <th>Sai Số Thời Lượng</th>
+                    </tr>
+                </thead>
+                <tbody id="shortVideoPentestTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">Đang tải kết quả Pentest Video Ngắn...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Closed-Loop Feedback Reflection Table -->
+        <section class="table-card" style="margin-bottom: 24px;">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-arrows-rotate" style="color: var(--accent-amber);"></i>
+                    Nhật Ký Phản Ánh Sai Lệch &amp; Cập Nhật Trọng Số (Closed-Loop Feedback)
+                </div>
+                <span class="mono" style="font-size: 0.78rem; color: var(--text-secondary);" id="valFeedbackStats">0 sự kiện</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mã Phản Ánh</th>
+                        <th>Nền Tảng</th>
+                        <th>Loại Sai Lệch</th>
+                        <th>Dự Đoán → Thực Tế</th>
+                        <th>Risk Score</th>
+                        <th>Hiệu Chuẩn</th>
+                        <th>LoRA ViT</th>
+                    </tr>
+                </thead>
+                <tbody id="feedbackEventsTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 18px;">Chưa có phản ánh sai lệch từ người dùng / pentest.</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
 
         <!-- Charts Grid -->
@@ -705,10 +803,14 @@
             });
         }
 
+        const BASE_PATH = window.location.pathname.startsWith('/dfagent') ? '/dfagent' : '';
+        const linkHomeNav = document.getElementById('linkHomeNav');
+        if (linkHomeNav) linkHomeNav.href = `${BASE_PATH}/`;
+
         // Fetch Dashboard Data from API
         async function loadDashboardData() {
             try {
-                const res = await fetch('/api/orchestrator/status');
+                const res = await fetch(`${BASE_PATH}/api/orchestrator/status`);
                 const data = await res.json();
                 
                 const history = data.history || [];
@@ -720,6 +822,63 @@
                     document.getElementById('valAUC').innerText = latest.auc || '0.9882';
                     document.getElementById('valEER').innerText = `${(latest.eer * 100).toFixed(2)}%`;
                     document.getElementById('valRunId').innerText = `Run ID: ${latest.run_id || 'active'}`;
+                }
+
+                // Sync Active Parameters (Image + Video + Vault)
+                const activeP = data.active_parameters || {};
+                const imgP = activeP.image || {};
+                const vidP = activeP.video || {};
+                const fbSum = data.feedback_summary || {};
+                document.getElementById('valParamImgTauT').innerText = `τ*=${Number(imgP.optimal_threshold_tau ?? 0.8118).toFixed(4)} | T*=${Number(imgP.temperature_scaling_T ?? 1.6178).toFixed(4)}`;
+                document.getElementById('valParamVidTau').innerText = `τ_video=${Number(vidP.tau_video ?? 0.8118).toFixed(4)} (T=${Number(vidP.temperature_T ?? 1.6178).toFixed(2)})`;
+                document.getElementById('valParamSaraab').innerText = `${Number(vidP.w_peak ?? 0.5).toFixed(2)} / ${Number(vidP.w_avg ?? 0.35).toFixed(2)} / ${Number(vidP.w_jitter ?? 0.15).toFixed(2)}`;
+                document.getElementById('valParamDualVid').innerText = `${Number(vidP.weight_general_video ?? 0.4).toFixed(2)} / ${Number(vidP.weight_human_video ?? 0.6).toFixed(2)}`;
+                document.getElementById('valParamVault').innerText = `${fbSum.total_events || 0} phản ánh | ${fbSum.vault_pending_count || 0} mẫu chờ`;
+                document.getElementById('valCalibStatus').innerText = vidP.calibration_status || 'ACTIVE';
+
+                // Render 4-Platform Short-Video Pentest Table
+                const svp = data.short_video_pentest || {};
+                const byPf = svp.by_platform || {};
+                const svpBody = document.getElementById('shortVideoPentestTableBody');
+                const pfEntries = Object.entries(byPf);
+                if (svp.overall && svp.overall.run_id) {
+                    document.getElementById('valShortVidRunId').innerText = `Latest Run: ${svp.overall.run_id}`;
+                }
+                if (pfEntries.length === 0) {
+                    svpBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">Chưa có dữ liệu Pentest Video Ngắn. Bấm "Pentest Video Ngắn (4 Nền Tảng)" để kiểm thử!</td></tr>';
+                } else {
+                    svpBody.innerHTML = pfEntries.map(([pf, m]) => `
+                        <tr>
+                            <td class="mono"><strong>${pf}</strong></td>
+                            <td>${m.sample_count || 0}</td>
+                            <td class="mono" style="color: var(--accent-green); font-weight: 700;">${(Number(m.accuracy || 0) * 100).toFixed(1)}%</td>
+                            <td class="mono">${(Number(m.tpr || 0) * 100).toFixed(1)}%</td>
+                            <td class="mono">${(Number(m.fpr || 0) * 100).toFixed(1)}%</td>
+                            <td class="mono" style="color: var(--accent-cyan); font-weight: 700;">${Number(m.roc_auc || 0).toFixed(4)}</td>
+                            <td class="mono">${Number(m.eer_percent || 0).toFixed(2)}%</td>
+                            <td class="mono">${Number(m.mean_duration_error_sec || 0).toFixed(3)}s</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render Closed-Loop Feedback Table
+                const fbEvents = fbSum.recent_events || [];
+                document.getElementById('valFeedbackStats').innerText = `${fbSum.total_events || 0} sự kiện (FP: ${fbSum.fp_count || 0} | FN: ${fbSum.fn_count || 0})`;
+                const fbBody = document.getElementById('feedbackEventsTableBody');
+                if (fbEvents.length === 0) {
+                    fbBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 18px;">Chưa có phản ánh sai lệch từ người dùng / pentest.</td></tr>';
+                } else {
+                    fbBody.innerHTML = fbEvents.map(ev => `
+                        <tr>
+                            <td class="mono">${ev.feedback_id}</td>
+                            <td class="mono">${ev.platform || 'unknown'}</td>
+                            <td style="font-weight: 700; color: ${ev.feedback_type === 'FALSE_POSITIVE' ? 'var(--accent-amber)' : 'var(--accent-rose)'};">${ev.feedback_type}</td>
+                            <td>${ev.predicted_label} → <strong>${ev.true_label}</strong></td>
+                            <td class="mono">${(Number(ev.composite_risk_score || 0) * 100).toFixed(1)}%</td>
+                            <td>${ev.calibration_applied ? '✅ Đã cập nhật' : '⏳ Chờ'}</td>
+                            <td>${ev.lora_trained ? '✅ Đã train' : '⏳ Chờ'}</td>
+                        </tr>
+                    `).join('');
                 }
 
                 // Render Table
@@ -736,12 +895,12 @@
                             <td class="mono">${item.corneal_asymmetry}</td>
                             <td class="mono">${item.lipsync_correlation}</td>
                             <td>
-                                <a href="/api/orchestrator/download/docx/${item.date}" class="action-link" style="color: var(--accent-blue);">
+                                <a href="${BASE_PATH}/api/orchestrator/download/docx/${item.date}" class="action-link" style="color: var(--accent-blue);">
                                     <i class="fa-solid fa-file-word"></i> Tải .DOCX
                                 </a>
                             </td>
                             <td>
-                                <a href="/api/orchestrator/download/md/${item.date}" class="action-link" style="color: var(--text-secondary);">
+                                <a href="${BASE_PATH}/api/orchestrator/download/md/${item.date}" class="action-link" style="color: var(--text-secondary);">
                                     <i class="fa-solid fa-file-lines"></i> Xem .MD
                                 </a>
                             </td>
@@ -762,7 +921,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Điều Phối Multi-Agent...';
 
             try {
-                const res = await fetch('/api/orchestrator/trigger', { method: 'POST' });
+                const res = await fetch(`${BASE_PATH}/api/orchestrator/trigger`, { method: 'POST' });
                 const result = await res.json();
                 
                 showToast(result.message || 'Chu kỳ Multi-Agent đã được kích hoạt thành công!');
@@ -775,6 +934,46 @@
                 showToast('Lỗi kích hoạt: ' + e);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Kích Hoạt Chu Kỳ Ngay';
+            }
+        }
+
+        async function triggerShortVideoPentest() {
+            const btn = document.getElementById('btnTriggerShortVideo');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Pentest 4 Nền Tảng...';
+            try {
+                const res = await fetch(`${BASE_PATH}/api/orchestrator/trigger_short_video_pentest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auto_feedback: true, trigger_lora: false })
+                });
+                const result = await res.json();
+                showToast(result.message || 'Đã hoàn tất Pentest Video Ngắn!');
+                loadDashboardData();
+            } catch (e) {
+                showToast('Lỗi Pentest Video Ngắn: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-video"></i> Pentest Video Ngắn (4 Nền Tảng)';
+            }
+        }
+
+        async function triggerLoRAFeedbackUpdate() {
+            const btn = document.getElementById('btnTriggerLoRA');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang Fine-Tune LoRA...';
+            try {
+                const res = await fetch(`${BASE_PATH}/api/orchestrator/trigger_lora_update`, { method: 'POST' });
+                const result = await res.json();
+                showToast(result.status === 'updated'
+                    ? `Đã cập nhật LoRA ViT (${result.feedback_frames_used} frames)!`
+                    : (result.message || 'Hoàn tất kiểm tra LoRA'));
+                loadDashboardData();
+            } catch (e) {
+                showToast('Lỗi cập nhật LoRA: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-sliders"></i> Cập Nhật LoRA Phản Ánh';
             }
         }
 
