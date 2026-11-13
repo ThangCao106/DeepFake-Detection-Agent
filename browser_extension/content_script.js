@@ -365,33 +365,86 @@
         }
     }
 
+    // Find largest visible media element currently inside the active viewport
+    function findBestVisibleMedia() {
+        if (hoveredMediaTarget && isElementInViewport(hoveredMediaTarget)) {
+            return hoveredMediaTarget;
+        }
+
+        const candidates = Array.from(document.querySelectorAll("video, img"));
+        let bestEl = null;
+        let maxArea = 0;
+
+        for (const el of candidates) {
+            const rect = el.getBoundingClientRect();
+            const w = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
+            const h = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+            const area = w * h;
+
+            if (w < 80 || h < 80) continue; // Skip tiny icons, logos, tracking pixels
+
+            const style = window.getComputedStyle(el);
+            if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) < 0.1) continue;
+
+            // Prioritize videos 2.5x over static images
+            const score = (el.tagName.toLowerCase() === "video" ? 2.5 : 1.0) * area;
+            if (score > maxArea) {
+                maxArea = score;
+                bestEl = el;
+            }
+        }
+        return bestEl;
+    }
+
+    function isElementInViewport(el) {
+        if (!el || !el.getBoundingClientRect) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+    }
+
     // Context menu & popup trigger listeners
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "TRIGGER_CONTEXT_SCAN") {
-            const media = hoveredMediaTarget || document.querySelector("video, img");
+            const media = findBestVisibleMedia();
             if (media) {
+                // Visual feedback: outline element briefly
+                try {
+                    const origOutline = media.style.outline;
+                    media.style.outline = "3px solid #00F0FF";
+                    setTimeout(() => { media.style.outline = origOutline; }, 2000);
+                } catch (e) {}
                 initiateMediaAudit(media);
             } else {
-                showToast("Vui lòng chạm hoặc di chuột vào video/ảnh để quét.", "error");
+                // Fallback: Capture active viewport directly
+                chrome.runtime.sendMessage({ action: "CAPTURE_ACTIVE_TAB" }, async (capRes) => {
+                    if (capRes && capRes.success && capRes.dataUrl) {
+                        showToast("Đang giám định toàn cảnh màn hình hiển thị...", "loading", true);
+                        sendAuditMessage({
+                            type: "base64",
+                            imageBase64: capRes.dataUrl,
+                            sourceUrl: window.location.href,
+                            routing_mode: "auto"
+                        });
+                    } else {
+                        showToast("Không tìm thấy phương tiện hợp lệ trên màn hình.", "error");
+                    }
+                });
             }
         } else if (request.action === "TRIGGER_LIVE_CALL_SCAN") {
-            showToast("Đang kích hoạt chế độ Giám định Cuộc gọi / Live Stream...", "info");
-            const liveMedia = document.querySelector("video") || hoveredMediaTarget || document.querySelector("img");
+            showToast("Đang kích hoạt chế độ Giám định Cuộc gọi / Live Stream...", "loading", true);
+            const liveMedia = document.querySelector("video") || findBestVisibleMedia();
             if (liveMedia) {
                 initiateMediaAudit(liveMedia);
             } else {
                 // If no direct video element found on DOM, capture active viewport
                 chrome.runtime.sendMessage({ action: "CAPTURE_ACTIVE_TAB" }, async (capRes) => {
                     if (capRes && capRes.success && capRes.dataUrl) {
-                        chrome.runtime.sendMessage({
-                            action: "EXECUTE_HYBRID_AUDIT",
-                            payload: {
-                                type: "base64",
-                                imageBase64: capRes.dataUrl,
-                                sourceUrl: window.location.href,
-                                routing_mode: "call"
-                            }
-                        }, handleAuditResponse);
+                        sendAuditMessage({
+                            type: "base64",
+                            imageBase64: capRes.dataUrl,
+                            sourceUrl: window.location.href,
+                            routing_mode: "call"
+                        });
                     } else {
                         showToast("Không tìm thấy luồng video cuộc gọi để giám định.", "error");
                     }
