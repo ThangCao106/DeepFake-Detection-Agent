@@ -35,10 +35,22 @@ document.addEventListener("DOMContentLoaded", () => {
     scanBtn.addEventListener("click", async () => {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab?.id) {
-            chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_CONTEXT_SCAN" });
+            chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_CONTEXT_SCAN", mode: "standard" });
             window.close(); // Close popup so user sees in-page scan banner
         }
     });
+
+    // Trigger Live Stream / Real-time Video Call Guardian
+    const scanLiveCallBtn = document.getElementById("scanLiveCallBtn");
+    if (scanLiveCallBtn) {
+        scanLiveCallBtn.addEventListener("click", async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab?.id) {
+                chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_LIVE_CALL_SCAN", mode: "live_call" });
+                window.close();
+            }
+        });
+    }
 
     // Open Full Cockpit Web App
     openCockpitBtn.addEventListener("click", () => {
@@ -46,3 +58,4 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.tabs.create({ url: targetUrl });
     });
 });
+

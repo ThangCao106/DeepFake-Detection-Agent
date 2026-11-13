@@ -2785,7 +2785,16 @@ class DeepfakeDetector:
                 "sampled_frames": len(frame_results),
             }
 
-            cert_id = f"CERT-DT-VID-{uuid.uuid4().hex[:8].upper()}"
+            # Check if this analysis is a live stream or real-time call
+            is_live_call = bool(
+                "live" in str(video_path).lower()
+                or "call" in str(video_path).lower()
+                or "zalo" in str(video_path).lower()
+                or "stream" in str(video_path).lower()
+                or routing_mode in ("call", "livestream", "live_call")
+            )
+            cert_prefix = "CERT-DT-CALL-" if ("call" in str(video_path).lower() or routing_mode == "call") else ("CERT-DT-LIVE-" if is_live_call else "CERT-DT-VID-")
+            cert_id = f"{cert_prefix}{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
             # Construct Video Scene Context (prevents NameError and preserves context for Triad Council)

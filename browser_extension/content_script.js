@@ -254,14 +254,37 @@
         }
     }
 
-    // Context menu trigger listener
+    // Context menu & popup trigger listeners
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "TRIGGER_CONTEXT_SCAN") {
             const media = hoveredMediaTarget || document.querySelector("video, img");
             if (media) {
                 initiateMediaAudit(media);
             } else {
-                showToast("Vui lòng di chuột vào video hoặc ảnh để quét.", "error");
+                showToast("Vui lòng chạm hoặc di chuột vào video/ảnh để quét.", "error");
+            }
+        } else if (request.action === "TRIGGER_LIVE_CALL_SCAN") {
+            showToast("Đang kích hoạt chế độ Giám định Cuộc gọi / Live Stream...", "info");
+            const liveMedia = document.querySelector("video") || hoveredMediaTarget || document.querySelector("img");
+            if (liveMedia) {
+                initiateMediaAudit(liveMedia);
+            } else {
+                // If no direct video element found on DOM, capture active viewport
+                chrome.runtime.sendMessage({ action: "CAPTURE_ACTIVE_TAB" }, async (capRes) => {
+                    if (capRes && capRes.success && capRes.dataUrl) {
+                        chrome.runtime.sendMessage({
+                            action: "EXECUTE_HYBRID_AUDIT",
+                            payload: {
+                                type: "base64",
+                                imageBase64: capRes.dataUrl,
+                                sourceUrl: window.location.href,
+                                routing_mode: "call"
+                            }
+                        }, handleAuditResponse);
+                    } else {
+                        showToast("Không tìm thấy luồng video cuộc gọi để giám định.", "error");
+                    }
+                });
             }
         }
     });

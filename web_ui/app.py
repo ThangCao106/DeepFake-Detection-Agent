@@ -1021,12 +1021,14 @@ def view_certificate_page(cert_id):
         html_content = html_content.replace("{{SHA256_HASH}}", _html.escape(str(sha256_hash)))
         html_content = html_content.replace("{{RATING_VALUE}}", rating_val)
 
-        # Modality-aware evidence mapping (Image 4D vs Video 6D/SARAAB vs Audio Acoustic)
+        # Modality-aware evidence mapping (Image 4D vs Video 6D/SARAAB vs Audio Acoustic vs Live/Call)
         cid_upper = str(cert.get("certificate_id", cert_id)).upper()
         media_type = str(cert.get("media_type") or (
-            "video" if ("-VID-" in cid_upper or cid_upper.startswith("CERT-VID-"))
+            "video" if ("-VID-" in cid_upper or "-CALL-" in cid_upper or "-LIVE-" in cid_upper or cid_upper.startswith("CERT-VID-") or cid_upper.startswith("CERT-DT-CALL-") or cid_upper.startswith("CERT-DT-LIVE-"))
             else ("audio" if ("-AUD-" in cid_upper or cid_upper.startswith("CERT-AUD-")) else "image")
         )).lower()
+
+        is_call_or_live = "-CALL-" in cid_upper or "-LIVE-" in cid_upper
 
         if media_type == "video":
             saraab = ev.get("saraab_phase1_video_audit") or {}
@@ -1043,13 +1045,30 @@ def view_certificate_page(cert_id):
             n_frames = vid_meta.get("analyzed_frames_count", len(ev.get("frame_by_frame_analysis") or []))
             fps_val = vid_meta.get("fps", "N/A")
 
-            ev_title = "📊 Bằng chứng Giám định Video 6D & SARAAB (Multi-Dimensional Video Audit)"
-            ev_rows = [
-                ("1. Rủi ro Đỉnh / Trung bình Khung hình:", f"Peak: {peak_p*100:.1f}% | Mean: {avg_p*100:.1f}% ({n_frames} frames @ {fps_val} fps)"),
-                ("2. Độ Giật Thời Gian (Motion Jitter):", f"{jitter*100:.1f}%"),
-                ("3. Rủi Ro Cửa Sổ 7s (SARAAB Window):", f"{saraab_risk*100:.1f}% (Flagged: {flagged_cnt} đoạn)"),
-                ("4. Lip-Sync, PRNU & Ngưỡng Video (τ*):", f"{lip_info} | PRNU: {prnu_info} | τ* = {tau_val:.4f}"),
-            ]
+            if "-CALL-" in cid_upper:
+                ev_title = "📞 Bằng chứng Giám định Cuộc gọi Video Thời gian thực (Real-time Call Guard)"
+                ev_rows = [
+                    ("1. Rủi ro Đỉnh Mép Mặt / Vật cản (Occlusion Peak):", f"Peak: {peak_p*100:.1f}% | Mean: {avg_p*100:.1f}% ({n_frames} frames @ {fps_val} fps)"),
+                    ("2. Độ Giật Mép Khuôn Mặt Thời Gian (Motion Jitter):", f"{jitter*100:.1f}%"),
+                    ("3. Cửa Sổ Phản Ứng Nhanh (Call Temporal Window):", f"{saraab_risk*100:.1f}% (Flagged: {flagged_cnt} đoạn nghi vấn)"),
+                    ("4. Đồng Bộ Khẩu Hình - Tiếng Nói & Ngưỡng (τ*):", f"{lip_info} | PRNU: {prnu_info} | τ* = {tau_val:.4f}"),
+                ]
+            elif "-LIVE-" in cid_upper:
+                ev_title = "📡 Bằng chứng Giám định Luồng Trực tiếp (Live Stream Forensic Audit)"
+                ev_rows = [
+                    ("1. Rủi ro Cửa Sổ Trực Tiếp (Live Window Peak):", f"Peak: {peak_p*100:.1f}% | Mean: {avg_p*100:.1f}% ({n_frames} frames @ {fps_val} fps)"),
+                    ("2. Dao Động Méo Viền Thời Gian Thực (Stream Jitter):", f"{jitter*100:.1f}%"),
+                    ("3. Độ Nhất Quán Nền Phòng vs Chủ Thể Live:", f"{saraab_risk*100:.1f}% (Flagged: {flagged_cnt} đoạn)"),
+                    ("4. Lip-Sync & Ngưỡng Giám Sát Trực Tiếp (τ*):", f"{lip_info} | PRNU: {prnu_info} | τ* = {tau_val:.4f}"),
+                ]
+            else:
+                ev_title = "📊 Bằng chứng Giám định Video 6D & SARAAB (Multi-Dimensional Video Audit)"
+                ev_rows = [
+                    ("1. Rủi ro Đỉnh / Trung bình Khung hình:", f"Peak: {peak_p*100:.1f}% | Mean: {avg_p*100:.1f}% ({n_frames} frames @ {fps_val} fps)"),
+                    ("2. Độ Giật Thời Gian (Motion Jitter):", f"{jitter*100:.1f}%"),
+                    ("3. Rủi Ro Cửa Sổ 7s (SARAAB Window):", f"{saraab_risk*100:.1f}% (Flagged: {flagged_cnt} đoạn)"),
+                    ("4. Lip-Sync, PRNU & Ngưỡng Video (τ*):", f"{lip_info} | PRNU: {prnu_info} | τ* = {tau_val:.4f}"),
+                ]
         elif media_type == "audio":
             voc = ev.get("vocoder_spectral_analysis") or {}
             pit = ev.get("pitch_vocal_dynamics") or {}

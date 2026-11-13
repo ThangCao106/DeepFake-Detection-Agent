@@ -229,9 +229,11 @@ def download_with_ytdlp(url: str, dest_dir: str) -> Dict[str, Any]:
         "no_warnings": True,
         "extract_flat": False,
         "user_agent": USER_AGENT_DESKTOP,
+        "live_from_start": False,  # If stream is live, capture current window immediately
     }
     if has_ffmpeg:
         ydl_opts["merge_output_format"] = "mp4"
+        ydl_opts["postprocessor_args"] = ["-t", "10"]  # Cap live stream slice to 10 seconds
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
