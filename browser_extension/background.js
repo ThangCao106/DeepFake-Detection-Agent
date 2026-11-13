@@ -79,11 +79,21 @@ async function executeForensicPipeline(payload) {
         throw new Error("Không có dữ liệu media hoặc URL hợp lệ.");
     }
 
-    const uploadRes = await fetch(uploadEndpoint, {
+    let uploadRes = await fetch(uploadEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(uploadBody)
     });
+
+    // Fallback: If Gateway returned 413 (Payload Too Large from reverse proxy), fallback to sending direct media URL if available
+    if (uploadRes.status === 413 && payload.sourceUrl && payload.sourceUrl.startsWith("http")) {
+        console.warn("[DF-Shield] Received 413 on base64, falling back to direct URL ingestion:", payload.sourceUrl);
+        uploadRes = await fetch(uploadEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: payload.sourceUrl })
+        });
+    }
 
     if (!uploadRes.ok) {
         const errText = await uploadRes.text();
@@ -127,3 +137,4 @@ async function executeForensicPipeline(payload) {
         api_base: apiBase
     };
 }
+

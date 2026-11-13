@@ -162,17 +162,29 @@
         });
     }
 
-    // Helper: Crop Image Data URL to Bounding Rect
+    // Helper: Crop Image Data URL to Bounding Rect and compress to JPEG under 1MB to avoid 413 Payload Too Large
     function cropImageDataUrl(dataUrl, area) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement("canvas");
-                canvas.width = Math.max(1, area.width);
-                canvas.height = Math.max(1, area.height);
+                let w = Math.max(1, area.width);
+                let h = Math.max(1, area.height);
+
+                // Downscale if area exceeds 1080p to keep payload small and fast for forensic ViT
+                const maxDim = 1080;
+                if (w > maxDim || h > maxDim) {
+                    const ratio = Math.min(maxDim / w, maxDim / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+
+                canvas.width = w;
+                canvas.height = h;
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height);
-                resolve(canvas.toDataURL("image/png"));
+                ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, w, h);
+                // Export as JPEG with 0.85 quality (~200KB - 400KB), avoiding multi-megabyte PNG base64 strings
+                resolve(canvas.toDataURL("image/jpeg", 0.85));
             };
             img.onerror = reject;
             img.src = dataUrl;
