@@ -1004,7 +1004,14 @@ def view_certificate_page(cert_id):
             or "N/A (Legacy Stream)"
         )
 
+        # Determine dynamic base origin (DeepTrace vs Custom Host)
+        host_header = request.headers.get("Host", "deeptrace.io.vn").lower()
+        base_origin = f"https://{host_header}" if not host_header.startswith("localhost") and not host_header.startswith("127.0.0.1") else f"http://{host_header}"
+        canonical_url = f"{base_origin}/certificate/{cert_id}"
+
         html_content = html_content.replace("{{CERTIFICATE_ID}}", str(cert.get("certificate_id", cert_id)))
+        html_content = html_content.replace("{{BASE_ORIGIN}}", base_origin)
+        html_content = html_content.replace("{{CANONICAL_URL}}", canonical_url)
         html_content = html_content.replace("{{VERDICT}}", verdict)
         html_content = html_content.replace("{{BADGE_CLASS}}", badge_class)
         html_content = html_content.replace("{{COMPOSITE_RISK_PERCENT}}", risk_percent)
@@ -1123,12 +1130,14 @@ def serve_service_worker():
 @app.route('/robots.txt', methods=['GET'])
 def get_robots_txt():
     """Serve robots.txt allowing Googlebot to crawl and index certificate verification pages."""
-    content = """User-agent: *
+    host_header = request.headers.get("Host", "deeptrace.io.vn").lower()
+    base_origin = f"https://{host_header}" if not host_header.startswith("localhost") and not host_header.startswith("127.0.0.1") else f"http://{host_header}"
+    content = f"""User-agent: *
 Allow: /
 Allow: /certificate/
 Allow: /verify/
 Allow: /api/verify/
-Sitemap: https://detection.dtpsoft.vn/sitemap.xml
+Sitemap: {base_origin}/sitemap.xml
 """
     return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
@@ -1141,6 +1150,9 @@ def get_sitemap_xml():
         sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
         from benchmark.deepfake_memory import get_all_certificates
 
+        host_header = request.headers.get("Host", "deeptrace.io.vn").lower()
+        base_origin = f"https://{host_header}" if not host_header.startswith("localhost") and not host_header.startswith("127.0.0.1") else f"http://{host_header}"
+
         certs = get_all_certificates(limit=1000)
         xml_lines = [
             '<?xml version="1.0" encoding="UTF-8"?>',
@@ -1148,15 +1160,14 @@ def get_sitemap_xml():
         ]
 
         today_iso = datetime.now().strftime("%Y-%m-%d")
-        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
-        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/obsagent/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
+        xml_lines.append(f"  <url><loc>{base_origin}/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
 
         for c in certs:
             cid = c.get("certificate_id")
             created_at = (c.get("created_at") or today_iso)[:10]
             if cid:
-                loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
-                verify_url = f"https://detection.dtpsoft.vn/verify/{cid}"
+                loc_url = f"{base_origin}/certificate/{cid}"
+                verify_url = f"{base_origin}/verify/{cid}"
                 xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
                 xml_lines.append(f"  <url><loc>{verify_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
 

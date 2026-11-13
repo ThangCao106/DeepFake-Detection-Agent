@@ -7,14 +7,14 @@
 
   <!-- OpenGraph Metadata for Social & Search Indexing -->
   <meta property="og:title" content="📜 Chứng thư Giám định Kỹ thuật số {{CERTIFICATE_ID}} - {{VERDICT}}">
-  <meta property="og:description" content="Kết quả giám định pháp y kỹ thuật số đa chiều 4D đối với tệp media mang mã {{CERTIFICATE_ID}}. Kết luận: {{VERDICT}} (Điểm rủi ro: {{COMPOSITE_RISK_PERCENT}}%).">
+  <meta property="og:description" content="Kết quả giám định pháp y kỹ thuật số đa chiều đối với tệp media mang mã {{CERTIFICATE_ID}}. Kết luận: {{VERDICT}} (Điểm rủi ro: {{COMPOSITE_RISK_PERCENT}}%).">
   <meta property="og:type" content="article">
-  <meta property="og:url" content="https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}">
-  <meta name="description" content="Chứng thư giám định số {{CERTIFICATE_ID}}: Phán quyết {{VERDICT}} (Rủi ro tổng hợp: {{COMPOSITE_RISK_PERCENT}}%, Độ tin cậy: {{PASSIVE_CONF}}). Tuân thủ chuẩn mực EU AI Act Article 50 & DSA Auditable Media.">
-  <meta name="keywords" content="{{CERTIFICATE_ID}}, chứng thư giám định, deepfake detection, tra cứu chứng thư {{CERTIFICATE_ID}}, EU AI Act Article 50, xác thực ảnh số">
+  <meta property="og:url" content="{{CANONICAL_URL}}">
+  <meta name="description" content="Chứng thư giám định số {{CERTIFICATE_ID}}: Phán quyết {{VERDICT}} (Rủi ro tổng hợp: {{COMPOSITE_RISK_PERCENT}}%). Tuân thủ chuẩn mực EU AI Act Article 50 & DSA Auditable Media.">
+  <meta name="keywords" content="{{CERTIFICATE_ID}}, DeepTrace, chứng thư giám định, deepfake detection, tra cứu chứng thư {{CERTIFICATE_ID}}, EU AI Act Article 50, xác thực ảnh số">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="googlebot" content="index, follow">
-  <link rel="canonical" href="https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}">
+  <link rel="canonical" href="{{CANONICAL_URL}}">
 
   <!-- Schema.org Multi-Type Structured Data for Google Rich Results Test -->
   <script type="application/ld+json">
@@ -23,51 +23,51 @@
     "@graph": [
       {
         "@type": "TechArticle",
-        "@id": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}#article",
+        "@id": "{{CANONICAL_URL}}#article",
         "headline": "Chứng thư Giám định Kỹ thuật số {{CERTIFICATE_ID}}",
         "description": "Hồ sơ bằng chứng giám định Deepfake/Authentic Media mã {{CERTIFICATE_ID}} tuân thủ EU AI Act Article 50 & DSA Auditable Media. Kết luận: {{VERDICT}}.",
-        "url": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}",
+        "url": "{{CANONICAL_URL}}",
         "datePublished": "{{TIMESTAMP_ISO}}",
         "dateModified": "{{TIMESTAMP_ISO}}",
-        "mainEntityOfPage": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}",
+        "mainEntityOfPage": "{{CANONICAL_URL}}",
         "author": {
           "@type": "Organization",
-          "name": "DTP Digital Forensic AI System",
-          "url": "https://detection.dtpsoft.vn"
+          "name": "DeepTrace AI Forensic System",
+          "url": "{{BASE_ORIGIN}}"
         },
         "publisher": {
           "@type": "Organization",
-          "name": "DTP Software Forensic AI",
-          "url": "https://detection.dtpsoft.vn",
+          "name": "DeepTrace.io.vn AI Forensic",
+          "url": "{{BASE_ORIGIN}}",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://detection.dtpsoft.vn/static/favicon.ico"
+            "url": "{{BASE_ORIGIN}}/static/images/favicon.png"
           }
         },
-        "image": "https://detection.dtpsoft.vn/static/favicon.ico"
+        "image": "{{BASE_ORIGIN}}/static/images/deeptrace-logo.jpg"
       },
       {
         "@type": "BreadcrumbList",
-        "@id": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}#breadcrumb",
+        "@id": "{{CANONICAL_URL}}#breadcrumb",
         "itemListElement": [
           {
             "@type": "ListItem",
             "position": 1,
             "name": "Trang chủ",
-            "item": "https://detection.dtpsoft.vn/"
+            "item": "{{BASE_ORIGIN}}/"
           },
           {
             "@type": "ListItem",
             "position": 2,
             "name": "Chứng thư {{CERTIFICATE_ID}}",
-            "item": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}"
+            "item": "{{CANONICAL_URL}}"
           }
         ]
       },
       {
         "@type": "ClaimReview",
-        "@id": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}#claimreview",
-        "url": "https://detection.dtpsoft.vn/certificate/{{CERTIFICATE_ID}}",
+        "@id": "{{CANONICAL_URL}}#claimreview",
+        "url": "{{CANONICAL_URL}}",
         "claimReviewed": "Xác thực tính nguyên bản phương tiện truyền thông mã {{CERTIFICATE_ID}}",
         "datePublished": "{{TIMESTAMP_ISO}}",
         "reviewRating": {
@@ -80,13 +80,13 @@
         "itemReviewed": {
           "@type": "MediaObject",
           "name": "Media Asset {{CERTIFICATE_ID}}",
-          "contentUrl": "https://detection.dtpsoft.vn/api/verify/{{CERTIFICATE_ID}}",
+          "contentUrl": "{{BASE_ORIGIN}}/api/verify/{{CERTIFICATE_ID}}",
           "sha256": "{{SHA256_HASH}}"
         },
         "author": {
           "@type": "Organization",
-          "name": "DTP Digital Forensic AI System",
-          "url": "https://detection.dtpsoft.vn"
+          "name": "DeepTrace AI Forensic System",
+          "url": "{{BASE_ORIGIN}}"
         }
       }
     ]
@@ -310,7 +310,7 @@
 
     <div class="cert-footer">
       <span style="font-size: 0.8rem; color: var(--text-muted);">Tiêu chuẩn: {{COMPLIANCE_STANDARD}}</span>
-      <a href="https://detection.dtpsoft.vn/api/verify/{{CERTIFICATE_ID}}" target="_blank" class="btn-download">
+      <a href="{{BASE_ORIGIN}}/api/verify/{{CERTIFICATE_ID}}" target="_blank" class="btn-download">
         📥 Tải File JSON Chứng thư
       </a>
     </div>
