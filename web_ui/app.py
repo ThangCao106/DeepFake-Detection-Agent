@@ -1127,6 +1127,12 @@ def serve_service_worker():
         return f.read(), 200, {'Content-Type': 'application/javascript; charset=utf-8', 'Service-Worker-Allowed': '/'}
 
 
+@app.route('/googled51260c813ad2ea8.html', methods=['GET'])
+def serve_google_verification():
+    """Serve Google Search Console HTML verification file."""
+    return "google-site-verification: googled51260c813ad2ea8.html", 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
 @app.route('/robots.txt', methods=['GET'])
 def get_robots_txt():
     """Serve robots.txt allowing Googlebot to crawl and index certificate verification pages."""
