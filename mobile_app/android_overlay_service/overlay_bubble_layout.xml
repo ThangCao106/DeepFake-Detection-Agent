@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="6dp">
+
+    <!-- Floating Bubble Circle Icon -->
+    <ImageView
+        android:id="@+id/bubble_icon"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:background="@android:drawable/btn_default"
+        android:src="@android:drawable/ic_menu_camera"
+        android:contentDescription="DeepTrace Call Guardian"
+        android:elevation="10dp" />
+
+    <!-- Verdict Banner appearing during call inspection -->
+    <TextView
+        android:id="@+id/verdict_badge"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:background="#0A84FF"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:elevation="12dp" />
+
+</LinearLayout>
