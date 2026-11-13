@@ -2315,8 +2315,8 @@ class DeepfakeDetector:
             else:
                 auditable_verdict = "AUTHENTIC_MEDIA_VERIFIED" if composite_risk <= 0.35 else "AUTHENTIC_MEDIA_LIKELY"
 
-            # Construct Auditable Forensic Decision Record (Digital Forensic Certificate)
-            cert_id = f"CERT-DF-{uuid.uuid4().hex[:8].upper()}"
+            # Construct Auditable Forensic Decision Record (Digital Forensic Certificate - DeepTrace format)
+            cert_id = f"CERT-DT-IMG-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
             # Canonical Certificate Signature Proof
@@ -2785,7 +2785,7 @@ class DeepfakeDetector:
                 "sampled_frames": len(frame_results),
             }
 
-            cert_id = f"CERT-VID-{uuid.uuid4().hex[:8].upper()}"
+            cert_id = f"CERT-DT-VID-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
             # Construct Video Scene Context (prevents NameError and preserves context for Triad Council)
@@ -3057,7 +3057,7 @@ class DeepfakeDetector:
                 tau_star=tau_star
             )
 
-            cert_id = f"CERT-AUD-{uuid.uuid4().hex[:8].upper()}"
+            cert_id = f"CERT-DT-AUD-{uuid.uuid4().hex[:8].upper()}"
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
             # Canonical Certificate Signature Proof

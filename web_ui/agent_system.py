@@ -270,7 +270,7 @@ def generate_forensic_answer(question: str, detection_result: dict = None, langu
     conf = float(det.get('confidence') or cert.get('calibrated_confidence') or 0.85)
     risk = float(cert.get('composite_risk_score') or (conf if is_fake else (1.0 - conf)))
     tau = float(cert.get('decision_threshold') or 0.8118)
-    cert_id = cert.get('certificate_id') or det.get('certificate_id') or 'CERT-DF-AUDITABLE'
+    cert_id = cert.get('certificate_id') or det.get('certificate_id') or 'CERT-DT-AUDITABLE'
     media_type = str(det.get('media_type') or cert.get('media_type') or 'image').lower()
     
     # 6D Evidence Metrics

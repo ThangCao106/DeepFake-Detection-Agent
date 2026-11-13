@@ -1,4 +1,4 @@
-"""
+﻿"""
 Deepfake Agent Memory Database & Report Sync Engine.
 Stores benchmark runs, Colab training reports, and model weight updates
 into persistent SQLite database `deepfake_agent_memory.db` for AI Agent querying.
@@ -290,7 +290,7 @@ def save_forensic_certificate(cert_data: dict, db_path=None) -> str:
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
 
-    cert_id = cert_data.get("certificate_id", f"CERT-DF-{datetime.now().strftime('%Y%m%d%H%M%S')}")
+    cert_id = cert_data.get("certificate_id", f"CERT-DT-{datetime.now().strftime('%Y%m%d%H%M%S')}")
     verdict = cert_data.get("auditable_verdict", "UNKNOWN")
     risk_score = float(cert_data.get("composite_risk_score", 0.0))
     
@@ -334,16 +334,18 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
     cursor = conn.cursor()
 
     clean_id = cert_id.strip().upper()
-    prefix_id = clean_id if clean_id.startswith("CERT-DF-") else f"CERT-DF-{clean_id}"
-    raw_suffix = clean_id.replace("CERT-DF-", "")
+    prefix_id_dt = clean_id if clean_id.startswith("CERT-DT-") else f"CERT-DT-{clean_id}"
+    prefix_id_df = clean_id if clean_id.startswith("CERT-DF-") else f"CERT-DF-{clean_id}"
+    raw_suffix = clean_id.replace("CERT-DT-", "").replace("CERT-DF-", "").replace("IMG-", "").replace("VID-", "").replace("AUD-", "")
 
     cursor.execute("""
     SELECT * FROM forensic_certificates 
     WHERE UPPER(certificate_id) = ? 
        OR UPPER(certificate_id) = ?
+       OR UPPER(certificate_id) = ?
        OR UPPER(certificate_id) LIKE ?
     LIMIT 1
-    """, (clean_id, prefix_id, f"%{raw_suffix}%"))
+    """, (clean_id, prefix_id_dt, prefix_id_df, f"%{raw_suffix}%"))
     
     row = cursor.fetchone()
     conn.close()
