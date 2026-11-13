@@ -46,3 +46,4 @@ mobile_app/
 
 - Viết bằng Dart/Flutter, tương thích cả Android và iOS.
 - Cho phép dán trực tiếp đường link phòng Live (TikTok, YouTube, Facebook) hoặc Call Web Link để hệ thống tự động bóc tách luồng streaming và hiển thị kết quả phân tích vi mô.
+

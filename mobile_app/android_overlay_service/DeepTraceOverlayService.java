@@ -262,3 +262,4 @@ public class DeepTraceOverlayService extends Service {
         if (mediaProjection != null) mediaProjection.stop();
     }
 }
+

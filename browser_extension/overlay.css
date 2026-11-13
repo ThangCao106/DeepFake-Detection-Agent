@@ -1,8 +1,8 @@
 /* overlay.css - Clinical Cyberpunk Forensic Styling for DF-Shield Extension */
 
 #df-shield-float-btn {
-    position: absolute;
-    z-index: 2147483646;
+    position: fixed !important;
+    z-index: 2147483646 !important;
     display: none;
     align-items: center;
     gap: 6px;
@@ -57,6 +57,21 @@
     pointer-events: auto;
 }
 
+#df-shield-toast.df-toast-loading {
+    border-color: #00F0FF;
+    box-shadow: 0 10px 30px rgba(0, 240, 255, 0.28);
+}
+
+@keyframes dfSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.df-toast-spin {
+    display: inline-block;
+    animation: dfSpin 1s linear infinite;
+}
+
 #df-shield-toast.df-toast-success {
     border-color: #10b981;
 }
@@ -67,9 +82,9 @@
 
 /* In-Situ Forensic Overlay Card */
 .df-shield-overlay-card {
-    position: absolute;
-    z-index: 2147483646;
-    width: 280px;
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    width: 290px;
     background: rgba(4, 21, 46, 0.96);
     border-radius: 12px;
     padding: 14px;

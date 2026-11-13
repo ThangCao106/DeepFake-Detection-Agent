@@ -1,12 +1,13 @@
-// background.js - Service Worker for Deepfake Forensic Shield (Manifest V3)
+// background.js - Service Worker for DeepTrace Forensic Shield (Manifest V3)
 
-const DEFAULT_API_BASE = "https://detection.dtpsoft.vn";
+const PRIMARY_API_BASE = "https://deeptrace.io.vn";
+const FALLBACK_API_BASE = "https://detection.dtpsoft.vn";
 
 // Initialize Context Menus and Storage Defaults
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.get(["apiBase"], (res) => {
         if (!res.apiBase) {
-            chrome.storage.local.set({ apiBase: DEFAULT_API_BASE });
+            chrome.storage.local.set({ apiBase: PRIMARY_API_BASE });
         }
     });
 
@@ -31,41 +32,99 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function getApiBase() {
     return new Promise((resolve) => {
         chrome.storage.local.get(["apiBase"], (res) => {
-            resolve(res.apiBase || DEFAULT_API_BASE);
+            resolve(res.apiBase || PRIMARY_API_BASE);
         });
     });
+}
+
+// Robust fetch with configurable timeout via AbortController
+async function fetchWithTimeout(url, options = {}, timeoutMs = 50000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === "AbortError") {
+            throw new Error(`Quá thời gian chờ phản hồi từ máy chủ (${Math.round(timeoutMs / 1000)}s timeout).`);
+        }
+        throw err;
+    }
 }
 
 // Handle messages from content script or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "CAPTURE_ACTIVE_TAB") {
-        chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
-            if (chrome.runtime.lastError || !dataUrl) {
-                sendResponse({ success: false, error: chrome.runtime.lastError?.message || "Failed to capture tab" });
-            } else {
-                sendResponse({ success: true, dataUrl });
-            }
-        });
+        try {
+            chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
+                if (chrome.runtime.lastError || !dataUrl) {
+                    sendResponse({ 
+                        success: false, 
+                        error: chrome.runtime.lastError?.message || "Không thể chụp màn hình tab hiện tại" 
+                    });
+                } else {
+                    sendResponse({ success: true, dataUrl });
+                }
+            });
+        } catch (e) {
+            sendResponse({ success: false, error: e.message });
+        }
         return true; // Keep message channel open for async response
     }
 
     if (request.action === "EXECUTE_HYBRID_AUDIT") {
+        // Ping service worker to prevent premature termination during long analysis
+        const pingInterval = setInterval(() => {
+            chrome.runtime.getPlatformInfo(() => {});
+        }, 10000);
+
         executeForensicPipeline(request.payload)
-            .then((result) => sendResponse({ success: true, result }))
-            .catch((err) => sendResponse({ success: false, error: err.message }));
-        return true;
+            .then((result) => {
+                clearInterval(pingInterval);
+                sendResponse({ success: true, result });
+            })
+            .catch((err) => {
+                clearInterval(pingInterval);
+                console.error("[DF-Shield Audit Pipeline Error]", err);
+                sendResponse({ success: false, error: err.message || "Lỗi quy trình giám định máy chủ" });
+            });
+        return true; // Keep message channel open for async response
     }
 });
 
 /**
- * Execute Client-Server Hybrid Forensic Pipeline
+ * Execute Client-Server Hybrid Forensic Pipeline with automatic failover
  */
 async function executeForensicPipeline(payload) {
-    const apiBase = await getApiBase();
-    console.log(`[DF-Shield] Dispatching to Forensic Gateway: ${apiBase}`);
+    const primaryBase = await getApiBase();
+    const candidates = [primaryBase];
+    if (primaryBase !== FALLBACK_API_BASE) {
+        candidates.push(FALLBACK_API_BASE);
+    }
 
+    let lastError = null;
+    for (const apiBase of candidates) {
+        try {
+            console.log(`[DF-Shield] Attempting Forensic Gateway: ${apiBase}`);
+            return await runPipelineAgainstServer(apiBase, payload);
+        } catch (err) {
+            console.warn(`[DF-Shield] Gateway ${apiBase} failed:`, err.message);
+            lastError = err;
+            // If Gateway returned a client-side payload error (not network/timeout/5xx), don't retry fallback
+            if (err.message && err.message.includes("400")) {
+                throw err;
+            }
+        }
+    }
+
+    throw lastError || new Error("Không thể kết nối tới các Cổng Pháp Y Số.");
+}
+
+async function runPipelineAgainstServer(apiBase, payload) {
     // Step 1: Upload / Ingest Media
-    let uploadEndpoint = `${apiBase}/api/upload`;
+    const uploadEndpoint = `${apiBase}/api/upload`;
     let uploadBody = {};
 
     if (payload.type === "url" && payload.url) {
@@ -79,20 +138,20 @@ async function executeForensicPipeline(payload) {
         throw new Error("Không có dữ liệu media hoặc URL hợp lệ.");
     }
 
-    let uploadRes = await fetch(uploadEndpoint, {
+    let uploadRes = await fetchWithTimeout(uploadEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(uploadBody)
-    });
+    }, 25000);
 
-    // Fallback: If Gateway returned 413 (Payload Too Large from reverse proxy), fallback to sending direct media URL if available
+    // Fallback: If Gateway returned 413 (Payload Too Large), retry with direct URL if available
     if (uploadRes.status === 413 && payload.sourceUrl && payload.sourceUrl.startsWith("http")) {
         console.warn("[DF-Shield] Received 413 on base64, falling back to direct URL ingestion:", payload.sourceUrl);
-        uploadRes = await fetch(uploadEndpoint, {
+        uploadRes = await fetchWithTimeout(uploadEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: payload.sourceUrl })
-        });
+        }, 25000);
     }
 
     if (!uploadRes.ok) {
@@ -107,16 +166,16 @@ async function executeForensicPipeline(payload) {
 
     // Step 2: Analyze Media through Tri-Stream Engine
     const analyzeEndpoint = `${apiBase}/api/analyze`;
-    const analyzeRes = await fetch(analyzeEndpoint, {
+    const analyzeRes = await fetchWithTimeout(analyzeEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             filepath: uploadData.filepath,
             language: "vi",
             source_url: payload.url || payload.sourceUrl || "",
-            routing_mode: "auto"
+            routing_mode: payload.routing_mode || "auto"
         })
-    });
+    }, 55000);
 
     if (!analyzeRes.ok) {
         const errText = await analyzeRes.text();
@@ -137,4 +196,3 @@ async function executeForensicPipeline(payload) {
         api_base: apiBase
     };
 }
-

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Deepfake Agent Memory Database & Report Sync Engine.
 Stores benchmark runs, Colab training reports, and model weight updates
 into persistent SQLite database `deepfake_agent_memory.db` for AI Agent querying.

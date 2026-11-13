@@ -56,3 +56,4 @@
 Mở popup tiện ích từ thanh công cụ để chọn cổng kết nối:
 - **Cloud Gateway (Mặc định)**: `https://detection.dtpsoft.vn` (Phục vụ kiểm thử trực tiếp trên môi trường production)
 - **Local Development**: `http://localhost:5000` (Phục vụ dev và kiểm thử nội bộ trên máy cá nhân)
+
