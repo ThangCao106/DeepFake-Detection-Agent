@@ -11,7 +11,7 @@
   "deepfake_frame_ratio_gate": 0.45,
   "ai_art_avg_comp_gate": 0.45,
   "calibration_status": "FEEDBACK_CALIBRATED_ACTIVE",
-  "feedback_updates_count": 6,
-  "updated_at": "2026-11-14T18:53:20Z",
-  "last_trigger": "feedback:FB-20261114185319-EAA31E:FALSE_NEGATIVE"
+  "feedback_updates_count": 7,
+  "updated_at": "2026-11-15T08:04:45Z",
+  "last_trigger": "feedback:FB-20261115080444-BCA6BE:FALSE_NEGATIVE"
 }
