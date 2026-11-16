@@ -739,7 +739,7 @@ def execute_analysis_pipeline(filepath: str, user_query: str = "", language: str
 
     if orchestrator is not None:
         try:
-            explanation = orchestrator.process_image(filepath, user_query, language=language)
+            explanation = orchestrator.process_image(filepath, user_query, language=language, routing_mode=routing_mode)
             # Retrieve latest metadata from orchestrator memory
             for msg in reversed(orchestrator.memory.messages):
                 if msg.role == 'system' and msg.metadata:

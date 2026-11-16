@@ -476,6 +476,63 @@ public class DeepTraceOverlayService extends Service {
         }
     }
 
+    private Bitmap extractForensicROI(Bitmap screenBitmap) {
+        if (screenBitmap == null) return null;
+        int w = screenBitmap.getWidth();
+        int h = screenBitmap.getHeight();
+
+        // 1. Detect human face using Android built-in FaceDetector
+        try {
+            int detectW = w % 2 == 0 ? w : w - 1;
+            Bitmap bmp565 = Bitmap.createBitmap(detectW, h, Bitmap.Config.RGB_565);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bmp565);
+            canvas.drawBitmap(screenBitmap, 0, 0, null);
+
+            android.media.FaceDetector.Face[] faces = new android.media.FaceDetector.Face[3];
+            android.media.FaceDetector detector = new android.media.FaceDetector(detectW, h, 3);
+            int faceCount = detector.findFaces(bmp565, faces);
+
+            if (faceCount > 0 && faces[0] != null) {
+                android.graphics.PointF midPoint = new android.graphics.PointF();
+                faces[0].getMidPoint(midPoint);
+                float eyesDistance = faces[0].eyesDistance();
+
+                if (eyesDistance > 15) {
+                    int faceSize = (int) (eyesDistance * 3.4f);
+                    int left = Math.max(0, (int) midPoint.x - faceSize / 2);
+                    int top = Math.max(0, (int) midPoint.y - (int) (faceSize * 0.55f));
+                    int cropW = Math.min(w - left, faceSize);
+                    int cropH = Math.min(h - top, faceSize);
+
+                    if (cropW > 64 && cropH > 64) {
+                        android.util.Log.i("DeepTrace", "Localized streamer face ROI: " + cropW + "x" + cropH + " at (" + left + "," + top + ")");
+                        Bitmap cropped = Bitmap.createBitmap(screenBitmap, left, top, cropW, cropH);
+                        bmp565.recycle();
+                        return cropped;
+                    }
+                }
+            }
+            bmp565.recycle();
+        } catch (Throwable t) {
+            android.util.Log.w("DeepTrace", "FaceDetector fallback: " + t.getMessage());
+        }
+
+        // 2. Intelligent Viewport Cropping for TikTok / Short Videos
+        // Strips out top 14% (Status bar, search bar) and bottom 26% (Comments, product boxes, nav bar)
+        try {
+            int cropTop = (int) (h * 0.14f);
+            int cropBottom = (int) (h * 0.74f);
+            int cropH = cropBottom - cropTop;
+            int cropLeft = (int) (w * 0.05f);
+            int cropW = (int) (w * 0.90f);
+            if (cropW > 100 && cropH > 100) {
+                return Bitmap.createBitmap(screenBitmap, cropLeft, cropTop, cropW, cropH);
+            }
+        } catch (Throwable ignored) {}
+
+        return screenBitmap;
+    }
+
     private void triggerScreenForensicScan() {
         isScanning = true;
         verdictText.setVisibility(View.VISIBLE);
@@ -501,9 +558,13 @@ public class DeepTraceOverlayService extends Service {
                     return;
                 }
 
+                // Isolate streamer face ROI or central video viewport to avoid background UI diluting detection
+                Bitmap targetBitmap = extractForensicROI(frame);
+                if (targetBitmap == null) targetBitmap = frame;
+
                 // Compress bitmap to JPEG Base64
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                frame.compress(Bitmap.CompressFormat.JPEG, 75, stream);
+                targetBitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream);
                 byte[] byteArray = stream.toByteArray();
                 String base64Img = "data:image/jpeg;base64," + Base64.encodeToString(byteArray, Base64.NO_WRAP);
 

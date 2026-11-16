@@ -1907,9 +1907,11 @@ class DeepfakeDetector:
             # Ocular resolution & scene context guard:
             # If the detected face is truly distant/insignificant (<2.5% of frame in standard photo, e.g. runner/sports/action),
             # cropping and upscaling to 224x224 introduces interpolation blur that deceives the ViT model.
-            # Preserve original image to maintain truthful scene context.
+            # However, on vertical mobile screens (h/w >= 1.4, e.g. TikTok/IG reels), human streamer faces naturally occupy 1%-5% of the frame.
             face_ratio = (fw * fh) / float(w * h)
-            if len(detected_faces) == 1 and ((w >= 300 and h >= 300 and (fw < 48 or fh < 48 or face_ratio < 0.025)) or (fw < 16 or fh < 16 or face_ratio < 0.015)):
+            min_ratio = 0.008 if (h / float(w) >= 1.4) else 0.025
+            min_dim = 32 if (h / float(w) >= 1.4) else 48
+            if len(detected_faces) == 1 and ((w >= 300 and h >= 300 and (fw < min_dim or fh < min_dim or face_ratio < min_ratio)) or (fw < 16 or fh < 16 or face_ratio < 0.005)):
                 return pil_image, False
             pad_w = int(0.15 * fw)
             pad_h = int(0.15 * fh)
@@ -1977,10 +1979,10 @@ class DeepfakeDetector:
 
             # Option C: Routing Mode Dispatcher
             mode = str(routing_mode or "auto").lower().strip()
-            if mode in ["human", "dual", "portrait"]:
+            if mode in ["human", "dual", "portrait", "live", "screen"]:
                 has_human = True
                 human_presence["has_human"] = True
-                human_presence["presence_evidence"] = ["Chế độ Chân dung (Dual-Stream Human Biometrics) kích hoạt thủ công qua Mode Selector"] + human_presence.get("presence_evidence", [])
+                human_presence["presence_evidence"] = ["Chế độ Giám định Khuôn mặt / Live Stream kích hoạt tự động"] + human_presence.get("presence_evidence", [])
             elif mode in ["general", "single", "scenery", "nature"]:
                 has_human = False
                 human_presence["has_human"] = False

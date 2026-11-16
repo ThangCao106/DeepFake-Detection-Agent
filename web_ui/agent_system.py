@@ -226,14 +226,14 @@ class DeepfakeDetectionTool:
         self.detector = DeepfakeDetector()
         logger.info("Initialized DeepfakeDetectionTool")
     
-    def detect(self, image_path: str) -> Dict[str, Any]:
+    def detect(self, image_path: str, routing_mode: str = "auto") -> Dict[str, Any]:
         """
         Run deepfake detection on media file (Image, Video, Audio).
         """
-        logger.info(f"Running detection on: {image_path}")
+        logger.info(f"Running detection on: {image_path} (mode: {routing_mode})")
         
         start_time = datetime.now()
-        result = self.detector.predict_media(image_path)
+        result = self.detector.predict_media(image_path, routing_mode=routing_mode)
         
         duration = (datetime.now() - start_time).total_seconds()
         result['processing_time'] = duration
@@ -595,7 +595,7 @@ class DeepfakeDetectionOrchestrator:
         safe_print(f"{Fore.GREEN}Deepfake Detection Agent System Initialized{Style.RESET_ALL}")
         safe_print(f"{Fore.CYAN}Session ID: {self.memory.session_id}{Style.RESET_ALL}\n")
     
-    def process_image(self, image_path: str, user_query: str = None, language: str = 'en') -> str:
+    def process_image(self, image_path: str, user_query: str = None, language: str = 'en', routing_mode: str = 'auto') -> str:
         """
         Process an image through the multi-agent workflow.
         
@@ -610,11 +610,12 @@ class DeepfakeDetectionOrchestrator:
             image_path: Path to image to analyze
             user_query: Optional question from user
             language: Language preference ('en' or 'vi')
+            routing_mode: Routing mode ('auto', 'human', 'live', 'general')
             
         Returns:
             Analysis and explanation
         """
-        logger.info(f"Processing image: {image_path} (language: {language})")
+        logger.info(f"Processing image: {image_path} (language: {language}, mode: {routing_mode})")
         
         # Add user message to memory with appropriate media modality
         ext = os.path.splitext(image_path)[1].lower() if image_path else ""
@@ -632,7 +633,7 @@ class DeepfakeDetectionOrchestrator:
         
         # Step 1: Detection Agent - Run ML model
         safe_print(f"{Fore.YELLOW}Detection Agent: Analyzing {media_modality_name}...{Style.RESET_ALL}")
-        detection_result = self.detection_tool.detect(image_path)
+        detection_result = self.detection_tool.detect(image_path, routing_mode=routing_mode)
         
         if "error" in detection_result:
             error_msg = f"Error: {detection_result['error']}"
