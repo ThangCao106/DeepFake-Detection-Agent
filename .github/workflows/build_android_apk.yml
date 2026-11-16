@@ -37,30 +37,37 @@ jobs:
       - name: Scaffold Flutter App Project
         run: |
           mkdir -p mobile_app
-          # Create a clean flutter skeleton project
+          # Create clean flutter skeleton
           flutter create --org vn.io.deeptrace --project-name deeptrace_guard mobile_app/flutter_app
           cd mobile_app/flutter_app
           flutter pub add http
 
-      - name: Inject Android Permissions & Cleartext Config
+      - name: Inject Android Permissions & Network Config
         run: |
-          MANIFEST="mobile_app/flutter_app/android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ]; then
-            echo "Injecting INTERNET permissions into AndroidManifest.xml..."
-            # Insert permissions right after <manifest ...> tag
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>' "$MANIFEST"
-            # Enable cleartext traffic for HTTP/HTTPS fallback
-            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
-            echo "--- Verified AndroidManifest.xml Content ---"
-            cat "$MANIFEST"
-          else
-            echo "Error: Manifest not found at $MANIFEST"
-            exit 1
-          fi
+          python3 -c "
+          import re
+          path = 'mobile_app/flutter_app/android/app/src/main/AndroidManifest.xml'
+          with open(path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>'''
+          
+          if 'android.permission.INTERNET' not in content:
+              content = re.sub(r'(<manifest[^>]*>)', r'\1\n' + perms, content, count=1)
+
+          if 'android:usesCleartextTraffic' not in content:
+              content = content.replace('<application', '<application android:usesCleartextTraffic=\"true\"')
+
+          with open(path, 'w', encoding='utf-8') as f:
+              f.write(content)
+          print('Successfully patched AndroidManifest.xml')
+          "
+          echo "--- AndroidManifest.xml ---"
+          cat mobile_app/flutter_app/android/app/src/main/AndroidManifest.xml
 
       - name: Inject DeepTrace Live Call Guardian Code
         run: |
-          # Copy the customized DeepTrace main.dart with dual-gateway failover
+          # Copy customized DeepTrace main.dart with dual-gateway failover
           if [ -f "mobile_app/main.dart.src" ]; then
             cp mobile_app/main.dart.src mobile_app/flutter_app/lib/main.dart
           fi
