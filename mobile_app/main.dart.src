@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 void main() => runApp(const DeepTraceMobileApp());
@@ -46,7 +47,7 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
     if (cleanUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng nhập link Live Stream hoặc Call ID cần giám định.'),
+          content: Text('Vui lòng nhập hoặc dán link video/live cần giám định.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -166,15 +167,36 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Input URL / Stream target
+            // Input URL / Stream target with Quick Paste Button
             TextField(
               controller: _urlController,
               decoration: InputDecoration(
-                hintText: 'Nhập link Live Stream (TikTok/FB/YT) hoặc Call ID...',
+                hintText: 'Nhập hoặc dán link TikTok, YouTube, FB...',
                 hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                 filled: true,
                 fillColor: const Color(0xFF071E3D),
                 prefixIcon: const Icon(Icons.link, color: Color(0xFF0A84FF)),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.content_paste_rounded, color: Color(0xFF00F0FF), size: 22),
+                  tooltip: 'Dán liên kết từ bộ nhớ tạm',
+                  onPressed: () async {
+                    final clip = await Clipboard.getData(Clipboard.kTextPlain);
+                    if (clip?.text != null && clip!.text!.trim().isNotEmpty) {
+                      setState(() {
+                        _urlController.text = clip.text!.trim();
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã dán liên kết video/live!'),
+                            duration: Duration(seconds: 1),
+                            backgroundColor: Color(0xFF0A84FF),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide(color: const Color(0xFF00F0FF).withOpacity(0.2)),
@@ -196,7 +218,7 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                         ? null
                         : () => _analyzeStream(_urlController.text, 'live'),
                     icon: const Icon(Icons.live_tv),
-                    label: const Text('Quét Live Stream'),
+                    label: const Text('Quét Live/Video'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0A84FF),
                       foregroundColor: Colors.white,
@@ -223,7 +245,47 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Mobile Usage Guide Card
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D2140),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.2)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.tips_and_updates, color: Color(0xFFFBBF24), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cách dùng Add-in trên TikTok & YouTube Mobile:',
+                        style: TextStyle(
+                          color: Color(0xFFFBBF24),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '1. Trên App TikTok/YouTube: Bấm nút "Chia sẻ" ở video -> "Sao chép liên kết" -> Mở DeepTrace bấm icon Dán 📋 -> "Quét Live/Video".',
+                    style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, height: 1.4),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '2. Hiển thị nút "Scan AI" trực tiếp trên video: Dùng Kiwi Browser (trên CH Play) mở TikTok/YouTube, tiện ích mở rộng sẽ tự động gắn nút Scan AI nổi lên màn hình.',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Loading state
             if (_isAnalyzing) ...[

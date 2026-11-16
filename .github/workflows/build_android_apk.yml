@@ -58,6 +58,10 @@ jobs:
           if 'android:usesCleartextTraffic' not in content:
               content = content.replace('<application', '<application android:usesCleartextTraffic=\"true\"')
 
+          share_intent = '''            <intent-filter>\n                <action android:name=\"android.intent.action.SEND\"/>\n                <category android:name=\"android.intent.category.DEFAULT\"/>\n                <data android:mimeType=\"text/plain\"/>\n            </intent-filter>'''
+          if 'android.intent.action.SEND' not in content:
+              content = content.replace('</activity>', share_intent + '\n        </activity>')
+
           with open(path, 'w', encoding='utf-8') as f:
               f.write(content)
           print('Successfully patched AndroidManifest.xml')
