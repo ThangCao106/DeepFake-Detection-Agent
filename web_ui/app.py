@@ -545,6 +545,7 @@ def upload_file():
 
 
 @app.route('/api/upload-url', methods=['POST'])
+@app.route('/api/upload_url', methods=['POST'])
 def upload_url():
     """Explicit dedicated endpoint for Social Media & Web Stream URL Ingestion."""
     return upload_file()
