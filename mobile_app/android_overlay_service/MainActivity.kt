@@ -34,16 +34,15 @@ class MainActivity: FlutterActivity() {
                     }
                     result.success(true)
                 }
+                "isOverlayRunning" -> {
+                    result.success(DeepTraceOverlayService.isRunning)
+                }
                 "startOverlay" -> {
                     try {
                         val intent = Intent(this, DeepTraceOverlayService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
+                        startService(intent)
                         result.success(true)
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         result.error("START_FAILED", e.message, null)
                     }
                 }
@@ -52,7 +51,7 @@ class MainActivity: FlutterActivity() {
                         val intent = Intent(this, DeepTraceOverlayService::class.java)
                         stopService(intent)
                         result.success(true)
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         result.error("STOP_FAILED", e.message, null)
                     }
                 }

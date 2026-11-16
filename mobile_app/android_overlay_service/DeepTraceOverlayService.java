@@ -11,15 +11,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +36,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class DeepTraceOverlayService extends Service {
+    public static boolean isRunning = false;
+
     private WindowManager windowManager;
     private View floatingView;
     private TextView bubbleIcon;
@@ -49,17 +55,34 @@ public class DeepTraceOverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
-        startForeground(1001, buildNotification());
+        isRunning = true;
 
-        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        initFloatingBubble();
+        // 1. Safe Foreground Notification (with Android 14 fallback)
+        try {
+            createNotificationChannel();
+            Notification notification = buildNotification();
+            startForeground(1001, notification);
+        } catch (Throwable t) {
+            android.util.Log.w("DeepTrace", "Safe notification warning: " + t.getMessage());
+        }
+
+        // 2. Programmatic Overlay Window Initialization (No XML inflation risk)
+        try {
+            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            initFloatingBubble();
+        } catch (Throwable t) {
+            android.util.Log.e("DeepTrace", "Fatal overlay error: " + t.getMessage(), t);
+            showToastOnMain("Lỗi tạo khiên: " + t.getMessage());
+        }
     }
 
     private void initFloatingBubble() {
-        int layoutFlag = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                : WindowManager.LayoutParams.TYPE_PHONE;
+        int layoutFlag;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            layoutFlag = WindowManager.LayoutParams.TYPE_PHONE;
+        }
 
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -70,13 +93,60 @@ public class DeepTraceOverlayService extends Service {
         );
 
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 20;
+        params.x = 30;
         params.y = 350;
 
-        floatingView = LayoutInflater.from(this).inflate(R.layout.overlay_bubble_layout, null);
-        bubbleIcon = floatingView.findViewById(R.id.bubble_icon);
-        verdictText = floatingView.findViewById(R.id.verdict_badge);
+        // Build container layout programmatically
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setGravity(Gravity.CENTER);
+        int pad = dpToPx(6);
+        container.setPadding(pad, pad, pad, pad);
 
+        // Shield Bubble Icon (Circle, dark blue with glowing cyan border)
+        bubbleIcon = new TextView(this);
+        bubbleIcon.setText("🛡️");
+        bubbleIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
+        bubbleIcon.setGravity(Gravity.CENTER);
+        int bubbleSize = dpToPx(58);
+        LinearLayout.LayoutParams bubbleParams = new LinearLayout.LayoutParams(bubbleSize, bubbleSize);
+        bubbleIcon.setLayoutParams(bubbleParams);
+
+        GradientDrawable bubbleBg = new GradientDrawable();
+        bubbleBg.setShape(GradientDrawable.OVAL);
+        bubbleBg.setColor(Color.parseColor("#071E3D"));
+        bubbleBg.setStroke(dpToPx(3), Color.parseColor("#00F0FF"));
+        bubbleIcon.setBackground(bubbleBg);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            bubbleIcon.setElevation(dpToPx(12));
+        }
+        container.addView(bubbleIcon);
+
+        // Verdict Badge (Hidden by default, shown during/after scan)
+        verdictText = new TextView(this);
+        verdictText.setVisibility(View.GONE);
+        verdictText.setTextColor(Color.WHITE);
+        verdictText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        verdictText.setTypeface(null, Typeface.BOLD);
+        verdictText.setGravity(Gravity.CENTER);
+        int vPad = dpToPx(8);
+        verdictText.setPadding(vPad, vPad, vPad, vPad);
+
+        LinearLayout.LayoutParams vParams = new LinearLayout.LayoutParams(dpToPx(220), LinearLayout.LayoutParams.WRAP_CONTENT);
+        vParams.topMargin = dpToPx(6);
+        verdictText.setLayoutParams(vParams);
+
+        GradientDrawable vBg = new GradientDrawable();
+        vBg.setCornerRadius(dpToPx(10));
+        vBg.setColor(Color.parseColor("#0A84FF"));
+        verdictText.setBackground(vBg);
+
+        container.addView(verdictText);
+
+        floatingView = container;
+
+        // Touch & Drag Listener
         floatingView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
@@ -96,12 +166,13 @@ public class DeepTraceOverlayService extends Service {
                     case MotionEvent.ACTION_MOVE:
                         params.x = initialX + (int) (event.getRawX() - initialTouchX);
                         params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                        windowManager.updateViewLayout(floatingView, params);
+                        try {
+                            windowManager.updateViewLayout(floatingView, params);
+                        } catch (Exception ignored) {}
                         return true;
 
                     case MotionEvent.ACTION_UP:
                         if (System.currentTimeMillis() - touchStartTime < 250) {
-                            // User tapped the floating shield
                             onShieldClicked();
                         }
                         return true;
@@ -148,7 +219,7 @@ public class DeepTraceOverlayService extends Service {
         isScanning = true;
         verdictText.setVisibility(View.VISIBLE);
         verdictText.setText("🛡️ DeepTrace: Đang kiểm định luồng...");
-        verdictText.setBackgroundColor(Color.parseColor("#0A84FF"));
+        setVerdictBgColor(Color.parseColor("#0A84FF"));
 
         new Thread(() -> {
             try {
@@ -215,10 +286,10 @@ public class DeepTraceOverlayService extends Service {
                                         new Handler(Looper.getMainLooper()).post(() -> {
                                             if (finalIsFake) {
                                                 verdictText.setText(String.format("🚨 DEEPFAKE! (Rủi ro: %.1f%%)\nMã: %s", finalRisk * 100, finalCertId));
-                                                verdictText.setBackgroundColor(0xFFDC2626);
+                                                setVerdictBgColor(Color.parseColor("#DC2626"));
                                             } else {
                                                 verdictText.setText(String.format("✅ CHÂN THẬT (Tin cậy: %.1f%%)\nMã: %s", (1.0 - finalRisk) * 100, finalCertId));
-                                                verdictText.setBackgroundColor(0xFF16A34A);
+                                                setVerdictBgColor(Color.parseColor("#16A34A"));
                                             }
                                         });
                                         success = true;
@@ -245,10 +316,24 @@ public class DeepTraceOverlayService extends Service {
         }).start();
     }
 
+    private void setVerdictBgColor(int color) {
+        if (verdictText != null) {
+            GradientDrawable d = new GradientDrawable();
+            d.setCornerRadius(dpToPx(10));
+            d.setColor(color);
+            verdictText.setBackground(d);
+        }
+    }
+
     private void resetBadge() {
         if (verdictText != null) {
             verdictText.setVisibility(View.GONE);
         }
+    }
+
+    private int dpToPx(int dp) {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        return (int) (dp * metrics.density + 0.5f);
     }
 
     private void showToastOnMain(String msg) {
@@ -283,6 +368,7 @@ public class DeepTraceOverlayService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        isRunning = false;
         if (floatingView != null && windowManager != null) {
             try {
                 windowManager.removeView(floatingView);

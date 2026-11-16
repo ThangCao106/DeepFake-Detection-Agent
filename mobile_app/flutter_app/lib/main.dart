@@ -30,7 +30,7 @@ class CallAndLiveGuardianScreen extends StatefulWidget {
   State<CallAndLiveGuardianScreen> createState() => _CallAndLiveGuardianScreenState();
 }
 
-class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
+class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> with WidgetsBindingObserver {
   static const platform = MethodChannel('vn.io.deeptrace/overlay');
 
   final TextEditingController _urlController = TextEditingController();
@@ -48,13 +48,31 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkInitialOverlayStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkInitialOverlayStatus();
+    }
   }
 
   Future<void> _checkInitialOverlayStatus() async {
     try {
-      final bool hasPerm = await platform.invokeMethod('checkPermission') ?? false;
-      debugPrint('[DeepTrace] Overlay permission status: $hasPerm');
+      final bool isRunning = await platform.invokeMethod('isOverlayRunning') ?? false;
+      if (mounted) {
+        setState(() {
+          _isFloatingShieldEnabled = isRunning;
+        });
+      }
     } catch (e) {
       debugPrint('[DeepTrace] Platform check error: $e');
     }
