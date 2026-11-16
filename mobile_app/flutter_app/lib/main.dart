@@ -33,6 +33,7 @@ class CallAndLiveGuardianScreen extends StatefulWidget {
 class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
   final TextEditingController _urlController = TextEditingController();
   bool _isAnalyzing = false;
+  bool _isFloatingShieldEnabled = false;
   Map<String, dynamic>? _lastResult;
 
   // Dual-Gateway Failover: Primary is DeepTrace Cloud, Fallback is DTP Gateway
@@ -129,6 +130,89 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
     }
   }
 
+  void _showFloatingShieldPermissionGuide() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF071E3D),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Text('🛡️', style: TextStyle(fontSize: 24)),
+                  SizedBox(width: 10),
+                  Text(
+                    'Cách Bật Khiên Nổi Trên TikTok, FB, YT',
+                    style: TextStyle(
+                      color: Color(0xFF00F0FF),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Để biểu tượng khiên 🛡️ có thể hiển thị đè lên màn hình khi bạn đang mở app TikTok, YouTube, Facebook hay Instagram:',
+                style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              _buildStepItem('1', 'Vào Cài đặt (Settings) trên điện thoại Android.'),
+              _buildStepItem('2', 'Tìm mục: "Hiển thị trên ứng dụng khác" (Appear on top / Draw over other apps).'),
+              _buildStepItem('3', 'Tìm ứng dụng "DeepTrace Guardian" và gạt BẬT (Cho phép).'),
+              _buildStepItem('4', 'Mở TikTok / YouTube: Khiên 🛡️ sẽ nổi ở mép màn hình. Chạm vào khiên để quét Live Stream!'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A84FF),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('ĐÃ HIỂU - BẬT KHIÊN NỔI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildStepItem(String num, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0A84FF),
+              shape: BoxShape.circle,
+            ),
+            child: Text(num, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,7 +249,80 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Floating Shield Activation Card
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _isFloatingShieldEnabled ? const Color(0xFF0A2B52) : const Color(0xFF071E3D),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isFloatingShieldEnabled ? const Color(0xFF00F0FF) : const Color(0xFF38BDF8).withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Text('🛡️', style: TextStyle(fontSize: 22)),
+                          SizedBox(width: 8),
+                          Text(
+                            'KHIÊN NỔI MÀN HÌNH (TIKTOK/FB/YT)',
+                            style: TextStyle(
+                              color: Color(0xFF00F0FF),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _isFloatingShieldEnabled,
+                        activeColor: const Color(0xFF00F0FF),
+                        onChanged: (val) {
+                          setState(() {
+                            _isFloatingShieldEnabled = val;
+                          });
+                          if (val) {
+                            _showFloatingShieldPermissionGuide();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isFloatingShieldEnabled
+                        ? '🟢 ĐANG BẬT: Khiên 🛡️ sẵn sàng nổi đè lên TikTok, YouTube, Facebook, IG, Zalo. Chạm vào khiên bất kỳ lúc nào để quét Live Stream!'
+                        : 'Bật để hiển thị icon khiên 🛡️ nổi đè lên trên app TikTok, YouTube, Facebook để chạm quét tức thì.',
+                    style: TextStyle(
+                      color: _isFloatingShieldEnabled ? const Color(0xFFBAE6FD) : const Color(0xFF94A3B8),
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (_isFloatingShieldEnabled) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF00F0FF)),
+                        foregroundColor: const Color(0xFF00F0FF),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      icon: const Icon(Icons.settings, size: 16),
+                      label: const Text('Xem hướng dẫn cấp quyền Android', style: TextStyle(fontSize: 11)),
+                      onPressed: _showFloatingShieldPermissionGuide,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Input URL / Stream target with Quick Paste Button
             TextField(
@@ -245,7 +402,7 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Mobile Usage Guide Card
             Container(
