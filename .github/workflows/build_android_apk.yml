@@ -50,7 +50,7 @@ jobs:
           with open(path, 'r', encoding='utf-8') as f:
               content = f.read()
 
-          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION\"/>'''
+          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_MICROPHONE\"/>\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>'''
           
           if 'android.permission.INTERNET' not in content:
               content = re.sub(r'(<manifest[^>]*>)', r'\1\n' + perms, content, count=1)
@@ -62,7 +62,7 @@ jobs:
           if 'android.intent.action.SEND' not in content:
               content = content.replace('</activity>', share_intent + '\n        </activity>')
 
-          service_decl = '''        <service android:name=\".DeepTraceOverlayService\" android:enabled=\"true\" android:exported=\"false\" android:foregroundServiceType=\"mediaProjection\" />'''
+          service_decl = '''        <service android:name=\".DeepTraceOverlayService\" android:enabled=\"true\" android:exported=\"false\" android:foregroundServiceType=\"mediaProjection|microphone\" />'''
           if 'DeepTraceOverlayService' not in content:
               content = content.replace('</application>', service_decl + '\n    </application>')
 

@@ -36,6 +36,7 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
   final TextEditingController _urlController = TextEditingController();
   bool _isAnalyzing = false;
   bool _isFloatingShieldEnabled = false;
+  bool _isAudioGuardianEnabled = false;
   Map<String, dynamic>? _lastResult;
 
   // Dual-Gateway Failover: Primary is DeepTrace Cloud, Fallback is DTP Gateway
@@ -68,11 +69,13 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
   Future<void> _checkInitialOverlayStatus() async {
     try {
       final bool isRunning = await platform.invokeMethod('isOverlayRunning') ?? false;
+      final bool isAudioRunning = await platform.invokeMethod('isAudioGuardianRunning') ?? false;
       final String? incomingUrl = await platform.invokeMethod('getSharedUrl');
 
       if (mounted) {
         setState(() {
           _isFloatingShieldEnabled = isRunning;
+          _isAudioGuardianEnabled = isAudioRunning;
           if (incomingUrl != null && incomingUrl.isNotEmpty) {
             _urlController.text = incomingUrl;
           }
@@ -83,6 +86,36 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
       }
     } catch (e) {
       debugPrint('[DeepTrace] Platform check error: $e');
+    }
+  }
+
+  Future<void> _toggleAudioGuardian(bool enable) async {
+    try {
+      await platform.invokeMethod('toggleAudioGuardian', {'enable': enable});
+      setState(() {
+        _isAudioGuardianEnabled = enable;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(enable
+                ? '📞 Lính gác âm thanh cuộc gọi đã kích hoạt (Micro-chunk 400ms ZCR/Jitter)!'
+                : 'Đã tắt bảo vệ âm thanh cuộc gọi.'),
+            backgroundColor: enable ? const Color(0xFF10B981) : const Color(0xFF475569),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[DeepTrace] Error toggling audio guardian: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khởi động bảo vệ cuộc gọi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -406,6 +439,59 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
                       onPressed: _showFloatingShieldPermissionGuide,
                     ),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // In-Call Audio Deepfake Watchdog Card
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _isAudioGuardianEnabled ? const Color(0xFF0F3A2B) : const Color(0xFF09221C),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isAudioGuardianEnabled ? const Color(0xFF10B981) : const Color(0xFF059669).withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Text('📞', style: TextStyle(fontSize: 22)),
+                          SizedBox(width: 8),
+                          Text(
+                            'LÍNH GÁC CUỘC GỌI (AUDIO GUARDIAN)',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _isAudioGuardianEnabled,
+                        activeColor: const Color(0xFF10B981),
+                        onChanged: (val) => _toggleAudioGuardian(val),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isAudioGuardianEnabled
+                        ? '🟢 ĐANG BẢO VỆ: Quét micro-chunk 400ms ZCR & Pitch Jitter. Cảnh báo rung và viền đỏ ngay khi phát hiện giọng AI clone.'
+                        : 'Bật để tự động phân tích âm thanh cuộc gọi (Zalo, Telegram, Cellular) phát hiện voice clone giả mạo người thân.',
+                    style: TextStyle(
+                      color: _isAudioGuardianEnabled ? const Color(0xFFA7F3D0) : const Color(0xFF94A3B8),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),

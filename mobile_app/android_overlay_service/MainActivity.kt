@@ -119,6 +119,24 @@ class MainActivity: FlutterActivity() {
                         }
                     }
                 }
+                "isAudioGuardianRunning" -> {
+                    result.success(DeepTraceOverlayService.isAudioGuardianRunning)
+                }
+                "toggleAudioGuardian" -> {
+                    val enable = call.argument<Boolean>("enable") ?: false
+                    if (enable) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 2002)
+                            }
+                        }
+                    }
+                    val intent = Intent(this, DeepTraceOverlayService::class.java).apply {
+                        putExtra("ACTION_AUDIO_GUARDIAN", enable)
+                    }
+                    startService(intent)
+                    result.success(true)
+                }
                 "stopOverlay" -> {
                     try {
                         val intent = Intent(this, DeepTraceOverlayService::class.java)
