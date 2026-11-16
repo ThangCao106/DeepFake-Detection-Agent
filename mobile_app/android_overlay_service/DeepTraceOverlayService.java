@@ -34,6 +34,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DeepTraceOverlayService extends Service {
     public static boolean isRunning = false;
@@ -57,7 +59,7 @@ public class DeepTraceOverlayService extends Service {
         super.onCreate();
         isRunning = true;
 
-        // 1. Safe Foreground Notification (with Android 14 fallback)
+        // 1. Safe Foreground Notification
         try {
             createNotificationChannel();
             Notification notification = buildNotification();
@@ -66,7 +68,7 @@ public class DeepTraceOverlayService extends Service {
             android.util.Log.w("DeepTrace", "Safe notification warning: " + t.getMessage());
         }
 
-        // 2. Programmatic Overlay Window Initialization (No XML inflation risk)
+        // 2. Programmatic Overlay Window Initialization
         try {
             windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             initFloatingBubble();
@@ -96,7 +98,7 @@ public class DeepTraceOverlayService extends Service {
         params.x = 30;
         params.y = 350;
 
-        // Build container layout programmatically
+        // Container Layout
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setGravity(Gravity.CENTER);
@@ -119,29 +121,25 @@ public class DeepTraceOverlayService extends Service {
         bubbleIcon.setBackground(bubbleBg);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            bubbleIcon.setElevation(dpToPx(12));
+            bubbleIcon.setElevation(dpToPx(14));
         }
         container.addView(bubbleIcon);
 
-        // Verdict Badge (Hidden by default, shown during/after scan)
+        // Verdict Badge (Floating banner displaying results directly on TikTok)
         verdictText = new TextView(this);
         verdictText.setVisibility(View.GONE);
         verdictText.setTextColor(Color.WHITE);
         verdictText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         verdictText.setTypeface(null, Typeface.BOLD);
         verdictText.setGravity(Gravity.CENTER);
-        int vPad = dpToPx(8);
+        int vPad = dpToPx(10);
         verdictText.setPadding(vPad, vPad, vPad, vPad);
 
-        LinearLayout.LayoutParams vParams = new LinearLayout.LayoutParams(dpToPx(220), LinearLayout.LayoutParams.WRAP_CONTENT);
-        vParams.topMargin = dpToPx(6);
+        LinearLayout.LayoutParams vParams = new LinearLayout.LayoutParams(dpToPx(240), LinearLayout.LayoutParams.WRAP_CONTENT);
+        vParams.topMargin = dpToPx(8);
         verdictText.setLayoutParams(vParams);
 
-        GradientDrawable vBg = new GradientDrawable();
-        vBg.setCornerRadius(dpToPx(10));
-        vBg.setColor(Color.parseColor("#0A84FF"));
-        verdictText.setBackground(vBg);
-
+        setVerdictBgColor(Color.parseColor("#0A84FF"));
         container.addView(verdictText);
 
         floatingView = container;
@@ -173,6 +171,7 @@ public class DeepTraceOverlayService extends Service {
 
                     case MotionEvent.ACTION_UP:
                         if (System.currentTimeMillis() - touchStartTime < 250) {
+                            // User clicked the shield: trigger scan right on TikTok!
                             onShieldClicked();
                         }
                         return true;
@@ -184,41 +183,59 @@ public class DeepTraceOverlayService extends Service {
         windowManager.addView(floatingView, params);
     }
 
-    private void onShieldClicked() {
-        if (isScanning) return;
+    private String extractUrlFromText(String text) {
+        if (text == null || text.trim().isEmpty()) return "";
+        try {
+            Matcher m = Pattern.compile("(https?://[\\w\\-\\.\\?\\=\\&\\%\\/\\#\\+\\@\\:\\;\\~]+)").matcher(text);
+            if (m.find()) {
+                return m.group(1).trim();
+            }
+        } catch (Exception ignored) {}
+        return "";
+    }
 
-        // Check clipboard for copied TikTok / YouTube / video link
-        String targetUrl = "";
+    private void onShieldClicked() {
+        if (isScanning) {
+            showToastOnMain("🛡️ DeepTrace: Đang trong quá trình quét, vui lòng chờ...");
+            return;
+        }
+
+        // Try extracting URL from clipboard
+        String rawClipboard = "";
         try {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip().getItemCount() > 0) {
                 ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
                 CharSequence text = item != null ? item.getText() : null;
                 if (text != null) {
-                    String clipStr = text.toString().trim();
-                    if (clipStr.startsWith("http://") || clipStr.startsWith("https://")) {
-                        targetUrl = clipStr;
-                    }
+                    rawClipboard = text.toString();
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            android.util.Log.w("DeepTrace", "Clipboard read error: " + e.getMessage());
+        }
+
+        String targetUrl = extractUrlFromText(rawClipboard);
 
         if (!targetUrl.isEmpty()) {
+            // URL found in clipboard (e.g. from TikTok "Share -> Copy link"): Scan immediately!
             triggerForensicScanUrl(targetUrl);
         } else {
-            showToastOnMain("🛡️ DeepTrace: Nhấn Chia sẻ -> Sao chép liên kết trên TikTok, rồi chạm lại vào Khiên để quét!");
-            try {
-                Intent appIntent = new Intent(this, MainActivity.class);
-                appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(appIntent);
-            } catch (Exception ignored) {}
+            // No URL found: Show guidance directly on the floating banner, DO NOT kick user out of TikTok!
+            verdictText.setVisibility(View.VISIBLE);
+            verdictText.setText("💡 Chưa có liên kết!\nỞ video TikTok: Bấm Chia sẻ ➔ Sao chép liên kết, rồi chạm lại vào Khiên 🛡️");
+            setVerdictBgColor(Color.parseColor("#D97706")); // Orange
+            new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 6000);
         }
     }
 
     private void triggerForensicScanUrl(String url) {
         isScanning = true;
         verdictText.setVisibility(View.VISIBLE);
-        verdictText.setText("🛡️ DeepTrace: Đang kiểm định luồng...");
+        
+        // Show truncated url in progress badge
+        String displayUrl = url.length() > 30 ? url.substring(0, 27) + "..." : url;
+        verdictText.setText("🛡️ Đang giám định Cổng Pháp Y...\n" + displayUrl);
         setVerdictBgColor(Color.parseColor("#0A84FF"));
 
         new Thread(() -> {
@@ -285,11 +302,11 @@ public class DeepTraceOverlayService extends Service {
 
                                         new Handler(Looper.getMainLooper()).post(() -> {
                                             if (finalIsFake) {
-                                                verdictText.setText(String.format("🚨 DEEPFAKE! (Rủi ro: %.1f%%)\nMã: %s", finalRisk * 100, finalCertId));
-                                                setVerdictBgColor(Color.parseColor("#DC2626"));
+                                                verdictText.setText(String.format("🚨 CẢNH BÁO: DEEPFAKE!\nNguy cơ: %.1f%% | Mã: %s", finalRisk * 100, finalCertId));
+                                                setVerdictBgColor(Color.parseColor("#DC2626")); // Red
                                             } else {
-                                                verdictText.setText(String.format("✅ CHÂN THẬT (Tin cậy: %.1f%%)\nMã: %s", (1.0 - finalRisk) * 100, finalCertId));
-                                                setVerdictBgColor(Color.parseColor("#16A34A"));
+                                                verdictText.setText(String.format("✅ PHƯƠNG TIỆN CHÂN THẬT\nTin cậy: %.1f%% | Mã: %s", (1.0 - finalRisk) * 100, finalCertId));
+                                                setVerdictBgColor(Color.parseColor("#16A34A")); // Green
                                             }
                                         });
                                         success = true;
@@ -303,15 +320,19 @@ public class DeepTraceOverlayService extends Service {
                 }
 
                 if (!success) {
-                    showToastOnMain("Không thể giám định liên kết này qua Cổng Pháp Y.");
-                    new Handler(Looper.getMainLooper()).post(this::resetBadge);
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        verdictText.setText("❌ Không thể kết nối Cổng Pháp Y.\nVui lòng thử lại sau.");
+                        setVerdictBgColor(Color.parseColor("#64748B"));
+                    });
                 }
             } catch (Exception e) {
-                showToastOnMain("Lỗi: " + e.getMessage());
-                new Handler(Looper.getMainLooper()).post(this::resetBadge);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    verdictText.setText("❌ Lỗi: " + e.getMessage());
+                    setVerdictBgColor(Color.parseColor("#64748B"));
+                });
             } finally {
                 isScanning = false;
-                new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 9000);
+                new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 10000);
             }
         }).start();
     }
@@ -337,7 +358,7 @@ public class DeepTraceOverlayService extends Service {
     }
 
     private void showToastOnMain(String msg) {
-        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show());
+        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
     }
 
     private void createNotificationChannel() {

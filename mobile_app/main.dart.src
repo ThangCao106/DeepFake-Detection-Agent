@@ -68,10 +68,18 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
   Future<void> _checkInitialOverlayStatus() async {
     try {
       final bool isRunning = await platform.invokeMethod('isOverlayRunning') ?? false;
+      final String? incomingUrl = await platform.invokeMethod('getSharedUrl');
+
       if (mounted) {
         setState(() {
           _isFloatingShieldEnabled = isRunning;
+          if (incomingUrl != null && incomingUrl.isNotEmpty) {
+            _urlController.text = incomingUrl;
+          }
         });
+        if (incomingUrl != null && incomingUrl.isNotEmpty) {
+          _analyzeStream(incomingUrl, 'live');
+        }
       }
     } catch (e) {
       debugPrint('[DeepTrace] Platform check error: $e');
@@ -510,12 +518,12 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> w
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '1. Trên App TikTok/YouTube: Bấm nút "Chia sẻ" ở video -> "Sao chép liên kết" -> Mở DeepTrace bấm icon Dán 📋 -> "Quét Live/Video".',
+                    '1. Trên App TikTok/YouTube: Bấm nút "Chia sẻ" ở video -> "Sao chép liên kết" -> Chạm vào Khiên 🛡️ để quét trực tiếp trên màn hình.',
                     style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 11.5, height: 1.4),
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '2. Hiển thị nút "Scan AI" trực tiếp trên video: Dùng Kiwi Browser (trên CH Play) mở TikTok/YouTube, tiện ích mở rộng sẽ tự động gắn nút Scan AI nổi lên màn hình.',
+                    '2. Hoặc mở DeepTrace bấm icon Dán 📋 -> "Quét Live/Video".',
                     style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5, height: 1.4),
                   ),
                 ],
