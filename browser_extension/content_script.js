@@ -192,8 +192,17 @@
             return;
         }
 
-        // Strategy B: If mediaEl is an <img>, try direct canvas extraction first (instant, bypasses capture)
+        // Strategy B: If mediaEl is an <img>, check for direct HTTP image URL first (Fastest & Highest Quality)
         if (mediaEl.tagName && mediaEl.tagName.toLowerCase() === "img") {
+            const directSrc = mediaEl.currentSrc || mediaEl.src || (mediaEl.dataset ? (mediaEl.dataset.src || mediaEl.dataset.original) : null);
+            if (directSrc && directSrc.startsWith("http") && !directSrc.startsWith("data:")) {
+                console.log(`[DF-Shield] Ingesting <img> directly via source URL: ${directSrc}`);
+                showToast("Đang giám định đa tầng (DeepTrace ViT)...", "loading", true);
+                sendAuditMessage({ type: "url", url: directSrc });
+                return;
+            }
+
+            // Fallback to in-memory canvas base64 if not direct HTTP URL
             const directB64 = tryExtractDirectImageBase64(mediaEl);
             if (directB64) {
                 showToast("Đang giám định đa tầng (DeepTrace ViT)...", "loading", true);
@@ -257,12 +266,16 @@
             img.onload = () => {
                 try {
                     const canvas = document.createElement("canvas");
-                    
+
                     // Clamp source rectangle strictly within [0, img.width] and [0, img.height]
-                    const sx = Math.max(0, Math.min(img.width - 1, area.x || 0));
-                    const sy = Math.max(0, Math.min(img.height - 1, area.y || 0));
-                    const sw = Math.max(1, Math.min(img.width - sx, area.width || img.width));
-                    const sh = Math.max(1, Math.min(img.height - sy, area.height || img.height));
+                    const rawX = area.x || 0;
+                    const rawY = area.y || 0;
+                    const sx = Math.max(0, Math.min(img.width - 1, rawX));
+                    const sy = Math.max(0, Math.min(img.height - 1, rawY));
+                    const rawW = (area.width || img.width) + Math.min(0, rawX);
+                    const rawH = (area.height || img.height) + Math.min(0, rawY);
+                    const sw = Math.max(1, Math.min(img.width - sx, rawW));
+                    const sh = Math.max(1, Math.min(img.height - sy, rawH));
 
                     let dw = sw;
                     let dh = sh;
@@ -322,7 +335,7 @@
 
         const card = document.createElement("div");
         card.className = `df-shield-overlay-card ${info.isFake ? "df-card-fake" : "df-card-real"}`;
-        
+
         card.innerHTML = `
             <div class="df-card-header">
                 <span class="df-card-badge-seal">🛡️ DEEPTRACE FORENSIC SHIELD</span>
@@ -412,7 +425,7 @@
                     const origOutline = media.style.outline;
                     media.style.outline = "3px solid #00F0FF";
                     setTimeout(() => { media.style.outline = origOutline; }, 2000);
-                } catch (e) {}
+                } catch (e) { }
                 initiateMediaAudit(media);
             } else {
                 // Fallback: Capture active viewport directly
@@ -453,6 +466,6 @@
         }
     });
 
-    console.log("[Deepfake Forensic Shield] Content script active on page:", window.location.hostname);
+    console.log("[DeepTrace AI Forensic Shield v1.2.0] Content script active on page:", window.location.hostname);
 })();
 

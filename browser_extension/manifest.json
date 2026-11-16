@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "DeepTrace.io.vn - AI Forensic Shield",
   "short_name": "DeepTrace",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "DeepTrace.io.vn Client-Server Hybrid Deepfake & Synthetic Media Detection Extension for TikTok, Instagram Reels, Threads, YouTube Shorts, and Web Media.",
   "permissions": [
     "activeTab",
