@@ -93,15 +93,19 @@ public class DeepTraceOverlayService extends Service {
             Notification notification = buildNotification();
             if (Build.VERSION.SDK_INT >= 34) {
                 int fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-                try {
-                    fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
-                } catch (Throwable ignored) {}
+                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+                    } catch (Throwable ignored) {}
+                }
                 startForeground(1001, notification, fgsType);
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-                try {
-                    fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
-                } catch (Throwable ignored) {}
+                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    try {
+                        fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+                    } catch (Throwable ignored) {}
+                }
                 startForeground(1001, notification, fgsType);
             } else {
                 startForeground(1001, notification);
@@ -136,8 +140,25 @@ public class DeepTraceOverlayService extends Service {
             }
 
             int resultCode = intent.getIntExtra("RESULT_CODE", 0);
-            Intent data = intent.getParcelableExtra("DATA_INTENT");
+            Intent data = null;
+            try {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    data = intent.getParcelableExtra("DATA_INTENT", Intent.class);
+                } else {
+                    data = intent.getParcelableExtra("DATA_INTENT");
+                }
+            } catch (Throwable t) {
+                try {
+                    data = intent.getParcelableExtra("DATA_INTENT");
+                } catch (Throwable ignored) {}
+            }
+
             if (resultCode != 0 && data != null) {
+                if (Build.VERSION.SDK_INT >= 34) {
+                    try {
+                        startForeground(1001, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                    } catch (Throwable ignored) {}
+                }
                 setupMediaProjection(resultCode, data);
             }
         }
@@ -239,6 +260,20 @@ public class DeepTraceOverlayService extends Service {
                         captureHandler = new Handler(captureHandlerThread.getLooper());
                     }
 
+                    // CRITICAL FOR ANDROID 14 (API 34+):
+                    // MediaProjection.Callback MUST be registered before createVirtualDisplay()
+                    mediaProjection.registerCallback(new MediaProjection.Callback() {
+                        @Override
+                        public void onStop() {
+                            super.onStop();
+                            android.util.Log.i("DeepTrace", "MediaProjection session ended");
+                            if (virtualDisplay != null) {
+                                try { virtualDisplay.release(); } catch (Exception ignored) {}
+                                virtualDisplay = null;
+                            }
+                        }
+                    }, captureHandler);
+
                     imageReader = ImageReader.newInstance(captureWidth, captureHeight, PixelFormat.RGBA_8888, 2);
                     imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                         @Override
@@ -249,6 +284,7 @@ public class DeepTraceOverlayService extends Service {
                                 if (image != null) {
                                     Image.Plane[] planes = image.getPlanes();
                                     ByteBuffer buffer = planes[0].getBuffer();
+                                    buffer.rewind();
                                     int pixelStride = planes[0].getPixelStride();
                                     int rowStride = planes[0].getRowStride();
                                     int rowPadding = rowStride - pixelStride * captureWidth;
@@ -256,6 +292,9 @@ public class DeepTraceOverlayService extends Service {
                                     Bitmap bmp = Bitmap.createBitmap(captureWidth + rowPadding / pixelStride, captureHeight, Bitmap.Config.ARGB_8888);
                                     bmp.copyPixelsFromBuffer(buffer);
                                     latestCapturedBitmap = Bitmap.createBitmap(bmp, 0, 0, captureWidth, captureHeight);
+                                    if (bmp != latestCapturedBitmap) {
+                                        bmp.recycle();
+                                    }
                                 }
                             } catch (Throwable ignored) {
                             } finally {
@@ -419,9 +458,20 @@ public class DeepTraceOverlayService extends Service {
             triggerForensicScanUrl(targetUrl);
         } else {
             verdictText.setVisibility(View.VISIBLE);
-            verdictText.setText("💡 Mở lại App DeepTrace và gạt lại công tắc Khiên để cấp quyền Chụp màn hình (Bắt đầu ngay) nhé!");
+            verdictText.setText("💡 Đang mở App DeepTrace để cấp quyền Bắt đầu ngay...");
             setVerdictBgColor(Color.parseColor("#D97706"));
-            new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 6000);
+            new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 5000);
+
+            try {
+                Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    launchIntent.putExtra("TRIGGER_SCREEN_PERMISSION", true);
+                    startActivity(launchIntent);
+                }
+            } catch (Throwable t) {
+                android.util.Log.e("DeepTrace", "Failed to launch MainActivity: " + t.getMessage());
+            }
         }
     }
 

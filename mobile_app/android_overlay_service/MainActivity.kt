@@ -22,12 +22,24 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleSendIntent(intent)
+        checkTriggerScreenPermission(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleSendIntent(intent)
+        checkTriggerScreenPermission(intent)
+    }
+
+    private fun checkTriggerScreenPermission(intent: Intent?) {
+        if (intent?.getBooleanExtra("TRIGGER_SCREEN_PERMISSION", false) == true) {
+            intent.removeExtra("TRIGGER_SCREEN_PERMISSION")
+            val mgr = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as? MediaProjectionManager
+            if (mgr != null) {
+                startActivityForResult(mgr.createScreenCaptureIntent(), REQUEST_SCREEN_CAPTURE)
+            }
+        }
     }
 
     private fun handleSendIntent(intent: Intent?) {
