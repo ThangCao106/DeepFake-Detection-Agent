@@ -23,11 +23,13 @@ import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -59,7 +61,13 @@ public class DeepTraceOverlayService extends Service {
     private MediaProjection mediaProjection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
-    private int screenWidth, screenHeight, screenDensity;
+    private HandlerThread captureHandlerThread;
+    private Handler captureHandler;
+    private volatile Bitmap latestCapturedBitmap = null;
+
+    private int captureWidth = 720;
+    private int captureHeight = 1280;
+    private int screenDensity = 320;
 
     private static final String API_GATEWAY_PRIMARY = "https://deeptrace.io.vn/api/upload";
     private static final String API_GATEWAY_FALLBACK = "https://detection.dtpsoft.vn/api/upload";
@@ -74,11 +82,6 @@ public class DeepTraceOverlayService extends Service {
     public void onCreate() {
         super.onCreate();
         isRunning = true;
-
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        screenWidth = metrics.widthPixels;
-        screenHeight = metrics.heightPixels;
-        screenDensity = metrics.densityDpi;
 
         // 1. Safe Foreground Notification (MediaProjection compatible)
         try {
@@ -126,19 +129,70 @@ public class DeepTraceOverlayService extends Service {
             if (mgr != null) {
                 mediaProjection = mgr.getMediaProjection(resultCode, data);
                 if (mediaProjection != null) {
-                    imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 2);
+                    // Compute Real Screen Metrics
+                    DisplayMetrics realMetrics = new DisplayMetrics();
+                    if (windowManager != null) {
+                        windowManager.getDefaultDisplay().getRealMetrics(realMetrics);
+                    } else {
+                        realMetrics = getResources().getDisplayMetrics();
+                    }
+
+                    int rawW = realMetrics.widthPixels > 0 ? realMetrics.widthPixels : 1080;
+                    int rawH = realMetrics.heightPixels > 0 ? realMetrics.heightPixels : 1920;
+                    screenDensity = realMetrics.densityDpi > 0 ? realMetrics.densityDpi : 320;
+
+                    // Proportionally scale to 720p width for high speed & low memory footprint
+                    captureWidth = 720;
+                    captureHeight = (int) ((float) rawH * (720.0f / (float) rawW));
+                    if (captureHeight % 2 != 0) captureHeight++;
+
+                    // Start dedicated capture background thread
+                    if (captureHandlerThread == null) {
+                        captureHandlerThread = new HandlerThread("DeepTraceCaptureThread");
+                        captureHandlerThread.start();
+                        captureHandler = new Handler(captureHandlerThread.getLooper());
+                    }
+
+                    imageReader = ImageReader.newInstance(captureWidth, captureHeight, PixelFormat.RGBA_8888, 2);
+                    imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
+                        @Override
+                        public void onImageAvailable(ImageReader reader) {
+                            Image image = null;
+                            try {
+                                image = reader.acquireLatestImage();
+                                if (image != null) {
+                                    Image.Plane[] planes = image.getPlanes();
+                                    ByteBuffer buffer = planes[0].getBuffer();
+                                    int pixelStride = planes[0].getPixelStride();
+                                    int rowStride = planes[0].getRowStride();
+                                    int rowPadding = rowStride - pixelStride * captureWidth;
+
+                                    Bitmap bmp = Bitmap.createBitmap(captureWidth + rowPadding / pixelStride, captureHeight, Bitmap.Config.ARGB_8888);
+                                    bmp.copyPixelsFromBuffer(buffer);
+                                    latestCapturedBitmap = Bitmap.createBitmap(bmp, 0, 0, captureWidth, captureHeight);
+                                }
+                            } catch (Throwable ignored) {
+                            } finally {
+                                if (image != null) {
+                                    image.close();
+                                }
+                            }
+                        }
+                    }, captureHandler);
+
                     virtualDisplay = mediaProjection.createVirtualDisplay(
                             "DeepTraceScreenCapture",
-                            screenWidth,
-                            screenHeight,
+                            captureWidth,
+                            captureHeight,
                             screenDensity,
                             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                             imageReader.getSurface(),
                             null,
-                            null
+                            captureHandler
                     );
-                    android.util.Log.i("DeepTrace", "Screen Capture Engine ready for 1-Tap inspection!");
-                    showToastOnMain("🛡️ Sẵn sàng quét trực tiếp màn hình TikTok!");
+
+                    android.util.Log.i("DeepTrace", "Real-time Screen Stream connected: " + captureWidth + "x" + captureHeight);
+                    showToastOnMain("🛡️ Đã kết nối luồng màn hình TikTok! Chạm khiên để quét.");
                 }
             }
         } catch (Throwable t) {
@@ -257,13 +311,13 @@ public class DeepTraceOverlayService extends Service {
             return;
         }
 
-        // Mode 1 (Primary): Direct Screen Frame Capture (No link needed!)
-        if (imageReader != null) {
+        // Mode 1: Direct Screen Frame Capture
+        if (virtualDisplay != null || latestCapturedBitmap != null) {
             triggerScreenForensicScan();
             return;
         }
 
-        // Mode 2 (Fallback): URL extraction from clipboard
+        // Mode 2: Fallback to clipboard if screen capture stream is not attached
         String rawClipboard = "";
         try {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -279,7 +333,7 @@ public class DeepTraceOverlayService extends Service {
             triggerForensicScanUrl(targetUrl);
         } else {
             verdictText.setVisibility(View.VISIBLE);
-            verdictText.setText("💡 Mẹo: Mở App DeepTrace và bật lại công tắc Khiên nổi để kích hoạt chế độ Chụp Màn Hình Trực Tiếp!");
+            verdictText.setText("💡 Mở lại App DeepTrace và gạt lại công tắc Khiên để cấp quyền Chụp màn hình (Bắt đầu ngay) nhé!");
             setVerdictBgColor(Color.parseColor("#D97706"));
             new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 6000);
         }
@@ -288,20 +342,23 @@ public class DeepTraceOverlayService extends Service {
     private void triggerScreenForensicScan() {
         isScanning = true;
         verdictText.setVisibility(View.VISIBLE);
-        verdictText.setText("📸 Đang chụp & quét khuôn mặt trên màn hình...");
+        verdictText.setText("📸 Đang bóc tách khuôn mặt trên màn hình TikTok...");
         setVerdictBgColor(Color.parseColor("#0A84FF"));
 
         new Thread(() -> {
             try {
-                Bitmap frame = captureCurrentFrame();
+                Bitmap frame = latestCapturedBitmap;
                 if (frame == null) {
-                    Thread.sleep(200);
-                    frame = captureCurrentFrame();
+                    for (int i = 0; i < 15; i++) {
+                        Thread.sleep(80);
+                        frame = latestCapturedBitmap;
+                        if (frame != null) break;
+                    }
                 }
 
                 if (frame == null) {
                     new Handler(Looper.getMainLooper()).post(() -> {
-                        verdictText.setText("⚠️ Không thể chụp khung hình màn hình.");
+                        verdictText.setText("⚠️ Chưa bắt được khung hình màn hình. Vui lòng mở lại khiên trong App.");
                         setVerdictBgColor(Color.parseColor("#D97706"));
                     });
                     return;
@@ -309,7 +366,7 @@ public class DeepTraceOverlayService extends Service {
 
                 // Compress bitmap to JPEG Base64
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                frame.compress(Bitmap.CompressFormat.JPEG, 80, stream);
+                frame.compress(Bitmap.CompressFormat.JPEG, 75, stream);
                 byte[] byteArray = stream.toByteArray();
                 String base64Img = "data:image/jpeg;base64," + Base64.encodeToString(byteArray, Base64.NO_WRAP);
 
@@ -406,32 +463,6 @@ public class DeepTraceOverlayService extends Service {
                 new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 10000);
             }
         }).start();
-    }
-
-    private Bitmap captureCurrentFrame() {
-        if (imageReader == null) return null;
-        Image image = null;
-        try {
-            image = imageReader.acquireLatestImage();
-            if (image == null) return null;
-
-            Image.Plane[] planes = image.getPlanes();
-            ByteBuffer buffer = planes[0].getBuffer();
-            int pixelStride = planes[0].getPixelStride();
-            int rowStride = planes[0].getRowStride();
-            int rowPadding = rowStride - pixelStride * screenWidth;
-
-            Bitmap bitmap = Bitmap.createBitmap(screenWidth + rowPadding / pixelStride, screenHeight, Bitmap.Config.ARGB_8888);
-            bitmap.copyPixelsFromBuffer(buffer);
-            return Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight);
-        } catch (Exception e) {
-            android.util.Log.e("DeepTrace", "Error capturing frame: " + e.getMessage());
-            return null;
-        } finally {
-            if (image != null) {
-                image.close();
-            }
-        }
     }
 
     private String extractUrlFromText(String text) {
@@ -607,13 +638,16 @@ public class DeepTraceOverlayService extends Service {
             } catch (Exception ignored) {}
         }
         if (virtualDisplay != null) {
-            virtualDisplay.release();
+            try { virtualDisplay.release(); } catch (Exception ignored) {}
         }
         if (imageReader != null) {
-            imageReader.close();
+            try { imageReader.close(); } catch (Exception ignored) {}
+        }
+        if (captureHandlerThread != null) {
+            try { captureHandlerThread.quitSafely(); } catch (Exception ignored) {}
         }
         if (mediaProjection != null) {
-            mediaProjection.stop();
+            try { mediaProjection.stop(); } catch (Exception ignored) {}
         }
     }
 }
