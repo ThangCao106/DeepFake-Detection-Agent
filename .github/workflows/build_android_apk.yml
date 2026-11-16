@@ -50,7 +50,7 @@ jobs:
           with open(path, 'r', encoding='utf-8') as f:
               content = f.read()
 
-          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>'''
+          perms = '''    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>'''
           
           if 'android.permission.INTERNET' not in content:
               content = re.sub(r'(<manifest[^>]*>)', r'\1\n' + perms, content, count=1)
@@ -62,6 +62,10 @@ jobs:
           if 'android.intent.action.SEND' not in content:
               content = content.replace('</activity>', share_intent + '\n        </activity>')
 
+          service_decl = '''        <service android:name=\".DeepTraceOverlayService\" android:enabled=\"true\" android:exported=\"false\" />'''
+          if 'DeepTraceOverlayService' not in content:
+              content = content.replace('</application>', service_decl + '\n    </application>')
+
           with open(path, 'w', encoding='utf-8') as f:
               f.write(content)
           print('Successfully patched AndroidManifest.xml')
@@ -69,9 +73,25 @@ jobs:
           echo "--- AndroidManifest.xml ---"
           cat mobile_app/flutter_app/android/app/src/main/AndroidManifest.xml
 
+      - name: Inject Android Overlay Service & Native Code
+        run: |
+          mkdir -p mobile_app/flutter_app/android/app/src/main/java/vn/io/deeptrace/deeptrace_guard
+          mkdir -p mobile_app/flutter_app/android/app/src/main/kotlin/vn/io/deeptrace/deeptrace_guard
+          mkdir -p mobile_app/flutter_app/android/app/src/main/res/layout
+
+          if [ -f "mobile_app/android_overlay_service/overlay_bubble_layout.xml" ]; then
+            cp mobile_app/android_overlay_service/overlay_bubble_layout.xml mobile_app/flutter_app/android/app/src/main/res/layout/
+          fi
+          if [ -f "mobile_app/android_overlay_service/DeepTraceOverlayService.java" ]; then
+            cp mobile_app/android_overlay_service/DeepTraceOverlayService.java mobile_app/flutter_app/android/app/src/main/java/vn/io/deeptrace/deeptrace_guard/
+          fi
+          if [ -f "mobile_app/android_overlay_service/MainActivity.kt" ]; then
+            cp mobile_app/android_overlay_service/MainActivity.kt mobile_app/flutter_app/android/app/src/main/kotlin/vn/io/deeptrace/deeptrace_guard/
+          fi
+
       - name: Inject DeepTrace Live Call Guardian Code
         run: |
-          # Copy customized DeepTrace main.dart with dual-gateway failover
+          # Copy customized DeepTrace main.dart with dual-gateway failover & overlay toggle
           if [ -f "mobile_app/main.dart.src" ]; then
             cp mobile_app/main.dart.src mobile_app/flutter_app/lib/main.dart
           fi

@@ -31,6 +31,8 @@ class CallAndLiveGuardianScreen extends StatefulWidget {
 }
 
 class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
+  static const platform = MethodChannel('vn.io.deeptrace/overlay');
+
   final TextEditingController _urlController = TextEditingController();
   bool _isAnalyzing = false;
   bool _isFloatingShieldEnabled = false;
@@ -42,6 +44,70 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
     "https://detection.dtpsoft.vn",
   ];
   String _activeGateway = "https://deeptrace.io.vn";
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialOverlayStatus();
+  }
+
+  Future<void> _checkInitialOverlayStatus() async {
+    try {
+      final bool hasPerm = await platform.invokeMethod('checkPermission') ?? false;
+      debugPrint('[DeepTrace] Overlay permission status: $hasPerm');
+    } catch (e) {
+      debugPrint('[DeepTrace] Platform check error: $e');
+    }
+  }
+
+  Future<void> _toggleFloatingShield(bool enable) async {
+    try {
+      if (enable) {
+        final bool hasPermission = await platform.invokeMethod('checkPermission') ?? false;
+        if (!hasPermission) {
+          _showFloatingShieldPermissionGuide();
+          await platform.invokeMethod('requestPermission');
+          return;
+        }
+        await platform.invokeMethod('startOverlay');
+        setState(() {
+          _isFloatingShieldEnabled = true;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🛡️ Khiên nổi đã xuất hiện! Mở TikTok hoặc YouTube để quét 1-chạm.'),
+              backgroundColor: Color(0xFF10B981),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        await platform.invokeMethod('stopOverlay');
+        setState(() {
+          _isFloatingShieldEnabled = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã đóng khiên nổi bảo vệ.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[DeepTrace] Error toggling overlay: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khởi động khiên nổi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _analyzeStream(String url, String routingMode) async {
     final cleanUrl = url.trim();
@@ -114,7 +180,6 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
       } catch (e) {
         debugPrint('[DeepTrace] Gateway $base failed: $e');
         lastError = e;
-        // Continue to fallback gateway
       }
     }
 
@@ -149,7 +214,7 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                   Text('🛡️', style: TextStyle(fontSize: 24)),
                   SizedBox(width: 10),
                   Text(
-                    'Cách Bật Khiên Nổi Trên TikTok, FB, YT',
+                    'Cấp Quyền Khiên Nổi Trên TikTok, FB, YT',
                     style: TextStyle(
                       color: Color(0xFF00F0FF),
                       fontSize: 15,
@@ -177,8 +242,11 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('ĐÃ HIỂU - BẬT KHIÊN NỔI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    platform.invokeMethod('requestPermission');
+                  },
+                  child: const Text('MỞ CÀI ĐẶT CẤP QUYỀN NGAY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -285,21 +353,14 @@ class _CallAndLiveGuardianScreenState extends State<CallAndLiveGuardianScreen> {
                       Switch(
                         value: _isFloatingShieldEnabled,
                         activeColor: const Color(0xFF00F0FF),
-                        onChanged: (val) {
-                          setState(() {
-                            _isFloatingShieldEnabled = val;
-                          });
-                          if (val) {
-                            _showFloatingShieldPermissionGuide();
-                          }
-                        },
+                        onChanged: (val) => _toggleFloatingShield(val),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
                     _isFloatingShieldEnabled
-                        ? '🟢 ĐANG BẬT: Khiên 🛡️ sẵn sàng nổi đè lên TikTok, YouTube, Facebook, IG, Zalo. Chạm vào khiên bất kỳ lúc nào để quét Live Stream!'
+                        ? '🟢 ĐANG BẬT: Khiên 🛡️ đang nổi trên màn hình! Bạn có thể mở TikTok, YouTube, Facebook và chạm vào khiên để quét.'
                         : 'Bật để hiển thị icon khiên 🛡️ nổi đè lên trên app TikTok, YouTube, Facebook để chạm quét tức thì.',
                     style: TextStyle(
                       color: _isFloatingShieldEnabled ? const Color(0xFFBAE6FD) : const Color(0xFF94A3B8),

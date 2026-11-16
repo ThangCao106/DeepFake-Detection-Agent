@@ -6,17 +6,19 @@
     android:gravity="center"
     android:padding="6dp">
 
-    <!-- Floating Bubble Circle Icon -->
-    <ImageView
+    <!-- Floating Shield Bubble Icon -->
+    <TextView
         android:id="@+id/bubble_icon"
-        android:layout_width="54dp"
-        android:layout_height="54dp"
-        android:background="@android:drawable/btn_default"
-        android:src="@android:drawable/ic_menu_camera"
-        android:contentDescription="DeepTrace Call Guardian"
-        android:elevation="10dp" />
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:text="🛡️"
+        android:textSize="32sp"
+        android:gravity="center"
+        android:background="@android:drawable/dialog_holo_dark_frame"
+        android:contentDescription="DeepTrace Live Guardian"
+        android:elevation="12dp" />
 
-    <!-- Verdict Banner appearing during call inspection -->
+    <!-- Verdict Banner appearing during inspection -->
     <TextView
         android:id="@+id/verdict_badge"
         android:layout_width="220dp"
@@ -29,7 +31,6 @@
         android:padding="8dp"
         android:layout_marginTop="6dp"
         android:gravity="center"
-        android:elevation="12dp" />
+        android:elevation="14dp" />
 
 </LinearLayout>
-

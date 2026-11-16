@@ -1,59 +1,44 @@
-package vn.io.deeptrace.guard;
+package vn.io.deeptrace.deeptrace_guard;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
-import android.media.Image;
-import android.media.ImageReader;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.util.Base64;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
-/**
- * DeepTrace Floating Overlay Service (Call & Live Stream Guardian for Android)
- * Monitors active Zalo / FaceTime / Messenger / TikTok Live sessions via non-invasive on-demand capture.
- */
 public class DeepTraceOverlayService extends Service {
     private WindowManager windowManager;
     private View floatingView;
-    private ImageView bubbleIcon;
+    private TextView bubbleIcon;
     private TextView verdictText;
 
-    private MediaProjection mediaProjection;
-    private VirtualDisplay virtualDisplay;
-    private ImageReader imageReader;
-    private int screenWidth, screenHeight, screenDensity;
-
-    private static final String API_ENDPOINT = "https://deeptrace.io.vn/api/analyze";
+    private static final String API_GATEWAY_PRIMARY = "https://deeptrace.io.vn/api/upload";
+    private static final String API_GATEWAY_FALLBACK = "https://detection.dtpsoft.vn/api/upload";
     private boolean isScanning = false;
 
     @Override
@@ -68,11 +53,6 @@ public class DeepTraceOverlayService extends Service {
         startForeground(1001, buildNotification());
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        screenWidth = metrics.widthPixels;
-        screenHeight = metrics.heightPixels;
-        screenDensity = metrics.densityDpi;
-
         initFloatingBubble();
     }
 
@@ -91,13 +71,12 @@ public class DeepTraceOverlayService extends Service {
 
         params.gravity = Gravity.TOP | Gravity.START;
         params.x = 20;
-        params.y = 250;
+        params.y = 350;
 
         floatingView = LayoutInflater.from(this).inflate(R.layout.overlay_bubble_layout, null);
         bubbleIcon = floatingView.findViewById(R.id.bubble_icon);
         verdictText = floatingView.findViewById(R.id.verdict_badge);
 
-        // Touch listener for dragging and single-click scanning
         floatingView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
@@ -122,8 +101,8 @@ public class DeepTraceOverlayService extends Service {
 
                     case MotionEvent.ACTION_UP:
                         if (System.currentTimeMillis() - touchStartTime < 250) {
-                            // User clicked the bubble: Trigger real-time forensic inspection
-                            triggerCallForensicScan();
+                            // User tapped the floating shield
+                            onShieldClicked();
                         }
                         return true;
                 }
@@ -134,95 +113,136 @@ public class DeepTraceOverlayService extends Service {
         windowManager.addView(floatingView, params);
     }
 
-    /**
-     * Captures a single frame from the live video call (Zalo / FaceTime / Stream) and calls DeepTrace Engine
-     */
-    public void triggerCallForensicScan() {
+    private void onShieldClicked() {
         if (isScanning) return;
-        isScanning = true;
 
+        // Check clipboard for copied TikTok / YouTube / video link
+        String targetUrl = "";
+        try {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip().getItemCount() > 0) {
+                ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+                CharSequence text = item != null ? item.getText() : null;
+                if (text != null) {
+                    String clipStr = text.toString().trim();
+                    if (clipStr.startsWith("http://") || clipStr.startsWith("https://")) {
+                        targetUrl = clipStr;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        if (!targetUrl.isEmpty()) {
+            triggerForensicScanUrl(targetUrl);
+        } else {
+            showToastOnMain("🛡️ DeepTrace: Nhấn Chia sẻ -> Sao chép liên kết trên TikTok, rồi chạm lại vào Khiên để quét!");
+            try {
+                Intent appIntent = new Intent(this, MainActivity.class);
+                appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(appIntent);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void triggerForensicScanUrl(String url) {
+        isScanning = true;
         verdictText.setVisibility(View.VISIBLE);
-        verdictText.setText("🛡️ Đang giám định cuộc gọi...");
-        verdictText.setBackgroundColor(0xFF0A84FF);
+        verdictText.setText("🛡️ DeepTrace: Đang kiểm định luồng...");
+        verdictText.setBackgroundColor(Color.parseColor("#0A84FF"));
 
         new Thread(() -> {
             try {
-                Bitmap frame = captureCurrentFrame();
-                if (frame == null) {
-                    showToastOnMain("Không thể chụp luồng video cuộc gọi.");
-                    resetBadge();
-                    return;
-                }
-
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                frame.compress(Bitmap.CompressFormat.JPEG, 85, stream);
-                String base64Image = "data:image/jpeg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
-
-                // Call DeepTrace API
                 JSONObject payload = new JSONObject();
-                payload.put("type", "base64");
-                payload.put("imageBase64", base64Image);
-                payload.put("routing_mode", "call");
+                payload.put("url", url);
+                payload.put("routing_mode", "live");
                 payload.put("language", "vi");
 
-                HttpURLConnection conn = (HttpURLConnection) new URL(API_ENDPOINT).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(12000);
+                String[] endpoints = {API_GATEWAY_PRIMARY, API_GATEWAY_FALLBACK};
+                boolean success = false;
 
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+                for (String endpoint : endpoints) {
+                    try {
+                        HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setDoOutput(true);
+                        conn.setConnectTimeout(8000);
+                        conn.setReadTimeout(20000);
+
+                        try (OutputStream os = conn.getOutputStream()) {
+                            os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+                        }
+
+                        if (conn.getResponseCode() == 200) {
+                            Scanner s = new Scanner(conn.getInputStream()).useDelimiter("\\A");
+                            String resp = s.hasNext() ? s.next() : "";
+                            JSONObject json = new JSONObject(resp);
+
+                            String filepath = json.optString("filepath", "");
+                            if (!filepath.isEmpty()) {
+                                String analyzeUrl = endpoint.replace("/api/upload", "/api/analyze");
+                                HttpURLConnection aConn = (HttpURLConnection) new URL(analyzeUrl).openConnection();
+                                aConn.setRequestMethod("POST");
+                                aConn.setRequestProperty("Content-Type", "application/json");
+                                aConn.setDoOutput(true);
+                                aConn.setConnectTimeout(10000);
+                                aConn.setReadTimeout(30000);
+
+                                JSONObject aPayload = new JSONObject();
+                                aPayload.put("filepath", filepath);
+                                aPayload.put("source_url", url);
+                                aPayload.put("routing_mode", "live");
+                                aPayload.put("language", "vi");
+
+                                try (OutputStream aos = aConn.getOutputStream()) {
+                                    aos.write(aPayload.toString().getBytes(StandardCharsets.UTF_8));
+                                }
+
+                                if (aConn.getResponseCode() == 200) {
+                                    Scanner as = new Scanner(aConn.getInputStream()).useDelimiter("\\A");
+                                    String aResp = as.hasNext() ? as.next() : "";
+                                    JSONObject aJson = new JSONObject(aResp);
+                                    JSONObject det = aJson.optJSONObject("detection_result");
+                                    if (det != null) {
+                                        double risk = det.optDouble("composite_risk_score", 0.0);
+                                        boolean isFake = risk >= 0.5 || det.optString("label", "").toLowerCase().contains("fake");
+                                        String certId = det.optString("certificate_id", "CERT-DT-LIVE");
+
+                                        final double finalRisk = risk;
+                                        final boolean finalIsFake = isFake;
+                                        final String finalCertId = certId;
+
+                                        new Handler(Looper.getMainLooper()).post(() -> {
+                                            if (finalIsFake) {
+                                                verdictText.setText(String.format("🚨 DEEPFAKE! (Rủi ro: %.1f%%)\nMã: %s", finalRisk * 100, finalCertId));
+                                                verdictText.setBackgroundColor(0xFFDC2626);
+                                            } else {
+                                                verdictText.setText(String.format("✅ CHÂN THẬT (Tin cậy: %.1f%%)\nMã: %s", (1.0 - finalRisk) * 100, finalCertId));
+                                                verdictText.setBackgroundColor(0xFF16A34A);
+                                            }
+                                        });
+                                        success = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
                 }
 
-                if (conn.getResponseCode() == 200) {
-                    java.util.Scanner s = new java.util.Scanner(conn.getInputStream()).useDelimiter("\\A");
-                    String respStr = s.hasNext() ? s.next() : "";
-                    JSONObject res = new JSONObject(respStr);
-                    JSONObject det = res.optJSONObject("detection_result");
-                    if (det != null) {
-                        double risk = det.optDouble("composite_risk_score", 0.0);
-                        boolean isFake = risk >= 0.7318;
-                        String certId = det.optString("certificate_id", "CERT-DT-CALL");
-
-                        new Handler(Looper.getMainLooper()).post(() -> {
-                            if (isFake) {
-                                verdictText.setText(String.format("🚨 CẢNH BÁO GIẢ MẠO! (Rủi ro: %.1f%%)\nMã: %s", risk * 100, certId));
-                                verdictText.setBackgroundColor(0xFFDC2626);
-                            } else {
-                                verdictText.setText(String.format("✅ CUỘC GỌI AN TOÀN (Tin cậy: %.1f%%)\nMã: %s", (1.0 - risk) * 100, certId));
-                                verdictText.setBackgroundColor(0xFF16A34A);
-                            }
-                        });
-                    }
-                } else {
-                    showToastOnMain("Lỗi máy chủ giám định (" + conn.getResponseCode() + ")");
+                if (!success) {
+                    showToastOnMain("Không thể giám định liên kết này qua Cổng Pháp Y.");
+                    new Handler(Looper.getMainLooper()).post(this::resetBadge);
                 }
             } catch (Exception e) {
                 showToastOnMain("Lỗi: " + e.getMessage());
+                new Handler(Looper.getMainLooper()).post(this::resetBadge);
             } finally {
                 isScanning = false;
-                new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 8000);
+                new Handler(Looper.getMainLooper()).postDelayed(this::resetBadge, 9000);
             }
         }).start();
-    }
-
-    private Bitmap captureCurrentFrame() {
-        if (imageReader == null) return null;
-        Image image = imageReader.acquireLatestImage();
-        if (image == null) return null;
-
-        Image.Plane[] planes = image.getPlanes();
-        ByteBuffer buffer = planes[0].getBuffer();
-        int pixelStride = planes[0].getPixelStride();
-        int rowStride = planes[0].getRowStride();
-        int rowPadding = rowStride - pixelStride * screenWidth;
-
-        Bitmap bitmap = Bitmap.createBitmap(screenWidth + rowPadding / pixelStride, screenHeight, Bitmap.Config.ARGB_8888);
-        bitmap.copyPixelsFromBuffer(buffer);
-        image.close();
-        return Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight);
     }
 
     private void resetBadge() {
@@ -232,7 +252,7 @@ public class DeepTraceOverlayService extends Service {
     }
 
     private void showToastOnMain(String msg) {
-        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
+        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show());
     }
 
     private void createNotificationChannel() {
@@ -244,22 +264,29 @@ public class DeepTraceOverlayService extends Service {
     }
 
     private Notification buildNotification() {
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0
+        );
+
         Notification.Builder builder = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 ? new Notification.Builder(this, "deeptrace_guard")
                 : new Notification.Builder(this);
         return builder.setContentTitle("DeepTrace Call & Live Guardian")
-                .setContentText("Bong bóng giám sát Deepfake Zalo/FaceTime đang hoạt động")
+                .setContentText("Bong bóng giám sát TikTok / YouTube đang hoạt động")
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentIntent(pendingIntent)
                 .build();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (floatingView != null) windowManager.removeView(floatingView);
-        if (virtualDisplay != null) virtualDisplay.release();
-        if (imageReader != null) imageReader.close();
-        if (mediaProjection != null) mediaProjection.stop();
+        if (floatingView != null && windowManager != null) {
+            try {
+                windowManager.removeView(floatingView);
+            } catch (Exception ignored) {}
+        }
     }
 }
-
