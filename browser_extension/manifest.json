@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "DeepTrace.io.vn - AI Forensic Shield",
   "short_name": "DeepTrace",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "DeepTrace.io.vn Client-Server Hybrid Deepfake & Synthetic Media Detection Extension for TikTok, Instagram Reels, Threads, YouTube Shorts, and Web Media.",
   "permissions": [
     "activeTab",
@@ -17,6 +17,7 @@
     "http://localhost:5000/*"
   ],
   "background": {
+    "scripts": ["background.js"],
     "service_worker": "background.js"
   },
   "icons": {
@@ -59,7 +60,10 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "deeptrace@deeptrace.io.vn",
-      "strict_min_version": "115.0"
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
   }
 }

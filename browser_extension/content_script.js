@@ -21,7 +21,17 @@
 
         const icon = type === "loading" ? "⏳" : (type === "success" ? "✅" : (type === "error" ? "🚨" : "🛡️"));
         toast.className = `df-shield-toast df-toast-${type} df-toast-show`;
-        toast.innerHTML = `<span class="df-toast-icon ${type === 'loading' ? 'df-toast-spin' : ''}">${icon}</span> <span>${message}</span>`;
+        toast.textContent = "";
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = `df-toast-icon ${type === 'loading' ? 'df-toast-spin' : ''}`;
+        iconSpan.textContent = icon;
+
+        const msgSpan = document.createElement("span");
+        msgSpan.textContent = ` ${message}`;
+
+        toast.appendChild(iconSpan);
+        toast.appendChild(msgSpan);
 
         if (!persistent && type !== "loading") {
             toastTimer = setTimeout(() => {
@@ -80,7 +90,7 @@
         if (!activeFloatingBtn) {
             activeFloatingBtn = document.createElement("button");
             activeFloatingBtn.id = "df-shield-float-btn";
-            activeFloatingBtn.innerHTML = `🛡️ Scan AI`;
+            activeFloatingBtn.textContent = "🛡️ Scan AI";
             activeFloatingBtn.title = "Giám định Deepfake / AI với DeepTrace.io.vn";
             activeFloatingBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -336,31 +346,59 @@
         const card = document.createElement("div");
         card.className = `df-shield-overlay-card ${info.isFake ? "df-card-fake" : "df-card-real"}`;
 
-        card.innerHTML = `
-            <div class="df-card-header">
-                <span class="df-card-badge-seal">🛡️ DEEPTRACE FORENSIC SHIELD</span>
-                <span class="df-card-close-btn" title="Đóng">✕</span>
-            </div>
-            <div class="df-card-verdict">
-                <span class="df-verdict-icon">${info.isFake ? "🚨" : "✅"}</span>
-                <div>
-                    <h4 class="df-verdict-title">${info.isFake ? "DEEPFAKE DETECTED" : "AUTHENTIC MEDIA"}</h4>
-                    <span class="df-verdict-sub">Độ tin cậy: ${info.conf}% | Rủi ro: ${info.risk}%</span>
-                </div>
-            </div>
-            <div class="df-card-meta">
-                <span>Chứng thư: <code>${info.certId}</code></span>
-            </div>
-            <div class="df-card-actions">
-                <a href="${info.certUrl}" target="_blank" rel="noopener noreferrer" class="df-btn-cert">
-                    📜 Tra Cứu Chứng Thư Số ↗
-                </a>
-            </div>
-        `;
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "df-card-header";
+        const sealSpan = document.createElement("span");
+        sealSpan.className = "df-card-badge-seal";
+        sealSpan.textContent = "🛡️ DEEPTRACE FORENSIC SHIELD";
+        const closeBtn = document.createElement("span");
+        closeBtn.className = "df-card-close-btn";
+        closeBtn.title = "Đóng";
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", () => card.remove());
+        cardHeader.appendChild(sealSpan);
+        cardHeader.appendChild(closeBtn);
 
-        card.querySelector(".df-card-close-btn").addEventListener("click", () => {
-            card.remove();
-        });
+        const cardVerdict = document.createElement("div");
+        cardVerdict.className = "df-card-verdict";
+        const verdictIcon = document.createElement("span");
+        verdictIcon.className = "df-verdict-icon";
+        verdictIcon.textContent = info.isFake ? "🚨" : "✅";
+        const verdictTextDiv = document.createElement("div");
+        const verdictTitle = document.createElement("h4");
+        verdictTitle.className = "df-verdict-title";
+        verdictTitle.textContent = info.isFake ? "DEEPFAKE DETECTED" : "AUTHENTIC MEDIA";
+        const verdictSub = document.createElement("span");
+        verdictSub.className = "df-verdict-sub";
+        verdictSub.textContent = `Độ tin cậy: ${info.conf}% | Rủi ro: ${info.risk}%`;
+        verdictTextDiv.appendChild(verdictTitle);
+        verdictTextDiv.appendChild(verdictSub);
+        cardVerdict.appendChild(verdictIcon);
+        cardVerdict.appendChild(verdictTextDiv);
+
+        const cardMeta = document.createElement("div");
+        cardMeta.className = "df-card-meta";
+        const metaSpan = document.createElement("span");
+        metaSpan.textContent = "Chứng thư: ";
+        const codeEl = document.createElement("code");
+        codeEl.textContent = info.certId || "N/A";
+        metaSpan.appendChild(codeEl);
+        cardMeta.appendChild(metaSpan);
+
+        const cardActions = document.createElement("div");
+        cardActions.className = "df-card-actions";
+        const certLink = document.createElement("a");
+        certLink.href = info.certUrl || "#";
+        certLink.target = "_blank";
+        certLink.rel = "noopener noreferrer";
+        certLink.className = "df-btn-cert";
+        certLink.textContent = "📜 Tra Cứu Chứng Thư Số ↗";
+        cardActions.appendChild(certLink);
+
+        card.appendChild(cardHeader);
+        card.appendChild(cardVerdict);
+        card.appendChild(cardMeta);
+        card.appendChild(cardActions);
 
         document.body.appendChild(card);
         activeOverlayCard = card;
