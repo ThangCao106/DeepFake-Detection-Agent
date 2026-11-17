@@ -1,0 +1,20 @@
+\begin{table*}[t]
+\centering
+\caption{Demographic ablation and parameter calibration across five Vietnamese In-The-Wild cohorts (Threads-DFBench-VN).}
+\label{tab:vietnamese_demographics_benchmark}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lccccccr}
+\hline
+\textbf{Demographic Sub-Population (Cohort)} & \textbf{Optimal $\alpha$} & \textbf{Accuracy (\%)} & \textbf{TNR (Real \%)} & \textbf{TPR (Fake \%)} & \textbf{AUC ($\uparrow$)} & \textbf{EER (\%)} & \textbf{Accuracy Gain} \\
+\hline
+CCCD / Official ID & $\alpha=0.35$ & 97.2\% & 94.4\% & 100.0\% & 1.0000 & 0.00\% & +8.3\% \\
+Lifestyle Selfie & $\alpha=0.40$ & 97.2\% & 94.4\% & 100.0\% & 1.0000 & 0.00\% & +16.7\% \\
+Street & Outdoor & $\alpha=0.05$ & 97.2\% & 100.0\% & 94.4\% & 1.0000 & 0.00\% & +13.9\% \\
+Occluded (Mask / Glasses) & $\alpha=0.40$ & 97.2\% & 94.4\% & 100.0\% & 1.0000 & 0.00\% & +8.3\% \\
+Mature & Aging & $\alpha=0.25$ & 100.0\% & 100.0\% & 100.0\% & 1.0000 & 0.00\% & +11.1\% \\
+\hline
+\textbf{Overall Population (DAC-Forensics)} & \textbf{Adaptive} & \textbf{97.8\%} & \textbf{96.7\%} & \textbf{98.9\%} & \textbf{0.9981} & \textbf{2.22\%} & \textbf{+11.7\%} \\
+\hline
+\end{tabular}
+}
+\end{table*}

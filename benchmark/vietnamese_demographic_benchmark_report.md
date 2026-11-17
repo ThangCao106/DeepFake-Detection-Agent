@@ -1,7 +1,7 @@
 # Demographic Benchmarking & Parameter Optimization for Vietnamese In-The-Wild Population
 ## Scientific Technical Report for PhD Thesis & Paper v2
 
-**Benchmark Date:** 2026-11-02 10:54:30 UTC  
+**Benchmark Date:** 2026-11-17 15:42:13 UTC  
 **Dataset:** Threads-DFBench Vietnamese Cohort (N = 180 Stratified In-The-Wild Samples)  
 **Compliance Target:** EU AI Act Article 50 & Demographic Fairness Standards (ISO/IEC 23894)  
 

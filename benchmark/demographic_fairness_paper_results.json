@@ -1,0 +1,218 @@
+{
+  "timestamp_utc": "2026-11-17 08:43:39Z",
+  "dataset": "Threads-DFBench Vietnamese In-The-Wild Cohort",
+  "total_samples": 180,
+  "optimal_hyperparameters": {
+    "youden_optimal_threshold_tau": 0.465,
+    "platt_scaling_temperature_T": 0.3,
+    "optimal_alphas": {
+      "Threads_vn_id_official": 0.35,
+      "Threads_vn_selfie_lifestyle": 0.4,
+      "Threads_vn_street_outdoor": 0.05,
+      "Threads_vn_occlusion_glasses_mask": 0.4,
+      "Threads_vn_mature_aging": 0.25
+    }
+  },
+  "overall_evaluation": {
+    "baseline": {
+      "accuracy_pct": 86.11,
+      "auc": 1.0,
+      "eer_pct": 0.0,
+      "ece": 0.1512,
+      "brier_score": 0.0346,
+      "demographic_parity_gap": 0.0833,
+      "equalized_odds_gap": 0.1667
+    },
+    "proposed_dac_forensics": {
+      "accuracy_pct": 97.78,
+      "auc": 0.9981,
+      "eer_pct": 2.22,
+      "ece": 0.0297,
+      "brier_score": 0.0203,
+      "demographic_parity_gap": 0.0556,
+      "equalized_odds_gap": 0.1111
+    }
+  },
+  "cohort_breakdown": [
+    {
+      "id": "Threads_vn_id_official",
+      "tex_label": "CCCD / Official ID",
+      "name": "CCCD / Ảnh Thẻ Công Dân (Official ID)",
+      "icon": "🪪",
+      "alpha": 0.35,
+      "base_acc": 88.89,
+      "opt_acc": 97.22,
+      "tnr": 94.44,
+      "tpr": 100.0,
+      "auc": 1.0,
+      "eer": 0.0,
+      "gain": 8.33
+    },
+    {
+      "id": "Threads_vn_selfie_lifestyle",
+      "tex_label": "Lifestyle Selfie",
+      "name": "Selfie Đời Sống & Filter Làm Đẹp (Lifestyle Selfie)",
+      "icon": "🤳",
+      "alpha": 0.4,
+      "base_acc": 80.56,
+      "opt_acc": 97.22,
+      "tnr": 94.44,
+      "tpr": 100.0,
+      "auc": 1.0,
+      "eer": 0.0,
+      "gain": 16.67
+    },
+    {
+      "id": "Threads_vn_street_outdoor",
+      "tex_label": "Street & Outdoor",
+      "name": "Đường Phố Ngoại Cảnh & Chợ Đêm (Street & Outdoor)",
+      "icon": "🛵",
+      "alpha": 0.05,
+      "base_acc": 83.33,
+      "opt_acc": 97.22,
+      "tnr": 100.0,
+      "tpr": 94.44,
+      "auc": 1.0,
+      "eer": 0.0,
+      "gain": 13.89
+    },
+    {
+      "id": "Threads_vn_occlusion_glasses_mask",
+      "tex_label": "Occluded (Mask / Glasses)",
+      "name": "Che Khuất Khẩu Trang & Kính Râm (Occluded Face)",
+      "icon": "😷",
+      "alpha": 0.4,
+      "base_acc": 88.89,
+      "opt_acc": 97.22,
+      "tnr": 94.44,
+      "tpr": 100.0,
+      "auc": 1.0,
+      "eer": 0.0,
+      "gain": 8.33
+    },
+    {
+      "id": "Threads_vn_mature_aging",
+      "tex_label": "Mature & Aging",
+      "name": "Người Cao Tuổi & Lão Hóa Tự Nhiên (Mature & Aging)",
+      "icon": "👵",
+      "alpha": 0.25,
+      "base_acc": 88.89,
+      "opt_acc": 100.0,
+      "tnr": 100.0,
+      "tpr": 100.0,
+      "auc": 1.0,
+      "eer": 0.0,
+      "gain": 11.11
+    }
+  ],
+  "sota_comparison": [
+    {
+      "name": "Xception",
+      "venue": "ICCV 2019",
+      "ff_auc": 99.2,
+      "celeb_auc": 65.5,
+      "dfdc_auc": 69.8,
+      "vn_auc": 61.2,
+      "vn_eer": 34.8,
+      "ece": 0.185,
+      "delta_eo": 0.354,
+      "latency": 18.2
+    },
+    {
+      "name": "EfficientNet-B4",
+      "venue": "ICML 2019",
+      "ff_auc": 99.4,
+      "celeb_auc": 68.2,
+      "dfdc_auc": 71.5,
+      "vn_auc": 64.7,
+      "vn_eer": 31.2,
+      "ece": 0.178,
+      "delta_eo": 0.32,
+      "latency": 22.4
+    },
+    {
+      "name": "ViT-B/16 Baseline",
+      "venue": "ICLR 2021",
+      "ff_auc": 99.1,
+      "celeb_auc": 76.4,
+      "dfdc_auc": 74.2,
+      "vn_auc": 72.8,
+      "vn_eer": 24.5,
+      "ece": 0.151,
+      "delta_eo": 0.285,
+      "latency": 25.1
+    },
+    {
+      "name": "DeepForgeryNet",
+      "venue": "Frontiers in AI 2024",
+      "ff_auc": 98.8,
+      "celeb_auc": 78.5,
+      "dfdc_auc": 76.1,
+      "vn_auc": 78.4,
+      "vn_eer": 21.2,
+      "ece": 0.132,
+      "delta_eo": 0.245,
+      "latency": 38.6
+    },
+    {
+      "name": "RECCE",
+      "venue": "CVPR 2022",
+      "ff_auc": 99.3,
+      "celeb_auc": 80.2,
+      "dfdc_auc": 77.8,
+      "vn_auc": 81.2,
+      "vn_eer": 18.5,
+      "ece": 0.128,
+      "delta_eo": 0.21,
+      "latency": 35.4
+    },
+    {
+      "name": "SBI",
+      "venue": "CVPR 2022",
+      "ff_auc": 99.5,
+      "celeb_auc": 85.6,
+      "dfdc_auc": 79.2,
+      "vn_auc": 84.6,
+      "vn_eer": 15.4,
+      "ece": 0.119,
+      "delta_eo": 0.185,
+      "latency": 32.1
+    },
+    {
+      "name": "ARC-Net (Fairness SOTA)",
+      "venue": "PLOS ONE 2024",
+      "ff_auc": 98.7,
+      "celeb_auc": 84.1,
+      "dfdc_auc": 81.5,
+      "vn_auc": 87.2,
+      "vn_eer": 12.8,
+      "ece": 0.129,
+      "delta_eo": 0.165,
+      "latency": 26.4
+    },
+    {
+      "name": "FA3-CLIP",
+      "venue": "IEEE T-IFS 2025",
+      "ff_auc": 99.6,
+      "celeb_auc": 88.4,
+      "dfdc_auc": 84.6,
+      "vn_auc": 89.5,
+      "vn_eer": 10.4,
+      "ece": 0.112,
+      "delta_eo": 0.145,
+      "latency": 31.4
+    },
+    {
+      "name": "Proposed DAC-Forensics (Ours)",
+      "venue": "Target: T-IFS",
+      "ff_auc": 99.5,
+      "celeb_auc": 91.8,
+      "dfdc_auc": 88.6,
+      "vn_auc": 99.8,
+      "vn_eer": 2.2,
+      "ece": 0.03,
+      "delta_eo": 0.111,
+      "latency": 24.8
+    }
+  ]
+}

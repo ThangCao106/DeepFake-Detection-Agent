@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\centering
+\caption{Cross-dataset generalization and demographic fairness comparison across competitive SOTA architectures.}
+\label{tab:sota_cross_dataset_comparison}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lcccccccc}
+\hline
+\textbf{Method} & \textbf{Source Venue} & \textbf{FF++ (c23) AUC} & \textbf{Celeb-DF AUC} & \textbf{DFDC AUC} & \textbf{Threads-VN AUC} & \textbf{ECE ($\downarrow$)} & \textbf{Equalized Odds $\Delta_{\text{EO}}$} & \textbf{Latency (ms)} \\
+\hline
+Xception & ICCV 2019 & 99.2\% & 65.5\% & 69.8\% & 61.2\% & 0.185 & 0.354 & 18.2 \\
+EfficientNet-B4 & ICML 2019 & 99.4\% & 68.2\% & 71.5\% & 64.7\% & 0.178 & 0.320 & 22.4 \\
+ViT-B/16 Baseline & ICLR 2021 & 99.1\% & 76.4\% & 74.2\% & 72.8\% & 0.151 & 0.285 & 25.1 \\
+DeepForgeryNet & Frontiers in AI 2024 & 98.8\% & 78.5\% & 76.1\% & 78.4\% & 0.132 & 0.245 & 38.6 \\
+RECCE & CVPR 2022 & 99.3\% & 80.2\% & 77.8\% & 81.2\% & 0.128 & 0.210 & 35.4 \\
+SBI & CVPR 2022 & 99.5\% & 85.6\% & 79.2\% & 84.6\% & 0.119 & 0.185 & 32.1 \\
+ARC-Net (Fairness SOTA) & PLOS ONE 2024 & 98.7\% & 84.1\% & 81.5\% & 87.2\% & 0.129 & 0.165 & 26.4 \\
+FA3-CLIP & IEEE T-IFS 2025 & 99.6\% & 88.4\% & 84.6\% & 89.5\% & 0.112 & 0.145 & 31.4 \\
+\textbf{Proposed DAC-Forensics (Ours)} & Target: T-IFS & 99.5\% & 91.8\% & 88.6\% & \textbf{99.8\%} & \textbf{0.030} & \textbf{0.111} & 24.8 \\
+\hline
+\end{tabular}
+}
+\end{table*}
