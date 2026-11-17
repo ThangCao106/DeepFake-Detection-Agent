@@ -27,3 +27,4 @@ python-pptx
 # Media Stream Ingestion (In-the-wild Social Videos & PWA Share Target)
 yt-dlp
 requests
+pytesseract

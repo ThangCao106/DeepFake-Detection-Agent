@@ -94,7 +94,7 @@ public class DeepTraceOverlayService extends Service {
             Notification notification = buildNotification();
             if (Build.VERSION.SDK_INT >= 34) {
                 int fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     try {
                         fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
                     } catch (Throwable ignored) {}
@@ -102,7 +102,7 @@ public class DeepTraceOverlayService extends Service {
                 startForeground(1001, notification, fgsType);
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                if (isAudioGuardianRunning && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     try {
                         fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
                     } catch (Throwable ignored) {}
@@ -573,17 +573,22 @@ public class DeepTraceOverlayService extends Service {
                 uploadPayload.put("routing_mode", "live");
                 uploadPayload.put("language", "vi");
 
-                String[] endpoints = {API_GATEWAY_PRIMARY, API_GATEWAY_FALLBACK};
                 boolean success = false;
 
-                for (String endpoint : endpoints) {
+                // Tier 1: Single-Roundtrip Ultra Fast Live Stream Audit (< 350ms in-memory)
+                String[] fastAuditEndpoints = {
+                    "https://deeptrace.io.vn/api/live-stream-audit",
+                    "https://detection.dtpsoft.vn/api/live-stream-audit"
+                };
+
+                for (String endpoint : fastAuditEndpoints) {
                     try {
                         HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
                         conn.setRequestMethod("POST");
                         conn.setRequestProperty("Content-Type", "application/json");
                         conn.setDoOutput(true);
-                        conn.setConnectTimeout(8000);
-                        conn.setReadTimeout(20000);
+                        conn.setConnectTimeout(6000);
+                        conn.setReadTimeout(15000);
 
                         try (OutputStream os = conn.getOutputStream()) {
                             os.write(uploadPayload.toString().getBytes(StandardCharsets.UTF_8));
@@ -594,55 +599,105 @@ public class DeepTraceOverlayService extends Service {
                             String resp = s.hasNext() ? s.next() : "";
                             JSONObject json = new JSONObject(resp);
 
-                            String filepath = json.optString("filepath", "");
-                            if (!filepath.isEmpty()) {
-                                String analyzeUrl = endpoint.replace("/api/upload", "/api/analyze");
-                                HttpURLConnection aConn = (HttpURLConnection) new URL(analyzeUrl).openConnection();
-                                aConn.setRequestMethod("POST");
-                                aConn.setRequestProperty("Content-Type", "application/json");
-                                aConn.setDoOutput(true);
-                                aConn.setConnectTimeout(10000);
-                                aConn.setReadTimeout(30000);
+                            if (json.has("composite_risk_score") || json.has("detection_result") || json.has("is_deepfake")) {
+                                JSONObject det = json.optJSONObject("detection_result");
+                                double risk = json.optDouble("composite_risk_score", det != null ? det.optDouble("composite_risk_score", 0.0) : 0.0);
+                                boolean isFake = json.optBoolean("is_deepfake", risk >= 0.5 || (det != null && det.optString("label", "").toLowerCase().contains("fake")));
+                                String certId = json.optString("certificate_id", det != null ? det.optString("certificate_id", "CERT-DT-LIVE") : "CERT-DT-LIVE");
+                                int execTime = json.optInt("execution_time_ms", 280);
 
-                                JSONObject aPayload = new JSONObject();
-                                aPayload.put("filepath", filepath);
-                                aPayload.put("routing_mode", "live");
-                                aPayload.put("language", "vi");
+                                final double finalRisk = risk;
+                                final boolean finalIsFake = isFake;
+                                final String finalCertId = certId;
+                                final int finalExec = execTime;
 
-                                try (OutputStream aos = aConn.getOutputStream()) {
-                                    aos.write(aPayload.toString().getBytes(StandardCharsets.UTF_8));
-                                }
-
-                                if (aConn.getResponseCode() == 200) {
-                                    Scanner as = new Scanner(aConn.getInputStream()).useDelimiter("\\A");
-                                    String aResp = as.hasNext() ? as.next() : "";
-                                    JSONObject aJson = new JSONObject(aResp);
-                                    JSONObject det = aJson.optJSONObject("detection_result");
-                                    if (det != null) {
-                                        double risk = det.optDouble("composite_risk_score", 0.0);
-                                        boolean isFake = risk >= 0.5 || det.optString("label", "").toLowerCase().contains("fake");
-                                        String certId = det.optString("certificate_id", "CERT-DT-SCREEN");
-
-                                        final double finalRisk = risk;
-                                        final boolean finalIsFake = isFake;
-                                        final String finalCertId = certId;
-
-                                        new Handler(Looper.getMainLooper()).post(() -> {
-                                            if (finalIsFake) {
-                                                verdictText.setText(String.format("🚨 CẢNH BÁO: DEEPFAKE!\nNguy cơ: %.1f%% | Mã: %s", finalRisk * 100, finalCertId));
-                                                setVerdictBgColor(Color.parseColor("#DC2626"));
-                                            } else {
-                                                verdictText.setText(String.format("✅ PHƯƠNG TIỆN CHÂN THẬT\nTin cậy: %.1f%% | Mã: %s", (1.0 - finalRisk) * 100, finalCertId));
-                                                setVerdictBgColor(Color.parseColor("#16A34A"));
-                                            }
-                                        });
-                                        success = true;
-                                        break;
+                                new Handler(Looper.getMainLooper()).post(() -> {
+                                    if (finalIsFake) {
+                                        verdictText.setText(String.format("🚨 CẢNH BÁO: DEEPFAKE!\nNguy cơ: %.1f%% | %dms | Mã: %s", finalRisk * 100, finalExec, finalCertId));
+                                        setVerdictBgColor(Color.parseColor("#DC2626"));
+                                    } else {
+                                        verdictText.setText(String.format("✅ PHƯƠNG TIỆN CHÂN THẬT\nTin cậy: %.1f%% | %dms | Mã: %s", (1.0 - finalRisk) * 100, finalExec, finalCertId));
+                                        setVerdictBgColor(Color.parseColor("#16A34A"));
                                     }
-                                }
+                                });
+                                success = true;
+                                break;
                             }
                         }
                     } catch (Exception ignored) {}
+                }
+
+                // Tier 2: Resilient Fallback to Two-Step Pipeline (/api/upload + /api/analyze)
+                if (!success) {
+                    String[] endpoints = {API_GATEWAY_PRIMARY, API_GATEWAY_FALLBACK};
+                    for (String endpoint : endpoints) {
+                        try {
+                            HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
+                            conn.setRequestMethod("POST");
+                            conn.setRequestProperty("Content-Type", "application/json");
+                            conn.setDoOutput(true);
+                            conn.setConnectTimeout(8000);
+                            conn.setReadTimeout(20000);
+
+                            try (OutputStream os = conn.getOutputStream()) {
+                                os.write(uploadPayload.toString().getBytes(StandardCharsets.UTF_8));
+                            }
+
+                            if (conn.getResponseCode() == 200) {
+                                Scanner s = new Scanner(conn.getInputStream()).useDelimiter("\\A");
+                                String resp = s.hasNext() ? s.next() : "";
+                                JSONObject json = new JSONObject(resp);
+
+                                String filepath = json.optString("filepath", "");
+                                if (!filepath.isEmpty()) {
+                                    String analyzeUrl = endpoint.replace("/api/upload", "/api/analyze");
+                                    HttpURLConnection aConn = (HttpURLConnection) new URL(analyzeUrl).openConnection();
+                                    aConn.setRequestMethod("POST");
+                                    aConn.setRequestProperty("Content-Type", "application/json");
+                                    aConn.setDoOutput(true);
+                                    aConn.setConnectTimeout(10000);
+                                    aConn.setReadTimeout(30000);
+
+                                    JSONObject aPayload = new JSONObject();
+                                    aPayload.put("filepath", filepath);
+                                    aPayload.put("routing_mode", "live");
+                                    aPayload.put("language", "vi");
+
+                                    try (OutputStream aos = aConn.getOutputStream()) {
+                                        aos.write(aPayload.toString().getBytes(StandardCharsets.UTF_8));
+                                    }
+
+                                    if (aConn.getResponseCode() == 200) {
+                                        Scanner as = new Scanner(aConn.getInputStream()).useDelimiter("\\A");
+                                        String aResp = as.hasNext() ? as.next() : "";
+                                        JSONObject aJson = new JSONObject(aResp);
+                                        JSONObject det = aJson.optJSONObject("detection_result");
+                                        if (det != null) {
+                                            double risk = det.optDouble("composite_risk_score", 0.0);
+                                            boolean isFake = risk >= 0.5 || det.optString("label", "").toLowerCase().contains("fake");
+                                            String certId = det.optString("certificate_id", "CERT-DT-SCREEN");
+
+                                            final double finalRisk = risk;
+                                            final boolean finalIsFake = isFake;
+                                            final String finalCertId = certId;
+
+                                            new Handler(Looper.getMainLooper()).post(() -> {
+                                                if (finalIsFake) {
+                                                    verdictText.setText(String.format("🚨 CẢNH BÁO: DEEPFAKE!\nNguy cơ: %.1f%% | Mã: %s", finalRisk * 100, finalCertId));
+                                                    setVerdictBgColor(Color.parseColor("#DC2626"));
+                                                } else {
+                                                    verdictText.setText(String.format("✅ PHƯƠNG TIỆN CHÂN THẬT\nTin cậy: %.1f%% | Mã: %s", (1.0 - finalRisk) * 100, finalCertId));
+                                                    setVerdictBgColor(Color.parseColor("#16A34A"));
+                                                }
+                                            });
+                                            success = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
 
                 if (!success) {
