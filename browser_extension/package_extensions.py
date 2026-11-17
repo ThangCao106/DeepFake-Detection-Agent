@@ -19,7 +19,7 @@ def build_packages():
     # 1. Firefox AMO Package: scripts background, strict_min_version 140.0, data_collection_permissions
     firefox_manifest = json.loads(json.dumps(base_manifest))
     firefox_manifest['background'] = {'scripts': ['background.js']}
-    firefox_manifest['browser_specific_settings']['gecko']['strict_min_version'] = '140.0'
+    firefox_manifest['browser_specific_settings']['gecko']['strict_min_version'] = '142.0'
     firefox_manifest['browser_specific_settings']['gecko']['data_collection_permissions'] = {'required': ['none']}
 
     # 2. Chrome Web Store Package: service_worker only, remove gecko settings
