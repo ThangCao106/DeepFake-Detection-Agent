@@ -12,7 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies required for OpenCV, PIL, ffmpeg, and native tools
+# Install system dependencies required for OpenCV, PIL, ffmpeg, tesseract OCR, and native tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1 \
@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first for layer caching
