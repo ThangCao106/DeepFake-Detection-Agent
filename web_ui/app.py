@@ -900,6 +900,7 @@ def api_live_stream_audit():
     import time
     import base64
     import io
+    import uuid
     from PIL import Image
 
     t0 = time.time()
