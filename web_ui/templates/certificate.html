@@ -53,13 +53,19 @@
           {
             "@type": "ListItem",
             "position": 1,
-            "name": "Trang chủ",
+            "name": "Trang chủ DeepTrace",
             "item": "{{BASE_ORIGIN}}/"
           },
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Chứng thư {{CERTIFICATE_ID}}",
+            "name": "Kho Chứng Thư Giám Định",
+            "item": "{{BASE_ORIGIN}}/certificates"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "{{CERTIFICATE_ID}}",
             "item": "{{CANONICAL_URL}}"
           }
         ]
@@ -68,14 +74,15 @@
         "@type": "ClaimReview",
         "@id": "{{CANONICAL_URL}}#claimreview",
         "url": "{{CANONICAL_URL}}",
-        "claimReviewed": "Xác thực tính nguyên bản phương tiện truyền thông mã {{CERTIFICATE_ID}}",
+        "claimReviewed": "Xác thực tính nguyên bản và phát hiện can thiệp Deepfake phương tiện truyền thông mã {{CERTIFICATE_ID}}",
         "datePublished": "{{TIMESTAMP_ISO}}",
         "reviewRating": {
           "@type": "Rating",
           "ratingValue": "{{RATING_VALUE}}",
           "bestRating": "5",
           "worstRating": "1",
-          "alternateName": "{{VERDICT}}"
+          "alternateName": "{{VERDICT}}",
+          "ratingExplanation": "Hệ thống giám định pháp y đa chiều DeepTrace phân tích tệp tin qua cảm biến CMOS PRNU, phổ Fourier 2D và mô hình ViT hiệu chuẩn Youden-Platt. Kết luận phán quyết: {{VERDICT}} (Rủi ro: {{COMPOSITE_RISK_PERCENT}}%)."
         },
         "itemReviewed": {
           "@type": "MediaObject",
@@ -85,9 +92,39 @@
         },
         "author": {
           "@type": "Organization",
-          "name": "DeepTrace AI Forensic System",
+          "name": "DeepTrace AI Forensic Authority",
           "url": "{{BASE_ORIGIN}}"
         }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "{{CANONICAL_URL}}#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Chứng thư giám định số {{CERTIFICATE_ID}} là gì?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Chứng thư số {{CERTIFICATE_ID}} là hồ sơ pháp y kỹ thuật số được cấp bởi hệ thống DeepTrace.io.vn nhằm xác thực tính nguyên bản và phát hiện giả mạo Deepfake cho ảnh và video, tuân thủ tiêu chuẩn EU AI Act Điều 50 và DSA Auditable Media."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Phương tiện truyền thông mang mã {{CERTIFICATE_ID}} là Thật hay Deepfake?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Tệp tin mang mã {{CERTIFICATE_ID}} được hệ thống phân tích và đưa ra kết luận phán quyết là: {{VERDICT}} với điểm rủi ro tổng hợp {{COMPOSITE_RISK_PERCENT}}% và mã băm toàn vẹn SHA-256."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Làm thế nào để tra cứu và kiểm tra lại tính hợp lệ của mã {{CERTIFICATE_ID}}?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Bạn có thể tra cứu trực tiếp bằng cách nhập mã {{CERTIFICATE_ID}} tại Cổng tra cứu quốc gia DeepTrace.io.vn hoặc gọi API bảo mật tại {{BASE_ORIGIN}}/api/verify/{{CERTIFICATE_ID}}."
+            }
+          }
+        ]
       }
     ]
   }
@@ -238,10 +275,21 @@
 <body>
 
   <div class="cert-card">
+    <div style="padding: 0.75rem 2rem; background: #0f172a; border-bottom: 1px solid #1e293b; font-size: 0.8rem; color: #94a3b8;">
+      <nav aria-label="Breadcrumb">
+        <a href="{{BASE_ORIGIN}}/" style="color: #38bdf8; text-decoration: none;">Trang chủ DeepTrace</a>
+        <span style="margin: 0 0.4rem;">&gt;</span>
+        <span style="color: #cbd5e1;">Chứng thư giám định</span>
+        <span style="margin: 0 0.4rem;">&gt;</span>
+        <strong style="color: #f8fafc;">{{CERTIFICATE_ID}}</strong>
+      </nav>
+    </div>
+
     <div class="cert-header">
       <div class="cert-title">
-        <h1>📜 Chứng thư Giám định Kỹ thuật số</h1>
-        <span class="cert-id">{{CERTIFICATE_ID}}</span>
+        <h1 style="font-size: 1.25rem; font-weight: 700; margin: 0; line-height: 1.4;">
+          📜 Chứng Thư Giám Định Deepfake Số <span class="cert-id" style="font-size: 0.95rem; vertical-align: middle;">{{CERTIFICATE_ID}}</span>
+        </h1>
       </div>
       <div class="verdict-badge {{BADGE_CLASS}}">
         {{VERDICT}}
@@ -277,7 +325,7 @@
       </div>
 
       <div class="evidence-section">
-        <div class="evidence-title">{{EVIDENCE_TITLE}}</div>
+        <h2 class="evidence-title" style="font-size: 1.05rem;">{{EVIDENCE_TITLE}}</h2>
         
         <div class="evidence-item">
           <span class="evidence-label">{{EV_1_LABEL}}</span>
@@ -298,13 +346,29 @@
       </div>
 
       <div class="evidence-section" style="margin-top: 1.25rem; background: #fffbeb; border-color: #fde68a; {{XAI_STYLE}}">
-        <div class="evidence-title" style="color: #92400e;">⚖️ Giải trình XAI Chuẩn EU AI Act Art. 50</div>
+        <h2 class="evidence-title" style="color: #92400e; font-size: 1.05rem;">⚖️ Giải trình XAI Chuẩn EU AI Act Art. 50</h2>
         <p style="margin: 0; font-size: 0.88rem; color: #78350f; line-height: 1.55;">{{XAI_STATEMENT}}</p>
       </div>
 
       <div class="evidence-section" style="margin-top: 1.25rem; background: #eef2ff; border-color: #c7d2fe; {{TRIAD_STYLE}}">
-        <div class="evidence-title" style="color: #312e81;">🏛️ Hội Đồng Ba Tác Thể Thẩm Định &amp; Phản Biện (Triad Council)</div>
+        <h2 class="evidence-title" style="color: #312e81; font-size: 1.05rem;">🏛️ Hội Đồng Ba Tác Thể Thẩm Định &amp; Phản Biện (Triad Council)</h2>
         <p style="margin: 0; font-size: 0.88rem; color: #312e81; line-height: 1.55;">{{TRIAD_SUMMARY}}</p>
+      </div>
+
+      <div class="evidence-section" style="margin-top: 1.25rem; background: #f8fafc; border-color: #e2e8f0;">
+        <h2 class="evidence-title" style="font-size: 1.05rem; color: #1e293b;">❓ Câu Hỏi Thường Gặp &amp; Xác Thực (FAQ)</h2>
+        <details style="margin-bottom: 0.75rem; cursor: pointer;" open>
+          <summary style="font-weight: 600; color: #0284c7; font-size: 0.9rem;">Chứng thư giám định số {{CERTIFICATE_ID}} là gì?</summary>
+          <p style="margin-top: 0.4rem; font-size: 0.85rem; color: #475569; line-height: 1.55;">Chứng thư số <strong>{{CERTIFICATE_ID}}</strong> là hồ sơ pháp y kỹ thuật số được cấp bởi hệ thống DeepTrace.io.vn nhằm xác thực tính nguyên bản và phát hiện can thiệp Deepfake cho ảnh, video theo tiêu chuẩn EU AI Act Điều 50 và DSA Auditable Media.</p>
+        </details>
+        <details style="margin-bottom: 0.75rem; cursor: pointer;">
+          <summary style="font-weight: 600; color: #0284c7; font-size: 0.9rem;">Phương tiện truyền thông mang mã {{CERTIFICATE_ID}} là Thật hay Deepfake?</summary>
+          <p style="margin-top: 0.4rem; font-size: 0.85rem; color: #475569; line-height: 1.55;">Tệp tin mang mã {{CERTIFICATE_ID}} được hệ thống phân tích và đưa ra kết luận phán quyết là: <strong>{{VERDICT}}</strong> với điểm rủi ro tổng hợp <strong>{{COMPOSITE_RISK_PERCENT}}%</strong> và mã băm toàn vẹn SHA-256 được lưu trữ bất biến.</p>
+        </details>
+        <details style="cursor: pointer;">
+          <summary style="font-weight: 600; color: #0284c7; font-size: 0.9rem;">Làm thế nào để tra cứu và kiểm tra lại tính hợp lệ?</summary>
+          <p style="margin-top: 0.4rem; font-size: 0.85rem; color: #475569; line-height: 1.55;">Bạn có thể tra cứu trực tiếp bằng cách nhập mã {{CERTIFICATE_ID}} tại Cổng tra cứu <a href="{{BASE_ORIGIN}}/" style="color: #0284c7; text-decoration: underline;">DeepTrace.io.vn</a> hoặc tải file JSON kiểm định độc lập qua nút tải phía dưới.</p>
+        </details>
       </div>
     </div>
 
@@ -313,6 +377,15 @@
       <a href="{{BASE_ORIGIN}}/api/verify/{{CERTIFICATE_ID}}" target="_blank" class="btn-download">
         📥 Tải File JSON Chứng thư
       </a>
+    </div>
+
+    <div style="padding: 1rem 2rem; background: #f1f5f9; font-size: 0.8rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid var(--border-color);">
+      <div>
+        <a href="{{BASE_ORIGIN}}/" style="color: #475569; text-decoration: none; margin-right: 1.25rem;">🏠 Trang Chủ DeepTrace</a>
+        <a href="{{BASE_ORIGIN}}/sitemap.xml" target="_blank" style="color: #475569; text-decoration: none; margin-right: 1.25rem;">🗺️ Sơ đồ Sitemap (2,001+ URLs)</a>
+        <a href="{{BASE_ORIGIN}}/api/verify/{{CERTIFICATE_ID}}" target="_blank" style="color: #475569; text-decoration: none;">🔍 Kiểm Tra API REST</a>
+      </div>
+      <span style="color: #94a3b8;">Hệ thống Giám định Deepfake Đa Phương Thức Chuẩn Quốc Tế</span>
     </div>
   </div>
 

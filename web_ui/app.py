@@ -1006,6 +1006,63 @@ def api_recent_certificates():
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
 
+@app.route('/certificates', methods=['GET'])
+@app.route('/public-registry', methods=['GET'])
+def view_certificates_directory():
+    """Public SEO Index of Recent Forensic Certificates for Googlebot Crawling & Discovery."""
+    try:
+        import sys
+        sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from benchmark.deepfake_memory import get_all_certificates
+        limit = int(request.args.get('limit', 60))
+        certs = get_all_certificates(limit=limit)
+        host_header = request.headers.get("Host", "deeptrace.io.vn").lower()
+        base_origin = f"https://{host_header}" if not host_header.startswith("localhost") and not host_header.startswith("127.0.0.1") else f"http://{host_header}"
+        
+        items_html = "".join([
+            f"""<li style="margin-bottom: 12px; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <a href="{base_origin}/certificate/{c['certificate_id']}" style="font-weight: 700; color: #0284c7; text-decoration: none; font-family: monospace; font-size: 1rem;">{c['certificate_id']}</a>
+                        <span style="margin-left: 10px; font-size: 0.8rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; background: {'#fee2e2; color: #b91c1c;' if 'SYNTHETIC' in c.get('auditable_verdict','') or 'SUSPECTED' in c.get('auditable_verdict','') else '#dcfce7; color: #15803d;'}">{c.get('auditable_verdict','VERIFIED')}</span>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.8rem;">{c.get('created_at','')}</span>
+                </div>
+                <div style="margin-top: 6px; font-size: 0.8rem; color: #64748b; font-family: monospace; word-break: break-all;">
+                    SHA-256: {c.get('media_sha256','N/A')}
+                </div>
+            </li>""" for c in certs
+        ])
+        
+        html = f"""<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Kho Chứng Thư Giám Định Deepfake Số Công Khai | DeepTrace.io.vn</title>
+  <meta name="description" content="Danh mục tra cứu công khai các chứng thư giám định số AI Deepfake, kiểm định tính nguyên bản theo chuẩn EU AI Act Điều 50 tại DeepTrace.io.vn.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{base_origin}/certificates">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding: 2rem 1rem; max-width: 900px; margin: 0 auto; color: #0f172a; line-height: 1.5;">
+  <header style="margin-bottom: 2rem;">
+    <a href="{base_origin}/" style="color: #0284c7; text-decoration: none; font-size: 0.9rem; font-weight: 600;">&larr; Quay lại Trang Chủ DeepTrace</a>
+    <h1 style="font-size: 1.6rem; font-weight: 800; margin-top: 0.75rem; color: #0f172a;">📜 Kho Chứng Thư Giám Định Kỹ Thuật Số (Public Registry)</h1>
+    <p style="color: #475569; font-size: 0.95rem;">Danh mục tra cứu các chứng thư giám định đa phương thức (Ảnh, Video, Âm thanh) tuân thủ tiêu chuẩn minh bạch EU AI Act Article 50 &amp; DSA.</p>
+  </header>
+  <ul style="list-style: none; padding: 0;">{items_html}</ul>
+  <footer style="margin-top: 2.5rem; color: #94a3b8; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 1.25rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <span>DeepTrace.io.vn • Hệ thống Giám định Pháp y Kỹ thuật số</span>
+    <a href="{base_origin}/sitemap.xml" target="_blank" style="color: #0284c7; text-decoration: none;">Xem Sơ Đồ Sitemap (2,001+ URLs)</a>
+  </footer>
+</body>
+</html>"""
+        return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except Exception as e:
+        logger.error(f"Error rendering certificates directory: {e}")
+        return jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
 @app.route('/certificate/<cert_id>', methods=['GET'])
 def view_certificate_page(cert_id):
     """Server-Side Rendered (SSR) Public Certificate Page with Schema.org ClaimReview JSON-LD for Googlebot."""
