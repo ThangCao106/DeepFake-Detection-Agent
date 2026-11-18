@@ -286,6 +286,12 @@ class HumanPresenceDetector:
                             bx, by, bw, bh = int(hb[0] / scale), int(hb[1] / scale), int(hb[2] / scale), int(hb[3] / scale)
                             # Human body vertical aspect ratio validation
                             if bh > int(bw * 1.5) and bh >= 50:
+                                # Validate ROI is not white paper / document / blank region
+                                roi_sub = small_bgr[max(0, hb[1]):min(small_bgr.shape[0], hb[1]+hb[3]), max(0, hb[0]):min(small_bgr.shape[1], hb[0]+hb[2])]
+                                if roi_sub.size > 0:
+                                    roi_gray = cv2.cvtColor(roi_sub, cv2.COLOR_BGR2GRAY)
+                                    if float(np.mean(roi_gray > 165)) > 0.65 or float(np.mean(roi_gray < 35)) > 0.85:
+                                        continue  # Skip white paper / document false pedestrian
                                 detected_pedestrians.append((bx, by, bw, bh))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
@@ -458,9 +464,26 @@ class HumanPresenceDetector:
             if not detected_faces and skin_pct >= 15.0 and skin_mask is not None:
                 evidence.append(f"Quan sát thấy diện tích sắc tố tương thích ({skin_pct}%), không có cấu trúc khuôn mặt rõ ràng")
 
+        # Document / Text Paper / Physical Scan Detection
+        is_document_scan = False
+        try:
+            gray_for_doc = cv2.cvtColor(np.uint8(img_np), cv2.COLOR_RGB2GRAY)
+            light_paper_ratio = float(np.mean(gray_for_doc > 155))
+            sobel_x_doc = np.abs(cv2.Sobel(gray_for_doc, cv2.CV_64F, 1, 0, ksize=3))
+            text_edges_ratio = float(np.mean(sobel_x_doc > 28))
+            if len(detected_faces) == 0 and (
+                (light_paper_ratio > 0.65 and text_edges_ratio > 0.04) or
+                (light_paper_ratio > 0.55 and text_edges_ratio > 0.07)
+            ):
+                is_document_scan = True
+                detected_pedestrians = []
+                evidence.append(f"Nhận diện văn bản giấy tờ / tài liệu scan in ấn thực tế (Độ sáng giấy: {light_paper_ratio*100:.1f}%, mật độ ký tự: {text_edges_ratio*100:.1f}%)")
+        except Exception:
+            pass
+
         face_count = len(detected_faces)
-        # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette, bypassing 2D posters
-        has_human = (face_count > 0 or len(detected_pedestrians) > 0) and not is_2d_illustration
+        # Strict Human Presence Gate: Requires validated face geometry or confirmed human silhouette, bypassing 2D posters and document scans
+        has_human = (face_count > 0 or len(detected_pedestrians) > 0) and not is_2d_illustration and not is_document_scan
 
         return {
             "has_human": has_human,
@@ -468,6 +491,7 @@ class HumanPresenceDetector:
             "detected_faces": detected_faces,
             "skin_percentage": skin_pct,
             "is_2d_illustration": is_2d_illustration,
+            "is_document_scan": is_document_scan,
             "presence_evidence": evidence if evidence else ["Không phát hiện cấu trúc sinh trắc người (Nội dung phong cảnh / đồ hoạ / phi nhân tạo)"]
         }
 
@@ -484,8 +508,22 @@ class SceneContextClassifier:
       6. non_human_media: Pure landscape, sunset, architecture, vehicles, or 2D posters.
     """
     @staticmethod
-    def classify_scene_context(pil_image, has_human=True, detected_faces=None, is_2d_illustration=False):
+    def classify_scene_context(pil_image, has_human=True, detected_faces=None, is_2d_illustration=False, is_document_scan=False):
         try:
+            if is_document_scan and not has_human:
+                return {
+                    "category": "Tài Liệu Văn Bản & Giấy Tờ Scan (Phi Sinh Trắc)",
+                    "short_name": "Văn Bản / Giấy Tờ",
+                    "vn_demographic_category": "non_human_media",
+                    "scene_type": "DOCUMENT_TEXT_SCAN",
+                    "icon": "📄",
+                    "environment": "Văn bản, tài liệu in ấn, hồ sơ/hóa đơn chụp quang học thực tế (Phi nhân vật)",
+                    "confidence": 0.99,
+                    "is_outdoor": False,
+                    "is_document": True,
+                    "metrics": {"is_document_scan": True}
+                }
+
             if is_2d_illustration:
                 return {
                     "category": "Nội Dung Đồ Họa 2D / Áp Phích / Poster",
@@ -1758,22 +1796,38 @@ class GenerativeAIDiffusionDetector:
             prnu_discrepancy = prnu_analysis.get("prnu_discrepancy_score", 0.0)
             res_kurtosis = float(prnu_analysis.get("noise_kurtosis", 3.0))
 
+            # Document scan check (bright paper + printed text strokes)
+            light_paper_ratio = float(np.mean(gray > 155))
+            sobel_x = np.abs(cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3))
+            text_edges_ratio = float(np.mean(sobel_x > 28))
+            is_doc_scan = bool(
+                not has_face_structure and (
+                    (light_paper_ratio > 0.65 and text_edges_ratio > 0.04) or
+                    (light_paper_ratio > 0.55 and text_edges_ratio > 0.07)
+                )
+            )
+            if is_doc_scan:
+                return {"is_ai_generative_art": False, "confidence_score": 0.0, "is_document_scan": True}
+
             # Condition 1: Stylized/Cybernetic Face with 0% biological skin (Midjourney/DALL-E cyber avatar or cartoon)
             is_cyber_face = bool(has_face_structure and skin_pct < 1.0 and overall_res_energy < 0.65)
 
             # Condition 2: Pure Generative Graphic/Illustration (Zero camera sensor PRNU + High Diffusion edge complexity)
-            is_diffusion_graphic = bool(overall_res_energy < 0.35 and (lap_var > 1500.0 or prnu_discrepancy > 0.40) and skin_pct < 2.0)
+            is_diffusion_graphic = bool(not is_doc_scan and overall_res_energy < 0.35 and (lap_var > 1500.0 or prnu_discrepancy > 0.40) and skin_pct < 2.0)
 
             # Condition 3: Photorealistic Generative AI Portrait / Human Diffusion / 3D Avatars (Midjourney v6, FLUX, SDXL, 3D CGI)
             # Latent Diffusion synthesis creates extreme micro-edge Laplacian variance (lap_var > 1000)
             # and heavy-tailed non-Gaussian sensor residual noise (kurtosis > 8.0)
             # where real camera optics exhibit natural roll-off and Gaussian PRNU (kurtosis ~ 3.0).
+            # Requires face geometry and excludes physical document paper scans.
             is_diffusion_portrait = bool(
-                (220.0 <= lap_var <= 650.0 and res_kurtosis > 7.5 and overall_res_energy > 0.55) or
-                (lap_var > 1600.0 and res_kurtosis > 9.5 and overall_res_energy > 0.60 and skin_pct < 10.0) or
-                (lap_var > 1000.0 and res_kurtosis > 8.0) or
-                (res_kurtosis > 15.0 and (lap_var > 450.0 or overall_res_energy < 0.40)) or
-                (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
+                has_face_structure and not is_doc_scan and (
+                    (220.0 <= lap_var <= 650.0 and res_kurtosis > 7.5 and overall_res_energy > 0.55) or
+                    (lap_var > 1600.0 and res_kurtosis > 9.5 and overall_res_energy > 0.60 and skin_pct < 10.0) or
+                    (lap_var > 1000.0 and res_kurtosis > 8.0) or
+                    (res_kurtosis > 15.0 and (lap_var > 450.0 or overall_res_energy < 0.40)) or
+                    (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
+                )
             )
 
             if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait:
@@ -2088,7 +2142,7 @@ class DeepfakeDetector:
             # Step 1b: Environmental Scene & Context Classification
             is_2d_illustration = human_presence.get("is_2d_illustration", False)
             scene_context = SceneContextClassifier.classify_scene_context(
-                image, has_human=has_human, detected_faces=detected_faces, is_2d_illustration=is_2d_illustration
+                image, has_human=has_human, detected_faces=detected_faces, is_2d_illustration=is_2d_illustration, is_document_scan=human_presence.get("is_document_scan", False)
             )
             if mode in ["human", "dual", "portrait"]:
                 scene_context["scene_type"] = "portrait"
@@ -2233,6 +2287,24 @@ class DeepfakeDetector:
                 raw_general_risk = max(raw_general_risk, 0.995)
                 fake_prob = max(fake_prob, 0.995)
                 is_fake_pred = True
+
+            # Document Scan / Physical Text Paper Calibration (Real-World Office & Legal Document Snapshots)
+            # Physical documents (police summons, official notices, bank receipts, certificates) photographed
+            # by smartphone cameras exhibit sharp printed text edges (elevating Laplacian variance)
+            # and uniform white paper background (skewing residual kurtosis).
+            # When no human face is present and no platform AI disclosure was detected,
+            # these represent authentic optical camera photographs of physical documents, NOT facial deepfakes!
+            is_doc_scan = human_presence.get("is_document_scan", False) or scene_context.get("is_document", False)
+            if is_doc_scan and not has_human and not is_platform_ai:
+                raw_general_risk = round(float(min(fake_prob * 0.05, 0.024)), 4)
+                fake_prob = round(float(raw_general_risk), 4)
+                is_fake_pred = False
+                is_ai_art = False
+                scene_context["category"] = "Tài Liệu Văn Bản & Giấy Tờ Scan (Phi Sinh Trắc)"
+                scene_context["short_name"] = "Văn Bản / Giấy Tờ"
+                scene_context["scene_type"] = "DOCUMENT_TEXT_SCAN"
+                scene_context["icon"] = "📄"
+                scene_context["environment"] = "Tài liệu văn bản, hồ sơ in ấn, giấy triệu tập/hóa đơn chụp quang học thực tế (Phi nhân vật)"
 
             # Dynamic Environmental, Low-Light & Landscape Gating (IEEE T-IFS 2025):
             # Applied strictly to AUTHENTIC PHOTOGRAPHS (not AI generative graphics or synthetic avatars).
