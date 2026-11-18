@@ -1,6 +1,6 @@
 {
-  "run_id": "SVP-20261118_084824_9fded",
-  "timestamp_utc": "2026-11-18T08:48:24Z",
+  "run_id": "SVP-20261118_213612_671b0",
+  "timestamp_utc": "2026-11-18T21:36:12Z",
   "date": "2026-11-18",
   "download_urls_enabled": true,
   "manifest_clips_evaluated": 0,
@@ -31,7 +31,7 @@
     "roc_auc": 1.0,
     "eer_percent": 0.0,
     "ece": 0.4401,
-    "mean_latency_ms": 2482.05,
+    "mean_latency_ms": 2458.7,
     "mean_duration_error_sec": 0.0
   },
   "by_platform": {
@@ -48,7 +48,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.4414,
-      "mean_latency_ms": 2521.3,
+      "mean_latency_ms": 2562.3,
       "mean_duration_error_sec": 0.0
     },
     "instagram_reels": {
@@ -64,7 +64,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.4381,
-      "mean_latency_ms": 2456.3,
+      "mean_latency_ms": 2408.43,
       "mean_duration_error_sec": 0.0
     },
     "youtube_shorts": {
@@ -80,7 +80,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.444,
-      "mean_latency_ms": 2497.66,
+      "mean_latency_ms": 2384.04,
       "mean_duration_error_sec": 0.0
     },
     "tiktok": {
@@ -96,7 +96,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.4369,
-      "mean_latency_ms": 2452.96,
+      "mean_latency_ms": 2480.02,
       "mean_duration_error_sec": 0.0
     }
   },
@@ -114,7 +114,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.6524,
-      "mean_latency_ms": 2451.57,
+      "mean_latency_ms": 2411.03,
       "mean_duration_error_sec": 0.0
     },
     "caption_sticker": {
@@ -130,7 +130,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.3929,
-      "mean_latency_ms": 2538.82,
+      "mean_latency_ms": 2391.77,
       "mean_duration_error_sec": 0.0
     },
     "clean_baseline": {
@@ -146,7 +146,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.3423,
-      "mean_latency_ms": 2496.03,
+      "mean_latency_ms": 2583.64,
       "mean_duration_error_sec": 0.0
     },
     "h264_heavy_reencode": {
@@ -162,7 +162,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.3698,
-      "mean_latency_ms": 2452.88,
+      "mean_latency_ms": 2413.2,
       "mean_duration_error_sec": 0.0
     },
     "partial_splicing": {
@@ -178,7 +178,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.7943,
-      "mean_latency_ms": 2455.88,
+      "mean_latency_ms": 2516.53,
       "mean_duration_error_sec": 0.0
     },
     "vfr_fps_mismatch": {
@@ -194,7 +194,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.3722,
-      "mean_latency_ms": 2468.82,
+      "mean_latency_ms": 2441.11,
       "mean_duration_error_sec": 0.0
     }
   },
@@ -211,13 +211,13 @@
       "correct": false,
       "risk_score": 0.2948,
       "confidence": 0.8564,
-      "latency_ms": 2447.8,
+      "latency_ms": 4008.45,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-725CA45C"
+      "certificate_id": "CERT-DT-VID-7584CAAA"
     },
     {
       "sample_id": "threads_vfr_fps_mismatch_fake",
@@ -230,13 +230,13 @@
       "correct": false,
       "risk_score": 0.3085,
       "confidence": 0.8427,
-      "latency_ms": 2488.76,
+      "latency_ms": 2282.76,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-FA69EC0D"
+      "certificate_id": "CERT-DT-VID-E3B3ACD3"
     },
     {
       "sample_id": "threads_h264_heavy_reencode_fake",
@@ -249,13 +249,13 @@
       "correct": false,
       "risk_score": 0.2662,
       "confidence": 0.8829,
-      "latency_ms": 2438.99,
+      "latency_ms": 2245.64,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-8F82AD17"
+      "certificate_id": "CERT-DT-VID-B29405CB"
     },
     {
       "sample_id": "threads_caption_sticker_fake",
@@ -268,13 +268,13 @@
       "correct": false,
       "risk_score": 0.2578,
       "confidence": 0.8901,
-      "latency_ms": 2503.05,
+      "latency_ms": 2389.8,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-DEA827B2"
+      "certificate_id": "CERT-DT-VID-7A857307"
     },
     {
       "sample_id": "threads_partial_splicing_fake",
@@ -287,13 +287,13 @@
       "correct": false,
       "risk_score": 0.2171,
       "confidence": 0.9221,
-      "latency_ms": 2450.99,
+      "latency_ms": 2544.46,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-29C0CD79"
+      "certificate_id": "CERT-DT-VID-AC30A60B"
     },
     {
       "sample_id": "threads_ai_generative_short_fake",
@@ -306,13 +306,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2482.69,
+      "latency_ms": 2526.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-89F5C1CE"
+      "certificate_id": "CERT-DT-VID-4F317BC1"
     },
     {
       "sample_id": "instagram_reels_clean_baseline_fake",
@@ -325,13 +325,13 @@
       "correct": false,
       "risk_score": 0.3481,
       "confidence": 0.7997,
-      "latency_ms": 2451.91,
+      "latency_ms": 2176.65,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-259ABCF3"
+      "certificate_id": "CERT-DT-VID-D60FA990"
     },
     {
       "sample_id": "instagram_reels_vfr_fps_mismatch_fake",
@@ -344,13 +344,13 @@
       "correct": false,
       "risk_score": 0.2772,
       "confidence": 0.873,
-      "latency_ms": 2466.75,
+      "latency_ms": 2538.39,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-976410E1"
+      "certificate_id": "CERT-DT-VID-D3934921"
     },
     {
       "sample_id": "instagram_reels_h264_heavy_reencode_fake",
@@ -363,13 +363,13 @@
       "correct": false,
       "risk_score": 0.2696,
       "confidence": 0.8799,
-      "latency_ms": 2467.33,
+      "latency_ms": 2598.68,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-D872D042"
+      "certificate_id": "CERT-DT-VID-DDC06796"
     },
     {
       "sample_id": "instagram_reels_caption_sticker_fake",
@@ -382,13 +382,13 @@
       "correct": false,
       "risk_score": 0.2644,
       "confidence": 0.8845,
-      "latency_ms": 2470.51,
+      "latency_ms": 2383.97,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-4704086A"
+      "certificate_id": "CERT-DT-VID-01B7F111"
     },
     {
       "sample_id": "instagram_reels_partial_splicing_fake",
@@ -401,13 +401,13 @@
       "correct": false,
       "risk_score": 0.2173,
       "confidence": 0.922,
-      "latency_ms": 2483.52,
+      "latency_ms": 2421.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E971C255"
+      "certificate_id": "CERT-DT-VID-9F944D55"
     },
     {
       "sample_id": "instagram_reels_ai_generative_short_fake",
@@ -420,13 +420,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2448.34,
+      "latency_ms": 2420.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-8CC23406"
+      "certificate_id": "CERT-DT-VID-E2EBB18B"
     },
     {
       "sample_id": "youtube_shorts_clean_baseline_fake",
@@ -439,13 +439,13 @@
       "correct": false,
       "risk_score": 0.3404,
       "confidence": 0.8085,
-      "latency_ms": 2708.99,
+      "latency_ms": 2359.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-FC4A5319"
+      "certificate_id": "CERT-DT-VID-BB3125EF"
     },
     {
       "sample_id": "youtube_shorts_vfr_fps_mismatch_fake",
@@ -458,13 +458,13 @@
       "correct": false,
       "risk_score": 0.2433,
       "confidence": 0.9022,
-      "latency_ms": 2520.8,
+      "latency_ms": 2273.18,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-A865C7F1"
+      "certificate_id": "CERT-DT-VID-49F9C816"
     },
     {
       "sample_id": "youtube_shorts_h264_heavy_reencode_fake",
@@ -477,13 +477,13 @@
       "correct": false,
       "risk_score": 0.2845,
       "confidence": 0.8662,
-      "latency_ms": 2491.53,
+      "latency_ms": 2431.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-21A1FDA2"
+      "certificate_id": "CERT-DT-VID-0DBD3D7B"
     },
     {
       "sample_id": "youtube_shorts_caption_sticker_fake",
@@ -496,13 +496,13 @@
       "correct": false,
       "risk_score": 0.2546,
       "confidence": 0.8929,
-      "latency_ms": 2491.01,
+      "latency_ms": 2214.36,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-554C3E4C"
+      "certificate_id": "CERT-DT-VID-17632A5C"
     },
     {
       "sample_id": "youtube_shorts_partial_splicing_fake",
@@ -515,13 +515,13 @@
       "correct": false,
       "risk_score": 0.2023,
       "confidence": 0.9324,
-      "latency_ms": 2453.67,
+      "latency_ms": 2296.1,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-9CADB513"
+      "certificate_id": "CERT-DT-VID-673209F8"
     },
     {
       "sample_id": "youtube_shorts_ai_generative_short_fake",
@@ -534,13 +534,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2436.71,
+      "latency_ms": 2323.76,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-49E06824"
+      "certificate_id": "CERT-DT-VID-3C7DA325"
     },
     {
       "sample_id": "tiktok_clean_baseline_fake",
@@ -553,13 +553,13 @@
       "correct": false,
       "risk_score": 0.3401,
       "confidence": 0.8088,
-      "latency_ms": 2462.68,
+      "latency_ms": 2335.75,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-F05F7F93"
+      "certificate_id": "CERT-DT-VID-1DD6E565"
     },
     {
       "sample_id": "tiktok_vfr_fps_mismatch_fake",
@@ -572,13 +572,13 @@
       "correct": false,
       "risk_score": 0.2831,
       "confidence": 0.8675,
-      "latency_ms": 2457.93,
+      "latency_ms": 2743.6,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-90D8DBB6"
+      "certificate_id": "CERT-DT-VID-9CB62F31"
     },
     {
       "sample_id": "tiktok_h264_heavy_reencode_fake",
@@ -591,13 +591,13 @@
       "correct": false,
       "risk_score": 0.3237,
       "confidence": 0.8268,
-      "latency_ms": 2455.15,
+      "latency_ms": 2492.34,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-92110C24"
+      "certificate_id": "CERT-DT-VID-BD45E6C2"
     },
     {
       "sample_id": "tiktok_caption_sticker_fake",
@@ -610,13 +610,13 @@
       "correct": false,
       "risk_score": 0.2509,
       "confidence": 0.8959,
-      "latency_ms": 2472.96,
+      "latency_ms": 2619.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E6016CD8"
+      "certificate_id": "CERT-DT-VID-0276ABF2"
     },
     {
       "sample_id": "tiktok_partial_splicing_fake",
@@ -629,13 +629,13 @@
       "correct": false,
       "risk_score": 0.1861,
       "confidence": 0.9428,
-      "latency_ms": 2435.34,
+      "latency_ms": 2804.23,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-364600AD"
+      "certificate_id": "CERT-DT-VID-24BE54B3"
     },
     {
       "sample_id": "tiktok_ai_generative_short_fake",
@@ -648,20 +648,20 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2438.54,
+      "latency_ms": 2372.5,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-C6A263F7"
+      "certificate_id": "CERT-DT-VID-49D9A401"
     }
   ],
   "auto_feedback_triggered": true,
   "feedback_actions": [
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-A72212",
+      "feedback_id": "FB-20261118213610-416123",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -673,7 +673,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-E0BE9D",
+      "feedback_id": "FB-20261118213610-486CD9",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -685,7 +685,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-D62A23",
+      "feedback_id": "FB-20261118213610-041960",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -697,7 +697,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-D59093",
+      "feedback_id": "FB-20261118213610-98D2EF",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -709,7 +709,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-05948A",
+      "feedback_id": "FB-20261118213610-7969E6",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -721,7 +721,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-D7FC45",
+      "feedback_id": "FB-20261118213610-25ED68",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "threads",
       "predicted_label": "Realism",
@@ -733,7 +733,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-09562E",
+      "feedback_id": "FB-20261118213610-7BBE97",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -745,7 +745,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-EE27D6",
+      "feedback_id": "FB-20261118213610-89259B",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -757,7 +757,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-82C31E",
+      "feedback_id": "FB-20261118213610-CEB6C9",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -769,7 +769,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-4C16C1",
+      "feedback_id": "FB-20261118213610-26F15B",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -781,7 +781,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-5629C7",
+      "feedback_id": "FB-20261118213610-CCF051",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -793,7 +793,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-816589",
+      "feedback_id": "FB-20261118213610-750497",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "instagram_reels",
       "predicted_label": "Realism",
@@ -805,7 +805,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-FA8587",
+      "feedback_id": "FB-20261118213610-E24C14",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -817,7 +817,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-957D97",
+      "feedback_id": "FB-20261118213610-E0A72E",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -829,7 +829,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-12E8A2",
+      "feedback_id": "FB-20261118213611-1D7EDE",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -841,7 +841,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-CDF896",
+      "feedback_id": "FB-20261118213611-5BAD7E",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -853,7 +853,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-86B657",
+      "feedback_id": "FB-20261118213611-2CBB8D",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -865,7 +865,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-74AFE3",
+      "feedback_id": "FB-20261118213611-31AF1B",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "youtube_shorts",
       "predicted_label": "Realism",
@@ -877,7 +877,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-DB1699",
+      "feedback_id": "FB-20261118213611-1EAE8B",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -889,7 +889,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084822-8AD734",
+      "feedback_id": "FB-20261118213611-FB7A08",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -901,7 +901,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084823-D7D892",
+      "feedback_id": "FB-20261118213611-FF4F94",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -913,7 +913,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084823-0C7C66",
+      "feedback_id": "FB-20261118213611-168106",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -925,7 +925,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084823-DC6EDB",
+      "feedback_id": "FB-20261118213611-1BD34E",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -937,7 +937,7 @@
     },
     {
       "status": "success",
-      "feedback_id": "FB-20261118084823-6BEF02",
+      "feedback_id": "FB-20261118213611-F9F54A",
       "feedback_type": "FALSE_NEGATIVE",
       "platform": "tiktok",
       "predicted_label": "Realism",
@@ -946,7 +946,7 @@
       "vault_sample_ids": [],
       "calibration_update": {
         "status": "updated",
-        "update_id": "WU-20261118084824",
+        "update_id": "WU-20261118213612",
         "accepted": true,
         "feedback_samples_used": 24,
         "before_params": {
@@ -962,9 +962,9 @@
           "deepfake_frame_ratio_gate": 0.45,
           "ai_art_avg_comp_gate": 0.45,
           "calibration_status": "FEEDBACK_CALIBRATED_ACTIVE",
-          "feedback_updates_count": 12,
-          "updated_at": "2026-11-17T21:56:47Z",
-          "last_trigger": "feedback:FB-20261117215646-F35215:FALSE_NEGATIVE"
+          "feedback_updates_count": 13,
+          "updated_at": "2026-11-18T08:48:24Z",
+          "last_trigger": "feedback:FB-20261118084823-6BEF02:FALSE_NEGATIVE"
         },
         "after_params": {
           "w_peak": 0.62,
@@ -979,9 +979,9 @@
           "deepfake_frame_ratio_gate": 0.45,
           "ai_art_avg_comp_gate": 0.45,
           "calibration_status": "FEEDBACK_CALIBRATED_ACTIVE",
-          "feedback_updates_count": 13,
-          "updated_at": "2026-11-18T08:48:24Z",
-          "last_trigger": "feedback:FB-20261118084823-6BEF02:FALSE_NEGATIVE"
+          "feedback_updates_count": 14,
+          "updated_at": "2026-11-18T21:36:12Z",
+          "last_trigger": "feedback:FB-20261118213611-F9F54A:FALSE_NEGATIVE"
         },
         "before_metrics": {
           "count": 28,
@@ -1023,13 +1023,13 @@
       "correct": true,
       "risk_score": 0.0156,
       "confidence": 0.9996,
-      "latency_ms": 2507.33,
+      "latency_ms": 2936.43,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_clean_baseline_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_clean_baseline_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-44D3C5D8"
+      "certificate_id": "CERT-DT-VID-151CD28D"
     },
     {
       "sample_id": "threads_clean_baseline_fake",
@@ -1042,13 +1042,13 @@
       "correct": false,
       "risk_score": 0.2948,
       "confidence": 0.8564,
-      "latency_ms": 2447.8,
+      "latency_ms": 4008.45,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-725CA45C"
+      "certificate_id": "CERT-DT-VID-7584CAAA"
     },
     {
       "sample_id": "threads_vfr_fps_mismatch_real",
@@ -1061,13 +1061,13 @@
       "correct": true,
       "risk_score": 0.0181,
       "confidence": 0.9995,
-      "latency_ms": 2425.27,
+      "latency_ms": 2288.66,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_vfr_fps_mismatch_real_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_vfr_fps_mismatch_real_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E02D4CEC"
+      "certificate_id": "CERT-DT-VID-B825527E"
     },
     {
       "sample_id": "threads_vfr_fps_mismatch_fake",
@@ -1080,13 +1080,13 @@
       "correct": false,
       "risk_score": 0.3085,
       "confidence": 0.8427,
-      "latency_ms": 2488.76,
+      "latency_ms": 2282.76,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-FA69EC0D"
+      "certificate_id": "CERT-DT-VID-E3B3ACD3"
     },
     {
       "sample_id": "threads_h264_heavy_reencode_real",
@@ -1099,13 +1099,13 @@
       "correct": true,
       "risk_score": 0.0257,
       "confidence": 0.9989,
-      "latency_ms": 2434.52,
+      "latency_ms": 2210.97,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_h264_heavy_reencode_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_h264_heavy_reencode_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-873DCEB9"
+      "certificate_id": "CERT-DT-VID-487C31DD"
     },
     {
       "sample_id": "threads_h264_heavy_reencode_fake",
@@ -1118,13 +1118,13 @@
       "correct": false,
       "risk_score": 0.2662,
       "confidence": 0.8829,
-      "latency_ms": 2438.99,
+      "latency_ms": 2245.64,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-8F82AD17"
+      "certificate_id": "CERT-DT-VID-B29405CB"
     },
     {
       "sample_id": "threads_caption_sticker_real",
@@ -1137,13 +1137,13 @@
       "correct": true,
       "risk_score": 0.0464,
       "confidence": 0.9964,
-      "latency_ms": 3033.59,
+      "latency_ms": 2188.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_caption_sticker_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_caption_sticker_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-81AC536A"
+      "certificate_id": "CERT-DT-VID-3C1240C3"
     },
     {
       "sample_id": "threads_caption_sticker_fake",
@@ -1156,13 +1156,13 @@
       "correct": false,
       "risk_score": 0.2578,
       "confidence": 0.8901,
-      "latency_ms": 2503.05,
+      "latency_ms": 2389.8,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-DEA827B2"
+      "certificate_id": "CERT-DT-VID-7A857307"
     },
     {
       "sample_id": "threads_partial_splicing_fake",
@@ -1175,13 +1175,13 @@
       "correct": false,
       "risk_score": 0.2171,
       "confidence": 0.9221,
-      "latency_ms": 2450.99,
+      "latency_ms": 2544.46,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-29C0CD79"
+      "certificate_id": "CERT-DT-VID-AC30A60B"
     },
     {
       "sample_id": "threads_ai_generative_short_fake",
@@ -1194,13 +1194,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2482.69,
+      "latency_ms": 2526.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/threads_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/threads_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-89F5C1CE"
+      "certificate_id": "CERT-DT-VID-4F317BC1"
     },
     {
       "sample_id": "instagram_reels_clean_baseline_real",
@@ -1213,13 +1213,13 @@
       "correct": true,
       "risk_score": 0.0151,
       "confidence": 0.9996,
-      "latency_ms": 2462.41,
+      "latency_ms": 2205.85,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_clean_baseline_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_clean_baseline_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-40CB58B7"
+      "certificate_id": "CERT-DT-VID-7A767A7B"
     },
     {
       "sample_id": "instagram_reels_clean_baseline_fake",
@@ -1232,13 +1232,13 @@
       "correct": false,
       "risk_score": 0.3481,
       "confidence": 0.7997,
-      "latency_ms": 2451.91,
+      "latency_ms": 2176.65,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-259ABCF3"
+      "certificate_id": "CERT-DT-VID-D60FA990"
     },
     {
       "sample_id": "instagram_reels_vfr_fps_mismatch_real",
@@ -1251,13 +1251,13 @@
       "correct": true,
       "risk_score": 0.0215,
       "confidence": 0.9992,
-      "latency_ms": 2438.58,
+      "latency_ms": 2477.27,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_vfr_fps_mismatch_real_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_vfr_fps_mismatch_real_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-92CF17A0"
+      "certificate_id": "CERT-DT-VID-9B8E0AD4"
     },
     {
       "sample_id": "instagram_reels_vfr_fps_mismatch_fake",
@@ -1270,13 +1270,13 @@
       "correct": false,
       "risk_score": 0.2772,
       "confidence": 0.873,
-      "latency_ms": 2466.75,
+      "latency_ms": 2538.39,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-976410E1"
+      "certificate_id": "CERT-DT-VID-D3934921"
     },
     {
       "sample_id": "instagram_reels_h264_heavy_reencode_real",
@@ -1289,13 +1289,13 @@
       "correct": true,
       "risk_score": 0.0232,
       "confidence": 0.9991,
-      "latency_ms": 2439.58,
+      "latency_ms": 2290.7,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_h264_heavy_reencode_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_h264_heavy_reencode_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-03DA862F"
+      "certificate_id": "CERT-DT-VID-8DA22DC9"
     },
     {
       "sample_id": "instagram_reels_h264_heavy_reencode_fake",
@@ -1308,13 +1308,13 @@
       "correct": false,
       "risk_score": 0.2696,
       "confidence": 0.8799,
-      "latency_ms": 2467.33,
+      "latency_ms": 2598.68,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-D872D042"
+      "certificate_id": "CERT-DT-VID-DDC06796"
     },
     {
       "sample_id": "instagram_reels_caption_sticker_real",
@@ -1327,13 +1327,13 @@
       "correct": true,
       "risk_score": 0.0457,
       "confidence": 0.9965,
-      "latency_ms": 2434.05,
+      "latency_ms": 2570.55,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_caption_sticker_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_caption_sticker_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E030872D"
+      "certificate_id": "CERT-DT-VID-19477DE2"
     },
     {
       "sample_id": "instagram_reels_caption_sticker_fake",
@@ -1346,13 +1346,13 @@
       "correct": false,
       "risk_score": 0.2644,
       "confidence": 0.8845,
-      "latency_ms": 2470.51,
+      "latency_ms": 2383.97,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-4704086A"
+      "certificate_id": "CERT-DT-VID-01B7F111"
     },
     {
       "sample_id": "instagram_reels_partial_splicing_fake",
@@ -1365,13 +1365,13 @@
       "correct": false,
       "risk_score": 0.2173,
       "confidence": 0.922,
-      "latency_ms": 2483.52,
+      "latency_ms": 2421.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E971C255"
+      "certificate_id": "CERT-DT-VID-9F944D55"
     },
     {
       "sample_id": "instagram_reels_ai_generative_short_fake",
@@ -1384,13 +1384,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2448.34,
+      "latency_ms": 2420.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/instagram_reels_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/instagram_reels_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-8CC23406"
+      "certificate_id": "CERT-DT-VID-E2EBB18B"
     },
     {
       "sample_id": "youtube_shorts_clean_baseline_real",
@@ -1403,13 +1403,13 @@
       "correct": true,
       "risk_score": 0.0159,
       "confidence": 0.9996,
-      "latency_ms": 2469.93,
+      "latency_ms": 2396.72,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_clean_baseline_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_clean_baseline_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-637908A0"
+      "certificate_id": "CERT-DT-VID-072AE7B8"
     },
     {
       "sample_id": "youtube_shorts_clean_baseline_fake",
@@ -1422,13 +1422,13 @@
       "correct": false,
       "risk_score": 0.3404,
       "confidence": 0.8085,
-      "latency_ms": 2708.99,
+      "latency_ms": 2359.93,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-FC4A5319"
+      "certificate_id": "CERT-DT-VID-BB3125EF"
     },
     {
       "sample_id": "youtube_shorts_vfr_fps_mismatch_real",
@@ -1441,13 +1441,13 @@
       "correct": true,
       "risk_score": 0.0261,
       "confidence": 0.9989,
-      "latency_ms": 2486.38,
+      "latency_ms": 2672.13,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_vfr_fps_mismatch_real_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_vfr_fps_mismatch_real_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-0359414D"
+      "certificate_id": "CERT-DT-VID-6BD70046"
     },
     {
       "sample_id": "youtube_shorts_vfr_fps_mismatch_fake",
@@ -1460,13 +1460,13 @@
       "correct": false,
       "risk_score": 0.2433,
       "confidence": 0.9022,
-      "latency_ms": 2520.8,
+      "latency_ms": 2273.18,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-A865C7F1"
+      "certificate_id": "CERT-DT-VID-49F9C816"
     },
     {
       "sample_id": "youtube_shorts_h264_heavy_reencode_real",
@@ -1479,13 +1479,13 @@
       "correct": true,
       "risk_score": 0.0274,
       "confidence": 0.9988,
-      "latency_ms": 2470.1,
+      "latency_ms": 2417.34,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_h264_heavy_reencode_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_h264_heavy_reencode_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-6C612016"
+      "certificate_id": "CERT-DT-VID-165D2BB3"
     },
     {
       "sample_id": "youtube_shorts_h264_heavy_reencode_fake",
@@ -1498,13 +1498,13 @@
       "correct": false,
       "risk_score": 0.2845,
       "confidence": 0.8662,
-      "latency_ms": 2491.53,
+      "latency_ms": 2431.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-21A1FDA2"
+      "certificate_id": "CERT-DT-VID-0DBD3D7B"
     },
     {
       "sample_id": "youtube_shorts_caption_sticker_real",
@@ -1517,13 +1517,13 @@
       "correct": true,
       "risk_score": 0.0436,
       "confidence": 0.9969,
-      "latency_ms": 2447.5,
+      "latency_ms": 2455.57,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_caption_sticker_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_caption_sticker_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-A4337D4A"
+      "certificate_id": "CERT-DT-VID-109CEE18"
     },
     {
       "sample_id": "youtube_shorts_caption_sticker_fake",
@@ -1536,13 +1536,13 @@
       "correct": false,
       "risk_score": 0.2546,
       "confidence": 0.8929,
-      "latency_ms": 2491.01,
+      "latency_ms": 2214.36,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-554C3E4C"
+      "certificate_id": "CERT-DT-VID-17632A5C"
     },
     {
       "sample_id": "youtube_shorts_partial_splicing_fake",
@@ -1555,13 +1555,13 @@
       "correct": false,
       "risk_score": 0.2023,
       "confidence": 0.9324,
-      "latency_ms": 2453.67,
+      "latency_ms": 2296.1,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-9CADB513"
+      "certificate_id": "CERT-DT-VID-673209F8"
     },
     {
       "sample_id": "youtube_shorts_ai_generative_short_fake",
@@ -1574,13 +1574,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2436.71,
+      "latency_ms": 2323.76,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/youtube_shorts_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/youtube_shorts_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-49E06824"
+      "certificate_id": "CERT-DT-VID-3C7DA325"
     },
     {
       "sample_id": "tiktok_clean_baseline_real",
@@ -1593,13 +1593,13 @@
       "correct": true,
       "risk_score": 0.0149,
       "confidence": 0.9996,
-      "latency_ms": 2457.15,
+      "latency_ms": 2249.31,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_clean_baseline_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_clean_baseline_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-67264A98"
+      "certificate_id": "CERT-DT-VID-DFFA20B5"
     },
     {
       "sample_id": "tiktok_clean_baseline_fake",
@@ -1612,13 +1612,13 @@
       "correct": false,
       "risk_score": 0.3401,
       "confidence": 0.8088,
-      "latency_ms": 2462.68,
+      "latency_ms": 2335.75,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_clean_baseline_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_clean_baseline_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-F05F7F93"
+      "certificate_id": "CERT-DT-VID-1DD6E565"
     },
     {
       "sample_id": "tiktok_vfr_fps_mismatch_real",
@@ -1631,13 +1631,13 @@
       "correct": true,
       "risk_score": 0.0242,
       "confidence": 0.999,
-      "latency_ms": 2466.1,
+      "latency_ms": 2252.86,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_vfr_fps_mismatch_real_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_vfr_fps_mismatch_real_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-AD10AEC3"
+      "certificate_id": "CERT-DT-VID-2371EE7C"
     },
     {
       "sample_id": "tiktok_vfr_fps_mismatch_fake",
@@ -1650,13 +1650,13 @@
       "correct": false,
       "risk_score": 0.2831,
       "confidence": 0.8675,
-      "latency_ms": 2457.93,
+      "latency_ms": 2743.6,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_vfr_fps_mismatch_fake_vfr.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_vfr_fps_mismatch_fake_vfr.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-90D8DBB6"
+      "certificate_id": "CERT-DT-VID-9CB62F31"
     },
     {
       "sample_id": "tiktok_h264_heavy_reencode_real",
@@ -1669,13 +1669,13 @@
       "correct": true,
       "risk_score": 0.0264,
       "confidence": 0.9988,
-      "latency_ms": 2425.8,
+      "latency_ms": 2618.64,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_h264_heavy_reencode_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_h264_heavy_reencode_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-2C074191"
+      "certificate_id": "CERT-DT-VID-42670FA7"
     },
     {
       "sample_id": "tiktok_h264_heavy_reencode_fake",
@@ -1688,13 +1688,13 @@
       "correct": false,
       "risk_score": 0.3237,
       "confidence": 0.8268,
-      "latency_ms": 2455.15,
+      "latency_ms": 2492.34,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_h264_heavy_reencode_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_h264_heavy_reencode_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-92110C24"
+      "certificate_id": "CERT-DT-VID-BD45E6C2"
     },
     {
       "sample_id": "tiktok_caption_sticker_real",
@@ -1707,13 +1707,13 @@
       "correct": true,
       "risk_score": 0.035,
       "confidence": 0.998,
-      "latency_ms": 2457.91,
+      "latency_ms": 2311.66,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_caption_sticker_real.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_caption_sticker_real.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-66884B09"
+      "certificate_id": "CERT-DT-VID-ED8028FA"
     },
     {
       "sample_id": "tiktok_caption_sticker_fake",
@@ -1726,13 +1726,13 @@
       "correct": false,
       "risk_score": 0.2509,
       "confidence": 0.8959,
-      "latency_ms": 2472.96,
+      "latency_ms": 2619.33,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_caption_sticker_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_caption_sticker_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-E6016CD8"
+      "certificate_id": "CERT-DT-VID-0276ABF2"
     },
     {
       "sample_id": "tiktok_partial_splicing_fake",
@@ -1745,13 +1745,13 @@
       "correct": false,
       "risk_score": 0.1861,
       "confidence": 0.9428,
-      "latency_ms": 2435.34,
+      "latency_ms": 2804.23,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_partial_splicing_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_partial_splicing_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-364600AD"
+      "certificate_id": "CERT-DT-VID-24BE54B3"
     },
     {
       "sample_id": "tiktok_ai_generative_short_fake",
@@ -1764,13 +1764,13 @@
       "correct": false,
       "risk_score": 0.3476,
       "confidence": 0.8003,
-      "latency_ms": 2438.54,
+      "latency_ms": 2372.5,
       "measured_duration_sec": 4.0,
       "expected_duration_sec": 4.0,
       "duration_error_sec": 0.0,
-      "file_path": "/tmp/short_vid_pentest_tnqfhdls/tiktok_ai_generative_short_fake.mp4",
+      "file_path": "/tmp/short_vid_pentest_23baj3to/tiktok_ai_generative_short_fake.mp4",
       "source_url": null,
-      "certificate_id": "CERT-DT-VID-C6A263F7"
+      "certificate_id": "CERT-DT-VID-49D9A401"
     }
   ]
 }
