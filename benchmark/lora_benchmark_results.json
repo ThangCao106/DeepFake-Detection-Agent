@@ -1,6 +1,6 @@
 {
-  "benchmark_timestamp": "2026-09-25 10:22:08 UTC",
-  "base_model": "dima806/deepfake_vs_real_image_detection",
+  "benchmark_timestamp": "2026-11-19 10:56:22 UTC",
+  "base_model": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\custom_vit_model",
   "lora_parameters": {
     "rank_r": 16,
     "lora_alpha": 32,
@@ -13,26 +13,26 @@
   },
   "comparative_metrics": {
     "baseline": {
-      "name": "Pretrained Baseline ViT",
-      "accuracy": 0.5,
-      "auc": 0.06,
-      "eer": 0.9,
-      "f1_score": 0.0,
-      "precision": 0.0,
-      "recall": 0.0,
-      "avg_latency_ms": 146.38,
-      "sample_count": 20
+      "name": "Pretrained / Custom Baseline ViT",
+      "accuracy": 0.7,
+      "auc": 0.6,
+      "eer": 0.6,
+      "f1_score": 0.5714,
+      "precision": 1.0,
+      "recall": 0.4,
+      "avg_latency_ms": 110.49,
+      "sample_count": 10
     },
     "lora_peft": {
-      "name": "ViT + LoRA (r=16, alpha=32)",
-      "accuracy": 0.5,
-      "auc": 0.06,
-      "eer": 0.9,
-      "f1_score": 0.0,
-      "precision": 0.0,
-      "recall": 0.0,
-      "avg_latency_ms": 131.0,
-      "sample_count": 20
+      "name": "ViT + Trained LoRA (r=16, alpha=32)",
+      "accuracy": 0.7,
+      "auc": 0.84,
+      "eer": 0.2,
+      "f1_score": 0.5714,
+      "precision": 1.0,
+      "recall": 0.4,
+      "avg_latency_ms": 125.42,
+      "sample_count": 10
     }
   }
 }

@@ -1,0 +1,35 @@
+{
+  "model_name": "EnhancedAudioFusionNet",
+  "backbone": "ENHANCED_FUSIONNET_HYBRID",
+  "weights_path": "custom_vit_model/audio_fusionnet.pt",
+  "checkpoint_size_kb": 212.1,
+  "trained_at": "2026-11-19T10:39:16Z",
+  "date": "2026-11-19",
+  "training_provenance": "EMPIRICAL_REAL_AUDIO_TENSORS",
+  "sample_breakdown": {
+    "total_train_wavs": 52,
+    "cached_real_world_wavs": 12,
+    "generated_multichannel_wavs": 40,
+    "holdout_unseen_duration_wavs": 40
+  },
+  "metrics": {
+    "train_loss": 9.8e-05,
+    "oof_cv_accuracy": 1.0,
+    "oof_cv_auc": 1.0,
+    "oof_cv_eer_percent": 0.0,
+    "holdout_accuracy": 1.0,
+    "holdout_auc": 1.0,
+    "holdout_eer_percent": 0.0
+  },
+  "hyperparameters": {
+    "epochs": 45,
+    "seed": 2026,
+    "lr": 0.0025,
+    "optimizer": "AdamW",
+    "fusion_branches": [
+      "SpectralCNN_64x64",
+      "BiGRU_48x8",
+      "ForensicMLP_8D"
+    ]
+  }
+}

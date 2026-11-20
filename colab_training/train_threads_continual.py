@@ -375,6 +375,25 @@ def run_threads_continual_training(
     if staged_records:
         records = staged_records
 
+    # Filter out entries whose files do not exist on disk to prevent training on dummy gray images
+    existing_records = []
+    for rec in records:
+        lp = rec.get("local_path")
+        if lp and os.path.exists(lp):
+            existing_records.append(rec)
+        else:
+            fname = rec.get("filename", "")
+            sub = rec.get("subfolder", "")
+            for cr in candidate_roots:
+                p_cand = (cr / sub / fname) if sub else (cr / fname)
+                if fname and p_cand.exists():
+                    rec_c = dict(rec)
+                    rec_c["local_path"] = str(p_cand)
+                    existing_records.append(rec_c)
+                    break
+    if existing_records:
+        records = existing_records
+
     total_count = len(records)
     hard_count = sum(1 for r in records if r.get("is_hard_sample"))
     print(f"\n[Dataset Summary] Active Continual Window: {total_count} Samples | Hard Negatives: {hard_count} ({hard_count/total_count*100 if total_count else 0:.1f}%)")
@@ -475,10 +494,12 @@ def run_threads_continual_training(
         history.append({"epoch": ep + 1, "loss": round(avg_loss, 4), "accuracy": round(acc * 100, 2)})
         print(f"  ✔ Finished Epoch [{ep + 1}/{epochs}] — Loss: {avg_loss:.4f} | Train Acc: {acc * 100:.2f}%\n")
 
-    # 6. Evaluation on test_ood split
+    # 6. Empirical Evaluation on test_ood split (no formula imputation)
     model.eval()
     test_correct = 0
     test_total = 0
+    y_true_ood = []
+    y_scores_ood = []
     eval_pbar = tqdm(test_loader, desc="  [OOD Evaluation]", unit="batch") if tqdm else test_loader
     with torch.no_grad():
         for pixel_values, labels, _ in eval_pbar:
@@ -486,14 +507,35 @@ def run_threads_continual_training(
             labels = labels.to(device)
             outputs = model(pixel_values)
             logits = outputs.logits if hasattr(outputs, "logits") else outputs
+            probs = torch.softmax(logits, dim=-1)[:, 1] if logits.shape[-1] > 1 else torch.sigmoid(logits.squeeze(-1))
             preds = logits.argmax(dim=-1)
             test_correct += (preds == labels).sum().item()
             test_total += len(labels)
+            y_true_ood.extend(labels.cpu().tolist())
+            y_scores_ood.extend(probs.cpu().tolist())
 
-    test_acc = (test_correct / test_total * 100) if test_total > 0 else 98.5
-    eval_auc = round(min(0.9985, 0.9850 + (test_acc / 100.0) * 0.013), 4)
-    eval_eer = round(max(0.95, 2.50 - (test_acc / 100.0) * 1.5), 2)
-    print(f"\n[OOD Evaluation] Test Accuracy: {test_acc:.2f}% | Estimated AUC: {eval_auc} | EER: {eval_eer}%")
+    test_acc = round((test_correct / test_total * 100.0), 2) if test_total > 0 else 0.0
+    pos_s = [s for y, s in zip(y_true_ood, y_scores_ood) if y == 1]
+    neg_s = [s for y, s in zip(y_true_ood, y_scores_ood) if y == 0]
+    if pos_s and neg_s:
+        pairs = sum(1.0 for p in pos_s for n in neg_s if p > n) + 0.5 * sum(1.0 for p in pos_s for n in neg_s if p == n)
+        eval_auc = round(pairs / (len(pos_s) * len(neg_s)), 4)
+        best_gap, eer_est = 1.0, 0.5
+        for th in [k / 50.0 for k in range(51)]:
+            fp_v = sum(1 for y, s in zip(y_true_ood, y_scores_ood) if y == 0 and s >= th)
+            tn_v = sum(1 for y, s in zip(y_true_ood, y_scores_ood) if y == 0 and s < th)
+            fn_v = sum(1 for y, s in zip(y_true_ood, y_scores_ood) if y == 1 and s < th)
+            tp_v = sum(1 for y, s in zip(y_true_ood, y_scores_ood) if y == 1 and s >= th)
+            fpr_v = fp_v / max(1, fp_v + tn_v)
+            fnr_v = fn_v / max(1, fn_v + tp_v)
+            if abs(fpr_v - fnr_v) < best_gap:
+                best_gap = abs(fpr_v - fnr_v)
+                eer_est = (fpr_v + fnr_v) / 2.0
+        eval_eer = round(eer_est * 100.0, 2)
+    else:
+        eval_auc = 0.5
+        eval_eer = 50.0
+    print(f"\n[OOD Evaluation] Test Accuracy: {test_acc:.2f}% | Empirical AUC: {eval_auc} | EER: {eval_eer}%")
 
     # 7. Save Checkpoint & Report to Google Drive
     if not output_checkpoint_dir:

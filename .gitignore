@@ -78,9 +78,11 @@ report_colab/*.sqlite
 *.pth
 *.h5
 *.zip
-# Whitelist lightweight SOTA YuNet face detector model (232KB)
+# Whitelist lightweight SOTA YuNet face detector model (232KB) and compact audio/RL checkpoints
 !web_ui/models/face_detection_yunet_2023mar.onnx
 !models/face_detection_yunet_2023mar.onnx
+!custom_vit_model/audio_fusionnet.pt
+!custom_vit_model/ppo_meta_controller.pt
 
 # Dataset images & temporary benchmark data
 dataset_pipeline/raw_sources/

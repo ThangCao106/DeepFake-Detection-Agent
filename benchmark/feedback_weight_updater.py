@@ -173,6 +173,7 @@ class FeedbackWeightUpdater:
 
         ext = Path(media_path).suffix.lower()
         is_image = ext in {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+        is_audio = ext in {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac", ".wma"}
 
         vault = ZeroDayActiveLearningVault.get_instance()
         label_int = _label_to_int(true_label)
@@ -184,6 +185,15 @@ class FeedbackWeightUpdater:
             saved_paths.append(str(dst))
             res = vault.enqueue_adversarial_sample(
                 str(dst), modality="image", confidence=0.5, anomaly_reason=reason
+            )
+            if "id" in res:
+                vault_ids.append(res["id"])
+        elif is_audio:
+            dst = out_dir / f"{feedback_id}_aud{ext or '.wav'}"
+            shutil.copy2(media_path, dst)
+            saved_paths.append(str(dst))
+            res = vault.enqueue_adversarial_sample(
+                str(dst), modality="audio", confidence=0.5, anomaly_reason=reason
             )
             if "id" in res:
                 vault_ids.append(res["id"])
@@ -236,8 +246,9 @@ class FeedbackWeightUpdater:
 
         existing_paths = {m.get("image_path") for m in manifest}
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        image_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
         for p in saved_paths:
-            if p not in existing_paths:
+            if Path(p).suffix.lower() in image_exts and p not in existing_paths:
                 manifest.append({
                     "image_path": p,
                     "label": label_int,
@@ -371,7 +382,7 @@ class FeedbackWeightUpdater:
         bounded coordinate search with strict non-regression acceptance.
         """
         before_params = cls.load_video_calibration_params()
-        events = get_recent_feedback(limit=250, db_path=db_path)
+        events = get_recent_feedback(limit=250, media_type="video", db_path=db_path)
 
         # Build labeled calibration vectors from stored telemetry
         samples: List[Dict[str, Any]] = []
@@ -517,13 +528,17 @@ class FeedbackWeightUpdater:
         with open(LABELED_MANIFEST_FILE, "r", encoding="utf-8") as f:
             manifest = json.load(f)
 
-        valid_entries = [m for m in manifest if m.get("image_path") and os.path.exists(m["image_path"])]
+        image_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+        valid_entries = [
+            m for m in manifest
+            if m.get("image_path") and os.path.exists(m["image_path"]) and Path(m["image_path"]).suffix.lower() in image_exts
+        ]
         if not valid_entries:
             return {"status": "skipped", "message": "No accessible hard frames on disk for LoRA update."}
 
         feedback_batch = valid_entries[-max_feedback_frames:]
 
-        # Gather compact balanced replay frames if local datasets exist
+        # Gather balanced replay frames to prevent catastrophic single-class forgetting
         replay_entries: List[Dict[str, Any]] = []
         replay_manifest = PROJECT_ROOT / "dataset_pipeline" / "source_split" / "train_manifest.json"
         if replay_manifest.exists():
@@ -537,7 +552,48 @@ class FeedbackWeightUpdater:
             except Exception:
                 pass
 
-        train_records = feedback_batch + replay_entries
+        real_cnt = sum(1 for r in feedback_batch + replay_entries if int(r["label"]) == 0)
+        fake_cnt = sum(1 for r in feedback_batch + replay_entries if int(r["label"]) == 1)
+        if real_cnt < 4:
+            for d_real in (
+                PROJECT_ROOT / "crawler" / "verified_threads_seeds",
+                PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
+            ):
+                if d_real.exists():
+                    for p in sorted(d_real.glob("*.jpg"))[: max(0, 4 - real_cnt)]:
+                        replay_entries.append({"image_path": str(p), "label": 0})
+                        real_cnt += 1
+                if real_cnt >= 4:
+                    break
+        if fake_cnt < 4:
+            for d_fake in (
+                PROJECT_ROOT / "report_colab" / "pentest" / "02_manipulated_faceswap",
+                PROJECT_ROOT / "report_colab" / "pentest" / "03_manipulated_openweight",
+                PROJECT_ROOT / "scratch" / "test_full_abc_out" / "03_manipulated_openweight",
+            ):
+                if d_fake.exists():
+                    for p in sorted(d_fake.glob("*.jpg"))[: max(0, 4 - fake_cnt)]:
+                        replay_entries.append({"image_path": str(p), "label": 1})
+                        fake_cnt += 1
+                if fake_cnt >= 4:
+                    break
+
+        all_records = feedback_batch + replay_entries
+        reals_all = [r for r in all_records if int(r["label"]) == 0]
+        fakes_all = [r for r in all_records if int(r["label"]) == 1]
+        val_subset: List[Dict[str, Any]] = []
+        train_subset: List[Dict[str, Any]] = []
+        for grp in (reals_all, fakes_all):
+            if len(grp) >= 2:
+                n_val = max(1, int(round(0.2 * len(grp))))
+                val_subset.extend(grp[:n_val])
+                train_subset.extend(grp[n_val:])
+            else:
+                train_subset.extend(grp)
+        if not val_subset:
+            val_subset = list(all_records)
+        if not train_subset:
+            train_subset = list(all_records)
 
         class _FeedbackFrameDataset(Dataset):
             def __init__(self, records, processor):
@@ -565,9 +621,10 @@ class FeedbackWeightUpdater:
 
         # Use Native PyTorch LoRA so delta merging W + scaling * (B @ A) is exact
         model = apply_lora_to_vit(model, r=8, lora_alpha=16, lora_dropout=0.05, prefer_peft=False).to(device)
-        dataset = _FeedbackFrameDataset(train_records, processor)
-        loader = DataLoader(dataset, batch_size=min(batch_size, max(1, len(dataset))), shuffle=True)
-        eval_loader = DataLoader(dataset, batch_size=min(batch_size, max(1, len(dataset))), shuffle=False)
+        train_dataset = _FeedbackFrameDataset(train_subset, processor)
+        val_dataset = _FeedbackFrameDataset(val_subset, processor)
+        loader = DataLoader(train_dataset, batch_size=min(batch_size, max(1, len(train_dataset))), shuffle=True)
+        eval_loader = DataLoader(val_dataset, batch_size=min(batch_size, max(1, len(val_dataset))), shuffle=False)
 
         criterion = FocalLoss(gamma=2.25, alpha=0.25)
 
@@ -606,8 +663,8 @@ class FeedbackWeightUpdater:
 
         after_metrics = _eval_model()
         improved = bool(
-            after_metrics["loss"] <= before_metrics["loss"] + 1e-4
-            or after_metrics["acc"] >= before_metrics["acc"]
+            after_metrics["loss"] < before_metrics["loss"]
+            and after_metrics["acc"] >= before_metrics["acc"]
         )
 
         saved_adapter_path = None
@@ -696,16 +753,95 @@ class FeedbackWeightUpdater:
             "merged_weights_path": saved_merged_path,
         }
 
+    @staticmethod
+    def _compute_audio_sample_risk(telemetry: Dict[str, Any], params: Dict[str, Any]) -> float:
+        """Vector-equivalent acoustic risk matching AudioForensicAnalyzer."""
+        wv = float(params.get("w_vocoder", 0.45))
+        wp = float(params.get("w_pitch", 0.35))
+        wph = float(params.get("w_phase", 0.20))
+        ws = max(1e-6, wv + wp + wph)
+        wv, wp, wph = wv / ws, wp / ws, wph / ws
+
+        voc = max(
+            float(telemetry.get("vocoder_anomaly_score", 0.5)),
+            float(telemetry.get("hf_dither_score", 0.0)),
+        )
+        pit = float(telemetry.get("pitch_score", 0.5))
+        pha = float(telemetry.get("phase_anomaly_score", 0.2))
+        if telemetry.get("is_non_speech", False):
+            return 0.15
+        if telemetry.get("is_telephony_bandlimited", False) and pit < 0.72:
+            voc = 0.25
+
+        risk = wv * voc + wp * pit + wph * pha
+        voc_gate = float(params.get("vocoder_gate", 0.72))
+        pit_gate = float(params.get("pitch_gate", 0.55))
+        if (voc >= voc_gate and pit >= pit_gate) or telemetry.get("partial_splice_detected", False) or float(telemetry.get("hf_dither_score", 0.0)) >= 0.76:
+            risk = max(risk, 0.86)
+        return float(min(0.985, max(0.02, risk)))
+
+    @classmethod
+    def _evaluate_audio_calibration_set(
+        cls, samples: List[Dict[str, Any]], params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        tau = float(params.get("tau_audio", 0.8118))
+        temp = max(0.5, float(params.get("temperature_T", 1.6178)))
+        baseline = cls.load_audio_calibration_params()
+        bce_total, total_weight = 0.0, 0.0
+        tp = tn = fp = fn = 0
+        for s in samples:
+            y = int(s["y"])
+            w = float(s.get("sample_weight", 1.0))
+            risk = cls._compute_audio_sample_risk(s["telemetry"], params)
+            logit = (risk - tau) * (6.0 / temp)
+            p_fake = min(1.0 - 1e-6, max(1e-6, 1.0 / (1.0 + math.exp(-max(-20.0, min(20.0, logit))))))
+            bce_total += w * (-(y * math.log(p_fake) + (1 - y) * math.log(1.0 - p_fake)))
+            total_weight += w
+            pred = 1 if risk >= tau else 0
+            if pred == 1 and y == 0:
+                fp += 1
+            elif pred == 0 and y == 1:
+                fn += 1
+            elif pred == 1 and y == 1:
+                tp += 1
+            else:
+                tn += 1
+        n = max(1, len(samples))
+        mean_bce = bce_total / max(1e-6, total_weight)
+        fpr = fp / max(1, fp + tn)
+        fnr = fn / max(1, fn + tp)
+        err_rate = (fp + fn) / n
+        drift = (
+            abs(float(params["w_vocoder"]) - float(baseline["w_vocoder"]))
+            + abs(float(params["w_pitch"]) - float(baseline["w_pitch"]))
+            + abs(float(params["tau_audio"]) - float(baseline["tau_audio"]))
+        )
+        objective = mean_bce + 1.5 * err_rate + 0.8 * fpr + 0.8 * fnr + 0.05 * drift
+        return {
+            "count": len(samples),
+            "tp": tp, "tn": tn, "fp": fp, "fn": fn,
+            "error_rate": round(err_rate, 4),
+            "fpr": round(fpr, 4),
+            "fnr": round(fnr, 4),
+            "mean_bce": round(mean_bce, 4),
+            "objective": round(objective, 5),
+        }
+
     @classmethod
     def run_audio_calibration_update(
         cls,
         detector=None,
         trigger_source: str = "audio_feedback_event",
         db_path: Optional[str] = None,
+        max_delta_tau: float = 0.08,
+        max_delta_w: float = 0.12,
     ) -> Dict[str, Any]:
-        """Fast-loop acoustic parameter calibration strictly updating audio_calibration_params.json."""
+        """
+        Fast-loop acoustic coordinate optimization updating audio_calibration_params.json
+        over stored audio feedback telemetry + canonical real/fake anchors with non-regression gate.
+        """
         before_params = cls.load_audio_calibration_params()
-        events = [e for e in get_recent_feedback(limit=250, db_path=db_path) if e.get("media_type") == "audio"]
+        events = get_recent_feedback(limit=250, media_type="audio", db_path=db_path)
         if not events:
             return {
                 "status": "no_audio_feedback_samples",
@@ -714,35 +850,87 @@ class FeedbackWeightUpdater:
                 "after_params": before_params,
             }
 
-        fp = sum(1 for e in events if e.get("feedback_type") == "FALSE_POSITIVE")
-        fn = sum(1 for e in events if e.get("feedback_type") == "FALSE_NEGATIVE")
+        samples: List[Dict[str, Any]] = []
+        for ev in events:
+            tel = ev.get("feature_telemetry") or {}
+            if not tel:
+                tel = {
+                    "vocoder_anomaly_score": float(ev.get("composite_risk_score", 0.5)),
+                    "pitch_score": float(ev.get("composite_risk_score", 0.5)),
+                    "phase_anomaly_score": 0.25,
+                }
+            samples.append({
+                "y": _label_to_int(ev.get("true_label", "Realism")),
+                "telemetry": tel,
+                "sample_weight": 2.0 if ev.get("feedback_type") in ("FALSE_POSITIVE", "FALSE_NEGATIVE") else 1.0,
+            })
+
+        canonical_anchors = [
+            {"y": 0, "sample_weight": 1.0, "telemetry": {"vocoder_anomaly_score": 0.05, "pitch_score": 0.14, "phase_anomaly_score": 0.22}},
+            {"y": 0, "sample_weight": 1.0, "telemetry": {"vocoder_anomaly_score": 0.25, "pitch_score": 0.15, "phase_anomaly_score": 0.24, "is_telephony_bandlimited": True}},
+            {"y": 1, "sample_weight": 1.0, "telemetry": {"vocoder_anomaly_score": 1.0, "pitch_score": 0.72, "phase_anomaly_score": 0.23}},
+            {"y": 1, "sample_weight": 1.0, "telemetry": {"vocoder_anomaly_score": 0.10, "hf_dither_score": 0.90, "pitch_score": 0.72, "phase_anomaly_score": 0.15}},
+        ]
+        all_samples = samples + canonical_anchors
+        before_metrics = cls._evaluate_audio_calibration_set(all_samples, before_params)
         best_params = dict(before_params)
-        tau_a = float(best_params.get("tau_audio", 0.8118))
-        temp_a = float(best_params.get("temperature_T", 1.6178))
+        best_metrics = dict(before_metrics)
 
-        if fn > fp:
-            tau_a = max(0.55, round(tau_a - 0.03, 4))
-        elif fp > fn:
-            tau_a = min(0.92, round(tau_a + 0.03, 4))
-        temp_a = round(float(np.clip(temp_a + (0.05 if (fp + fn) > 0 else 0.0), 1.0, 2.5)), 4)
+        wv_0 = float(before_params.get("w_vocoder", 0.45))
+        wp_0 = float(before_params.get("w_pitch", 0.35))
+        tau_0 = float(before_params.get("tau_audio", 0.8118))
 
-        best_params["tau_audio"] = tau_a
-        best_params["temperature_T"] = temp_a
-        best_params["calibration_status"] = "AUDIO_FEEDBACK_CALIBRATED"
-        best_params["feedback_updates_count"] = int(before_params.get("feedback_updates_count", 0)) + 1
-        best_params["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        best_params["last_trigger"] = trigger_source
-        cls.save_audio_calibration_params(best_params)
+        wv_cands = [round(min(0.65, max(0.25, wv_0 + d)), 3) for d in (-max_delta_w, -0.05, 0.0, 0.05, max_delta_w)]
+        wp_cands = [round(min(0.55, max(0.20, wp_0 + d)), 3) for d in (-max_delta_w, -0.05, 0.0, 0.05, max_delta_w)]
+        tau_cands = [round(min(0.90, max(0.58, tau_0 + d)), 4) for d in np.linspace(-max_delta_tau, max_delta_tau, 7)]
 
-        if detector is not None and hasattr(detector, "reload_calibration_params"):
-            detector.reload_calibration_params()
+        for wv in wv_cands:
+            for wp in wp_cands:
+                if wv + wp > 0.92:
+                    continue
+                wph = round(max(0.08, 1.0 - wv - wp), 3)
+                for ta in tau_cands:
+                    cand = dict(best_params)
+                    cand.update({"w_vocoder": wv, "w_pitch": wp, "w_phase": wph, "tau_audio": ta})
+                    m = cls._evaluate_audio_calibration_set(all_samples, cand)
+                    if (m["fp"] + m["fn"], m["objective"]) < (best_metrics["fp"] + best_metrics["fn"], best_metrics["objective"]):
+                        best_params = cand
+                        best_metrics = m
+
+        accepted = bool(
+            (best_metrics["fp"] + best_metrics["fn"]) <= (before_metrics["fp"] + before_metrics["fn"])
+            and best_metrics["objective"] <= before_metrics["objective"]
+        )
+
+        if accepted:
+            best_params["calibration_status"] = "AUDIO_FEEDBACK_CALIBRATED"
+            best_params["feedback_updates_count"] = int(before_params.get("feedback_updates_count", 0)) + 1
+            best_params["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            best_params["last_trigger"] = trigger_source
+            cls.save_audio_calibration_params(best_params)
+            if detector is not None and hasattr(detector, "reload_calibration_params"):
+                detector.reload_calibration_params()
+
+        update_id = save_weight_update_audit({
+            "trigger_source": trigger_source,
+            "feedback_count": len(samples),
+            "before_params": before_params,
+            "after_params": best_params if accepted else before_params,
+            "before_metrics": before_metrics,
+            "after_metrics": best_metrics if accepted else before_metrics,
+            "accepted": accepted,
+            "notes": "Fast-loop acoustic coordinate calibration refinement from audio feedback",
+        }, db_path=db_path)
 
         return {
-            "status": "updated",
-            "accepted": True,
-            "feedback_samples_used": len(events),
+            "status": "updated" if accepted else "kept_baseline",
+            "update_id": update_id,
+            "accepted": accepted,
+            "feedback_samples_used": len(samples),
             "before_params": before_params,
-            "after_params": best_params,
+            "after_params": best_params if accepted else before_params,
+            "before_metrics": before_metrics,
+            "after_metrics": best_metrics if accepted else before_metrics,
         }
 
     @classmethod
@@ -841,18 +1029,21 @@ class FeedbackWeightUpdater:
 
         calib_res = None
         if auto_update_calibration:
-            if str(media_type).lower() == "audio":
+            mtype_norm = str(media_type or "video").strip().lower()
+            if mtype_norm == "audio":
                 calib_res = cls.run_audio_calibration_update(
                     detector=detector,
                     trigger_source=f"feedback:{feedback_id}:{fb_type}",
                     db_path=db_path,
                 )
-            else:
+            elif mtype_norm == "video":
                 calib_res = cls.run_fast_calibration_update(
                     detector=detector,
                     trigger_source=f"feedback:{feedback_id}:{fb_type}",
                     db_path=db_path,
                 )
+            else:
+                calib_res = {"status": "skipped_image_uses_council_or_lora", "accepted": False}
             if calib_res.get("accepted"):
                 event_payload["calibration_applied"] = True
 

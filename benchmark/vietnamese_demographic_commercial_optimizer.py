@@ -196,14 +196,15 @@ def optimize_vietnamese_hyperparameters(
 
     y_true = np.array([s["ground_truth_label"] for s in samples])
 
-    # Construct risk vectors
-    # risk_general: visual texture/frequency artifacts
-    # risk_human: biometrics, PRNU, eye reflection, facial symmetry
+    # Construct risk vectors (prefer empirical sample scores when provided)
     sample_risks = []
     for s in samples:
         c_id = s.get("dataset_source", "Threads_vn_selfie_lifestyle")
         gt = s["ground_truth_label"]
-        if gt == 0:
+        if "risk_general" in s and "risk_human" in s:
+            rg = float(s["risk_general"])
+            rh = float(s["risk_human"])
+        elif gt == 0:
             if "id_official" in c_id:
                 rg = 0.22; rh = 0.18
             elif "selfie" in c_id:
@@ -218,26 +219,25 @@ def optimize_vietnamese_hyperparameters(
             rg = 0.92; rh = 0.84
         sample_risks.append({"risk_general": rg, "risk_human": rh, "cohort": c_id})
 
-    # 1. Cohort-Adaptive Fusion Weights alpha_c Optimization
+    # 1. Cohort-Adaptive Fusion Weights alpha_c Optimization (constrained anti-collapse grid)
     cohort_weights = {}
-    cohort_keys = [c["id"] for c in VIETNAMESE_COHORTS]
 
     for c_info in VIETNAMESE_COHORTS:
         c_id = c_info["id"]
         c_idxs = [i for i, s in enumerate(samples) if s.get("dataset_source") == c_id]
         if not c_idxs:
-            cohort_weights[c_id] = {"alpha_human": 0.40, "weight_general": 0.60}
+            cohort_weights[c_id] = {"alpha_human": 0.35, "weight_general": 0.65}
             continue
 
         c_true = y_true[c_idxs]
         c_rg = np.array([sample_risks[i]["risk_general"] for i in c_idxs])
         c_rh = np.array([sample_risks[i]["risk_human"] for i in c_idxs])
 
-        best_alpha = 0.40
+        best_alpha = 0.35
         best_auc = -1.0
         lowest_eer = 1.0
 
-        for alpha in np.linspace(0.05, 0.95, 19):
+        for alpha in np.linspace(0.20, 0.70, 11):
             scores = (1.0 - alpha) * c_rg + alpha * c_rh
             auc_val = compute_roc_auc(c_true, scores)
             eer_val = compute_eer(c_true, scores)
@@ -259,18 +259,18 @@ def optimize_vietnamese_hyperparameters(
         "description": "Chân dung studio chuẩn - Biometrics 60% / ViT 40%"
     }
 
-    # 2. Optimal Decision Threshold tau*_VN (Maximizing Youden Index J)
+    # 2. Optimal Decision Threshold tau*_VN (Maximizing Youden Index J with anti-FP floor 0.55)
     opt_scores = []
     for i, s in enumerate(samples):
         c_id = s.get("dataset_source", "Threads_vn_selfie_lifestyle").replace("Threads_", "")
-        alpha = cohort_weights.get(c_id, {}).get("alpha_human", 0.40)
+        alpha = cohort_weights.get(c_id, {}).get("alpha_human", 0.35)
         s_score = (1.0 - alpha) * sample_risks[i]["risk_general"] + alpha * sample_risks[i]["risk_human"]
         opt_scores.append(s_score)
     opt_scores = np.array(opt_scores)
 
-    best_tau = 0.465
+    best_tau = 0.58
     best_j = -1.0
-    for tau in np.linspace(0.20, 0.85, 131):
+    for tau in np.linspace(0.55, 0.82, 55):
         preds = (opt_scores >= tau).astype(int)
         tp = np.sum((preds == 1) & (y_true == 1))
         fp = np.sum((preds == 1) & (y_true == 0))
@@ -284,10 +284,10 @@ def optimize_vietnamese_hyperparameters(
             best_j = j_val
             best_tau = round(float(tau), 4)
 
-    # 3. Platt Scaling Temperature T*_VN (Minimizing ECE)
-    best_temp = 0.4
+    # 3. Platt Scaling Temperature T*_VN (Minimizing ECE in bounded range [0.80, 2.20])
+    best_temp = 1.45
     lowest_ece = 1.0
-    for temp in np.linspace(0.2, 2.5, 47):
+    for temp in np.linspace(0.80, 2.20, 29):
         calibrated_probs = 1.0 / (1.0 + np.exp(-opt_scores / temp))
         ece_val = compute_ece(y_true, calibrated_probs)
         if ece_val < lowest_ece:
@@ -329,12 +329,15 @@ def optimize_vietnamese_hyperparameters(
         }
     }
 
-    # Save to custom_vit_model/vietnamese_demographic_params.json
-    OUTPUT_PARAMS_JSON.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PARAMS_JSON, "w", encoding="utf-8") as f:
-        json.dump(optimized_params, f, indent=2, ensure_ascii=False)
-
-    print(f"✅ Saved optimized Vietnamese Demographic Parameters to: {OUTPUT_PARAMS_JSON}")
+    # Save to custom_vit_model/vietnamese_demographic_params.json ONLY with sufficient balanced cohorts
+    has_both_classes = (0 in set(int(v) for v in y_true)) and (1 in set(int(v) for v in y_true))
+    if len(samples) >= 30 and has_both_classes:
+        OUTPUT_PARAMS_JSON.parent.mkdir(parents=True, exist_ok=True)
+        with open(OUTPUT_PARAMS_JSON, "w", encoding="utf-8") as f:
+            json.dump(optimized_params, f, indent=2, ensure_ascii=False)
+        print(f"✅ Saved optimized Vietnamese Demographic Parameters to: {OUTPUT_PARAMS_JSON}")
+    else:
+        print(f"⚠️ Skipped overwriting {OUTPUT_PARAMS_JSON} (samples={len(samples)}, both_classes={has_both_classes}).")
     print(f"   Optimal tau* = {best_tau} | Optimal T* = {best_temp} | Overall AUC = {overall_auc}")
     return optimized_params
 

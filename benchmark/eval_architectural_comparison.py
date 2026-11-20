@@ -361,6 +361,7 @@ def run_architectural_benchmarks():
 
     output_payload = {
         "benchmark_title": "Direct Architectural Comparison on Deepfake Detection Benchmarks",
+        "evaluation_provenance": "SOTA_LITERATURE_PARAMETRIC_COMPARISON",
         "evaluation_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
         "dataset_sample_count": total_samples,
         "dataset_manifest_path": str(MANIFEST_PATH),

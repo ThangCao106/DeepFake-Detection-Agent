@@ -7,6 +7,7 @@ import hashlib
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
@@ -290,8 +291,10 @@ class HumanPresenceDetector:
                                 roi_sub = small_bgr[max(0, hb[1]):min(small_bgr.shape[0], hb[1]+hb[3]), max(0, hb[0]):min(small_bgr.shape[1], hb[0]+hb[2])]
                                 if roi_sub.size > 0:
                                     roi_gray = cv2.cvtColor(roi_sub, cv2.COLOR_BGR2GRAY)
-                                    if float(np.mean(roi_gray > 165)) > 0.65 or float(np.mean(roi_gray < 35)) > 0.85:
-                                        continue  # Skip white paper / document false pedestrian
+                                    roi_lap_var = float(cv2.Laplacian(roi_gray, cv2.CV_64F).var())
+                                    roi_edge_pct = float(np.mean(cv2.Canny(roi_gray, 40, 120) > 0))
+                                    if float(np.mean(roi_gray > 165)) > 0.65 or float(np.mean(roi_gray < 35)) > 0.85 or (roi_lap_var < 35.0 and roi_edge_pct < 0.030):
+                                        continue  # Skip white paper / document / flat geometric false pedestrian
                                 detected_pedestrians.append((bx, by, bw, bh))
                     if detected_pedestrians:
                         evidence.append(f"Phát hiện thực thể người toàn thân qua HOG Human Detector ({len(detected_pedestrians)} người, trọng số: {max_wt:.2f})")
@@ -1334,11 +1337,17 @@ class CornealReflectionAnalyzer:
 
             glint_l_mask = (left_eye >= max(195.0, thresh_l - 5.0))
             glint_r_mask = (right_eye >= max(195.0, thresh_r - 5.0))
+            glint_l_ratio = float(np.mean(glint_l_mask))
+            glint_r_ratio = float(np.mean(glint_r_mask))
 
             has_glint_l = np.any(glint_l_mask)
             has_glint_r = np.any(glint_r_mask)
 
-            if has_glint_l and has_glint_r:
+            if glint_l_ratio > 0.12 or glint_r_ratio > 0.12:
+                # Over-exposed diffuse ambient or cheek glare (>12% area), not a pinpoint specular glint
+                asymmetry_score = 0.0
+                glints_count = 0
+            elif has_glint_l and has_glint_r:
                 ly_indices, lx_indices = np.where(glint_l_mask)
                 ry_indices, rx_indices = np.where(glint_r_mask)
 
@@ -1393,12 +1402,13 @@ class CornealReflectionAnalyzer:
 
 class AudioForensicAnalyzer:
     """
-    Acoustic & Voice Deepfake Analyzer (Tri-Stream Dispatcher).
-    Evaluates:
-      1. High-frequency formant roll-off (>7.5 kHz) characteristic of TTS/Vocoder synthesis.
-      2. Pitch (F0) micro-tremor stability and vocal cord jitter.
-      3. Zero-crossing interval phase irregularity.
-      4. Log-Mel Spectrogram 8x8 Time-Frequency Saliency Grid & Shannon Entropy.
+    Acoustic & Voice Deepfake Analyzer (Tri-Stream Full-Duration Sliding-Window DSP).
+    Evaluates across the ENTIRE audio duration (up to 60s, preventing partial-splice blindness):
+      1. High-frequency formant roll-off (>7.5 kHz) with 8 kHz telephony codec guard (anti-FP).
+      2. High-frequency air-band dither detection (spectral flatness & 4–7.5 kHz valley inversion).
+      3. Band-limited (50–500 Hz) unbiased NCCF with parabolic interpolation for F0 jitter, shimmer & HNR.
+      4. Inter-window splice discontinuity & dynamic microphone channel noise-floor variance.
+      5. 8x8 Log-Mel/STFT Spectrogram Saliency Grid.
     """
     @staticmethod
     def load_audio_signal(audio_path, target_sr=22050):
@@ -1416,11 +1426,13 @@ class AudioForensicAnalyzer:
                 y = data.astype(np.float32) / 32768.0
             elif data.dtype == np.int32:
                 y = data.astype(np.float32) / 2147483648.0
+            elif data.dtype == np.uint8:
+                y = (data.astype(np.float32) - 128.0) / 128.0
             else:
                 y = data.astype(np.float32)
             if len(y.shape) > 1:
                 y = np.mean(y, axis=1)
-            return y, sr
+            return y, int(sr)
         except Exception:
             pass
 
@@ -1435,12 +1447,18 @@ class AudioForensicAnalyzer:
                 if wf.getnchannels() > 1:
                     data = data.reshape(-1, wf.getnchannels())
                     data = np.mean(data, axis=1)
-                return data, sr
+                return data, int(sr)
         except Exception:
             pass
 
-        # 3. Decode compressed audio/video containers (m4a, mp3, aac, ogg, flac, mp4, webm) via ffmpeg
+        # 3. Decode compressed audio/video containers (m4a, mp3, aac, ogg, flac, mp4, webm) via ffmpeg / imageio_ffmpeg
         ffmpeg_bin = shutil.which("ffmpeg")
+        if not ffmpeg_bin:
+            try:
+                import imageio_ffmpeg
+                ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception:
+                ffmpeg_bin = None
         if ffmpeg_bin:
             tmp_wav = None
             try:
@@ -1464,7 +1482,7 @@ class AudioForensicAnalyzer:
                         frames = wf.readframes(wf.getnframes())
                         data = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
                         if len(data) > 0:
-                            return data, sr
+                            return data, int(sr)
             except Exception:
                 pass
             finally:
@@ -1474,13 +1492,13 @@ class AudioForensicAnalyzer:
                     except Exception:
                         pass
 
-        # 4. Try torchaudio / soundfile / av if installed
+        # 4. Try soundfile / torchaudio if installed
         try:
             import soundfile as sf
             data, sr = sf.read(audio_path_str, dtype="float32")
             if len(data.shape) > 1:
                 data = np.mean(data, axis=1)
-            return data, sr
+            return data, int(sr)
         except Exception:
             pass
 
@@ -1501,84 +1519,151 @@ class AudioForensicAnalyzer:
         )
 
     @staticmethod
-    def analyze_audio(audio_path, audio_params=None):
-        y, sr = AudioForensicAnalyzer.load_audio_signal(audio_path)
-        if len(y) < 512:
-            y = np.pad(y, (0, 512 - len(y)))
+    def _extract_pitch_and_physiology(sig, sr, max_frames=96):
+        """
+        Extracts band-limited (50–500 Hz) pitch F0 using unbiased normalized cross-correlation
+        with 3-point parabolic interpolation, plus shimmer and HNR regularity metrics.
+        """
+        n_total = len(sig)
+        frame_len = max(512, min(n_total, int(sr * 0.045)))
+        if n_total < frame_len:
+            sig = np.pad(sig, (0, frame_len - n_total))
+            n_total = len(sig)
 
-        # 1. FFT Magnitude Spectrum & High-Frequency Cutoff (>7.5 kHz)
-        fft_len = min(len(y), 65536)
-        fft_vals = np.abs(np.fft.rfft(y[:fft_len]))
-        freqs = np.fft.rfftfreq(fft_len, 1.0 / sr)
+        min_lag = max(2, int(sr / 500.0))
+        max_lag = min(int(sr / 50.0), frame_len - max(48, frame_len // 3))
+        if max_lag <= min_lag + 2:
+            return {
+                "voiced_ratio": 0.0,
+                "f0_jitter": 0.021,
+                "f0_dd_jitter": 0.008,
+                "mean_hnr_corr": 0.0,
+                "shimmer": 0.0,
+                "interharmonic_noise_ratio": 0.0,
+                "pitch_score": 0.15,
+            }
 
-        low_band = (freqs >= 300) & (freqs < 7500)
-        high_band = (freqs >= 7500)
+        stride = max(frame_len // 2, (n_total - frame_len) // max(1, max_frames - 1))
+        starts = list(range(0, max(1, n_total - frame_len + 1), max(1, stride)))[:max_frames]
 
-        low_energy = float(np.sum(fft_vals[low_band])) + 1e-6
-        high_energy = float(np.sum(fft_vals[high_band])) + 1e-6
-        hf_ratio = high_energy / low_energy
-
-        # Vocoders (HiFi-GAN, VITS) exhibit sharp roll-off above 7.5kHz (hf_ratio < 0.04)
-        vocoder_anomaly = float(np.clip((0.075 - hf_ratio) / 0.065, 0.0, 1.0))
-
-        # 2. Zero Crossing Rate (ZCR) & Phase Inconsistency
-        zcr = np.mean(np.abs(np.diff(np.sign(y)))) / 2.0
-        phase_anomaly = float(np.clip(abs(zcr - 0.08) * 3.5, 0.05, 0.85))
-
-        # 3. Pitch (F0) Stability & Jitter
-        frame_len = min(512, len(y))
-        n_frames = min(32, len(y) // frame_len)
         f0_estimates = []
-        for i in range(n_frames):
-            frame = y[i*frame_len:(i+1)*frame_len]
-            if np.max(np.abs(frame)) > 0.01:
-                corr = np.correlate(frame, frame, mode='full')
-                corr = corr[len(corr)//2:]
-                d = np.diff(corr)
-                start = np.where(d > 0)[0]
-                if len(start) > 0:
-                    peak = np.argmax(corr[start[0]:]) + start[0]
-                    if peak > 0:
-                        f0_estimates.append(float(sr / peak))
+        hnr_peaks = []
+        voiced_rms = []
+        voiced_flatness = []
 
-        if len(f0_estimates) > 2:
-            f0_jitter = float(np.std(f0_estimates) / (np.mean(f0_estimates) + 1e-6))
+        for s_idx in starts:
+            frame = sig[s_idx:s_idx + frame_len].astype(np.float64)
+            rms = float(np.sqrt(np.mean(frame * frame)))
+            if rms < 0.008:
+                continue
+
+            w_c = frame - np.mean(frame)
+            sq = w_c * w_c
+            if float(np.sum(sq)) < 1e-10:
+                continue
+
+            # Unbiased normalized cross-correlation r[lag] in [-1, 1]
+            n_f = len(w_c)
+            corr = np.correlate(w_c, w_c, mode='full')[n_f - 1:]
+            csum = np.concatenate(([0.0], np.cumsum(sq)))
+            lags = np.arange(min_lag, max_lag + 1)
+            e1 = csum[n_f - lags]
+            e2 = csum[-1] - csum[lags]
+            denom = np.sqrt(e1 * e2) + 1e-12
+            r_norm = corr[lags] / denom
+
+            global_max = float(np.max(r_norm))
+            if global_max < 0.35:
+                continue
+
+            # Pick FIRST local maximum >= max(0.35, 0.85 * global_max) to prevent octave errors
+            peak_thresh = max(0.35, 0.85 * global_max)
+            chosen_idx = int(np.argmax(r_norm))
+            for k in range(1, len(r_norm) - 1):
+                if r_norm[k] >= peak_thresh and r_norm[k] >= r_norm[k - 1] and r_norm[k] >= r_norm[k + 1]:
+                    chosen_idx = k
+                    break
+
+            best_lag = float(lags[chosen_idx])
+            if 0 < chosen_idx < len(r_norm) - 1:
+                y_l = float(r_norm[chosen_idx - 1])
+                y_c = float(r_norm[chosen_idx])
+                y_r = float(r_norm[chosen_idx + 1])
+                denom_p = 2.0 * (y_l - 2.0 * y_c + y_r)
+                if abs(denom_p) > 1e-12:
+                    delta = float(np.clip((y_l - y_r) / denom_p, -0.5, 0.5))
+                    best_lag += delta
+
+            f0 = float(sr / max(1.0, best_lag))
+            if 50.0 <= f0 <= 500.0:
+                f0_estimates.append(f0)
+                hnr_peaks.append(global_max)
+                voiced_rms.append(rms)
+
+                # Measure aspiration/turbulence floor in 1000–3500 Hz relative to vocal energy
+                spec_f = np.abs(np.fft.rfft(w_c * np.hanning(n_f)))
+                freqs_f = np.fft.rfftfreq(n_f, 1.0 / sr)
+                band_mask = (freqs_f >= 900.0) & (freqs_f <= min(3600.0, sr * 0.45))
+                if np.any(band_mask):
+                    b_vals = spec_f[band_mask]
+                    voiced_flatness.append(float(np.median(b_vals) / (np.max(spec_f) + 1e-9)))
+
+        voiced_ratio = float(len(f0_estimates) / max(1, len(starts)))
+        mean_hnr_corr = float(np.mean(hnr_peaks)) if hnr_peaks else 0.0
+        interharmonic_ratio = float(np.mean(voiced_flatness)) if voiced_flatness else 0.0
+
+        if len(voiced_rms) >= 2:
+            shimmer = float(np.mean(np.abs(np.diff(voiced_rms))) / (np.mean(voiced_rms) + 1e-9))
         else:
-            f0_jitter = 0.021
+            shimmer = 0.0
 
-        # Human vocal jitter typically 1-3%. Synthetic TTS either <0.6% or >6.5%
-        if f0_jitter < 0.006 or f0_jitter > 0.065:
-            pitch_score = 0.60 + min(0.35, abs(f0_jitter - 0.02) * 5.0)
+        if len(f0_estimates) >= 3:
+            f0_arr = np.array(f0_estimates, dtype=np.float64)
+            mean_f0 = float(np.mean(f0_arr)) + 1e-6
+            # Filter genuine pitch steps within +/- 30% to prevent occasional octave flips biasing jitter
+            rel_diffs = []
+            for idx_f in range(len(f0_arr) - 1):
+                ratio = f0_arr[idx_f + 1] / (f0_arr[idx_f] + 1e-6)
+                if 0.72 <= ratio <= 1.38:
+                    rel_diffs.append(abs(f0_arr[idx_f + 1] - f0_arr[idx_f]) / mean_f0)
+            f0_jitter = float(np.mean(rel_diffs)) if rel_diffs else float(np.std(f0_arr) / mean_f0)
+            f0_dd_jitter = float(np.mean(np.abs(np.diff(f0_arr, n=2))) / mean_f0)
         else:
-            pitch_score = 0.12 + abs(f0_jitter - 0.02) * 3.0
-        pitch_score = float(np.clip(pitch_score, 0.05, 0.95))
+            f0_jitter = 0.0
+            f0_dd_jitter = 0.0
 
-        # 4. 8x8 Time-Frequency Spectrogram Saliency Grid
-        grid_size = 8
-        hop = len(y) // grid_size
-        spec_grid = []
-        for r in range(grid_size):
-            row = []
-            chunk = y[r*hop:(r+1)*hop]
-            chunk_fft = np.abs(np.fft.rfft(chunk)) if len(chunk) > 16 else np.zeros(8)
-            step_f = len(chunk_fft) // grid_size
-            for c in range(grid_size):
-                sub_spec = chunk_fft[c*step_f:(c+1)*step_f] if step_f > 0 else chunk_fft
-                p_energy = float(np.mean(sub_spec)) if len(sub_spec) > 0 else 0.0
-                row.append(p_energy)
-            spec_grid.append(row)
-
-        sg_np = np.array(spec_grid, dtype=np.float32)
-        if np.max(sg_np) > 0:
-            sg_norm = sg_np / np.max(sg_np)
+        # Physiological scoring
+        if voiced_ratio < 0.10 or len(f0_estimates) < 3:
+            # Non-speech / ambient noise / silent segment
+            pitch_score = 0.15
+        elif f0_jitter < 0.005 or f0_jitter > 0.135:
+            # Mechanical robotic flat pitch (<0.5%) or severe glitch artifact (>13.5%)
+            pitch_score = float(np.clip(0.74 + min(0.21, abs(f0_jitter - 0.02) * 3.5), 0.74, 0.95))
+        elif mean_hnr_corr >= 0.994 and shimmer < 0.030 and interharmonic_ratio < 0.010:
+            # Jitter-spoofed / clean synthetic TTS: artificial pitch contour with hyper-clean harmonics & missing shimmer/aspiration
+            pitch_score = float(np.clip(0.78 + (mean_hnr_corr - 0.994) * 28.0, 0.78, 0.95))
+        elif mean_hnr_corr >= 0.975 and f0_dd_jitter < 0.0018 and shimmer < 0.015:
+            # Deterministic smooth sinusoidal vibrato lacking stochastic cycle-to-cycle micro-tremor
+            pitch_score = 0.76
         else:
-            sg_norm = sg_np
+            pitch_score = float(np.clip(0.10 + abs(f0_jitter - 0.02) * 2.5, 0.05, 0.45))
 
-        max_idx = np.unravel_index(np.argmax(sg_norm), sg_norm.shape)
-        peak_score = float(sg_norm[max_idx])
-        dispersion = float(np.var(sg_norm))
+        return {
+            "voiced_ratio": round(voiced_ratio, 4),
+            "f0_jitter": round(f0_jitter, 4),
+            "f0_dd_jitter": round(f0_dd_jitter, 5),
+            "mean_hnr_corr": round(mean_hnr_corr, 4),
+            "shimmer": round(shimmer, 4),
+            "interharmonic_noise_ratio": round(interharmonic_ratio, 5),
+            "pitch_score": round(pitch_score, 4),
+        }
 
-        # 5. Composite Acoustic Risk using separated audio_calibration_params
+    @staticmethod
+    def _analyze_window(win_sig, sr, audio_params=None):
+        """Evaluates a single time window (typically 1.0s) for vocoder, HF dither, phase, and pitch cues."""
+        if len(win_sig) < 512:
+            win_sig = np.pad(win_sig, (0, 512 - len(win_sig)))
+
         ap = audio_params or {}
         w_voc = float(ap.get("w_vocoder", 0.45))
         w_pit = float(ap.get("w_pitch", 0.35))
@@ -1588,18 +1673,222 @@ class AudioForensicAnalyzer:
         voc_gate = float(ap.get("vocoder_gate", 0.72))
         pit_gate = float(ap.get("pitch_gate", 0.55))
 
-        acoustic_risk = w_voc * vocoder_anomaly + w_pit * pitch_score + w_pha * phase_anomaly
-        if vocoder_anomaly >= voc_gate and pitch_score >= pit_gate:
-            acoustic_risk = max(acoustic_risk, 0.76 + 0.18 * vocoder_anomaly)
-        acoustic_risk = float(np.clip(acoustic_risk, 0.02, 0.98))
+        phys = AudioForensicAnalyzer._extract_pitch_and_physiology(win_sig, sr, max_frames=24)
+        pitch_score = phys["pitch_score"]
+
+        # Hann-windowed FFT spectrum
+        n_fft = min(len(win_sig), 65536)
+        hann = np.hanning(n_fft)
+        fft_vals = np.abs(np.fft.rfft(win_sig[:n_fft] * hann))
+        freqs = np.fft.rfftfreq(n_fft, 1.0 / sr)
+
+        voice_band = (freqs >= 300.0) & (freqs < 3600.0)
+        mid_hi_band = (freqs >= 4000.0) & (freqs < 7500.0)
+        low_band = (freqs >= 300.0) & (freqs < 7500.0)
+        high_band = (freqs >= 7500.0)
+
+        voice_energy = float(np.sum(fft_vals[voice_band])) + 1e-9
+        mid_hi_energy = float(np.sum(fft_vals[mid_hi_band])) if np.any(mid_hi_band) else 0.0
+        low_energy = float(np.sum(fft_vals[low_band])) + 1e-9
+        high_energy = float(np.sum(fft_vals[high_band])) if np.any(high_band) else 0.0
+
+        mid_hi_ratio = mid_hi_energy / voice_energy
+        hf_ratio = high_energy / low_energy
+
+        # 8 kHz Telephony / Zalo band-limit codec guard
+        is_telephony = bool(sr <= 10000 or (mid_hi_ratio < 0.004 and hf_ratio < 0.004 and phys["voiced_ratio"] >= 0.10))
+
+        # HF Dither Bypass Detector: dead valley in 4–7.5 kHz followed by injected upper-band noise (>7.5 kHz)
+        hf_dither_score = 0.0
+        if np.any(high_band) and phys["voiced_ratio"] >= 0.10 and mid_hi_ratio < 0.03:
+            upper_hf_band = (freqs >= 8000.0) & (freqs <= min(10500.0, sr * 0.48))
+            hf_mags = fft_vals[upper_hf_band] if np.any(upper_hf_band) else fft_vals[high_band]
+            inv_ratio = high_energy / (mid_hi_energy + 1e-9)
+            if len(hf_mags) >= 8 and float(np.mean(hf_mags)) > 1e-7:
+                hf_flatness = float(
+                    np.exp(np.mean(np.log(hf_mags + 1e-12))) / (float(np.mean(hf_mags)) + 1e-12)
+                )
+                if (inv_ratio > 2.0 and hf_ratio > 0.04 and hf_flatness > 0.35) or (
+                    inv_ratio > 1.3 and hf_flatness > 0.45
+                ):
+                    hf_dither_score = float(np.clip(0.78 + 0.20 * min(1.0, (hf_flatness - 0.30) / 0.40), 0.78, 0.98))
+
+        if is_telephony:
+            # Authentic low-passed call lacks >4 kHz legitimately; rely on vocal cord physiology + shimmer
+            vocoder_anomaly = 0.78 if pitch_score >= 0.72 else 0.25
+        else:
+            vocoder_anomaly = float(np.clip((0.075 - hf_ratio) / 0.065, 0.0, 1.0))
+
+        # Effective vocoder score includes HF dither bypass signal
+        eff_vocoder = max(vocoder_anomaly, hf_dither_score)
+
+        # ZCR & phase regularity
+        zcr = float(np.mean(np.abs(np.diff(np.sign(win_sig))))) / 2.0
+        phase_anomaly = float(np.clip(abs(zcr - 0.08) * 3.5, 0.05, 0.85))
+
+        # Background noise floor in speech band (dB) for cross-window microphone channel drift
+        speech_mags = fft_vals[low_band]
+        nf_db = float(20.0 * np.log10(float(np.percentile(speech_mags, 10)) + 1e-9)) if len(speech_mags) > 4 else -120.0
+
+        win_risk = w_voc * eff_vocoder + w_pit * pitch_score + w_pha * phase_anomaly
+        if phys["voiced_ratio"] < 0.10:
+            # Non-speech / ambient noise guard (anti-FP)
+            win_risk = min(win_risk, 0.28)
+        else:
+            if eff_vocoder >= voc_gate and pitch_score >= pit_gate:
+                win_risk = max(win_risk, 0.85 + 0.12 * eff_vocoder)
+            if hf_dither_score >= 0.76:
+                win_risk = max(win_risk, 0.86 + 0.10 * hf_dither_score)
+            if is_telephony and pitch_score >= 0.72:
+                win_risk = max(win_risk, 0.86)
+
+        return {
+            "phys": phys,
+            "vocoder_anomaly": round(vocoder_anomaly, 4),
+            "eff_vocoder": round(eff_vocoder, 4),
+            "hf_dither_score": round(hf_dither_score, 4),
+            "pitch_score": pitch_score,
+            "phase_anomaly": round(phase_anomaly, 4),
+            "noise_floor_db": round(nf_db, 2),
+            "is_telephony": is_telephony,
+            "win_risk": round(float(np.clip(win_risk, 0.02, 0.985)), 4),
+        }
+
+    @staticmethod
+    def analyze_audio(audio_path, audio_params=None):
+        y, sr = AudioForensicAnalyzer.load_audio_signal(audio_path)
+        if len(y) < 512:
+            y = np.pad(y, (0, 512 - len(y)))
+
+        duration_sec = round(len(y) / max(1, sr), 2)
+        # Analyze full audio up to 60 seconds with 1.0s sliding windows (0.5s hop)
+        max_samples_eval = min(len(y), int(sr * 60.0))
+        y_eval = y[:max_samples_eval]
+
+        win_samples = int(sr * 1.0)
+        hop_samples = int(sr * 0.5)
+        window_evals = []
+
+        if len(y_eval) <= win_samples + int(sr * 0.25):
+            w_res = AudioForensicAnalyzer._analyze_window(y_eval, sr, audio_params=audio_params)
+            w_res.update({"window_index": 0, "start_sec": 0.0, "end_sec": round(len(y_eval) / sr, 2)})
+            window_evals.append(w_res)
+        else:
+            starts = list(range(0, max(1, len(y_eval) - win_samples + 1), max(1, hop_samples)))
+            if len(starts) > 60:
+                idx_sel = np.linspace(0, len(starts) - 1, 60, dtype=int)
+                starts = [starts[k] for k in idx_sel]
+            for w_idx, s_pos in enumerate(starts):
+                w_chunk = y_eval[s_pos:s_pos + win_samples]
+                w_res = AudioForensicAnalyzer._analyze_window(w_chunk, sr, audio_params=audio_params)
+                w_res.update({
+                    "window_index": w_idx,
+                    "start_sec": round(s_pos / sr, 2),
+                    "end_sec": round(min(len(y_eval), s_pos + win_samples) / sr, 2),
+                })
+                window_evals.append(w_res)
+
+        # Global pitch & physiology over the entire audio stream (never truncated at 0.74s)
+        global_phys = AudioForensicAnalyzer._extract_pitch_and_physiology(y_eval, sr, max_frames=96)
+
+        voiced_windows = [w for w in window_evals if w["phys"]["voiced_ratio"] >= 0.10]
+        is_non_speech = (global_phys["voiced_ratio"] < 0.10 and not voiced_windows)
+
+        active_windows = voiced_windows if voiced_windows else window_evals
+        mean_vocoder = float(np.mean([w["eff_vocoder"] for w in active_windows]))
+        max_vocoder = float(np.max([w["eff_vocoder"] for w in active_windows]))
+        max_hf_dither = float(np.max([w["hf_dither_score"] for w in active_windows]))
+        mean_phase = float(np.mean([w["phase_anomaly"] for w in active_windows]))
+        max_win_risk = float(np.max([w["win_risk"] for w in active_windows]))
+        min_win_risk = float(np.min([w["win_risk"] for w in active_windows]))
+        mean_win_risk = float(np.mean([w["win_risk"] for w in active_windows]))
+
+        is_telephony_bandlimited = bool(
+            active_windows and all(w["is_telephony"] for w in active_windows) and max_hf_dither < 0.5
+        )
+
+        # Cross-window splice discontinuity & dynamic microphone channel uniformity
+        if len(voiced_windows) >= 2:
+            nf_dbs = [w["noise_floor_db"] for w in voiced_windows]
+            nf_std = float(np.std(nf_dbs))
+            risk_range = max(0.0, max_win_risk - min_win_risk)
+            nf_jump = float(np.max(np.abs(np.diff(nf_dbs)))) if len(nf_dbs) >= 2 else 0.0
+            partial_splice_detected = bool(
+                (max_win_risk >= 0.80 and risk_range >= 0.40) or
+                (max_win_risk >= 0.76 and nf_jump >= 8.0 and risk_range >= 0.30)
+            )
+            splice_discontinuity = round(float(np.clip(risk_range, 0.0, 1.0)), 4)
+        else:
+            nf_std = 0.5
+            partial_splice_detected = False
+            splice_discontinuity = 0.0
+
+        channel_uniformity = round(float(np.clip(1.0 - nf_std / 15.0, 0.05, 0.99)), 4)
+        mic_channel_score = round(float(np.clip(0.65 * splice_discontinuity + 0.35 * (1.0 - channel_uniformity), 0.02, 0.98)), 4)
+
+        flagged_segments = [
+            {
+                "window_index": w["window_index"],
+                "time_span": f"{w['start_sec']}s - {w['end_sec']}s",
+                "window_risk": w["win_risk"],
+            }
+            for w in active_windows
+            if w["win_risk"] >= 0.75
+        ]
+
+        # 8x8 Time-Frequency Spectrogram Saliency Grid across evaluated waveform
+        grid_size = 8
+        hop_grid = max(1, len(y_eval) // grid_size)
+        spec_grid = []
+        for r in range(grid_size):
+            row = []
+            chunk = y_eval[r * hop_grid:(r + 1) * hop_grid]
+            chunk_fft = np.abs(np.fft.rfft(chunk)) if len(chunk) > 16 else np.zeros(8)
+            step_f = len(chunk_fft) // grid_size
+            for c in range(grid_size):
+                sub_spec = chunk_fft[c * step_f:(c + 1) * step_f] if step_f > 0 else chunk_fft
+                p_energy = float(np.mean(sub_spec)) if len(sub_spec) > 0 else 0.0
+                row.append(p_energy)
+            spec_grid.append(row)
+
+        sg_np = np.array(spec_grid, dtype=np.float32)
+        sg_norm = (sg_np / np.max(sg_np)) if np.max(sg_np) > 0 else sg_np
+        max_idx = np.unravel_index(np.argmax(sg_norm), sg_norm.shape)
+        peak_score = float(sg_norm[max_idx])
+        dispersion = float(np.var(sg_norm))
+
+        # Final risk aggregation (Locard's Tampering Dominance for multi-window audio)
+        if is_non_speech:
+            acoustic_risk = float(np.clip(min(mean_win_risk, 0.28), 0.02, 0.28))
+            reported_vocoder = round(mean_vocoder, 4)
+            reported_pitch = global_phys["pitch_score"]
+        else:
+            acoustic_risk = float(max(mean_win_risk, max_win_risk))
+            if partial_splice_detected:
+                acoustic_risk = max(acoustic_risk, 0.86)
+            acoustic_risk = float(np.clip(acoustic_risk, 0.02, 0.985))
+            reported_vocoder = round(max_vocoder if (partial_splice_detected or max_hf_dither >= 0.76) else mean_vocoder, 4)
+            reported_pitch = max(global_phys["pitch_score"], max(w["pitch_score"] for w in active_windows) if partial_splice_detected else global_phys["pitch_score"])
 
         return {
             "sample_rate": sr,
-            "duration_sec": round(len(y) / sr, 2),
-            "vocoder_anomaly_score": round(vocoder_anomaly, 4),
-            "pitch_jitter": round(f0_jitter, 4),
-            "pitch_score": round(pitch_score, 4),
-            "phase_anomaly_score": round(phase_anomaly, 4),
+            "duration_sec": duration_sec,
+            "vocoder_anomaly_score": reported_vocoder,
+            "hf_dither_score": round(max_hf_dither, 4),
+            "pitch_jitter": global_phys["f0_jitter"],
+            "f0_dd_jitter": global_phys["f0_dd_jitter"],
+            "mean_hnr_corr": global_phys["mean_hnr_corr"],
+            "shimmer": global_phys["shimmer"],
+            "voiced_ratio": global_phys["voiced_ratio"],
+            "pitch_score": round(float(reported_pitch), 4),
+            "phase_anomaly_score": round(mean_phase, 4),
+            "splice_discontinuity_score": splice_discontinuity,
+            "partial_splice_detected": partial_splice_detected,
+            "flagged_segments": flagged_segments,
+            "is_telephony_bandlimited": is_telephony_bandlimited,
+            "is_non_speech": is_non_speech,
+            "mic_channel_score": mic_channel_score,
+            "channel_uniformity": channel_uniformity,
             "acoustic_risk": round(acoustic_risk, 4),
             "spectrogram_grid": [[round(float(v), 3) for v in r] for r in sg_norm],
             "peak_hotspot": {
@@ -1607,7 +1896,18 @@ class AudioForensicAnalyzer:
                 "peak_anomaly_score": round(peak_score, 4),
                 "frequency_band": "High-Frequency Formant (>7.5 kHz)" if max_idx[1] > 4 else "Mid-Frequency Vocal Formant"
             },
-            "spatial_dispersion": round(dispersion, 4)
+            "spatial_dispersion": round(dispersion, 4),
+            "window_evaluations": [
+                {
+                    "window_index": w["window_index"],
+                    "start_sec": w["start_sec"],
+                    "end_sec": w["end_sec"],
+                    "win_risk": w["win_risk"],
+                    "vocoder": w["eff_vocoder"],
+                    "pitch": w["pitch_score"],
+                }
+                for w in window_evals
+            ],
         }
 
 
@@ -1781,7 +2081,7 @@ class GenerativeAIDiffusionDetector:
       3. Generative Latent Diffusion Complexity: High Laplacian / High-Frequency micro-texture variance (lap_var > 1200).
     """
     @staticmethod
-    def inspect_generative_art(pil_image, img_np, detected_faces, skin_pct, prnu_analysis, spectral_anomaly):
+    def inspect_generative_art(pil_image, img_np, detected_faces, skin_pct, prnu_analysis, spectral_anomaly, passive_fake_prob=0.5):
         try:
             h, w, _ = img_np.shape
             gray = cv2.cvtColor(np.uint8(img_np), cv2.COLOR_RGB2GRAY)
@@ -1829,10 +2129,19 @@ class GenerativeAIDiffusionDetector:
                     (lap_var > 1200.0 and res_kurtosis > 13.0 and spectral_anomaly > 0.20)
                 )
             )
+            if is_diffusion_portrait and has_face_structure and float(passive_fake_prob) < 0.35 and float(spectral_anomaly) < 0.35 and float(skin_pct) >= 1.2:
+                is_diffusion_portrait = False
 
-            if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait:
-                confidence = 0.988 if is_diffusion_portrait else (0.970 if is_cyber_face else 0.955)
-                synth_type = "DIFFUSION_PORTRAIT" if is_diffusion_portrait else ("CYBER_AVATAR" if is_cyber_face else "DIFFUSION_GRAPHIC")
+            is_diffusion_vae_smooth = bool(
+                not is_doc_scan and lap_var < 35.0 and (
+                    (float(spectral_anomaly) >= 0.45 and float(passive_fake_prob) >= 0.65) or
+                    (float(spectral_anomaly) >= 0.35 and res_kurtosis >= 15.0 and float(passive_fake_prob) >= 0.45)
+                )
+            )
+
+            if is_cyber_face or is_diffusion_graphic or is_diffusion_portrait or is_diffusion_vae_smooth:
+                confidence = 0.988 if (is_diffusion_portrait or is_diffusion_vae_smooth) else (0.970 if is_cyber_face else 0.955)
+                synth_type = "DIFFUSION_PORTRAIT" if (is_diffusion_portrait or is_diffusion_vae_smooth) else ("CYBER_AVATAR" if is_cyber_face else "DIFFUSION_GRAPHIC")
                 return {
                     "is_ai_generative_art": True,
                     "confidence_score": confidence,
@@ -1896,9 +2205,13 @@ class DeepfakeDetector:
             any(os.path.exists(os.path.join(custom_dir, w)) for w in ["model.safetensors", "pytorch_model.bin", "model.bin"])
         )
 
-        target_model = custom_dir if has_custom_weights else model_name
+        hf_custom_repo = os.environ.get("CUSTOM_VIT_HF_REPO", "").strip()
+        hf_token = os.environ.get("HF_TOKEN") or None
+        target_model = custom_dir if has_custom_weights else (hf_custom_repo if hf_custom_repo else model_name)
         if has_custom_weights:
             print(f"[info] Custom fine-tuned model detected! Loading from: {target_model}")
+        elif hf_custom_repo:
+            print(f"[info] Local custom weights absent; attempting HF Hub custom repo: {target_model}")
         else:
             print(f"[info] Loading base model: {model_name} ...")
 
@@ -1906,18 +2219,28 @@ class DeepfakeDetector:
         print(f"[info] Using device: {self.device}")
         
         try:
-            self.processor = AutoImageProcessor.from_pretrained(target_model)
-            self.model = AutoModelForImageClassification.from_pretrained(target_model).to(self.device)
+            load_kwargs = {"token": hf_token} if (not has_custom_weights and hf_custom_repo and hf_token) else {}
+            self.processor = AutoImageProcessor.from_pretrained(target_model, **load_kwargs)
+            self.model = AutoModelForImageClassification.from_pretrained(target_model, **load_kwargs).to(self.device)
             self.model.eval()
+            if not has_custom_weights and hf_custom_repo:
+                has_custom_weights = True
         except Exception as e:
             if target_model != model_name:
                 print(f"[warning] Failed to load custom model from '{target_model}': {e}. Falling back to base model '{model_name}'...")
+                has_custom_weights = False
                 target_model = model_name
                 self.processor = AutoImageProcessor.from_pretrained(target_model)
                 self.model = AutoModelForImageClassification.from_pretrained(target_model).to(self.device)
                 self.model.eval()
             else:
                 raise e
+
+        self.using_custom_weights = bool(has_custom_weights)
+        self.loaded_model_id = str(target_model)
+        self._audio_neural_model = None
+        self._audio_feature_extractor = None
+        self._audio_fusionnet_model = None
 
         # Hot-load merged continual-feedback weights if promoted from FeedbackWeightUpdater
         merged_fb_weights = os.path.join(custom_dir, "feedback_merged_weights.pt")
@@ -2228,8 +2551,27 @@ class DeepfakeDetector:
             # Stream 1 General Risk Calculation:
             # 55% ViT passive probability, 15% 2D FFT spectral lattice, 15% Sensor PRNU, 10% spatial noise, 5% patch heatmap peak
             is_fake_pred = "fake" in label.lower() or "deepfake" in label.lower() or pred_idx == 1
-            fake_prob = all_scores.get("FAKE", all_scores.get("fake", score if is_fake_pred else 1.0 - score))
-            
+            fake_prob = all_scores.get("FAKE", all_scores.get("fake", all_scores.get("Fake", score if is_fake_pred else 1.0 - score)))
+            if face_found and fake_prob >= 0.50 and spectral_anomaly < 0.35 and not is_video_frame:
+                gray_full_check = cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2GRAY)
+                lap_var_full = float(cv2.Laplacian(gray_full_check, cv2.CV_64F).var())
+                if lap_var_full >= 75.0:
+                    full_inputs = self.processor(images=image, return_tensors="pt")
+                    full_inputs = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in full_inputs.items()}
+                    with torch.no_grad():
+                        full_probs = torch.nn.functional.softmax(self.model(**full_inputs).logits, dim=-1)
+                        full_all = {
+                            self.model.config.id2label[i]: float(full_probs[0, i].item())
+                            for i in range(len(self.model.config.id2label))
+                        }
+                    full_fake_prob = full_all.get("FAKE", full_all.get("fake", full_all.get("Fake", 0.5)))
+                    if full_fake_prob < 0.35:
+                        fake_prob = float(full_fake_prob)
+                        is_fake_pred = False
+                        label = "Real"
+                        score = float(1.0 - fake_prob)
+                        all_scores = full_all
+
             raw_general_risk = (
                 0.55 * fake_prob + 
                 0.15 * spectral_anomaly + 
@@ -2247,7 +2589,8 @@ class DeepfakeDetector:
                 ai_art_eval = {"is_ai_generative_art": False, "confidence_score": 0.0}
             else:
                 ai_art_eval = GenerativeAIDiffusionDetector.inspect_generative_art(
-                    image, img_np_eval, detected_faces, skin_pct_val, prnu_analysis, spectral_anomaly
+                    image, img_np_eval, detected_faces, skin_pct_val, prnu_analysis, spectral_anomaly,
+                    passive_fake_prob=fake_prob
                 )
             is_ai_art = ai_art_eval.get("is_ai_generative_art", False)
             if is_ai_art:
@@ -2335,7 +2678,11 @@ class DeepfakeDetector:
             if has_human and face_found and self.human_detector is not None:
                 # For lossy compressed video frames where ViT strongly predicts Real (<0.25),
                 # avoid false corneal specular glint overrides from distant/outdoor motion blur.
-                effective_corneal = 0.0 if (is_video_frame and fake_prob < 0.25) else corneal_score
+                effective_corneal = (
+                    0.0
+                    if ((is_video_frame and fake_prob < 0.25) or (fake_prob < 0.35 and spectral_anomaly < 0.35))
+                    else corneal_score
+                )
                 # Stream 2: Human-Centric Specialist Stream (WAVIE + Corneal Reflection + rPPG + ECE Calibration)
                 human_eval = self.human_detector.predict_media(image_path, modality="image", corneal_asymmetry=effective_corneal, base_fake_prob=fake_prob)
                 human_risk = float(human_eval.get("calibrated_probability", fake_prob))
@@ -2363,8 +2710,11 @@ class DeepfakeDetector:
                 # Forensic Decisiveness Gate (Locard's Tampering Dominance Principle - ISO/IEC 27037 & EU AI Act Art. 50):
                 # 1. Physically impossible eye reflections (face-swap optical asymmetry: effective_corneal > 0.65)
                 # 2. Latent diffusion micro-edge and non-Gaussian kurtosis (is_ai_art = True)
-                has_corneal_tamper = bool(effective_corneal > 0.65)
-                has_biometric_tamper = bool(human_risk >= 0.80 or (human_eval and human_eval.get("is_deepfake", False)))
+                has_corneal_tamper = bool(effective_corneal > 0.65 and (fake_prob >= 0.35 or spectral_anomaly >= 0.35))
+                has_biometric_tamper = bool(
+                    (human_risk >= 0.80 or (human_eval and human_eval.get("is_deepfake", False)))
+                    and (fake_prob >= 0.40 or spectral_anomaly >= 0.35)
+                )
                 has_neural_tamper = bool(is_fake_pred and fake_prob >= 0.88)
                 if is_ai_art or has_corneal_tamper or has_biometric_tamper or has_neural_tamper:
                     tamper_risk = max(composite_risk, human_risk, fake_prob, 0.988 if is_ai_art else 0.975)
@@ -2476,8 +2826,8 @@ class DeepfakeDetector:
             }
 
             # 6. Step 6 Post-Hoc Platt Scaling & Decision Calibration
-            if self.vn_demographic_params and "optimal_decision_threshold_tau_star" in self.vn_demographic_params:
-                tau_star = float(self.vn_demographic_params["optimal_decision_threshold_tau_star"])
+            if has_human and self.vn_demographic_params and "optimal_decision_threshold_tau_star" in self.vn_demographic_params:
+                tau_star = max(0.55, float(self.vn_demographic_params["optimal_decision_threshold_tau_star"]))
             elif self.calibration_params:
                 tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118))
             else:
@@ -2777,7 +3127,7 @@ class DeepfakeDetector:
                             has_human_video = True
                         elif mode in ["general", "single", "scenery", "nature"]:
                             has_human_video = False
-                        elif cert.get("human_presence_evaluation", {}).get("has_human", False):
+                        elif cert.get("human_presence_evaluation", {}).get("face_count", 0) > 0:
                             has_human_video = True
 
                         frame_results.append({
@@ -2850,12 +3200,22 @@ class DeepfakeDetector:
             flagged_segments_ratio = (len(flagged_partial_segments) / len(window_evaluations)) if window_evaluations else 0.0
             median_kurtosis = float(np.median(kurtosis_vals)) if kurtosis_vals else 3.0
 
-            # Optional Embedded Audio Track Forensics (when ffmpeg is installed on server)
+            # Optional Embedded Audio Track Forensics (when ffmpeg/imageio-ffmpeg is available)
             video_audio_metrics = None
             try:
                 import shutil
-                if shutil.which("ffmpeg") is not None:
-                    video_audio_metrics = AudioForensicAnalyzer.analyze_audio(video_path)
+                ffmpeg_bin = shutil.which("ffmpeg")
+                if not ffmpeg_bin:
+                    try:
+                        import imageio_ffmpeg
+                        ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+                    except Exception:
+                        ffmpeg_bin = None
+                if ffmpeg_bin is not None:
+                    video_audio_metrics = AudioForensicAnalyzer.analyze_audio(
+                        video_path,
+                        audio_params=getattr(self, "audio_calibration_params", None),
+                    )
             except Exception:
                 video_audio_metrics = None
 
@@ -2927,10 +3287,67 @@ class DeepfakeDetector:
             # Video Forensic Decisiveness Gates (Locard's Tampering Dominance Principle):
             # Require consistent multi-frame corroboration so 1-2 compressed/text outlier frames
             # (like real news captions or roadwork motion blur) cannot hijack an authentic video.
+            max_consecutive_df = 0
+            cur_run_indices = []
+            best_run_indices = []
+            for i_f, (flag_df, fp_val) in enumerate(zip(deepfake_frame_flags, fake_probs)):
+                if flag_df or fp_val >= 0.50:
+                    cur_run_indices.append(i_f)
+                    if len(cur_run_indices) > max_consecutive_df:
+                        max_consecutive_df = len(cur_run_indices)
+                        best_run_indices = list(cur_run_indices)
+                else:
+                    cur_run_indices = []
+            max_consecutive_elevated = 0
+            cur_elevated_indices = []
+            best_elevated_indices = []
+            for i_f, (flag_df, fp_val) in enumerate(zip(deepfake_frame_flags, fake_probs)):
+                if flag_df or fp_val >= 0.40:
+                    cur_elevated_indices.append(i_f)
+                    if len(cur_elevated_indices) > max_consecutive_elevated:
+                        max_consecutive_elevated = len(cur_elevated_indices)
+                        best_elevated_indices = list(cur_elevated_indices)
+                else:
+                    cur_elevated_indices = []
+            high_prob_ratio = sum(1 for p in fake_probs if p >= 0.50) / max(1, len(fake_probs))
+            median_fake_prob = float(np.median(fake_probs))
+            max_step_jump = float(np.max(np.abs(np.diff(fake_probs)))) if len(fake_probs) > 1 else 0.0
+            splice_contrast = float(max_fake_prob - median_fake_prob)
+
             min_corroborated_frames = max(3, int(math.ceil(min_corr_ratio * len(frame_results))))
+            has_partial_splice_tamper = bool(
+                (frames_ge_060 >= 3 and max_fake_prob >= 0.75) or
+                (
+                    max_consecutive_df >= 2
+                    and max_fake_prob >= 0.50
+                    and splice_contrast >= 0.35
+                    and max_step_jump >= 0.30
+                    and motion_jitter >= 0.10
+                ) or
+                (
+                    max_consecutive_elevated >= 2
+                    and max_fake_prob >= 0.72
+                    and splice_contrast >= 0.55
+                    and max_step_jump >= 0.45
+                    and motion_jitter >= 0.18
+                )
+            )
+            seg_indices = best_run_indices if best_run_indices else best_elevated_indices
+            if has_partial_splice_tamper and not flagged_partial_segments and seg_indices:
+                seg_start = frame_results[seg_indices[0]]["timestamp_sec"]
+                seg_end = frame_results[seg_indices[-1]]["timestamp_sec"]
+                seg_peak = max(frame_results[i]["fake_probability"] for i in seg_indices)
+                flagged_partial_segments.append({
+                    "window_index": 0,
+                    "time_span": f"{seg_start}s - {seg_end}s",
+                    "segment_fake_risk": round(float(seg_peak), 4),
+                    "localization_method": "contiguous_frame_splice_contrast",
+                })
             has_multi_frame_neural_tamper = bool(
+                has_partial_splice_tamper or
                 (max_fake_prob >= gate_max_prob and frames_ge_060 >= 3) or
                 (deepfake_frame_ratio >= gate_df_ratio and max_fake_prob >= 0.78) or
+                ((deepfake_frame_ratio >= 0.625 or high_prob_ratio >= 0.625) and avg_fake_prob >= 0.48 and max_fake_prob >= 0.65) or
                 (flagged_segments_ratio >= 0.40 and avg_fake_prob >= 0.45)
             )
             has_ai_art_video_tamper = bool(
@@ -2944,11 +3361,17 @@ class DeepfakeDetector:
                 video_audio_metrics.get("acoustic_risk", 0.0) >= 0.78 and
                 composite_video_risk >= 0.65
             )
-            if has_multi_frame_neural_tamper or has_ai_art_video_tamper or has_audio_corroboration:
+            has_standalone_synthetic_audio = bool(
+                video_audio_metrics is not None and
+                not video_audio_metrics.get("is_non_speech", False) and
+                video_audio_metrics.get("acoustic_risk", 0.0) >= 0.85
+            )
+            if has_multi_frame_neural_tamper or has_ai_art_video_tamper or has_audio_corroboration or has_standalone_synthetic_audio:
                 dominant_floor = max(
                     0.84 + 0.14 * max_fake_prob if has_multi_frame_neural_tamper else 0.0,
                     max_comp_prob if has_ai_art_video_tamper else 0.0,
-                    0.86 if has_audio_corroboration else 0.0,
+                    0.86 if (has_audio_corroboration or has_standalone_synthetic_audio) else 0.0,
+                    float(video_audio_metrics.get("acoustic_risk", 0.0)) if has_standalone_synthetic_audio else 0.0,
                     0.92 if (has_ai_art_video_tamper and deepfake_frame_ratio >= 0.40) else 0.0
                 )
                 composite_video_risk = round(float(min(0.995, max(composite_video_risk, dominant_floor))), 4)
@@ -3081,7 +3504,11 @@ class DeepfakeDetector:
             else:
                 reasons_vid.append(f"Vân cảm biến phần cứng camera đồng nhất qua các khung hình (PRNU score = {prnu_video_score:.2f}).")
 
-            if video_audio_metrics is not None and video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.65:
+            if has_standalone_synthetic_audio:
+                reasons_vid.append(
+                    f"Cảnh báo giả mạo lồng tiếng độc lập (Audio-Dub Deepfake): Luồng âm thanh nhúng đạt rủi ro {video_audio_metrics['acoustic_risk']*100:.1f}% (Vocoder = {video_audio_metrics.get('vocoder_anomaly_score', 0.0):.2f}, Pitch = {video_audio_metrics.get('pitch_score', 0.0):.2f}) dù khung hình thị giác ít biến dạng."
+                )
+            elif video_audio_metrics is not None and video_audio_metrics.get("vocoder_anomaly_score", 0.0) >= 0.65:
                 reasons_vid.append(
                     f"Luồng âm thanh đi kèm video có suy giảm phổ >7.5kHz (Vocoder Anomaly = {video_audio_metrics['vocoder_anomaly_score']:.2f}), củng cố bằng chứng tổng hợp AI đa phương thức."
                 )
@@ -3216,14 +3643,91 @@ class DeepfakeDetector:
         except Exception as e:
             return {"error": f"Video processing error: {str(e)}"}
 
+    def _predict_fusionnet_audio(self, y: np.ndarray, sr: int, audio_metrics: dict) -> Optional[float]:
+        """
+        Lazy-loaded EnhancedAudioFusionNet inference (Spectral CNN + Temporal BiGRU + 8-D Forensic Vector).
+        Enabled automatically when `custom_vit_model/audio_fusionnet.pt` exists.
+        """
+        fusion_ckpt = Path(getattr(self, "custom_dir", "")) / "audio_fusionnet.pt"
+        if not fusion_ckpt.exists():
+            return None
+        try:
+            proj_root = str(Path(__file__).resolve().parent.parent)
+            if proj_root not in sys.path:
+                sys.path.insert(0, proj_root)
+            from colab_training.train_audio_fusionnet import EnhancedAudioFusionNet, extract_fusionnet_tensors
+
+            if self._audio_fusionnet_model is None:
+                ckpt = torch.load(str(fusion_ckpt), map_location=self.device, weights_only=False)
+                seq_dim = int(ckpt.get("seq_dim", 8)) if isinstance(ckpt, dict) else 8
+                vec_dim = int(ckpt.get("vec_dim", 8)) if isinstance(ckpt, dict) else 8
+                state_dict = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+                model = EnhancedAudioFusionNet(seq_dim=seq_dim, vec_dim=vec_dim)
+                model.load_state_dict(state_dict)
+                model = model.to(self.device)
+                model.eval()
+                self._audio_fusionnet_model = model
+
+            spec_np, seq_np, vec_np = extract_fusionnet_tensors(y, sr, audio_metrics)
+            spec_t = torch.from_numpy(spec_np).unsqueeze(0).to(self.device)
+            seq_t = torch.from_numpy(seq_np).unsqueeze(0).to(self.device)
+            vec_t = torch.from_numpy(vec_np).unsqueeze(0).to(self.device)
+            with torch.no_grad():
+                logits = self._audio_fusionnet_model(spec_t, seq_t, vec_t)
+                probs = torch.softmax(logits, dim=-1)[0].detach().cpu().numpy()
+            return float(np.clip(probs[1], 0.0, 1.0))
+        except Exception as err:
+            print(f"[warning] EnhancedAudioFusionNet inference skipped: {err}")
+            return None
+
+    def _predict_neural_audio(self, y: np.ndarray, sr: int) -> Optional[float]:
+        """
+        Optional lazy-loaded Wav2Vec2 neural audio backbone (MelodyMachine/Deepfake-audio-detection-V2).
+        Enabled when local `custom_vit_model/audio_wav2vec2/config.json` exists or ENABLE_NEURAL_AUDIO_MODEL=1.
+        """
+        local_aud_dir = Path(getattr(self, "custom_dir", "")) / "audio_wav2vec2"
+        enable_env = os.environ.get("ENABLE_NEURAL_AUDIO_MODEL", "0") == "1"
+        if not (enable_env or (local_aud_dir.exists() and (local_aud_dir / "config.json").exists())):
+            return None
+        try:
+            from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
+            import scipy.signal as sp_sig
+            if self._audio_neural_model is None or self._audio_feature_extractor is None:
+                repo = str(local_aud_dir) if (local_aud_dir / "config.json").exists() else os.environ.get(
+                    "AUDIO_DEEPFAKE_HF_REPO", "MelodyMachine/Deepfake-audio-detection-V2"
+                )
+                self._audio_feature_extractor = AutoFeatureExtractor.from_pretrained(repo)
+                self._audio_neural_model = AutoModelForAudioClassification.from_pretrained(repo).to(self.device)
+                self._audio_neural_model.eval()
+            sig_16k = y.astype(np.float32)
+            if sr != 16000 and sr > 0:
+                gcd = math.gcd(16000, int(sr))
+                sig_16k = sp_sig.resample_poly(sig_16k, 16000 // gcd, int(sr) // gcd).astype(np.float32)
+            sig_16k = sig_16k[:16000 * 10]
+            inputs = self._audio_feature_extractor(sig_16k, sampling_rate=16000, return_tensors="pt", padding=True)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            with torch.no_grad():
+                logits = self._audio_neural_model(**inputs).logits
+                probs = torch.softmax(logits, dim=-1)[0].cpu().numpy()
+            id2label = getattr(self._audio_neural_model.config, "id2label", {0: "fake", 1: "real"})
+            fake_idx = 0
+            for idx_k, lbl_v in id2label.items():
+                if any(tok in str(lbl_v).lower() for tok in ("fake", "spoof", "synth")):
+                    fake_idx = int(idx_k)
+                    break
+            return float(np.clip(probs[fake_idx], 0.0, 1.0))
+        except Exception as err:
+            print(f"[warning] Optional neural audio inference skipped: {err}")
+            return None
+
     def predict_audio(self, audio_path, routing_mode="auto"):
         """
-        Acoustic & Spectral Voice Deepfake Detector (Tri-Stream Engine).
+        Acoustic & Spectral Voice Deepfake Detector (Tri-Stream Full-Duration Engine).
         Detects AI-generated voices (VITS, HiFi-GAN, ElevenLabs, XTTS) via:
-        1. High-frequency formant cut-off (>7.5 kHz).
-        2. Pitch (F0) micro-tremor stability.
-        3. Zero-crossing interval phase irregularity.
-        4. Time-Frequency Spectrogram Saliency & Shannon Entropy.
+        1. Full-duration sliding-window spectral roll-off (>7.5 kHz) + 8 kHz telephony codec guard.
+        2. High-frequency air-band dither bypass detection & partial-splice localization.
+        3. Band-limited (50–500 Hz) parabolic F0 jitter, shimmer, and HNR regularity.
+        4. Dynamic microphone channel noise-floor uniformity & optional Wav2Vec2 neural fusion.
         """
         try:
             audio_path = Path(audio_path)
@@ -3242,7 +3746,11 @@ class DeepfakeDetector:
             tau_star = float(ap.get("tau_audio", 0.8118))
             voc_gate = float(ap.get("vocoder_gate", 0.72))
             pit_gate = float(ap.get("pitch_gate", 0.55))
-            if audio_metrics["vocoder_anomaly_score"] >= voc_gate and (
+            if audio_metrics.get("is_non_speech", False):
+                calibrated_prob = min(0.28, round(float(raw_risk), 4))
+            elif audio_metrics.get("partial_splice_detected", False) or audio_metrics.get("hf_dither_score", 0.0) >= 0.76:
+                calibrated_prob = round(float(max(raw_risk, 0.86)), 4)
+            elif audio_metrics["vocoder_anomaly_score"] >= voc_gate and (
                 audio_metrics["pitch_score"] >= pit_gate or (
                     audio_metrics["phase_anomaly_score"] >= 0.45 and audio_metrics["pitch_score"] >= 0.40
                 )
@@ -3250,6 +3758,34 @@ class DeepfakeDetector:
                 calibrated_prob = round(float(max(raw_risk, 0.84 + 0.12 * audio_metrics["vocoder_anomaly_score"])), 4)
             else:
                 calibrated_prob = round(float(raw_risk), 4)
+
+            # Optional Neural Audio Backbone Fusion (Wav2Vec2 / EnhancedAudioFusionNet)
+            neural_fake_prob = None
+            audio_backbone = "DSP_6D_SLIDING_WINDOW"
+            fusion_ckpt = Path(getattr(self, "custom_dir", "")) / "audio_fusionnet.pt"
+            if os.environ.get("ENABLE_NEURAL_AUDIO_MODEL", "0") == "1" or (
+                Path(getattr(self, "custom_dir", "")) / "audio_wav2vec2" / "config.json"
+            ).exists():
+                y_sig, sr_sig = AudioForensicAnalyzer.load_audio_signal(str(audio_path))
+                neural_fake_prob = self._predict_neural_audio(y_sig, sr_sig)
+                if neural_fake_prob is not None:
+                    calibrated_prob = round(float(0.60 * neural_fake_prob + 0.40 * calibrated_prob), 4)
+                    audio_backbone = "WAV2VEC2_HYBRID_FUSION"
+            elif fusion_ckpt.exists():
+                y_sig, sr_sig = AudioForensicAnalyzer.load_audio_signal(str(audio_path))
+                neural_fake_prob = self._predict_fusionnet_audio(y_sig, sr_sig, audio_metrics)
+                if neural_fake_prob is not None:
+                    calibrated_prob = round(float(0.35 * neural_fake_prob + 0.65 * calibrated_prob), 4)
+                    audio_backbone = "ENHANCED_FUSIONNET_HYBRID"
+
+            # Re-enforce deterministic physical/forensic safety bounds after neural fusion
+            if audio_metrics.get("is_non_speech", False):
+                calibrated_prob = min(0.28, round(float(calibrated_prob), 4))
+            elif audio_metrics.get("partial_splice_detected", False) or audio_metrics.get("hf_dither_score", 0.0) >= 0.76:
+                calibrated_prob = max(0.86, round(float(calibrated_prob), 4))
+            elif audio_metrics.get("is_telephony_bandlimited", False) and raw_risk < 0.45:
+                calibrated_prob = min(0.45, round(float(calibrated_prob), 4))
+
             calibrated_prob = float(min(0.985, max(0.02, calibrated_prob)))
 
             is_synthetic_aud, verdict_label, confidence, all_scores = self.calibrate_posterior_probability(
@@ -3267,15 +3803,24 @@ class DeepfakeDetector:
             # XAI Explanation for Audio
             is_fake = (calibrated_prob >= tau_star)
             reasons = []
-            if audio_metrics["vocoder_anomaly_score"] > 0.50:
+            if audio_metrics.get("is_non_speech", False):
+                reasons.append("Tín hiệu không chứa tiếng nói hữu thanh (âm thanh nền / tạp âm phòng thu tự nhiên).")
+            elif audio_metrics.get("is_telephony_bandlimited", False):
+                reasons.append("Phát hiện giới hạn băng thông cuộc gọi (Telephony / Zalo ~3.8 kHz): bỏ qua suy hao >7.5 kHz để chống dương tính giả, tập trung phân tích cao độ F0 và độ rung thanh quản.")
+            elif audio_metrics.get("hf_dither_score", 0.0) >= 0.76:
+                reasons.append(f"Phát hiện nhiễu giả lập dải cao >7.5 kHz nhằm ngụy trang vết cắt vocoder (HF Dither Score = {audio_metrics['hf_dither_score']:.2f}, thung lũng phổ 4–7.5 kHz).")
+            elif audio_metrics["vocoder_anomaly_score"] > 0.50:
                 reasons.append(f"Suy giảm phổ tần số cao bất thường trên 7.5 kHz (Vocoder anomaly = {audio_metrics['vocoder_anomaly_score']:.2f}) - đặc trưng nén tạo sinh của mô hình TTS / Voice Cloning.")
             else:
                 reasons.append(f"Dải phổ tần số cao duy trì năng lượng tự nhiên (>7.5 kHz), phù hợp với âm thanh thu âm từ micro vật lý.")
 
+            if audio_metrics.get("partial_splice_detected", False):
+                reasons.append(f"Cảnh báo ghép nối giọng nói cục bộ (Partial Audio Splice = {audio_metrics.get('splice_discontinuity_score', 0.0):.2f}) tại {len(audio_metrics.get('flagged_segments', []))} phân đoạn cửa sổ trượt.")
+
             if audio_metrics["pitch_score"] > 0.50:
-                reasons.append(f"Độ biến thiên cao độ F0 (Jitter = {audio_metrics['pitch_jitter']:.4f}) thiếu vi rung tự nhiên của dây thanh quản con người.")
+                reasons.append(f"Độ biến thiên cao độ F0 (Jitter = {audio_metrics['pitch_jitter']:.4f}, HNR = {audio_metrics.get('mean_hnr_corr', 0.0):.4f}) thiếu vi rung tự nhiên của dây thanh quản con người.")
             else:
-                reasons.append(f"Độ biến thiên cao độ F0 (Jitter = {audio_metrics['pitch_jitter']:.4f}) nằm trong dải sinh lý học giọng nói tự nhiên (1.0% - 3.0%).")
+                reasons.append(f"Độ biến thiên cao độ F0 (Jitter = {audio_metrics['pitch_jitter']:.4f}) nằm trong dải sinh lý học giọng nói tự nhiên.")
 
             if audio_metrics["phase_anomaly_score"] > 0.50:
                 reasons.append(f"Sai biệt pha và mật độ bước qua điểm không (Zero-crossing irregularity = {audio_metrics['phase_anomaly_score']:.2f}) ghi nhận hiện tượng tái tạo vocoder nhân tạo.")
@@ -3284,29 +3829,34 @@ class DeepfakeDetector:
 
             xai_explanation = f"[{'CẢNH BÁO NGUY CƠ CAO (DEEPFAKE)' if is_fake else 'XÁC NHẬN CHÂN THỰC (AUTHENTIC)'} - Rủi ro âm học: {calibrated_prob*100:.1f}%]. Phân tích ma trận chứng cứ âm học:\n" + "\n".join(f"- {r}" for r in reasons)
 
+            mic_score = float(audio_metrics.get("mic_channel_score", 0.05))
+            ch_unif = float(audio_metrics.get("channel_uniformity", 0.95))
             evidence_matrix_6d_audio = {
                 "dim1_passive_audio": {
                     "dimension_name": "1. Passive Acoustic Spectral Classification",
                     "score": round(calibrated_prob, 4),
+                    "backbone": audio_backbone,
                     "status": "ANOMALY_DETECTED" if is_fake else "NATURAL_SPECTRUM"
                 },
                 "dim2_spectral_frequency": {
                     "dimension_name": "2. High-Frequency Formant Attenuation (>7.5 kHz)",
                     "score": audio_metrics["vocoder_anomaly_score"],
-                    "status": "VOCODER_CUTOFF" if audio_metrics["vocoder_anomaly_score"] > 0.50 else "NATURAL_AIR_RESONANCE"
+                    "hf_dither_score": audio_metrics.get("hf_dither_score", 0.0),
+                    "status": "HF_DITHER_SPOOF" if audio_metrics.get("hf_dither_score", 0.0) >= 0.76 else ("TELEPHONY_BANDLIMITED" if audio_metrics.get("is_telephony_bandlimited") else ("VOCODER_CUTOFF" if audio_metrics["vocoder_anomaly_score"] > 0.50 else "NATURAL_AIR_RESONANCE"))
                 },
                 "dim3_spatial_inconsistency": {
                     "dimension_name": "3. Phase & Waveform Zero-Crossing Consistency",
                     "score": audio_metrics["phase_anomaly_score"],
-                    "status": "PHASE_DISCONTINUITY" if audio_metrics["phase_anomaly_score"] > 0.50 else "CONSISTENT_PHASE"
+                    "splice_discontinuity_score": audio_metrics.get("splice_discontinuity_score", 0.0),
+                    "status": "PARTIAL_SPLICE_DETECTED" if audio_metrics.get("partial_splice_detected") else ("PHASE_DISCONTINUITY" if audio_metrics["phase_anomaly_score"] > 0.50 else "CONSISTENT_PHASE")
                 },
                 "dim4_microphone_channel": {
                     "dimension_name": "4. Microphone Acoustic Channel Residual & Noise Floor",
-                    "score": 0.15,
-                    "status": "PHYSICAL_MICROPHONE_FINGERPRINT",
+                    "score": mic_score,
+                    "status": "CHANNEL_SPLICE_DISCONTINUITY" if mic_score >= 0.45 else "PHYSICAL_MICROPHONE_FINGERPRINT",
                     "details": {
-                        "channel_uniformity": 0.92,
-                        "ambient_noise_floor": "Consistent natural room acoustics"
+                        "channel_uniformity": ch_unif,
+                        "ambient_noise_floor": "Discontinuous noise floor across windows" if mic_score >= 0.45 else "Consistent natural room acoustics"
                     }
                 },
                 "dim5_vocal_cord_physiology": {
@@ -3315,20 +3865,40 @@ class DeepfakeDetector:
                     "status": "UNNATURAL_PITCH_VARIATION" if audio_metrics["pitch_score"] > 0.50 else "PHYSIOLOGICAL_F0_STABILITY",
                     "details": {
                         "f0_jitter": audio_metrics["pitch_jitter"],
+                        "shimmer": audio_metrics.get("shimmer", 0.0),
+                        "mean_hnr_corr": audio_metrics.get("mean_hnr_corr", 0.0),
                         "vocal_cord_stability": round(1.0 - audio_metrics["pitch_score"], 4),
-                        "interpretation": "Natural human glottal micro-tremor (1.0% - 3.0%)" if audio_metrics["pitch_score"] <= 0.50 else "Synthetic mechanical pitch flattening or unnatural jitter (>6.5%)"
+                        "interpretation": "Natural human glottal micro-tremor" if audio_metrics["pitch_score"] <= 0.50 else "Synthetic mechanical pitch flattening or spoofed vibrato"
                     }
                 },
                 "dim6_patch_heatmap_uncertainty": {
                     "dimension_name": "6. Log-Mel Spectrogram Patch Saliency & Entropy",
                     "peak_hotspot": audio_metrics["peak_hotspot"],
                     "spatial_dispersion_var": audio_metrics["spatial_dispersion"],
+                    "flagged_segments": audio_metrics.get("flagged_segments", []),
                     "status": "LOCALIZED_ACOUSTIC_TAMPERING" if is_fake else "HOMOGENEOUS"
                 },
                 "audio_evidence": {
                     "f0_variance": audio_metrics["pitch_jitter"],
-                    "vocoder_drift": audio_metrics["vocoder_anomaly_score"]
+                    "vocoder_drift": audio_metrics["vocoder_anomaly_score"],
+                    "hf_dither_score": audio_metrics.get("hf_dither_score", 0.0),
+                    "splice_discontinuity": audio_metrics.get("splice_discontinuity_score", 0.0),
                 }
+            }
+
+            audio_feature_telemetry = {
+                "vocoder_anomaly_score": audio_metrics["vocoder_anomaly_score"],
+                "hf_dither_score": audio_metrics.get("hf_dither_score", 0.0),
+                "pitch_score": audio_metrics["pitch_score"],
+                "pitch_jitter": audio_metrics["pitch_jitter"],
+                "phase_anomaly_score": audio_metrics["phase_anomaly_score"],
+                "splice_discontinuity_score": audio_metrics.get("splice_discontinuity_score", 0.0),
+                "partial_splice_detected": bool(audio_metrics.get("partial_splice_detected", False)),
+                "is_telephony_bandlimited": bool(audio_metrics.get("is_telephony_bandlimited", False)),
+                "is_non_speech": bool(audio_metrics.get("is_non_speech", False)),
+                "mic_channel_score": mic_score,
+                "neural_fake_prob": round(float(neural_fake_prob), 4) if neural_fake_prob is not None else None,
+                "audio_backbone": audio_backbone,
             }
 
             # Option B: Asymmetric Triad Council Debate for Audio (evidence_matrix built cleanly before manifest)
@@ -3356,7 +3926,8 @@ class DeepfakeDetector:
             forensic_certificate = {
                 "certificate_id": cert_id,
                 "timestamp": timestamp,
-                "forensic_version": "3.0-AUDIO-6D-AUDITABLE",
+                "forensic_version": "3.1-AUDIO-6D-AUDITABLE",
+                "audio_backbone": audio_backbone,
                 "triad_council_debate": triad_debate_aud,
                 "compliance_standard": "EU AI Act Article 50 & DSA Acoustic Integrity",
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
@@ -3374,14 +3945,19 @@ class DeepfakeDetector:
                 "multi_dimensional_evidence": {
                     "vocoder_spectral_analysis": {
                         "vocoder_anomaly_score": audio_metrics["vocoder_anomaly_score"],
+                        "hf_dither_score": audio_metrics.get("hf_dither_score", 0.0),
                         "hf_formant_cutoff_flag": audio_metrics["vocoder_anomaly_score"] > 0.50
                     },
                     "pitch_vocal_dynamics": {
                         "f0_jitter": audio_metrics["pitch_jitter"],
+                        "shimmer": audio_metrics.get("shimmer", 0.0),
+                        "mean_hnr_corr": audio_metrics.get("mean_hnr_corr", 0.0),
                         "pitch_discrepancy_score": audio_metrics["pitch_score"]
                     },
                     "phase_regularity_analysis": {
-                        "phase_anomaly_score": audio_metrics["phase_anomaly_score"]
+                        "phase_anomaly_score": audio_metrics["phase_anomaly_score"],
+                        "splice_discontinuity_score": audio_metrics.get("splice_discontinuity_score", 0.0),
+                        "partial_splice_detected": bool(audio_metrics.get("partial_splice_detected", False)),
                     },
                     "spectrogram_patch_saliency": {
                         "grid_size": "8x8",
@@ -3391,6 +3967,7 @@ class DeepfakeDetector:
                     }
                 },
                 "evidence_matrix_6d": evidence_matrix_6d_audio,
+                "audio_feature_telemetry": audio_feature_telemetry,
                 "calibrated_probability": calibrated_prob,
                 "composite_risk_score": calibrated_prob,
                 "decision_threshold": tau_star,
@@ -3418,6 +3995,8 @@ class DeepfakeDetector:
                 "decision_threshold": tau_star,
                 "analysis_mode": "Single-Stream (Acoustic Forensic)",
                 "media_type": "audio",
+                "audio_backbone": audio_backbone,
+                "audio_feature_telemetry": audio_feature_telemetry,
                 "triad_council_debate": triad_debate_aud,
                 "forensic_certificate": forensic_certificate
             }

@@ -309,6 +309,7 @@ def run_paper_demographic_benchmark():
     # Save Machine-readable JSON
     audit_data = {
         "timestamp_utc": time.strftime("%Y-%m-%d %H:%M:%SZ", time.gmtime()),
+        "evaluation_provenance": "STRATIFIED_COHORT_CALIBRATION_SIMULATION",
         "dataset": "Threads-DFBench Vietnamese In-The-Wild Cohort",
         "total_samples": len(samples),
         "optimal_hyperparameters": {

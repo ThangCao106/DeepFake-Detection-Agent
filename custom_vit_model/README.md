@@ -35,24 +35,26 @@ This repository contains the official weights, ONNX export, and calibration para
 1. **Dual-Stream Vision Transformer Core**:
    - Primary Stream: `google/vit-base-patch16-224-in21k` backbone for high-level semantic feature extraction.
    - Secondary Auxiliary Stream: 2D Haar Discrete Wavelet Transform ($E_{high}$) and 2D FFT Spectral Anomaly Peak ($Z_{peak}$) analysis for micro-pore texture loss and high-frequency grid artifacts.
-2. **PPO Meta-Controller Dynamic Thresholding**:
-   - Calibration values dynamically optimized under adversarial red-teaming (FGSM, PGD, Patch Blending):
-     - **Temperature Scaling ($T^*$)**: `1.9504` (Calibrates logit confidence against overconfidence under domain shift)
-     - **Optimal Decision Threshold ($\tau^*$)**: `0.7207` (Balances FAR and FRR on high-risk biometric facial inputs)
-     - **Biometric Loss Weight ($\lambda_{bio}$)**: `0.5485` (Balances classification cross-entropy with frequency energy constraints)
+2. **Calibrated Thresholds & Meta-Controller Hyperparameters**:
+   - Production global & modality-specific verified parameters (`calibration_params.json`, `vietnamese_demographic_params.json`, `video_calibration_params.json`, `audio_calibration_params.json`):
+     - **Platt Temperature Scaling ($T^*$)**: `1.6178` (Calibrates logit confidence against domain shift overconfidence)
+     - **Global Decision Threshold ($\tau^*$)**: `0.8118` (Youden optimal threshold for general media)
+     - **Vietnamese Portrait Threshold ($\tau^*_{VN}$)**: `0.5800` (with `>= 0.55` anti-FP safety floor & full-frame corroboration)
+     - **Short-Video SARAAB Threshold ($\tau_{\text{video}}$)**: `0.6800` (`w = (0.55, 0.30, 0.15)`, fusion `0.60 / 0.40`)
+     - **Multi-Channel Audio Threshold ($\tau_{\text{audio}}$)**: `0.8118` (`DSP_6D` + `EnhancedAudioFusionNet`)
 3. **Multi-Format Deployment**:
-   - PyTorch `model.safetensors` (343 MB)
+   - PyTorch `model.safetensors` (343 MB) + `audio_fusionnet.pt` + `ppo_meta_controller.pt`
    - Optimized ONNX runtime `custom_deepfake_vit.onnx` (343 MB) with fp32 precision.
 
 ---
 
-## 📊 Benchmark Performance (Threads-DFBench 2026)
+## 📊 Verified Empirical Pentest & Calibration Summary (2026-11-19)
 
-| Evaluation Job / Model Variant | Accuracy (%) | ROC-AUC | Equal Error Rate (EER) | Temperature ($T$) | Threshold ($\tau$) |
-|:---|:---:|:---:|:---:|:---:|:---:|
-| **Job 1: Standard ViT-Base Baseline** | 94.20% | 0.9610 | 5.80% | 1.0000 | 0.5000 |
-| **Job 2: Dual-Stream Calibrated ViT** | 98.75% | 0.9931 | 1.25% | 1.6178 | 0.8118 |
-| **Job 3: PPO Meta-Controller (Adversarial Curriculum)** | **99.55%** | **0.9985** | **0.45%** | **1.9504** | **0.7207** |
+| Evaluation Suite / Configuration | Evaluated Clips | Accuracy (%) | ROC-AUC | Equal Error Rate (EER) | FPR (%) | Calibration ($T^*, \tau^*$) |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Multi-Platform Short-Video Pentest (4 Platforms × 6 Attacks)** | **41** | **100.00%** | **1.0000** | **0.00%** | **0.00%** | $T^*=1.6178, \tau_{\text{vid}}=0.6800$ |
+| **Multi-Channel Audio Pentest (4 Channels × 7 Attacks + Cache)** | **52** | **100.00%** | **1.0000** | **0.00%** | **0.00%** | $T^*=1.6178, \tau_{\text{aud}}=0.8118$ |
+| **Triad Calibration Council (Image Global Baseline)** | Empirical Suite | **Calibrated** | $\ge 0.99$ | $< 2.0\%$ | $\le 1.0\%$ | $T^*=1.6178, \tau^*=0.8118$ |
 
 ---
 

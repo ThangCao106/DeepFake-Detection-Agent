@@ -59,16 +59,28 @@ def compute_roc_auc_eer(y_true: List[int], y_scores: List[float]) -> Tuple[float
         return round(auc, 4), round(1.0 - auc, 4)
 
 
+def _resolve_fake_index(model) -> int:
+    id2label = getattr(getattr(model, "config", None), "id2label", None) or {}
+    for k, v in id2label.items():
+        if any(tok in str(v).lower() for tok in ("fake", "deepfake", "synth", "spoof")):
+            return int(k)
+    return 1
+
+
 def run_lora_benchmark(
-    base_model_name: str = "dima806/deepfake_vs_real_image_detection",
+    base_model_name: Optional[str] = None,
     lora_r: int = 16,
     lora_alpha: int = 32,
     num_eval_samples: int = 20,
     output_report_path: Optional[str] = None
 ) -> Dict:
     """
-    Executes comparative evaluation of Baseline ViT vs LoRA-adapted ViT.
+    Executes comparative evaluation of Baseline ViT vs trained LoRA-adapted ViT.
     """
+    local_custom = PROJECT_ROOT / "custom_vit_model"
+    if base_model_name is None:
+        base_model_name = str(local_custom) if (local_custom / "config.json").exists() else "dima806/deepfake_vs_real_image_detection"
+
     print("\n" + "=" * 75)
     print("🔬 [LoRA PEFT Benchmark] Vision Transformer Evaluation (Option B)")
     print(f"   Backbone: {base_model_name} | Rank: {lora_r} | Alpha: {lora_alpha}")
@@ -76,7 +88,7 @@ def run_lora_benchmark(
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # 1. Load Pretrained ViT Backbone
+    # 1. Load Pretrained / Custom ViT Backbone
     try:
         from transformers import AutoImageProcessor, AutoModelForImageClassification
         processor = AutoImageProcessor.from_pretrained(base_model_name)
@@ -84,62 +96,78 @@ def run_lora_benchmark(
             base_model_name, num_labels=2, ignore_mismatched_sizes=True
         ).to(device)
         base_model.eval()
-        has_vit = True
     except Exception as e:
-        print(f"[LoRA Benchmark] Notice loading {base_model_name}: {e}. Using Torchvision model for benchmark demonstration.")
+        print(f"[LoRA Benchmark] Notice loading {base_model_name}: {e}. Using Torchvision model.")
         from torchvision.models import resnet18
         base_model = resnet18(weights=None, num_classes=2).to(device)
         base_model.eval()
         processor = None
-        has_vit = False
 
     total_params, base_trainable, _ = count_parameters(base_model)
+    fake_idx = _resolve_fake_index(base_model)
 
-    # 2. Prepare Evaluation Dataset (Threads Vietnamese in-the-wild + seed pool)
-    eval_samples = []
-    # Collect from 01_raw_originals and manipulated folders if available
-    raw_dir = PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals"
-    if not raw_dir.exists():
-        raw_dir = PROJECT_ROOT / "crawler" / "seeds_vietnamese"
-    
-    manip_dir = PROJECT_ROOT / "report_colab" / "pentest" / "02_manipulated_faceswap"
+    # 2. Prepare Balanced Evaluation Dataset (Threads Vietnamese in-the-wild + fake pool)
+    real_items: List[Dict] = []
+    for raw_dir in (
+        PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
+        PROJECT_ROOT / "crawler" / "verified_threads_seeds",
+        PROJECT_ROOT / "crawler" / "seeds_vietnamese",
+    ):
+        if raw_dir.exists():
+            for f in sorted(raw_dir.glob("*.jpg")):
+                real_items.append({"path": str(f), "label": 0, "label_name": "REAL"})
+                if len(real_items) >= num_eval_samples // 2:
+                    break
+        if len(real_items) >= num_eval_samples // 2:
+            break
 
-    # Real samples (label = 0)
-    if raw_dir.exists():
-        for f in list(raw_dir.glob("*.jpg"))[:num_eval_samples // 2]:
-            eval_samples.append({"path": str(f), "label": 0, "label_name": "REAL"})
+    fake_items: List[Dict] = []
+    for manip_dir in (
+        PROJECT_ROOT / "report_colab" / "pentest" / "02_manipulated_faceswap",
+        PROJECT_ROOT / "report_colab" / "pentest" / "03_manipulated_openweight",
+        PROJECT_ROOT / "scratch" / "test_full_abc_out" / "03_manipulated_openweight",
+    ):
+        if manip_dir.exists():
+            for f in sorted(manip_dir.glob("*.jpg")):
+                fake_items.append({"path": str(f), "label": 1, "label_name": "FAKE"})
+                if len(fake_items) >= num_eval_samples // 2:
+                    break
+        if len(fake_items) >= num_eval_samples // 2:
+            break
 
-    # Fake samples (label = 1)
-    if manip_dir.exists():
-        for f in list(manip_dir.glob("*.jpg"))[:num_eval_samples // 2]:
-            eval_samples.append({"path": str(f), "label": 1, "label_name": "FAKE"})
-
-    # If missing fake samples, synthesize paired manipulations from the real ones
-    num_reals = sum(1 for s in eval_samples if s["label"] == 0)
-    num_fakes = sum(1 for s in eval_samples if s["label"] == 1)
-    if num_fakes == 0 and num_reals > 0:
+    if len(fake_items) < len(real_items):
+        import tempfile
         from crawler.media_generator import apply_faceswap_manipulation
-        for idx, item in enumerate([s for s in eval_samples if s["label"] == 0][:num_reals]):
+        tmp_fake_dir = Path(tempfile.mkdtemp(prefix="lora_bench_fake_"))
+        for idx, item in enumerate(real_items[: len(real_items) - len(fake_items)]):
             try:
                 with Image.open(item["path"]) as r_im:
                     f_im = apply_faceswap_manipulation(r_im.convert("RGB"), seed=3000 + idx * 47)
-                demo_p = PROJECT_ROOT / "benchmark" / f"eval_demo_fake_{idx}.jpg"
+                demo_p = tmp_fake_dir / f"eval_demo_fake_{idx}.jpg"
                 f_im.save(demo_p, format="JPEG", quality=95)
-                eval_samples.append({"path": str(demo_p), "label": 1, "label_name": "FAKE"})
+                fake_items.append({"path": str(demo_p), "label": 1, "label_name": "FAKE"})
             except Exception:
                 pass
 
-    print(f"📊 [Evaluation Dataset] Evaluated across {len(eval_samples)} test samples ({sum(1 for s in eval_samples if s['label']==0)} Real, {sum(1 for s in eval_samples if s['label']==1)} Fake).")
+    # Split into Support (LoRA Adaptation) and Held-out Test Set (Disjoint)
+    r_mid = max(2, len(real_items) // 2)
+    f_mid = max(2, len(fake_items) // 2)
+    support_samples = real_items[:r_mid] + fake_items[:f_mid]
+    test_samples = real_items[r_mid:] + fake_items[f_mid:]
+    if not test_samples:
+        test_samples = support_samples
 
-    # 3. Benchmark Baseline Model
-    def evaluate_model(m, name="Model"):
+    print(f"📊 [Evaluation Dataset] Support={len(support_samples)} | Held-Out Test={len(test_samples)} (fake_idx={fake_idx}).")
+
+    # 3. Benchmark Baseline Model on Held-Out Test Set
+    def evaluate_model(m, samples_list, name="Model"):
         m.eval()
         y_true = []
         y_scores = []
         latencies = []
 
         with torch.no_grad():
-            for item in eval_samples:
+            for item in samples_list:
                 try:
                     with Image.open(item["path"]) as pil_im:
                         img = pil_im.convert("RGB")
@@ -156,17 +184,16 @@ def run_lora_benchmark(
 
                     latencies.append((time.time() - t0) * 1000.0)
                     probs = torch.softmax(logits, dim=-1)
-                    fake_prob = float(probs[0, 1].item()) if probs.shape[-1] > 1 else float(probs[0, 0].item())
+                    fake_prob = float(probs[0, fake_idx].item()) if probs.shape[-1] > fake_idx else float(probs[0, 0].item())
                     y_true.append(item["label"])
                     y_scores.append(fake_prob)
-                except Exception as err:
+                except Exception:
                     pass
 
         auc, eer = compute_roc_auc_eer(y_true, y_scores)
         preds = [1 if s >= 0.5 else 0 for s in y_scores]
         acc = sum(1 for p, y in zip(preds, y_true) if p == y) / len(y_true) if y_true else 0.0
-        
-        # F1
+
         tp = sum(1 for p, y in zip(preds, y_true) if p == 1 and y == 1)
         fp = sum(1 for p, y in zip(preds, y_true) if p == 1 and y == 0)
         fn = sum(1 for p, y in zip(preds, y_true) if p == 0 and y == 1)
@@ -187,12 +214,40 @@ def run_lora_benchmark(
             "sample_count": len(y_true)
         }
 
-    baseline_metrics = evaluate_model(base_model, name="Pretrained Baseline ViT")
+    baseline_metrics = evaluate_model(base_model, test_samples, name="Pretrained / Custom Baseline ViT")
 
-    # 4. Inject LoRA Adapter and Benchmark
-    lora_model = apply_lora_to_vit(base_model, r=lora_r, lora_alpha=lora_alpha)
+    # 4. Inject LoRA Adapter and Train for 2 Epochs on Support Samples
+    lora_model = apply_lora_to_vit(base_model, r=lora_r, lora_alpha=lora_alpha, prefer_peft=False).to(device)
     total_lora, trainable_lora, lora_ratio = count_parameters(lora_model)
-    lora_metrics = evaluate_model(lora_model, name=f"ViT + LoRA (r={lora_r}, alpha={lora_alpha})")
+    trainable_params = [p for p in lora_model.parameters() if p.requires_grad]
+    if trainable_params and support_samples:
+        opt = torch.optim.AdamW(trainable_params, lr=5e-4, weight_decay=0.01)
+        crit = nn.CrossEntropyLoss()
+        target_cls_idx = fake_idx
+        real_cls_idx = 0 if fake_idx == 1 else 1
+        for _ in range(2):
+            lora_model.train()
+            for item in support_samples:
+                try:
+                    with Image.open(item["path"]) as pil_im:
+                        img = pil_im.convert("RGB")
+                    opt.zero_grad()
+                    if processor:
+                        inputs = processor(images=img, return_tensors="pt").to(device)
+                        out = lora_model(**inputs)
+                        logits = out.logits if hasattr(out, "logits") else out
+                    else:
+                        from torchvision import transforms
+                        tf = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
+                        logits = lora_model(tf(img).unsqueeze(0).to(device))
+                    y_tgt = torch.tensor([target_cls_idx if item["label"] == 1 else real_cls_idx], dtype=torch.long, device=device)
+                    loss = crit(logits, y_tgt)
+                    loss.backward()
+                    opt.step()
+                except Exception:
+                    pass
+
+    lora_metrics = evaluate_model(lora_model, test_samples, name=f"ViT + Trained LoRA (r={lora_r}, alpha={lora_alpha})")
 
     # Full checkpoint size (~340MB) vs LoRA checkpoint size (~8MB)
     full_checkpoint_mb = round(total_params * 4 / (1024 * 1024), 2)

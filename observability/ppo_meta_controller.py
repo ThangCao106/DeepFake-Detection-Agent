@@ -13,12 +13,16 @@ import json
 import time
 import math
 import random
+from pathlib import Path
+from typing import Optional
 import numpy as np
 
 try:
     import torch
     import torch.nn as nn
+    import torch.nn.functional as F
     import torch.optim as optim
+    from torch.distributions import Normal
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
@@ -54,16 +58,35 @@ class PPOMetaController:
     """
     PPO RL Controller managing dynamic hyperparameters & LoRA triggers for Threads-DFBench.
     """
-    def __init__(self, state_dim=6, action_dim=4, lr=0.001, gamma=0.99, clip_eps=0.2):
+    def __init__(self, state_dim=6, action_dim=4, lr=0.001, gamma=0.99, clip_eps=0.2, checkpoint_path: Optional[str] = None):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
         self.clip_eps = clip_eps
         self.trajectories = []
-        
+        self.step_count = 0
+        self.last_reward = 0.0
+        self.baseline_reward = 0.85
+
+        default_ckpt = Path(__file__).resolve().parent.parent / "custom_vit_model" / "ppo_meta_controller.pt"
+        self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else default_ckpt
+
         if HAS_TORCH:
+            torch.manual_seed(2026)
             self.model = PPONetwork(state_dim, action_dim)
             self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+            if self.checkpoint_path.exists():
+                try:
+                    ckpt = torch.load(str(self.checkpoint_path), map_location="cpu", weights_only=False)
+                    if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+                        self.model.load_state_dict(ckpt["model_state_dict"])
+                        if "optimizer_state_dict" in ckpt:
+                            self.optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+                        self.step_count = int(ckpt.get("step_count", 0))
+                        self.last_reward = float(ckpt.get("last_reward", 0.0))
+                        self.baseline_reward = float(ckpt.get("baseline_reward", 0.85))
+                except Exception as exc:
+                    print(f"[PPO Meta-Controller] Checkpoint reload skipped ({exc})")
         else:
             self.model = None
 
@@ -124,6 +147,7 @@ class PPOMetaController:
             "hard_threshold_eta": hard_threshold_eta,
             "trigger_lora": trigger_lora,
             "state_vector": state_np.tolist(),
+            "raw_action": [round(float(x), 6) for x in raw],
             "predicted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         return action_dict
@@ -140,19 +164,121 @@ class PPOMetaController:
         reward = auc - (2.0 * ece) - (1.5 * fpr)
         return round(float(reward), 4)
 
+    def _reconstruct_raw_action(self, action_dict: dict) -> np.ndarray:
+        """Recovers [0, 1]^4 policy action vector from action_dict when raw_action is absent."""
+        if "raw_action" in action_dict and len(action_dict["raw_action"]) == self.action_dim:
+            return np.clip(np.array(action_dict["raw_action"], dtype=np.float32), 1e-3, 1.0 - 1e-3)
+        tau_r = (float(action_dict.get("optimal_tau", 0.72)) - 0.50) / 0.45
+        temp_r = (float(action_dict.get("optimal_temp_t", 1.50)) - 1.0) / 2.0
+        lam_r = (float(action_dict.get("lambda_bio", 0.50)) - 0.10) / 0.80
+        eta_r = (float(action_dict.get("hard_threshold_eta", 0.75)) - 0.60) / 0.30
+        return np.clip(np.array([tau_r, temp_r, lam_r, eta_r], dtype=np.float32), 1e-3, 1.0 - 1e-3)
+
+    def update_policy(self, state_np: np.ndarray, reward: float, raw_action: Optional[np.ndarray] = None) -> dict:
+        """
+        Runs a clipped PPO Actor-Critic policy gradient update (4 epochs) on the observed
+        (S_t, A_t, R_t) tuple and persists the updated checkpoint to disk.
+        """
+        if not HAS_TORCH or self.model is None:
+            return {"policy_loss": 0.0, "checkpoint_saved": False}
+
+        state_arr = np.asarray(state_np, dtype=np.float32).reshape(1, self.state_dim)
+        state_t = torch.from_numpy(state_arr)
+        target_return = torch.tensor([[float(reward)]], dtype=torch.float32)
+
+        if raw_action is None:
+            with torch.no_grad():
+                mean_init, _ = self.model(state_t)
+                action_t = mean_init.detach().clamp(1e-3, 1.0 - 1e-3)
+        else:
+            raw_arr = np.asarray(raw_action, dtype=np.float32).reshape(1, self.action_dim)
+            action_t = torch.from_numpy(raw_arr).clamp(1e-3, 1.0 - 1e-3)
+
+        self.model.eval()
+        with torch.no_grad():
+            old_mean, old_val = self.model(state_t)
+            old_std = torch.full_like(old_mean, 0.08)
+            old_dist = Normal(old_mean, old_std)
+            old_log_prob = old_dist.log_prob(action_t).sum(dim=-1, keepdim=True)
+            advantage = target_return - old_val
+            if float(advantage.abs().item()) < 1e-4:
+                advantage = target_return - torch.tensor([[float(self.baseline_reward)]], dtype=torch.float32)
+
+        self.model.train()
+        last_loss = 0.0
+        for _ in range(4):
+            self.optimizer.zero_grad()
+            mean, val = self.model(state_t)
+            std = torch.full_like(mean, 0.08)
+            dist = Normal(mean, std)
+            log_prob = dist.log_prob(action_t).sum(dim=-1, keepdim=True)
+            ratio = torch.exp((log_prob - old_log_prob).clamp(-10.0, 10.0))
+            surr1 = ratio * advantage
+            surr2 = torch.clamp(ratio, 1.0 - self.clip_eps, 1.0 + self.clip_eps) * advantage
+            actor_loss = -torch.min(surr1, surr2).mean()
+            critic_loss = F.mse_loss(val, target_return)
+            entropy_bonus = dist.entropy().mean()
+            loss = actor_loss + 0.5 * critic_loss - 0.01 * entropy_bonus
+            loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
+            self.optimizer.step()
+            last_loss = float(loss.item())
+
+        self.model.eval()
+        self.step_count += 1
+        self.last_reward = float(reward)
+        self.baseline_reward = float(0.9 * self.baseline_reward + 0.1 * float(reward))
+
+        self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(
+            {
+                "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "step_count": int(self.step_count),
+                "last_reward": float(self.last_reward),
+                "baseline_reward": float(self.baseline_reward),
+                "state_dim": int(self.state_dim),
+                "action_dim": int(self.action_dim),
+            },
+            str(self.checkpoint_path),
+        )
+        return {
+            "policy_loss": round(last_loss, 6),
+            "checkpoint_saved": self.checkpoint_path.exists(),
+            "checkpoint_path": str(self.checkpoint_path),
+        }
+
     def record_step(self, metrics: dict, action_dict: dict):
         """
-        Stores trajectory tuple (State, Action, Reward) in controller memory.
+        Stores trajectory tuple (State, Action, Reward), runs a PPO policy gradient update,
+        and persists the updated Actor-Critic checkpoint.
         """
         reward = self.compute_reward(metrics)
+        state_vec = action_dict.get("state_vector", [])
+        if isinstance(state_vec, (list, tuple, np.ndarray)) and len(state_vec) == self.state_dim:
+            state_np = np.array(state_vec, dtype=np.float32)
+        else:
+            state_np = self.construct_state_vector(metrics)
+        raw_action = self._reconstruct_raw_action(action_dict)
+        update_info = self.update_policy(state_np, reward, raw_action=raw_action)
+
         trajectory_step = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "state": action_dict.get("state_vector", []),
+            "state": state_np.tolist(),
             "action": action_dict,
-            "reward": reward
+            "reward": reward,
+            "policy_loss": update_info.get("policy_loss", 0.0),
+            "checkpoint_saved": update_info.get("checkpoint_saved", False),
+            "checkpoint_path": update_info.get("checkpoint_path"),
+            "step_count": int(self.step_count),
         }
         self.trajectories.append(trajectory_step)
-        print(f"[PPO Meta-Controller] Recorded Trajectory Step #{len(self.trajectories)} | Reward={reward:.4f} (Tau={action_dict['optimal_tau']}, Temp={action_dict['optimal_temp_t']}, Lambda={action_dict['lambda_bio']})")
+        print(
+            f"[PPO Meta-Controller] Step #{self.step_count} (Session #{len(self.trajectories)}) | "
+            f"Reward={reward:.4f} | Loss={trajectory_step['policy_loss']:.6f} | "
+            f"Saved={trajectory_step['checkpoint_saved']} "
+            f"(Tau={action_dict['optimal_tau']}, Temp={action_dict['optimal_temp_t']}, Lambda={action_dict['lambda_bio']})"
+        )
         return trajectory_step
 
 if __name__ == "__main__":

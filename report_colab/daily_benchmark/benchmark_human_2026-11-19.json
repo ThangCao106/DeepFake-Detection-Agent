@@ -1,0 +1,237 @@
+{
+  "timestamp_utc": "2026-11-19T18:02:52Z",
+  "evaluation_mode": "EMPIRICAL_LIVE_INFERENCE",
+  "model_type": "human",
+  "loaded_model_id": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\custom_vit_model",
+  "using_custom_weights": true,
+  "target_model": "Human-Centric Detector (WAVIE + Full-Duration Acoustic + DF26 LipSync + Tri-Stream ViT)",
+  "human_image_evaluation": {
+    "media_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1500648767.jpg",
+    "modality": "image",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": 3.3,
+    "calibrated_probability": 0.8849,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": true,
+    "forensic_decision": "DEEPFAKE_SUSPECT",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "wavelet_high_freq_energy": 0.0032,
+      "wavelet_high_freq_artifacts": true,
+      "corneal_reflection_symmetry": 0.0,
+      "corneal_asymmetry_score": 1.0,
+      "optical_gaze_consistent": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 8.17,
+    "detector_label": "Realism",
+    "detector_risk_score": 0.3096,
+    "sha256": "3b09fa90412492be57d8f35e79ce3c9caa5a2e1840c8bd12f2add64306d3533a",
+    "total_latency_ms": 854.29
+  },
+  "human_audio_evaluation": {
+    "media_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\runs\\benchmarks\\media_cache\\audio\\vietprism_real_01.wav",
+    "modality": "audio",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": -1.9839,
+    "calibrated_probability": 0.2268,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "ssl_vocal_trajectory_smoothness": 0.814,
+      "voiced_unvoiced_transition_anomaly": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 32.95,
+    "suite_metrics": {
+      "sample_count": 12,
+      "tp": 6,
+      "tn": 6,
+      "fp": 0,
+      "fn": 0,
+      "accuracy": 1.0,
+      "tpr": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0,
+      "roc_auc": 1.0,
+      "eer_percent": 0.0,
+      "ece": 0.1129,
+      "mean_latency_ms": 217.75
+    },
+    "manifest": [
+      {
+        "sample_id": "vietprism_real_01",
+        "sha256": "b3fff0696eb1fd86f5036cd4ea1fbee9d5e7f9cc58bb2dd76522921be9522093",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.1209
+      },
+      {
+        "sample_id": "vietprism_real_02",
+        "sha256": "2e8c5caf80ef825d7a06d357ce3bd3a8f9e3b16e4023b71d553efba13c6665a4",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.1201
+      },
+      {
+        "sample_id": "vietprism_real_03",
+        "sha256": "66bb228f6f1709c98246d4ab791b193ca24734d0e39be946006a4504e25d2fcb",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.1202
+      },
+      {
+        "sample_id": "vietprism_real_04",
+        "sha256": "51f32916081b6695bafb624fdf306efdf3961ff013bf5cb7ef25beccd47c85c6",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.2586
+      },
+      {
+        "sample_id": "vietprism_real_05",
+        "sha256": "343824dbe239cf0d80d18caced40eb1840520c0829dbb12e1fab841cf16b2046",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.256
+      },
+      {
+        "sample_id": "vietprism_real_06",
+        "sha256": "a227ca18bacc5e21618688549fd79e24d414bf38c8c1e1367a07f48dba404c66",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.259
+      },
+      {
+        "sample_id": "vocoder_fake_01",
+        "sha256": "29c55e9848cd305725ff434ededcc16d2c947edc49ca8fd4f6d7eab06333096f",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "vocoder_fake_02",
+        "sha256": "65177c911ee9c5378ab5f2a823410681dcd85e32f432a7f0a97789fa54c62644",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "vocoder_fake_03",
+        "sha256": "fda782822b87713765e4e67992836eb1b96964a9552b9b96b408b5f87c607917",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "vocoder_fake_04",
+        "sha256": "175d0e7be29f2ab962ab3a408a9d9c74a5d58d17509b7ff09bc84deb489a0101",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "vocoder_fake_05",
+        "sha256": "4e2f870e451b45119ea4629a3a997c65f06bd8d837ed23f5d6634899fecee53e",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "vocoder_fake_06",
+        "sha256": "480df3a2641eeed58ccc8296fb3b95ac2632763dc43c76ca2f2e2be65ee4e7dc",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      }
+    ]
+  },
+  "human_video_evaluation": {
+    "media_path": "C:\\Users\\thang.cd\\AppData\\Local\\Temp\\human_bench_1eflx0xi\\vid\\threads_clean_baseline_real.mp4",
+    "modality": "video",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": -2.885,
+    "calibrated_probability": 0.1439,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "df26_lipsync_correlation": 0.9512,
+      "microexpression_temporal_jitter": 0.0005,
+      "lipsync_desync": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 36.34,
+    "suite_metrics": {
+      "sample_count": 6,
+      "tp": 4,
+      "tn": 2,
+      "fp": 0,
+      "fn": 0,
+      "accuracy": 1.0,
+      "tpr": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0,
+      "roc_auc": 1.0,
+      "eer_percent": 0.0,
+      "ece": 0.0502,
+      "mean_latency_ms": 4065.66,
+      "mean_duration_error_sec": 0.0
+    },
+    "manifest": [
+      {
+        "sample_id": "threads_clean_baseline_real",
+        "sha256": "b943ad6d53cdb9b44ac1d1b2c7f6ef494484db9d3952b81bd0fb3b2c8b4d02e6",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.0529
+      },
+      {
+        "sample_id": "threads_clean_baseline_fake",
+        "sha256": "0510f3ef1652bbd02d307314294176ec034f827bfa1afd89a40f97b5c3effe3d",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9668
+      },
+      {
+        "sample_id": "threads_h264_heavy_reencode_real",
+        "sha256": "fcca86e5d6356fecd0c2a1c57b3eb30829585af23b05e8940ba07386541cdf8e",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.1096
+      },
+      {
+        "sample_id": "threads_h264_heavy_reencode_fake",
+        "sha256": "efda6753881862fdf8ecdf0feecd81f8f8b9872e4daf17d59dfd9847084d34f8",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9663
+      },
+      {
+        "sample_id": "threads_partial_splicing_fake",
+        "sha256": "c170fd60cdd244d2eedb1d1e4edc74c0964982410d9ee498ef9137d60d30878e",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9625
+      },
+      {
+        "sample_id": "threads_ai_generative_short_fake",
+        "sha256": "48cdad8785a35265270ba396ef87681fd25dd7844c51852974251476e153a041",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9658
+      }
+    ]
+  },
+  "compliance_audit": {
+    "audio_ece": 0.1129,
+    "video_ece": 0.0502,
+    "ece_status": "EMPIRICAL_AUDIT_LOGGED",
+    "platt_temperature_T": 1.6178
+  }
+}

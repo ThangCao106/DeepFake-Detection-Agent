@@ -188,6 +188,7 @@ def generate_stratified_manifest(total_samples: int = 1000) -> List[Dict]:
                 "modality": cohort["modality"],
                 "ground_truth_label": int(label),
                 "label_name": "FAKE" if is_fake else "REAL",
+                "evaluation_provenance": "STRATIFIED_MONTE_CARLO_MODEL_SIMULATION",
                 "risk_general": round(float(r_gen), 4),
                 "risk_human": round(float(r_hum), 4),
                 "features": {
@@ -334,6 +335,7 @@ def save_outputs(samples: List[Dict], results: List[Dict], optimum: Dict):
     
     raw_payload = {
         "title": "Empirical Ablation Grid Search for Multimodal Deepfake Composite Risk Ratio",
+        "evaluation_provenance": "STRATIFIED_MONTE_CARLO_MODEL_SIMULATION",
         "timestamp_utc": "2026-10-12T10:30:00Z",
         "manifest_path": str(MANIFEST_PATH.resolve()),
         "manifest_sha256": manifest_sha256,
