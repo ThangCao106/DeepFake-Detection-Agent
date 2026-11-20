@@ -12,17 +12,48 @@ Validates:
 import os
 import sys
 import json
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 # Setup paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import agents.calibration_deliberation_council as council_mod
 from agents.calibration_deliberation_council import CalibrationDeliberationCouncil
 
 
 class TestCalibrationDeliberationCouncil(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        """Isolate all test writes to a temporary directory so tracked calibration files are untouched."""
+        cls._tmp_dir = tempfile.TemporaryDirectory(prefix="council_test_")
+        cls.tmp_root = Path(cls._tmp_dir.name)
+        tmp_custom = cls.tmp_root / "custom_vit_model"
+        tmp_reports = cls.tmp_root / "report_colab"
+        tmp_custom.mkdir(parents=True, exist_ok=True)
+        tmp_reports.mkdir(parents=True, exist_ok=True)
+
+        for fname in ("calibration_params.json", "vietnamese_demographic_params.json", "benchmark_results.json"):
+            src = PROJECT_ROOT / "custom_vit_model" / fname
+            if src.exists():
+                shutil.copy2(src, tmp_custom / fname)
+
+        db_src = PROJECT_ROOT / "report_colab" / "deepfake_agent_memory.db"
+        if db_src.exists():
+            shutil.copy2(db_src, tmp_reports / "deepfake_agent_memory.db")
+
+        cls._root_patcher = mock.patch.object(council_mod, "PROJECT_ROOT", cls.tmp_root)
+        cls._root_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._root_patcher.stop()
+        cls._tmp_dir.cleanup()
 
     def test_01_empirical_evidence_gathering(self):
         """Test that evidence aggregator pulls metrics from benchmark & pentest storage."""
@@ -92,8 +123,8 @@ class TestCalibrationDeliberationCouncil(unittest.TestCase):
         self.assertIn("parameters", res)
         self.assertIn("audit_trail", res)
 
-        # Check calibration_params.json
-        calib_file = PROJECT_ROOT / "custom_vit_model" / "calibration_params.json"
+        # Check calibration_params.json inside isolated temp workspace
+        calib_file = self.tmp_root / "custom_vit_model" / "calibration_params.json"
         self.assertTrue(calib_file.exists())
         with open(calib_file, "r", encoding="utf-8") as f:
             saved = json.load(f)
@@ -104,7 +135,7 @@ class TestCalibrationDeliberationCouncil(unittest.TestCase):
 
     def test_05_archive_report_generation(self):
         """Test that Markdown audit reports are archived in report_colab/council_deliberations/."""
-        reports_dir = PROJECT_ROOT / "report_colab" / "council_deliberations"
+        reports_dir = self.tmp_root / "report_colab" / "council_deliberations"
         self.assertTrue(reports_dir.exists())
         md_files = list(reports_dir.glob("*.md"))
         self.assertGreater(len(md_files), 0, "At least one council deliberation markdown report should exist")

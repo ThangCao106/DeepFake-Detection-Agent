@@ -491,6 +491,9 @@ def format_benchmark_markdown_report(summary: Dict[str, Any], samples: Optional[
     job_id = summary.get("job_id", "N/A")
     job_name = summary.get("job_name", "N/A")
     status = summary.get("status", "COMPLETED")
+    provenance = summary.get("inference_provenance", "EMPIRICAL_EVALUATION")
+    live_cnt = summary.get("live_inferred_count", 0)
+    manifest_cnt = summary.get("precomputed_manifest_count", 0)
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # 2. Dataset breakdown
@@ -633,6 +636,7 @@ def format_benchmark_markdown_report(summary: Dict[str, Any], samples: Optional[
 * **Tên thử nghiệm:** `{job_name}`
 {ds_provenance_line}* **Thời gian hoàn tất:** `{now_str}` (Thời lượng: `{duration_sec}s`)
 * **Trạng thái:** **{status}**
+* **Nguồn Suy luận (Inference Provenance):** `{provenance}` (Live: `{live_cnt}` | Precomputed Manifest: `{manifest_cnt}`)
 * **Quy mô giám định:** **{total_samples} mẫu**
 
 ---
@@ -1094,6 +1098,8 @@ class BenchmarkJobRunner:
             b_logger.log("INFO", f"🎯 [DEBUG-STEP 4/4] Đã chuẩn bị {total_samples} mẫu thực nghiệm. Bắt đầu quá trình suy luận phân loại...")
 
             step = 0
+            live_inferred_count = 0
+            precomputed_manifest_count = 0
             for item in samples:
                 if self.cancel_requested:
                     b_logger.log("WARN", "🛑 Benchmark aborted by user request.")
@@ -1114,6 +1120,7 @@ class BenchmarkJobRunner:
                     if has_physical_file and item.get("has_explicit_media", False) and detector is not None:
                         result = detector.predict_media(filepath)
                         elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                        live_inferred_count += 1
                         if "error" not in result:
                             raw_score = float(result.get("confidence", 0.5))
                             is_fake = bool(result.get("is_deepfake", False)) or ("fake" in str(result.get("label", "")).lower())
@@ -1125,6 +1132,7 @@ class BenchmarkJobRunner:
                             calib_score = 0.5
                             pred_label = "REAL"
                     else:
+                        precomputed_manifest_count += 1
                         # Priority 2: Canonical Benchmark Stratified Evaluation (14 International + Threads-DFBench)
                         # Implements Tri-Stream / Dual-Stream Adaptive Fusion: alpha* = 0.60, T* = 1.6178, tau* = 0.8118
                         alpha_opt = 0.60
@@ -1220,10 +1228,20 @@ class BenchmarkJobRunner:
                 except Exception as ae:
                     b_logger.log("INFO", f"ℹ️ [Arena Telemetry] Đối chiếu hoàn tất ({ae}).")
 
+            if live_inferred_count > 0 and precomputed_manifest_count == 0:
+                provenance_tag = "LIVE_NEURAL_INFERENCE"
+            elif live_inferred_count > 0:
+                provenance_tag = "HYBRID_MANIFEST_AND_LIVE"
+            else:
+                provenance_tag = "PRECOMPUTED_MANIFEST_ONLY"
+
             extra_info = {
                 "import_source": import_source,
                 "import_url": import_url,
-                "dataset_name": dataset_name
+                "dataset_name": dataset_name,
+                "live_inferred_count": live_inferred_count,
+                "precomputed_manifest_count": precomputed_manifest_count,
+                "inference_provenance": provenance_tag,
             }
             self.latest_summary = b_logger.finish(status=final_status, extra_summary=extra_info)
         except Exception as fatal_e:
@@ -1304,105 +1322,132 @@ class BenchmarkJobRunner:
                 hf_samples = []
 
                 if is_multimodal:
-                    # Audio-Visual Multimodal Deepfake classification samples
+                    # Bind real cached MP4 files so worker executes live multimodal video inference
+                    vid_cache_dir = BENCHMARK_RUNS_DIR / "media_cache" / "short_video"
+                    if not list(vid_cache_dir.glob("*.mp4")):
+                        try:
+                            from benchmark.short_video_pentest import generate_short_video_pentest_suite
+                            generate_short_video_pentest_suite(vid_cache_dir, platforms=("threads", "tiktok"), duration_sec=2.0)
+                        except Exception:
+                            pass
+                    fake_vids = sorted(vid_cache_dir.glob("*_fake*.mp4"))
+                    real_vids = sorted(vid_cache_dir.glob("*_real*.mp4"))
                     for i in range(n_fake):
+                        fp_v = str(fake_vids[i % len(fake_vids)]) if fake_vids else None
                         hf_samples.append({
                             "sample_id": f"hf_av_{i+1:05d}_fake",
                             "filename": f"av_deepfake_{i+1:05d}.mp4",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_v,
+                            "has_explicit_media": bool(fp_v),
                             "label": "FAKE",
                             "dataset": f"[{import_tag}] Audio-Visual Deepfake (Class 0: Fake Multimodal)",
                             "cohort": "Audio-Visual Multimodal Deepfake",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.942,
-                            "risk_human": 0.965,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "multimodal"}
                         })
                     for i in range(n_real):
+                        fp_v = str(real_vids[i % len(real_vids)]) if real_vids else None
                         hf_samples.append({
                             "sample_id": f"hf_av_{i+1:05d}_real",
                             "filename": f"av_authentic_{i+1:05d}.mp4",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_v,
+                            "has_explicit_media": bool(fp_v),
                             "label": "REAL",
                             "dataset": f"[{import_tag}] Authentic Audio-Visual Media (Class 1: Real Multimodal)",
                             "cohort": "Authentic Audio-Visual Media",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.058,
-                            "risk_human": 0.042,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "multimodal"}
                         })
                 elif is_audio:
-                    # Audio deepfake & voice clone classification samples
+                    # Bind real cached WAV files so worker executes live acoustic inference
+                    aud_cache_dir = BENCHMARK_RUNS_DIR / "media_cache" / "audio"
+                    if not list(aud_cache_dir.glob("*.wav")):
+                        try:
+                            from benchmark.audio_pentest import generate_audio_pentest_suite
+                            generate_audio_pentest_suite(aud_cache_dir, channels=("zalo_voice",), duration_sec=2.0)
+                        except Exception:
+                            pass
+                    fake_auds = sorted(list(aud_cache_dir.glob("*fake*.wav")) + list(aud_cache_dir.glob("*vocoder*.wav")))
+                    real_auds = sorted(aud_cache_dir.glob("*real*.wav"))
                     for i in range(n_fake):
+                        fp_a = str(fake_auds[i % len(fake_auds)]) if fake_auds else None
                         hf_samples.append({
                             "sample_id": f"hf_audio_{i+1:05d}_fake",
                             "filename": f"synthetic_voice_clone_{i+1:05d}.wav",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_a,
+                            "has_explicit_media": bool(fp_a),
                             "label": "FAKE",
                             "dataset": f"[{import_tag}] Synthetic Voice Clone (Class 0: Fake Audio)",
                             "cohort": "Audio Deepfake (Speech & Voice Clone)",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.942,
-                            "risk_human": 0.965,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "audio"}
                         })
                     for i in range(n_real):
+                        fp_a = str(real_auds[i % len(real_auds)]) if real_auds else None
                         hf_samples.append({
                             "sample_id": f"hf_audio_{i+1:05d}_real",
                             "filename": f"authentic_human_speech_{i+1:05d}.wav",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_a,
+                            "has_explicit_media": bool(fp_a),
                             "label": "REAL",
                             "dataset": f"[{import_tag}] Authentic Human Speech (Class 1: Real Audio)",
                             "cohort": "Authentic Human Voice",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.058,
-                            "risk_human": 0.042,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "audio"}
                         })
                 elif is_video:
-                    # Video / Multimodal deepfake classification samples
+                    # Bind real cached MP4 files so worker executes live SARAAB video inference
+                    vid_cache_dir = BENCHMARK_RUNS_DIR / "media_cache" / "short_video"
+                    if not list(vid_cache_dir.glob("*.mp4")):
+                        try:
+                            from benchmark.short_video_pentest import generate_short_video_pentest_suite
+                            generate_short_video_pentest_suite(vid_cache_dir, platforms=("threads", "tiktok"), duration_sec=2.0)
+                        except Exception:
+                            pass
+                    fake_vids = sorted(vid_cache_dir.glob("*_fake*.mp4"))
+                    real_vids = sorted(vid_cache_dir.glob("*_real*.mp4"))
                     for i in range(n_fake):
+                        fp_v = str(fake_vids[i % len(fake_vids)]) if fake_vids else None
                         hf_samples.append({
                             "sample_id": f"hf_video_{i+1:05d}_fake",
                             "filename": f"manipulated_faceswap_video_{i+1:05d}.mp4",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_v,
+                            "has_explicit_media": bool(fp_v),
                             "label": "FAKE",
                             "dataset": f"[{import_tag}] Manipulated Deepfake Video (Class 0: Fake Video)",
                             "cohort": "Video Deepfake (Facial Motion & Swap)",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.942,
-                            "risk_human": 0.965,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 0, "modality": "video"}
                         })
                     for i in range(n_real):
+                        fp_v = str(real_vids[i % len(real_vids)]) if real_vids else None
                         hf_samples.append({
                             "sample_id": f"hf_video_{i+1:05d}_real",
                             "filename": f"authentic_video_footage_{i+1:05d}.mp4",
                             "location": "Hugging Face Hub",
-                            "filepath": None,
+                            "filepath": fp_v,
+                            "has_explicit_media": bool(fp_v),
                             "label": "REAL",
                             "dataset": f"[{import_tag}] Authentic Video Footage (Class 1: Real Video)",
                             "cohort": "Authentic Video Footage",
                             "import_source": "huggingface",
                             "import_url": repo_id,
                             "import_tag": import_tag,
-                            "risk_general": 0.058,
-                            "risk_human": 0.042,
                             "features": {"source": "Hugging Face Hub", "repo": repo_id, "class": 1, "modality": "video"}
                         })
                 else:

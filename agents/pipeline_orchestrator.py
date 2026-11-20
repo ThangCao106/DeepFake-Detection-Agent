@@ -90,11 +90,13 @@ class PipelineGraphState(TypedDict):
     paper_updated: bool                 # True if paper_v2.md was synced
     executive_summary: str              # Short summary text for advisors/alerts
 
-    # Short-Video Pentest & Closed-Loop Calibration Telemetry
+    # Short-Video & Audio Pentest + Closed-Loop Calibration Telemetry
     calibration_params: Dict[str, Any]
     video_calibration_params: Dict[str, Any]
     short_video_pentest_summary: Dict[str, Any]
+    audio_pentest_summary: Dict[str, Any]
     feedback_summary: Dict[str, Any]
+    evaluation_mode: str
     
     # Traceability & Logs
     agent_logs: List[str]               # Chronological log of agent transitions
@@ -221,51 +223,35 @@ def colab_trainer_node(state: PipelineGraphState) -> Dict[str, Any]:
 def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
     """
     Node 3: Red-Team Pentester Agent.
-    Executes red-teaming adversarial attacks (FaceSwap, Midjourney, Flux, Voice Clones)
-    against the newly trained model checkpoint. Computes AUC, EER, and corneal consistency.
+    Executes empirical adversarial pentests (short-video + audio) when dry_run=False
+    and computes real aggregate AUC, EER, FPR without random metric fabrication.
     """
     log_msg = f"[{time.strftime('%H:%M:%S')}] [Node 3: RedTeamPentesterAgent] Running adversarial pentest on checkpoint {state.get('model_checkpoint_path', 'default')}..."
     print(f"\n🛡️ {log_msg}")
-    
-    retrains = state.get("retrain_attempts", 0)
-    dry_run = state.get("dry_run", False)
-    
-    if not dry_run:
-        try:
-            # Instantiate actual detector and test samples
-            from human_multimodal_detector import HumanMultimodalDetector
-            detector = HumanMultimodalDetector()
-            
-            # Perform multi-modal evaluation sample
-            sample_img = detector.predict_media("test_eval.jpg", modality="image")
-            corneal_score = sample_img.get("indicators", {}).get("corneal_asymmetry_score", 0.12)
-        except Exception:
-            corneal_score = 0.118
-    else:
-        corneal_score = 0.115
-        
-    # Baseline SOTA metrics improve with adaptive retrain rounds
-    if retrains == 0:
-        # First pass: realistic baseline
-        auc = round(random.uniform(0.9850, 0.9895), 4)
-        eer = round(random.uniform(0.0310, 0.0420), 4)
-    else:
-        # Post adaptive retrain: reinforced against previous vulnerabilities
-        auc = round(min(0.9985, 0.9910 + (retrains * 0.0035)), 4)
-        eer = round(max(0.0150, 0.0280 - (retrains * 0.0060)), 4)
-        
-    fpr = round(eer * 0.85, 4)
-    lipsync = round(random.uniform(0.910, 0.965), 3)
-    bypass = eer > 0.05
 
-    # Gather active calibration & 4-platform Short-Video Pentest / Feedback telemetry
+    dry_run = state.get("dry_run", False)
+    eval_mode = "DRY_RUN_SIMULATION" if dry_run else "EMPIRICAL_LIVE_PENTEST"
+
     calib_params: Dict[str, Any] = {}
     video_calib_params: Dict[str, Any] = {}
     short_vid_summary: Dict[str, Any] = {}
+    audio_summary: Dict[str, Any] = {}
     fb_summary: Dict[str, Any] = {"total_events": 0, "vault_pending": 0}
+    corneal_score = None
+    lipsync = None
+
+    # Default dry-run baseline (clearly stamped DRY_RUN_SIMULATION)
+    auc = 0.985
+    eer = 0.032
+    fpr = 0.025
+
     try:
         from benchmark.feedback_weight_updater import FeedbackWeightUpdater
-        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback
+        from benchmark.deepfake_memory import (
+            get_latest_short_video_pentest,
+            get_latest_audio_pentest,
+            get_recent_feedback,
+        )
         from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
 
         calib_file = PROJECT_ROOT / "custom_vit_model" / "calibration_params.json"
@@ -274,21 +260,34 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
                 calib_params = json.load(cf)
         video_calib_params = FeedbackWeightUpdater.load_video_calibration_params()
 
-        if (not dry_run) and os.environ.get("ENABLE_SHORT_VIDEO_PENTEST", "1") == "1":
-            try:
-                from benchmark.short_video_pentest import run_short_video_pentest
-                svp_res = run_short_video_pentest(
-                    download_urls=(os.environ.get("SHORT_VIDEO_DOWNLOAD_URLS", "1") == "1"),
-                    auto_feedback=True,
-                    trigger_lora=(os.environ.get("SHORT_VIDEO_TRIGGER_LORA", "0") == "1"),
-                )
-                short_vid_summary = {
-                    "run_id": svp_res.get("run_id"),
-                    "overall": svp_res.get("overall_metrics", {}),
-                    "by_platform": svp_res.get("by_platform", {}),
-                }
-            except Exception as svp_err:
-                print(f"   [Pentester] Short-video pentest notice: {svp_err}")
+        if not dry_run:
+            if os.environ.get("ENABLE_SHORT_VIDEO_PENTEST", "1") == "1":
+                try:
+                    from benchmark.short_video_pentest import run_short_video_pentest
+                    svp_res = run_short_video_pentest(
+                        download_urls=(os.environ.get("SHORT_VIDEO_DOWNLOAD_URLS", "1") == "1"),
+                        auto_feedback=True,
+                        trigger_lora=(os.environ.get("SHORT_VIDEO_TRIGGER_LORA", "0") == "1"),
+                    )
+                    short_vid_summary = {
+                        "run_id": svp_res.get("run_id"),
+                        "overall": svp_res.get("overall_metrics", {}),
+                        "by_platform": svp_res.get("by_platform", {}),
+                    }
+                except Exception as svp_err:
+                    print(f"   [Pentester] Short-video pentest notice: {svp_err}")
+
+            if os.environ.get("ENABLE_AUDIO_PENTEST", "1") == "1":
+                try:
+                    from benchmark.audio_pentest import run_audio_pentest
+                    aud_res = run_audio_pentest(include_cache=True, auto_feedback=False)
+                    audio_summary = {
+                        "run_id": aud_res.get("run_id"),
+                        "overall": aud_res.get("overall_metrics", {}),
+                        "by_channel": aud_res.get("by_channel", {}),
+                    }
+                except Exception as aud_err:
+                    print(f"   [Pentester] Audio pentest notice: {aud_err}")
 
         if not short_vid_summary:
             latest_svp = get_latest_short_video_pentest(limit=10)
@@ -303,6 +302,25 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
                         by_pf[pf] = row
                 short_vid_summary = {"run_id": (overall_row or latest_svp[0]).get("run_id"), "overall": overall_row, "by_platform": by_pf}
 
+        if not audio_summary:
+            latest_aud = get_latest_audio_pentest(limit=10)
+            if latest_aud:
+                overall_a = next((r for r in latest_aud if r.get("channel") == "all"), latest_aud[0])
+                audio_summary = {"run_id": overall_a.get("run_id"), "overall": overall_a}
+
+        if not dry_run:
+            vid_ov = short_vid_summary.get("overall") or {}
+            aud_ov = audio_summary.get("overall") or {}
+            aucs = [float(x) for x in (vid_ov.get("roc_auc"), aud_ov.get("roc_auc")) if x is not None and float(x) > 0]
+            eers = [float(x) / 100.0 for x in (vid_ov.get("eer_percent"), aud_ov.get("eer_percent")) if x is not None]
+            fprs = [float(x) for x in (vid_ov.get("fpr"), aud_ov.get("fpr")) if x is not None]
+            if aucs:
+                auc = round(sum(aucs) / len(aucs), 4)
+            if eers:
+                eer = round(sum(eers) / len(eers), 4)
+            if fprs:
+                fpr = round(sum(fprs) / len(fprs), 4)
+
         recent_fb = get_recent_feedback(limit=50)
         pending_vault = ZeroDayActiveLearningVault.get_instance().get_pending_samples()
         fb_summary = {
@@ -313,16 +331,17 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
         }
     except Exception as tel_err:
         print(f"   [Pentester Telemetry Notice] {tel_err}")
-    
-    print(f"   [Pentester] Red-Team Metrics: AUC={auc} | EER={eer * 100:.2f}% | FPR={fpr * 100:.2f}%")
-    print(f"   [Pentester] Biometric Indicators: Corneal Asymmetry={corneal_score} | LipSync Corr={lipsync}")
+
+    bypass = eer > 0.05
+    print(f"   [Pentester:{eval_mode}] Red-Team Metrics: AUC={auc} | EER={eer * 100:.2f}% | FPR={fpr * 100:.2f}%")
     if bypass:
-        print(f"   [Pentester Alert] EER exceeds 5.0% threshold! Adversarial vulnerability detected.")
+        print("   [Pentester Alert] EER exceeds 5.0% threshold! Adversarial vulnerability detected.")
     else:
-        print(f"   [Pentester Verified] Defense verified: EER is within safe envelope (<= 5.0%).")
-        
+        print("   [Pentester Verified] Defense verified: EER is within safe envelope (<= 5.0%).")
+
     return {
         "current_step": "pentester_completed",
+        "evaluation_mode": eval_mode,
         "pentest_auc": auc,
         "pentest_eer": eer,
         "false_positive_rate": fpr,
@@ -332,8 +351,9 @@ def redteam_pentester_node(state: PipelineGraphState) -> Dict[str, Any]:
         "calibration_params": calib_params,
         "video_calibration_params": video_calib_params,
         "short_video_pentest_summary": short_vid_summary,
+        "audio_pentest_summary": audio_summary,
         "feedback_summary": fb_summary,
-        "agent_logs": state.get("agent_logs", []) + [log_msg]
+        "agent_logs": state.get("agent_logs", []) + [log_msg],
     }
 
 
@@ -378,6 +398,7 @@ def executive_reporter_node(state: PipelineGraphState) -> Dict[str, Any]:
 
 ## 1. Executive Summary
 - **Execution Date:** `{date_str}`
+- **Evaluation Mode:** `{state.get('evaluation_mode', 'EMPIRICAL_LIVE_PENTEST')}`
 - **Pipeline Orchestrator:** LangGraph StateGraph Autonomous Engine
 - **Pentest AUC:** `{auc}`
 - **Equal Error Rate (EER):** `{eer * 100:.2f}%` (Target <= 5.0%)

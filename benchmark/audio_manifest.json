@@ -1,0 +1,37 @@
+{
+  "description": "Multi-Channel Audio Benchmark & Adversarial Pentest Manifest (Zalo Voice, TikTok Audio, Threads Voice, 8kHz Telephony). Populated with cached WAV anchors or real user/public WAV/FLAC/MP3 audio benchmarks.",
+  "samples": [
+    {
+      "sample_id": "vietprism_real_01_cache",
+      "channel": "zalo_voice",
+      "attack_vector": "clean_baseline",
+      "file_path": "runs/benchmarks/media_cache/audio/vietprism_real_01.wav",
+      "true_label": "Realism",
+      "notes": "Canonical VietPrism natural speech jitter baseline"
+    },
+    {
+      "sample_id": "vocoder_fake_02_regression_anchor",
+      "channel": "tiktok_audio",
+      "attack_vector": "clean_baseline",
+      "file_path": "runs/benchmarks/media_cache/audio/vocoder_fake_02.wav",
+      "true_label": "Deepfake",
+      "notes": "Historical F0 lag quantization False Negative regression anchor (f0=170 Hz)"
+    },
+    {
+      "sample_id": "asvspoof_bonafide_template",
+      "channel": "phone_8khz",
+      "attack_vector": "telephony_8khz_codec",
+      "file_path": "",
+      "true_label": "Realism",
+      "notes": "Populate with local ASVspoof 2021 / VietPrism authentic narrowband WAV/FLAC path"
+    },
+    {
+      "sample_id": "wavefake_tts_template",
+      "channel": "threads_voice",
+      "attack_vector": "clean_baseline",
+      "file_path": "",
+      "true_label": "Deepfake",
+      "notes": "Populate with local ElevenLabs / VITS / HiFi-GAN / WaveFake synthetic WAV/MP3 path"
+    }
+  ]
+}

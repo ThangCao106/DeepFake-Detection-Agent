@@ -181,6 +181,35 @@ class TestUIRegressionBugs(unittest.TestCase):
             f"Regression: 'const tau' declared {len(tau_matches)} times in formatAgentChatSummary (Commit 95296977 bug)!"
         )
 
+    def test_10_agentic_ai_model_ui_and_routes(self):
+        """Check that the Agentic AI formal modeling UI, /dfagent links, and Flask routes are wired properly."""
+        agentic_html = REPO_ROOT / "web_ui" / "templates" / "agentic_ai_model.html"
+        orch_html = REPO_ROOT / "web_ui" / "templates" / "orchestrator_dashboard.html"
+        app_py = REPO_ROOT / "web_ui" / "app.py"
+
+        self.assertTrue(agentic_html.exists(), "agentic_ai_model.html template missing!")
+        agentic_txt = agentic_html.read_text(encoding="utf-8")
+        for token in (
+            "C-Dec-POMDP",
+            "agentInspectorPanel",
+            "/dfagent/api/agentic/model",
+            "copyLatexAlgorithm",
+            "A0", "A1", "A2_G", "A2_M", "A2_C", "A3", "A4", "A5", "A6",
+        ):
+            self.assertIn(token, agentic_txt, f"Missing '{token}' in agentic_ai_model.html")
+
+        self.assertIn("navAgenticModelLink", self.html_content)
+        self.assertIn("agenticModelPreviewCard", self.html_content)
+        self.assertIn("/dfagent/agentic-ai", self.html_content)
+
+        orch_txt = orch_html.read_text(encoding="utf-8")
+        self.assertIn("linkAgenticModelNav", orch_txt)
+        self.assertIn("/dfagent/agentic-ai", orch_txt)
+
+        app_txt = app_py.read_text(encoding="utf-8")
+        for route_tok in ("/dfagent/agentic-ai", "/dfagent/api/agentic/model", "_collect_agentic_model_payload"):
+            self.assertIn(route_tok, app_txt, f"Missing '{route_tok}' in web_ui/app.py")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

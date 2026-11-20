@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI Formal Model (C-Dec-POMDP) | DeepTrace.io.vn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #04152E;
+            --bg-surface: #071E3D;
+            --bg-card: rgba(7, 30, 61, 0.86);
+            --border-color: rgba(0, 240, 255, 0.18);
+            --border-hover: rgba(0, 240, 255, 0.6);
+            --accent-blue: #0A84FF;
+            --accent-cyan: #00F0FF;
+            --accent-amber: #f59e0b;
+            --accent-green: #10b981;
+            --accent-purple: #a78bfa;
+            --accent-rose: #f43f5e;
+            --text-primary: #f0f9ff;
+            --text-secondary: #bae6fd;
+            --text-muted: #7dd3fc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(10, 132, 255, 0.14) 0px, transparent 55%),
+                radial-gradient(at 100% 100%, rgba(0, 240, 255, 0.10) 0px, transparent 55%);
+            padding-bottom: 60px;
+        }
+        .header {
+            background: rgba(4, 21, 46, 0.88);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-brand { display: flex; align-items: center; gap: 14px; }
+        .header-logo {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff; box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+        }
+        .header-title { font-size: 1.12rem; font-weight: 800; letter-spacing: -0.02em; }
+        .header-subtitle { font-size: 0.78rem; color: var(--text-secondary); }
+        .header-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .btn {
+            padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center;
+            gap: 7px; text-decoration: none; border: 1px solid transparent;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            color: #fff; box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
+        }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05); color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover { background: rgba(0, 240, 255, 0.12); border-color: var(--border-hover); }
+        .btn-lang.active { background: rgba(0, 240, 255, 0.18); border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .container { max-width: 1440px; margin: 0 auto; padding: 24px 28px; }
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 20px; backdrop-filter: blur(8px);
+            margin-bottom: 22px;
+        }
+        .section-title {
+            font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+        }
+        .section-title i { color: var(--accent-cyan); }
+        .math-banner {
+            background: rgba(4, 15, 34, 0.9); border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 12px; padding: 16px 20px; overflow-x: auto; margin-bottom: 14px;
+        }
+        .math-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-cyan); font-weight: 700; margin-bottom: 6px; }
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+            gap: 14px; margin-top: 14px;
+        }
+        .kpi-box {
+            background: rgba(4, 21, 46, 0.7); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 14px;
+        }
+        .kpi-label { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 6px; }
+        .kpi-val { font-size: 1.35rem; font-weight: 800; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; }
+        .kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* 2-Column Interactive Agentic Workspace */
+        .topology-workspace {
+            display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start;
+        }
+        @media (max-width: 1080px) { .topology-workspace { grid-template-columns: 1fr; } }
+
+        .tier-block {
+            background: rgba(4, 18, 40, 0.72); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 14px; margin-bottom: 14px;
+        }
+        .tier-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);
+        }
+        .tier-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;
+        }
+        .agent-node {
+            background: rgba(10, 35, 72, 0.78); border: 1px solid rgba(0, 240, 255, 0.22);
+            border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease;
+            text-align: left; color: var(--text-primary);
+        }
+        .agent-node:hover { border-color: var(--accent-cyan); transform: translateY(-2px); }
+        .agent-node.selected {
+            border-color: var(--accent-cyan);
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(0, 240, 255, 0.14));
+            box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
+        }
+        .agent-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .agent-id-pill {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px; background: rgba(0, 240, 255, 0.16); color: var(--accent-cyan);
+        }
+        .agent-status { font-size: 0.68rem; font-weight: 700; color: var(--accent-green); }
+        .agent-name { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+        .agent-metric { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-secondary); }
+
+        /* Right Column Inspector */
+        .inspector-panel {
+            position: sticky; top: 82px;
+            background: rgba(4, 18, 40, 0.92); border: 1px solid var(--border-hover);
+            border-radius: 14px; padding: 20px;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .tag-chip {
+            font-size: 0.74rem; padding: 4px 9px; border-radius: 6px;
+            background: rgba(10, 132, 255, 0.16); border: 1px solid rgba(10, 132, 255, 0.35);
+            color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;
+        }
+        .tag-chip.action { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #a7f3d0; }
+
+        /* Mermaid Diagram Tabs */
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;
+            background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);
+            border: 1px solid var(--border-color); cursor: pointer;
+        }
+        .tab-btn.active { background: rgba(0, 240, 255, 0.18); color: var(--accent-cyan); border-color: var(--accent-cyan); }
+        .mermaid-wrap {
+            background: #f8fafc; border-radius: 12px; padding: 16px; overflow-x: auto; min-height: 260px;
+        }
+
+        /* Interactive Simulator + LaTeX Export */
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; }
+        @media (max-width: 1080px) { .bottom-grid { grid-template-columns: 1fr; } }
+        .slider-row { margin-bottom: 11px; }
+        .slider-head { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: var(--text-secondary); }
+        input[type="range"] { width: 100%; accent-color: var(--accent-cyan); }
+        .gate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .gate-box {
+            padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);
+            background: rgba(4, 21, 46, 0.8); font-size: 0.8rem;
+        }
+        .gate-box.on { border-color: var(--accent-green); background: rgba(16, 185, 129, 0.14); }
+        .gate-box.warn { border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.14); }
+        pre.latex-code {
+            background: #020b1a; color: #dbeafe; border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 14px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.74rem; line-height: 1.5; overflow-x: auto; max-height: 410px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-brand">
+            <div class="header-logo"><i class="fa-solid fa-diagram-project"></i></div>
+            <div>
+                <div class="header-title">Agentic AI Formal Model | DeepTrace.io.vn</div>
+                <div class="header-subtitle" id="headerSub">Mô hình hóa Toán học C-Dec-POMDP & LangGraph StateGraph (9 Tác thể Pháp y)</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn btn-outline btn-lang active" id="btnLangVi" onclick="setLang('vi')">🇻🇳 VI</button>
+            <button type="button" class="btn btn-outline btn-lang" id="btnLangEn" onclick="setLang('en')">🌐 EN</button>
+            <button type="button" class="btn btn-primary" onclick="loadLiveModel()"><i class="fa-solid fa-rotate"></i> <span id="lblRefresh">Làm Mới Dữ Liệu Sống</span></button>
+            <a href="/dfagent" class="btn btn-outline"><i class="fa-solid fa-house"></i> /dfagent</a>
+            <a href="/dfagent/orchestrator" class="btn btn-outline"><i class="fa-solid fa-sliders"></i> Orchestrator</a>
+            <a href="/dfagent/benchmark" class="btn btn-outline"><i class="fa-solid fa-chart-line"></i> Benchmark</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Section 1: Formal C-Dec-POMDP Tuple & Live Telemetry KPIs -->
+        <section class="card">
+            <div class="section-title"><i class="fa-solid fa-square-root-variable"></i> <span id="sec1Title">1. Định Nghĩa Hình Thức Hệ Thống Đa Tác Thể (C-Dec-POMDP over StateGraph)</span></div>
+            <div class="math-banner">
+                <div class="math-label">Bộ 9 Thành Phần Hình Thức (Formal 9-Tuple Specification)</div>
+                <div id="katexTuple"></div>
+            </div>
+            <div class="math-banner" style="margin-bottom: 6px;">
+                <div class="math-label">Niêm Phong Mật Mã Chống Chối Bỏ (Crypto-Audit Constraint)</div>
+                <div id="katexCrypto"></div>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi1Lbl">Tổng Chứng Thư Phát Hành</div>
+                    <div class="kpi-val" id="kpiCerts">--</div>
+                    <div class="kpi-sub">SQLite forensic_certificates</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi2Lbl">Pentest Video Ngắn (4 Nền Tảng)</div>
+                    <div class="kpi-val" id="kpiVideoAcc">--</div>
+                    <div class="kpi-sub" id="kpiVideoSub">41 clips / 6 attacks</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi3Lbl">Pentest Audio Đa Kênh</div>
+                    <div class="kpi-val" id="kpiAudioAcc">--</div>
+                    <div class="kpi-sub" id="kpiAudioSub">52 clips / 7 attacks</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi4Lbl">Hàng Đợi Học Chủ Động (Vault)</div>
+                    <div class="kpi-val" id="kpiVault">--</div>
+                    <div class="kpi-sub" id="kpiFeedbackSub">Feedback events: --</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi5Lbl">Ngưỡng Đang Áp Dụng (Tau*)</div>
+                    <div class="kpi-val" id="kpiTau">--</div>
+                    <div class="kpi-sub" id="kpiTauSub">Img/Vid/Aud/VN</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label" id="kpi6Lbl">Chuỗi PPO Meta-Controller</div>
+                    <div class="kpi-val" id="kpiPpo">--</div>
+                    <div class="kpi-sub" id="kpiPpoSub">Last reward: --</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Interactive 3-Tier 9-Agent Topology & Math Inspector -->
+        <section class="card">
+            <div class="section-title"><i class="fa-solid fa-network-wired"></i> <span id="sec2Title">2. Kiến Trúc Phân Tầng 9 Tác Thể & Thanh Tra Chính Sách Toán Học</span></div>
+            <div class="topology-workspace">
+                <div>
+                    <div class="tier-block">
+                        <div class="tier-header">
+                            <span id="tier1Title">Tầng I: Tri giác & Điều phối Trực tuyến (Mode 1 — Online dfagent)</span>
+                            <span>A0, A1</span>
+                        </div>
+                        <div class="tier-grid" id="tierGrid1"></div>
+                    </div>
+                    <div class="tier-block">
+                        <div class="tier-header">
+                            <span id="tier2Title">Tầng II: Hội Đồng Tranh Biện Bất Đối Xứng (Asymmetric Triad Council)</span>
+                            <span>A2_G, A2_M, A2_C</span>
+                        </div>
+                        <div class="tier-grid" id="tierGrid2"></div>
+                    </div>
+                    <div class="tier-block" style="margin-bottom: 0;">
+                        <div class="tier-header">
+                            <span id="tier3Title">Tầng III: Đồ Thị Vòng Đời Tự Trị LangGraph & Học Tăng Cường (Mode 2)</span>
+                            <span>A3, A4, A5, A6</span>
+                        </div>
+                        <div class="tier-grid" id="tierGrid3"></div>
+                    </div>
+                </div>
+
+                <aside class="inspector-panel" id="agentInspectorPanel">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span class="agent-id-pill" id="inspId">A0</span>
+                        <span class="agent-status" id="inspStatus">● ACTIVE</span>
+                    </div>
+                    <h3 id="inspName" style="font-size:1.1rem; font-weight:800; margin-bottom:6px;">Unified Master Orchestrator</h3>
+                    <p id="inspRole" style="font-size:0.84rem; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;"></p>
+
+                    <div class="math-banner" style="padding:12px;">
+                        <div class="math-label">Chính sách Quyết định (Policy / Gate Equation)</div>
+                        <div id="inspPolicyMath"></div>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <div class="math-label" style="margin-bottom:4px;">Không Gian Quan Sát O_i (Observations)</div>
+                        <div class="tag-list" id="inspObs"></div>
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <div class="math-label" style="margin-bottom:4px;">Không Gian Hành Động U_i (Actions)</div>
+                        <div class="tag-list" id="inspAct"></div>
+                    </div>
+                    <div style="margin-bottom:10px; font-size:0.8rem;">
+                        <span class="math-label">Gate Rule: </span>
+                        <span id="inspGate" style="color:var(--text-primary);"></span>
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:10px; margin-top:10px;">
+                        <div><strong>Live Metric:</strong> <span class="mono" id="inspLiveMetric"></span></div>
+                        <div><strong>Source File:</strong> <span class="mono" id="inspSource"></span></div>
+                        <div><strong>API Endpoint:</strong> <span class="mono" id="inspEndpoint"></span></div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- Section 3: Interactive Mermaid Topology & State Machine -->
+        <section class="card">
+            <div class="section-title"><i class="fa-solid fa-sitemap"></i> <span id="sec3Title">3. Sơ Đồ Đồ Thị Luồng Tín Hiệu & Máy Trạng Thái Chuyển Tiếp (Mermaid Live Render)</span></div>
+            <div class="tab-bar">
+                <button type="button" class="tab-btn active" id="tabFlowBtn" onclick="switchDiagram('flow')">Unified 9-Agent Topology (Flowchart TB)</button>
+                <button type="button" class="tab-btn" id="tabStateBtn" onclick="switchDiagram('state')">Formal State Machine (stateDiagram-v2)</button>
+            </div>
+            <div class="mermaid-wrap" id="diagramContainer"></div>
+        </section>
+
+        <!-- Section 4: Interactive Gate & PPO Simulator + Thesis LaTeX Algorithm -->
+        <section class="bottom-grid">
+            <div class="card" style="margin-bottom:0;">
+                <div class="section-title"><i class="fa-solid fa-sliders"></i> <span id="sec4LeftTitle">4A. Trình Mô Phỏng Cổng Chuyển Trạng Thái & Phần Thưởng PPO</span></div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>P_cal(x) — Calibrated Fake Prob</span><span class="mono" id="valPcal">0.52</span></div>
+                    <input type="range" id="slPcal" min="0" max="1" step="0.01" value="0.52" oninput="recomputeSimulator()">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>S_corneal(x) — Corneal Optical Asymmetry</span><span class="mono" id="valCorneal">0.31</span></div>
+                    <input type="range" id="slCorneal" min="0" max="1" step="0.01" value="0.31" oninput="recomputeSimulator()">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>H(P) — Prediction Shannon Entropy</span><span class="mono" id="valEntropy">0.09</span></div>
+                    <input type="range" id="slEntropy" min="0" max="1" step="0.01" value="0.09" oninput="recomputeSimulator()">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>AUC_t — Pentest ROC-AUC</span><span class="mono" id="valAuc">0.99</span></div>
+                    <input type="range" id="slAuc" min="0.50" max="1.00" step="0.01" value="0.99" oninput="recomputeSimulator()">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>ECE_t — Expected Calibration Error</span><span class="mono" id="valEce">0.02</span></div>
+                    <input type="range" id="slEce" min="0.00" max="0.25" step="0.005" value="0.02" oninput="recomputeSimulator()">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-head"><span>FPR_t &amp; EER_t — False Alarm / Equal Error Rate</span><span class="mono" id="valFpr">0.00 / 0.00</span></div>
+                    <input type="range" id="slFpr" min="0.00" max="0.20" step="0.005" value="0.00" oninput="recomputeSimulator()">
+                </div>
+
+                <div class="gate-grid">
+                    <div class="gate-box" id="simGatePi0"></div>
+                    <div class="gate-box" id="simGateExit"></div>
+                    <div class="gate-box" id="simGateG5"></div>
+                    <div class="gate-box" id="simPpoOut"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:0;">
+                <div class="section-title" style="justify-content:space-between;">
+                    <span><i class="fa-solid fa-code"></i> <span id="sec4RightTitle">4B. Mã Giả Thuật Toán Điều Phối LaTeX (Luận Án & IEEE T-IFS)</span></span>
+                    <button type="button" class="btn btn-primary" onclick="copyLatexAlgorithm()"><i class="fa-regular fa-copy"></i> <span id="copyBtnTxt">Copy LaTeX</span></button>
+                </div>
+                <pre class="latex-code" id="latexAlgoBlock">\begin{algorithm}[htbp]
+\caption{Closed-Loop Multi-Agent Forensic Verification and Continual Adaptation ($\mathcal{M}_{\text{Agentic}}$)}
+\label{alg:agentic_forensic_lifecycle}
+\begin{algorithmic}[1]
+\Require Input media $\mathbf{x}$, Active Learning Vault $\mathcal{Q}_{\text{vault}}$, Parameters $\Theta_t$
+\Ensure Auditable Certificate $\mathcal{C}_{\text{Ed25519}}$ and Updated Parameters $\Theta_{t+1}$
+\State $(\text{mod}, \text{has\_human}, c_{\text{cohort}}, \text{exit}_{\text{fast}}) \gets \mathcal{A}_1.\text{RouteContext}(\mathbf{x})$
+\If{$\text{exit}_{\text{fast}} = \text{True}$}
+    \State $R_{\text{comp}} \gets R_{\text{gen}}(\mathbf{x}); \quad \text{Mode} \gets \texttt{FAST\_EARLY\_EXIT}$
+\Else
+    \State $(\mathbf{e}_{\text{6D}}, R_{\text{gen}}, R_{\text{bio}}) \gets \mathcal{A}_1.\text{Extract6DEvidence}(\mathbf{x}, \text{mod})$
+    \State $R_{\text{comp}} \gets \text{LocardDominanceGate}\big((1 - \alpha_{c}) R_{\text{gen}} + \alpha_{c} R_{\text{bio}}, \, \mathbf{e}_{\text{6D}}\big)$
+\EndIf
+\State $P_{\text{cal}} \gets \sigma_{\text{Youden}}(R_{\text{comp}}; T^*, \tau^*); \quad \mathbf{s}_{\text{on}} \gets \text{BuildFactManifest}(\mathbf{x}, \mathbf{e}_{\text{6D}}, R_{\text{comp}}, P_{\text{cal}})$
+\State $\phi_G \gets \mathcal{A}_2^{(G)}.\text{Examine}(\mathbf{s}_{\text{on}}); \quad \phi_M \gets \mathcal{A}_2^{(M)}.\text{CounterInvestigate}(\mathbf{s}_{\text{on}})$
+\State $(V_{\text{council}}, \mathcal{C}_{\text{Ed25519}}) \gets \mathcal{A}_2^{(C)}.\text{CrossExamineAndSeal}(\mathbf{s}_{\text{on}}, \phi_G, \phi_M)$
+\If{$0.35 \le P_{\text{cal}} \le 0.75 \;\lor\; \text{Discrepancy}(\phi_G, \phi_M) \;\lor\; \text{Feedback}(\mathcal{C})$}
+    \State $\mathcal{Q}_{\text{vault}}.\text{Enqueue}(\mathcal{A}_0.\text{ExtractHardFrames}(\mathbf{x}))$
+\EndIf
+\State $\mathcal{D}_{\text{daily}} \gets \mathcal{A}_3.\text{HarvestAndDeduplicate}(d_{\text{Hamming}}(\text{dHash}) > 4)$
+\Repeat
+    \State $\Theta_{\text{cand}} \gets \mathcal{A}_4.\text{FastCoordinateAndSlowLoRAUpdate}(\Theta_t, \mathcal{Q}_{\text{vault}} \cup \mathcal{D}_{\text{replay}})$
+    \State $(\text{AUC}_t, \text{EER}_t, \text{ECE}_t, \text{FPR}_t, \text{Bypass}_t) \gets \mathcal{A}_5.\text{RunMultimodalPentest}(\Theta_{\text{cand}})$
+\Until{$(\text{EER}_t \le 0.05 \land \neg\text{Bypass}_t) \;\lor\; k_{\text{retry}} \ge 2$}
+\State $\mathbf{a}_t^{\text{PPO}} \gets \mathcal{A}_6.\text{PPOPolicyUpdate}(\mathbf{s}_t^{\text{PPO}}, R_t^{\text{PPO}})$
+\If{$\text{CouncilApprove}(\Theta_{\text{cand}}, \mathbf{a}_t^{\text{PPO}}) \ge 2/3 \;\land\; \text{NonRegression}(\Theta_{\text{cand}}, \Theta_t)$}
+    \State $\Theta_{t+1} \gets \text{AtomicCommitAndHotReload}(\Theta_{\text{cand}}, \mathbf{a}_t^{\text{PPO}})$
+\EndIf
+\end{algorithmic}
+\end{algorithm}</pre>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let currentLang = 'vi';
+        let modelData = null;
+        let selectedAgentId = 'A0';
+        let currentDiagramTab = 'flow';
+
+        const FALLBACK_AGENTS = [
+            { id: 'A0', symbol: '\\mathcal{A}_0', tier: 'tier1_online', name_vi: 'Unified Master Orchestrator', name_en: 'Unified Master Orchestrator', role_vi: 'Điều phối trung tâm kết nối Giám định Trực tuyến (Mode 1) & Vòng đời Tự trị (Mode 2).', role_en: 'Master coordinator bridging online forensics (Mode 1) and autonomous lifecycle (Mode 2).', source_file: 'agents/unified_master_orchestrator.py', endpoint: '/dfagent/api/orchestrator/status', policy_latex: '\\pi_0(\\mathbf{x}) = \\mathbb{I}(0.35 \\le P_{\\text{cal}} \\le 0.75)', observations: ['P_cal', 'Vault Queue'], actions: ['Issue Cert', 'Enqueue Hard'], gate_rule: 'Uncertainty Gate', status: 'ACTIVE', live_metric: 'Standby' },
+            { id: 'A1', symbol: '\\mathcal{A}_1', tier: 'tier1_online', name_vi: 'Tri-Stream Context Dispatcher', name_en: 'Tri-Stream Context Dispatcher', role_vi: 'Định tuyến 3 luồng Ảnh / Video SARAAB / Audio Toàn thời lượng.', role_en: 'Routes Image / Video SARAAB / Full-Duration Audio streams.', source_file: 'web_ui/deepfake_detector.py', endpoint: '/predict', policy_latex: 'R_{\\text{comp}} = (1-\\alpha_c)R_{\\text{gen}} + \\alpha_c R_{\\text{bio}}', observations: ['YuNet', 'FFT/DWT'], actions: ['Early-Exit', '6D Matrix'], gate_rule: 'Locard Dominance Gate', status: 'ACTIVE', live_metric: 'tau=0.8118' },
+            { id: 'A2_G', symbol: '\\mathcal{A}_2^{(G)}', tier: 'tier2_triad', name_vi: 'Gemini Lead Examiner', name_en: 'Gemini Lead Examiner', role_vi: 'Công tố Pháp y Đa phương thức trên ForensicFactManifest.', role_en: 'Lead Forensic Examiner running abductive CoT.', source_file: 'agents/triad_council_engine.py', endpoint: '/api/benchmark/debate_calibration', policy_latex: '\\phi_G(\\mathbf{s}_{\\text{on}}) \\mapsto (v_G, c_G)', observations: ['6D Matrix'], actions: ['Vote v_G'], gate_rule: 'Abductive CoT', status: 'ACTIVE', live_metric: 'Active' },
+            { id: 'A2_M', symbol: '\\mathcal{A}_2^{(M)}', tier: 'tier2_triad', name_vi: 'Meta Muse Investigator', name_en: 'Meta Muse Investigator', role_vi: 'Điều tra phản chứng codec & phân loại nguồn mở.', role_en: 'Counter-evidence & open-source threat analyst.', source_file: 'agents/triad_council_engine.py', endpoint: '/api/benchmark/debate_calibration', policy_latex: '\\phi_M(\\mathbf{s}_{\\text{on}}) \\mapsto (v_M, c_M)', observations: ['PRNU', '8kHz Flag'], actions: ['Vote v_M'], gate_rule: 'Anti-FP Codec Filter', status: 'ACTIVE', live_metric: 'Active' },
+            { id: 'A2_C', symbol: '\\mathcal{A}_2^{(C)}', tier: 'tier2_triad', name_vi: 'Claude Chief Inquisitor', name_en: 'Claude Chief Inquisitor', role_vi: 'Thẩm phán thẩm vấn & niêm phong Ed25519 EU AI Act.', role_en: 'Chief Inquisitor & EU AI Act Art. 50 Ed25519 Sealer.', source_file: 'agents/calibration_deliberation_council.py', endpoint: '/api/benchmark/apply_calibrated_weights_council', policy_latex: '\\text{Approve} = \\mathbb{I}(\\frac{1}{3}\\sum v_k \\ge \\frac{2}{3})', observations: ['G/M Transcript', 'ECE'], actions: ['Seal Ed25519'], gate_rule: 'Supermajority >= 2/3', status: 'ACTIVE', live_metric: 'Active' },
+            { id: 'A3', symbol: '\\mathcal{A}_3', tier: 'tier3_lifecycle', name_vi: 'Data Harvester & Hygiene Agent', name_en: 'Data Harvester & Hygiene Agent', role_vi: 'Thu thập & lọc trùng 64-bit dHash (Hamming > 4).', role_en: 'Harvests & deduplicates via 64-bit dHash (Hamming > 4).', source_file: 'agents/data_curation_purge_agent.py', endpoint: '/dfagent/api/orchestrator/trigger', policy_latex: 'd_{\\text{Hamming}}(\\text{dHash}(x), h) > 4', observations: ['dHash Registry'], actions: ['Purge & Sync'], gate_rule: 'Quality Gate g_34', status: 'ACTIVE', live_metric: 'Ready' },
+            { id: 'A4', symbol: '\\mathcal{A}_4', tier: 'tier3_lifecycle', name_vi: 'Two-Speed Continual Trainer', name_en: 'Two-Speed Continual Trainer', role_vi: 'Fast-Loop Coordinate + Slow-Loop LoRA Focal Loss.', role_en: 'Fast-Loop Coordinate Search + Slow-Loop LoRA PEFT.', source_file: 'benchmark/feedback_weight_updater.py', endpoint: '/dfagent/api/feedback', policy_latex: '\\mathcal{L}_{\\text{Focal}} = -\\alpha_t(1-p_t)^{2.25}\\log(p_t)', observations: ['Feedback Events', 'Vault'], actions: ['Coord Update', 'LoRA Merge'], gate_rule: 'Non-Regression Gate', status: 'ACTIVE', live_metric: 'Ready' },
+            { id: 'A5', symbol: '\\mathcal{A}_5', tier: 'tier3_lifecycle', name_vi: 'Red-Team Multimodal Pentester', name_en: 'Red-Team Multimodal Pentester', role_vi: 'Kiểm thử đối kháng Video (41 clips) & Audio (52 clips).', role_en: 'Adversarial pentesting on Video (41 clips) & Audio (52 clips).', source_file: 'benchmark/short_video_pentest.py & audio_pentest.py', endpoint: '/dfagent/api/pentest/audio', policy_latex: 'g_5: \\text{EER}_t \\le 0.05', observations: ['41 Videos', '52 Audios'], actions: ['Self-Heal Loop'], gate_rule: 'EER <= 5%', status: 'ACTIVE', live_metric: 'Ready' },
+            { id: 'A6', symbol: '\\mathcal{A}_6', tier: 'tier3_lifecycle', name_vi: 'PPO Meta-Controller & Reporter', name_en: 'PPO Meta-Controller & Reporter', role_vi: 'Học tăng cường PPO tối ưu (tau*, T*, lambda_bio) & Xuất báo cáo.', role_en: 'PPO Actor-Critic hyperparameter tuning & IEEE reporting.', source_file: 'observability/ppo_meta_controller.py', endpoint: '/dfagent/api/orchestrator/status', policy_latex: 'R_t = \\text{AUC}_t - 2.0\\,\\text{ECE}_t - 1.5\\,\\text{FPR}_t', observations: ['S_t in R^6'], actions: ['Update PPO Policy'], gate_rule: 'Clipped Surrogate', status: 'ACTIVE', live_metric: 'Ready' }
+        ];
+
+        const FLOW_DIAGRAM = `flowchart TB
+    subgraph ONLINE["MODE 1: ONLINE FORENSIC INVESTIGATION & TRIAD COUNCIL"]
+        Input["Input Media x (Image / Video / Audio)"] --> A0["A0: UnifiedMasterOrchestrator"]
+        A0 --> A1["A1: TriStreamDispatcherAgent (Early-Exit / 6D / SARAAB / Audio DSP)"]
+        A1 --> Manifest["ForensicFactManifest (<1,200 tokens)"]
+        Manifest --> A2G["A2_G: Gemini Lead"] & A2M["A2_M: Meta Muse"]
+        A2G & A2M --> A2C["A2_C: Claude Inquisitor & Ed25519 Sealer"]
+        A2C --> Cert["CERT-DT Certificate + Schema.org @graph"]
+        A2C -->|Uncertain or FP/FN| Vault[("Zero-Day Vault & SQLite Memory")]
+    end
+    subgraph OFFLINE["MODE 2: AUTONOMOUS LANGGRAPH STATEGRAPH LIFECYCLE"]
+        A3["A3: DataHarvester & 64-bit dHash Hygiene"] --> G34{"Quality Gate g_34"}
+        G34 -->|Fail retry < 2| A3
+        G34 -->|Pass| A4["A4: Two-Speed Trainer (Coord Search + LoRA PEFT)"]
+        A4 --> A5["A5: RedTeamPentester (Video 41 + Audio 52 + Image)"]
+        A5 --> G5{"Performance Gate g_5: EER <= 0.05?"}
+        G5 -->|Fail: Self-Heal| A4
+        G5 -->|Pass| A6["A6: PPOMetaController & Executive Reporter"]
+    end
+    Vault ==>|Hard Samples + Replay| A4
+    A6 ==>|Hot-Reload Calibration & Weights| A1`;
+
+        const STATE_DIAGRAM = `stateDiagram-v2
+    [*] --> S0_Idle: UnifiedOrchestrator (A0)
+    state OnlineMode {
+        S1_Perception: A1 Modality & Context Gate
+        S1_FastExit: Early-Exit Non-Human (12.8ms)
+        S1_DualStream: Dual-Stream 6D Extraction
+        S2_TriadDebate: Triad Council (G, M, C)
+        S2_CertSeal: Ed25519 Certificate
+        S1_Perception --> S1_FastExit: Non-Human & Clean FFT
+        S1_Perception --> S1_DualStream: Face / Video / Audio
+        S1_FastExit --> S2_TriadDebate
+        S1_DualStream --> S2_TriadDebate
+        S2_TriadDebate --> S2_CertSeal: Supermajority >= 2/3
+    }
+    state BatchMode {
+        S3_Harvest: A3 Crawl & dHash Dedup
+        S4_Train: A4 FastCoord & SlowLoRA
+        S5_Pentest: A5 Video + Audio Pentest
+        S6_PPO: A6 PPO Meta-Controller & Audit
+        S3_Harvest --> S4_Train: Quality Gate Pass
+        S4_Train --> S5_Pentest
+        S5_Pentest --> S4_Train: EER > 0.05 (Self-Heal)
+        S5_Pentest --> S6_PPO: EER <= 0.05
+    }
+    S0_Idle --> OnlineMode: Inspect Media
+    S2_CertSeal --> S4_Train: Hard Sample / User Feedback
+    S0_Idle --> BatchMode: Daily Cron / Manual Trigger
+    S6_PPO --> S0_Idle: Atomic Params & Weights Hot-Reload`;
+
+        function renderKatexSafe(el, tex, displayMode = false) {
+            if (!el) return;
+            if (window.katex && typeof window.katex.render === 'function') {
+                try {
+                    window.katex.render(tex, el, { displayMode: displayMode, throwOnError: false });
+                    return;
+                } catch (e) {}
+            }
+            el.textContent = tex;
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.getElementById('btnLangVi').classList.toggle('active', lang === 'vi');
+            document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+            if (lang === 'en') {
+                document.getElementById('headerSub').textContent = 'Formal C-Dec-POMDP & LangGraph StateGraph Modeling (9 Forensic Agents)';
+                document.getElementById('lblRefresh').textContent = 'Refresh Live Telemetry';
+                document.getElementById('sec1Title').textContent = '1. Formal Multi-Agent System Definition (C-Dec-POMDP over StateGraph)';
+                document.getElementById('sec2Title').textContent = '2. 3-Tier 9-Agent Hierarchy & Mathematical Policy Inspector';
+                document.getElementById('sec3Title').textContent = '3. Unified Signal Flow & State Transition Diagrams (Mermaid Live Render)';
+                document.getElementById('sec4LeftTitle').textContent = '4A. Interactive Gate & PPO Reward Simulator';
+                document.getElementById('sec4RightTitle').textContent = '4B. PhD Thesis & IEEE T-IFS LaTeX Algorithm';
+            } else {
+                document.getElementById('headerSub').textContent = 'Mô hình hóa Toán học C-Dec-POMDP & LangGraph StateGraph (9 Tác thể Pháp y)';
+                document.getElementById('lblRefresh').textContent = 'Làm Mới Dữ Liệu Sống';
+                document.getElementById('sec1Title').textContent = '1. Định Nghĩa Hình Thức Hệ Thống Đa Tác Thể (C-Dec-POMDP over StateGraph)';
+                document.getElementById('sec2Title').textContent = '2. Kiến Trúc Phân Tầng 9 Tác Thể & Thanh Tra Chính Sách Toán Học';
+                document.getElementById('sec3Title').textContent = '3. Sơ Đồ Đồ Thị Luồng Tín Hiệu & Máy Trạng Thái Chuyển Tiếp (Mermaid Live Render)';
+                document.getElementById('sec4LeftTitle').textContent = '4A. Trình Mô Phỏng Cổng Chuyển Trạng Thái & Phần Thưởng PPO';
+                document.getElementById('sec4RightTitle').textContent = '4B. Mã Giả Thuật Toán Điều Phối LaTeX (Luận Án & IEEE T-IFS)';
+            }
+            renderAgentsGrid();
+            selectAgent(selectedAgentId);
+        }
+
+        function renderAgentsGrid() {
+            const agents = (modelData && modelData.agents) ? modelData.agents : FALLBACK_AGENTS;
+            const map = { tier1_online: 'tierGrid1', tier2_triad: 'tierGrid2', tier3_lifecycle: 'tierGrid3' };
+            Object.values(map).forEach(id => { document.getElementById(id).innerHTML = ''; });
+            agents.forEach(ag => {
+                const container = document.getElementById(map[ag.tier]);
+                if (!container) return;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'agent-node' + (ag.id === selectedAgentId ? ' selected' : '');
+                btn.onclick = () => selectAgent(ag.id);
+                const title = currentLang === 'en' ? (ag.name_en || ag.name_vi) : ag.name_vi;
+                btn.innerHTML = `
+                    <div class="agent-top">
+                        <span class="agent-id-pill">${ag.id}</span>
+                        <span class="agent-status">● ${ag.status || 'ACTIVE'}</span>
+                    </div>
+                    <div class="agent-name">${title}</div>
+                    <div class="agent-metric">${ag.live_metric || ''}</div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectAgent(agentId) {
+            selectedAgentId = agentId;
+            const agents = (modelData && modelData.agents) ? modelData.agents : FALLBACK_AGENTS;
+            const ag = agents.find(a => a.id === agentId) || agents[0];
+            renderAgentsGrid();
+            document.getElementById('inspId').textContent = ag.id;
+            document.getElementById('inspStatus').textContent = '● ' + (ag.status || 'ACTIVE');
+            document.getElementById('inspName').textContent = currentLang === 'en' ? ag.name_en : ag.name_vi;
+            document.getElementById('inspRole').textContent = currentLang === 'en' ? ag.role_en : ag.role_vi;
+            renderKatexSafe(document.getElementById('inspPolicyMath'), ag.policy_latex || '', true);
+            document.getElementById('inspObs').innerHTML = (ag.observations || []).map(o => `<span class="tag-chip">${o}</span>`).join('');
+            document.getElementById('inspAct').innerHTML = (ag.actions || []).map(a => `<span class="tag-chip action">${a}</span>`).join('');
+            document.getElementById('inspGate').textContent = ag.gate_rule || '';
+            document.getElementById('inspLiveMetric').textContent = ag.live_metric || 'N/A';
+            document.getElementById('inspSource').textContent = ag.source_file || '';
+            document.getElementById('inspEndpoint').textContent = ag.endpoint || '';
+        }
+
+        async function renderDiagram() {
+            const container = document.getElementById('diagramContainer');
+            const code = currentDiagramTab === 'flow' ? FLOW_DIAGRAM : STATE_DIAGRAM;
+            if (window.mermaid && typeof window.mermaid.render === 'function') {
+                try {
+                    const { svg } = await window.mermaid.render('mermaidSvg_' + Date.now(), code);
+                    container.innerHTML = svg;
+                    return;
+                } catch (e) {}
+            }
+            container.innerHTML = `<pre style="color:#0f172a; font-family:JetBrains Mono,monospace; font-size:0.78rem;">${code}</pre>`;
+        }
+
+        function switchDiagram(tab) {
+            currentDiagramTab = tab;
+            document.getElementById('tabFlowBtn').classList.toggle('active', tab === 'flow');
+            document.getElementById('tabStateBtn').classList.toggle('active', tab === 'state');
+            renderDiagram();
+        }
+
+        function recomputeSimulator() {
+            const pcal = parseFloat(document.getElementById('slPcal').value);
+            const corneal = parseFloat(document.getElementById('slCorneal').value);
+            const entropy = parseFloat(document.getElementById('slEntropy').value);
+            const auc = parseFloat(document.getElementById('slAuc').value);
+            const ece = parseFloat(document.getElementById('slEce').value);
+            const fpr = parseFloat(document.getElementById('slFpr').value);
+            const eer = fpr;
+
+            document.getElementById('valPcal').textContent = pcal.toFixed(2);
+            document.getElementById('valCorneal').textContent = corneal.toFixed(2);
+            document.getElementById('valEntropy').textContent = entropy.toFixed(2);
+            document.getElementById('valAuc').textContent = auc.toFixed(2);
+            document.getElementById('valEce').textContent = ece.toFixed(3);
+            document.getElementById('valFpr').textContent = `${fpr.toFixed(3)} / ${eer.toFixed(3)}`;
+
+            const pi0 = (pcal >= 0.35 && pcal <= 0.75) || (corneal > 0.28 && pcal < 0.8118);
+            const fastExit = (corneal < 0.05 && entropy < 0.12);
+            const selfHeal = (eer > 0.05);
+            const reward = auc - 2.0 * ece - 1.5 * fpr;
+            const loraTrig = (ece > 0.05) || pi0;
+
+            const gPi0 = document.getElementById('simGatePi0');
+            gPi0.className = 'gate-box ' + (pi0 ? 'warn' : 'on');
+            gPi0.innerHTML = `<strong>π₀ Active Vault Gate</strong><br>${pi0 ? '⚠️ ENQUEUE Vault (Uncertain/Conflict)' : '✅ Confident Prediction (No Enqueue)'}`;
+
+            const gEx = document.getElementById('simGateExit');
+            gEx.className = 'gate-box ' + (fastExit ? 'on' : '');
+            gEx.innerHTML = `<strong>Early-Exit Gate</strong><br>${fastExit ? '⚡ FAST_EARLY_EXIT (12.8ms Bypass)' : '🔬 DUAL_STREAM 6D Full Extraction'}`;
+
+            const g5 = document.getElementById('simGateG5');
+            g5.className = 'gate-box ' + (selfHeal ? 'warn' : 'on');
+            g5.innerHTML = `<strong>Performance Gate g₅</strong><br>${selfHeal ? '🔄 EER > 5%: Trigger Self-Heal (A5→A4)' : '✅ EER ≤ 5%: Advance to A6 PPO/Report'}`;
+
+            const gPpo = document.getElementById('simPpoOut');
+            gPpo.className = 'gate-box ' + (reward >= 0.85 ? 'on' : 'warn');
+            gPpo.innerHTML = `<strong>PPO Reward Rₜ &amp; LoRA</strong><br><span class="mono">Rₜ = ${reward.toFixed(4)}</span> | u_LoRA = ${loraTrig ? '1 (Trigger)' : '0'}`;
+        }
+
+        function copyLatexAlgorithm() {
+            const txt = document.getElementById('latexAlgoBlock').textContent;
+            navigator.clipboard.writeText(txt).then(() => {
+                document.getElementById('copyBtnTxt').textContent = 'Copied ✓';
+                setTimeout(() => { document.getElementById('copyBtnTxt').textContent = 'Copy LaTeX'; }, 1800);
+            }).catch(() => {});
+        }
+
+        async function loadLiveModel() {
+            const apiUrl = window.location.pathname.includes('/dfagent')
+                ? '/dfagent/api/agentic/model'
+                : '/api/agentic/model';
+            try {
+                const resp = await fetch(apiUrl);
+                if (resp.ok) {
+                    modelData = await resp.json();
+                    const fm = modelData.formal_model || {};
+                    renderKatexSafe(document.getElementById('katexTuple'), fm.tuple_latex || '', true);
+                    renderKatexSafe(document.getElementById('katexCrypto'), fm.crypto_latex || '', true);
+
+                    const lt = modelData.live_telemetry || {};
+                    const counts = lt.table_counts || {};
+                    const svpOv = (lt.short_video_pentest || {}).overall || {};
+                    const audLat = lt.latest_audio_pentest || {};
+                    const fb = lt.feedback_summary || {};
+                    const ppo = lt.latest_ppo_trajectory || {};
+                    const params = lt.active_params || {};
+
+                    document.getElementById('kpiCerts').textContent = (counts.forensic_certificates ?? '--').toLocaleString();
+                    document.getElementById('kpiVideoAcc').textContent = svpOv.accuracy != null ? `${(svpOv.accuracy * 100).toFixed(1)}%` : '--';
+                    document.getElementById('kpiVideoSub').textContent = `${svpOv.sample_count || 0} clips | FPR=${((svpOv.fpr || 0) * 100).toFixed(1)}% | AUC=${svpOv.roc_auc || '--'}`;
+                    document.getElementById('kpiAudioAcc').textContent = audLat.accuracy != null ? `${(audLat.accuracy * 100).toFixed(1)}%` : '--';
+                    document.getElementById('kpiAudioSub').textContent = `${audLat.sample_count || 0} clips | FPR=${((audLat.fpr || 0) * 100).toFixed(1)}% | AUC=${audLat.roc_auc || '--'}`;
+                    document.getElementById('kpiVault').textContent = fb.vault_pending_count ?? 0;
+                    document.getElementById('kpiFeedbackSub').textContent = `Feedbacks: ${counts.user_feedback_events || 0} | Audits: ${counts.calibration_weight_updates || 0}`;
+                    const tImg = (params.image || {}).optimal_threshold_tau ?? 0.8118;
+                    const tVid = (params.video || {}).tau_video ?? 0.68;
+                    const tAud = (params.audio || {}).tau_audio ?? 0.8118;
+                    const tVn = (params.vn_demographic || {}).optimal_decision_threshold_tau_star ?? 0.37;
+                    document.getElementById('kpiTau').textContent = `${tImg}`;
+                    document.getElementById('kpiTauSub').textContent = `Vid:${tVid} | Aud:${tAud} | VN:${tVn}`;
+                    document.getElementById('kpiPpo').textContent = `${counts.ppo_agent_trajectories || 0} steps`;
+                    document.getElementById('kpiPpoSub').textContent = `Last R=${ppo.reward ?? '--'} | tau=${ppo.optimal_tau ?? '--'}`;
+                }
+            } catch (e) {
+                console.warn('Live model fetch fallback:', e);
+            }
+            renderAgentsGrid();
+            selectAgent(selectedAgentId);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.mermaid) {
+                window.mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+            }
+            renderKatexSafe(
+                document.getElementById('katexTuple'),
+                String.raw`\mathcal{M}_{\text{Agentic}} = \Big\langle \mathcal{A}, \, \mathcal{S}, \, \{\mathcal{O}_i\}_{i \in \mathcal{A}}, \, \{\mathcal{U}_i\}_{i \in \mathcal{A}}, \, \mathcal{T}, \, \{\mathcal{R}_i\}_{i \in \mathcal{A}}, \, \Pi, \, \mathcal{G}_{\text{Graph}}, \, \mathcal{K}_{\text{Crypto}} \Big\rangle`,
+                true
+            );
+            renderKatexSafe(
+                document.getElementById('katexCrypto'),
+                String.raw`\sigma_{\text{cert}} = \text{Sign}_{\text{Ed25519}}\Big(\text{SHA256}\big(\text{ID}_{\text{cert}} \parallel t_{\text{UTC}} \parallel \text{SHA256}(\mathbf{x}_{\text{media}}) \parallel R_{\text{comp}} \parallel \text{Mode}\big)\Big)`,
+                true
+            );
+            renderDiagram();
+            recomputeSimulator();
+            loadLiveModel();
+        });
+    </script>
+</body>
+</html>

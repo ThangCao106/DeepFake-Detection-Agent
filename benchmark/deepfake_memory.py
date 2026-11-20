@@ -140,6 +140,28 @@ def init_db(db_path=None):
     )
     """)
 
+    # Table 8: Multi-Channel Audio Benchmark & Adversarial Pentest Runs
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS audio_pentest_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id TEXT UNIQUE NOT NULL,
+        channel TEXT NOT NULL,
+        attack_vector TEXT DEFAULT 'all',
+        sample_count INTEGER DEFAULT 0,
+        accuracy REAL DEFAULT 0.0,
+        tpr REAL DEFAULT 0.0,
+        fpr REAL DEFAULT 0.0,
+        fnr REAL DEFAULT 0.0,
+        roc_auc REAL DEFAULT 0.0,
+        eer_percent REAL DEFAULT 0.0,
+        ece REAL DEFAULT 0.0,
+        mean_latency_ms REAL DEFAULT 0.0,
+        report_json_path TEXT,
+        report_md_path TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Table 4: Auditable Forensic Certificates
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS forensic_certificates (
@@ -589,6 +611,57 @@ def get_latest_short_video_pentest(limit: int = 20, db_path=None) -> list:
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM short_video_pentest_runs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def save_audio_pentest_run(row_data: dict, db_path=None) -> str:
+    """Save channel/attack metrics from Multi-Channel Audio Adversarial Pentest."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    run_id = row_data.get("run_id") or f"AUDP-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    cursor.execute("""
+    INSERT INTO audio_pentest_runs (
+        run_id, channel, attack_vector, sample_count, accuracy, tpr, fpr, fnr,
+        roc_auc, eer_percent, ece, mean_latency_ms, report_json_path, report_md_path
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(run_id) DO UPDATE SET
+        accuracy = excluded.accuracy,
+        tpr = excluded.tpr,
+        fpr = excluded.fpr,
+        fnr = excluded.fnr,
+        roc_auc = excluded.roc_auc,
+        eer_percent = excluded.eer_percent,
+        ece = excluded.ece
+    """, (
+        run_id,
+        row_data.get("channel", "all"),
+        row_data.get("attack_vector", "all"),
+        int(row_data.get("sample_count", 0)),
+        float(row_data.get("accuracy", 0.0)),
+        float(row_data.get("tpr", 0.0)),
+        float(row_data.get("fpr", 0.0)),
+        float(row_data.get("fnr", 0.0)),
+        float(row_data.get("roc_auc", 0.0)),
+        float(row_data.get("eer_percent", 0.0)),
+        float(row_data.get("ece", 0.0)),
+        float(row_data.get("mean_latency_ms", 0.0)),
+        row_data.get("report_json_path", ""),
+        row_data.get("report_md_path", ""),
+    ))
+    conn.commit()
+    conn.close()
+    return run_id
+
+
+def get_latest_audio_pentest(limit: int = 20, db_path=None) -> list:
+    """Return latest Multi-Channel Audio Pentest runs."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM audio_pentest_runs ORDER BY id DESC LIMIT ?", (limit,))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return rows
