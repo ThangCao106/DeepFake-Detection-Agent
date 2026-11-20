@@ -198,9 +198,8 @@ class TestUIRegressionBugs(unittest.TestCase):
         ):
             self.assertIn(token, agentic_txt, f"Missing '{token}' in agentic_ai_model.html")
 
-        self.assertIn("navAgenticModelLink", self.html_content)
-        self.assertIn("agenticModelPreviewCard", self.html_content)
-        self.assertIn("/dfagent/agentic-ai", self.html_content)
+        # Public web UI must remain clean for end-users, while /dfagent houses the full C-Dec-POMDP modeling
+        self.assertNotIn("agenticModelPreviewCard", self.html_content, "agenticModelPreviewCard should not be shown on public index.html")
 
         orch_txt = orch_html.read_text(encoding="utf-8")
         self.assertIn("linkAgenticModelNav", orch_txt)
@@ -210,7 +209,7 @@ class TestUIRegressionBugs(unittest.TestCase):
         for route_tok in ("/dfagent/agentic-ai", "/dfagent/api/agentic/model", "_collect_agentic_model_payload"):
             self.assertIn(route_tok, app_txt, f"Missing '{route_tok}' in web_ui/app.py")
 
-        # Observability SRE Cockpit integration checks
+        # Observability SRE Cockpit (/dfagent) integration checks
         obs_static = REPO_ROOT / "observability" / "static" / "agentic_ai_model.html"
         obs_dir_idx = REPO_ROOT / "observability" / "static" / "agentic-ai" / "index.html"
         obs_index = REPO_ROOT / "observability" / "static" / "index.html"
@@ -220,6 +219,8 @@ class TestUIRegressionBugs(unittest.TestCase):
         self.assertTrue(obs_dir_idx.exists(), "observability/static/agentic-ai/index.html missing!")
         obs_index_txt = obs_index.read_text(encoding="utf-8")
         self.assertIn("nav-agentic-model", obs_index_txt, "Missing nav-agentic-model in SRE Cockpit sidebar")
+        self.assertIn("tab-agentic-model", obs_index_txt, "Missing tab-agentic-model in SRE Cockpit")
+        self.assertIn("agenticModelPreviewCard", obs_index_txt, "Missing agenticModelPreviewCard in SRE Cockpit /dfagent")
         self.assertIn("/dfagent/agentic-ai", obs_index_txt, "Missing /dfagent/agentic-ai in SRE Cockpit")
 
         obs_main_txt = obs_main.read_text(encoding="utf-8")
