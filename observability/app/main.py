@@ -2347,23 +2347,27 @@ def _collect_agentic_model_payload_observability() -> dict:
     }
 
 
-@app.get("/agentic-ai", response_class=FileResponse)
-@app.get("/agentic-ai/", response_class=FileResponse)
-@app.get("/dfagent/agentic-ai", response_class=FileResponse)
-@app.get("/dfagent/agentic-ai/", response_class=FileResponse)
-async def serve_agentic_ai_ui() -> FileResponse:
+@app.get("/agentic-ai", response_class=HTMLResponse)
+@app.get("/agentic-ai/", response_class=HTMLResponse)
+@app.get("/dfagent/agentic-ai", response_class=HTMLResponse)
+@app.get("/dfagent/agentic-ai/", response_class=HTMLResponse)
+async def serve_agentic_ai_ui() -> Response:
     """Serve the Interactive Agentic AI C-Dec-POMDP & LangGraph StateGraph Modeling UI."""
     target_paths = [
-        Path(__file__).resolve().parent.parent / "static" / "agentic_ai_model.html",
-        Path(__file__).resolve().parent.parent / "static" / "agentic-ai" / "index.html",
         Path("/app/static/agentic_ai_model.html"),
         Path("/app/static/agentic-ai/index.html"),
-        PROJECT_ROOT / "web_ui" / "templates" / "agentic_ai_model.html",
+        Path(__file__).resolve().parent.parent / "static" / "agentic_ai_model.html",
+        Path(__file__).resolve().parent.parent / "static" / "agentic-ai" / "index.html",
+        Path(PROJECT_ROOT) / "web_ui" / "templates" / "agentic_ai_model.html",
     ]
     for p in target_paths:
-        if p.exists():
-            return FileResponse(str(p), media_type="text/html")
-    return FileResponse(str(Path(__file__).resolve().parent.parent / "static" / "index.html"), media_type="text/html")
+        try:
+            if p.exists():
+                return HTMLResponse(content=p.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    fallback_path = Path(__file__).resolve().parent.parent / "static" / "index.html"
+    return HTMLResponse(content=fallback_path.read_text(encoding="utf-8"))
 
 
 @app.get("/api/agentic/model")
