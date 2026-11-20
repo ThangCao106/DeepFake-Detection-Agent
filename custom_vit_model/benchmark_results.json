@@ -1,18 +1,18 @@
 {
   "evaluation_mode": "EMPIRICAL_LIVE_INFERENCE",
-  "loaded_model_id": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\custom_vit_model",
-  "using_custom_weights": true,
+  "loaded_model_id": "dima806/deepfake_vs_real_image_detection",
+  "using_custom_weights": false,
   "total": 20,
-  "correct": 20,
-  "accuracy_percent": 100.0,
-  "tpr_percent": 100.0,
+  "correct": 12,
+  "accuracy_percent": 60.0,
+  "tpr_percent": 20.0,
   "fpr_percent": 0.0,
-  "roc_auc": 1.0,
+  "roc_auc": 0.58,
   "confusion_matrix": {
-    "tp": 10,
+    "tp": 2,
     "tn": 10,
     "fp": 0,
-    "fn": 0
+    "fn": 8
   },
   "literature_reference_matrix": {
     "benchmarks": [
@@ -130,284 +130,284 @@
   },
   "predictions": [
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1500648767.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1500648767.jpg",
       "sha256": "3b09fa90412492be57d8f35e79ce3c9caa5a2e1840c8bd12f2add64306d3533a",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.8575,
-      "composite_risk_score": 0.3096,
+      "confidence": 0.9022,
+      "composite_risk_score": 0.2432,
       "all_scores": {
-        "Deepfake": 0.1425,
-        "Realism": 0.8575
+        "Deepfake": 0.0978,
+        "Realism": 0.9022
       },
       "spectral_anomaly": 0.0872,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1519085360.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1519085360.jpg",
       "sha256": "15c884224dc838a3efa661937afa3fafb686dda16b3eb8a58a32ef0ceb9918da",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9481,
-      "composite_risk_score": 0.1868,
+      "confidence": 0.9224,
+      "composite_risk_score": 0.2167,
       "all_scores": {
-        "Deepfake": 0.0519,
-        "Realism": 0.9481
+        "Deepfake": 0.0776,
+        "Realism": 0.9224
       },
       "spectral_anomaly": 0.0,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1529626455.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1529626455.jpg",
       "sha256": "9182f82d8069f486e2e50e1edede98334bd1ad4a67aa46a4f6c919a001e37c8b",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9736,
-      "composite_risk_score": 0.1332,
+      "confidence": 0.9685,
+      "composite_risk_score": 0.1381,
       "all_scores": {
-        "Deepfake": 0.0264,
-        "Realism": 0.9736
+        "Deepfake": 0.0315,
+        "Realism": 0.9685
       },
       "spectral_anomaly": 0.0873,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1544005313.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1544005313.jpg",
       "sha256": "f85b6046d190cc8642bdce2574dc4f2649b2b40d8916dcc18051f9f84073477c",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9603,
-      "composite_risk_score": 0.1634,
+      "confidence": 0.9424,
+      "composite_risk_score": 0.1866,
       "all_scores": {
-        "Deepfake": 0.0397,
-        "Realism": 0.9603
+        "Deepfake": 0.0576,
+        "Realism": 0.9424
       },
       "spectral_anomaly": 0.3239,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_id_official_1586297135.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1586297135.jpg",
       "sha256": "0b48fe88a458800c054ffff4b6faecbd451db63925442eeb694ec94f578b1aea",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9956,
-      "composite_risk_score": 0.0541,
+      "confidence": 0.9959,
+      "composite_risk_score": 0.0497,
       "all_scores": {
-        "Deepfake": 0.0044,
-        "Realism": 0.9956
+        "Deepfake": 0.0041,
+        "Realism": 0.9959
       },
       "spectral_anomaly": 0.187,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_mature_aging_1506794778.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_mature_aging_1506794778.jpg",
       "sha256": "a29ae06e4b43e971c34fd751511f8159e57f79b9c457dd1a5766fe700e2542b4",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9671,
-      "composite_risk_score": 0.1488,
+      "confidence": 0.9624,
+      "composite_risk_score": 0.1508,
       "all_scores": {
-        "Deepfake": 0.0329,
-        "Realism": 0.9671
+        "Deepfake": 0.0376,
+        "Realism": 0.9624
       },
       "spectral_anomaly": 0.0,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_mature_aging_1508214751.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_mature_aging_1508214751.jpg",
       "sha256": "5c2d26bc5d30b193a88786fb8ed5f8c60423203a7d1a90465b60284d45b6dcc9",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9639,
-      "composite_risk_score": 0.1559,
+      "confidence": 0.9471,
+      "composite_risk_score": 0.1789,
       "all_scores": {
-        "Deepfake": 0.0361,
-        "Realism": 0.9639
+        "Deepfake": 0.0529,
+        "Realism": 0.9471
       },
       "spectral_anomaly": 0.2843,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_mature_aging_1560250097.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_mature_aging_1560250097.jpg",
       "sha256": "96ba6ac53206aeb227c4c179dae273d45f27e1c63a8867287ff7881ee941fac2",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9574,
-      "composite_risk_score": 0.1692,
+      "confidence": 0.9538,
+      "composite_risk_score": 0.1672,
       "all_scores": {
-        "Deepfake": 0.0426,
-        "Realism": 0.9574
+        "Deepfake": 0.0462,
+        "Realism": 0.9538
       },
       "spectral_anomaly": 0.2077,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_mature_aging_1567532939.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_mature_aging_1567532939.jpg",
       "sha256": "f78e857c73ffecacdd0002b558ed4f926cf337e632578faef889ebaaef72d37c",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9517,
-      "composite_risk_score": 0.1802,
+      "confidence": 0.9415,
+      "composite_risk_score": 0.1882,
       "all_scores": {
-        "Deepfake": 0.0483,
-        "Realism": 0.9517
+        "Deepfake": 0.0585,
+        "Realism": 0.9415
       },
       "spectral_anomaly": 0.3132,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\crawler\\verified_threads_seeds\\seed_curated_vn_vn_mature_aging_1573496359.jpg",
+      "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_mature_aging_1573496359.jpg",
       "sha256": "bd49c853c884cde88f4120ad3dea46cae3d94bed455bbaed106c48c342344841",
       "ground_truth": "REAL",
       "predicted": "Realism",
-      "confidence": 0.9796,
-      "composite_risk_score": 0.1171,
+      "confidence": 0.9716,
+      "composite_risk_score": 0.131,
       "all_scores": {
-        "Deepfake": 0.0204,
-        "Realism": 0.9796
+        "Deepfake": 0.0284,
+        "Realism": 0.9716
       },
       "spectral_anomaly": 0.1373,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_0288e1d095.jpg",
-      "sha256": "309b591e33f10242d693b46ccde5b30db7ad525ba52b4338069bbf07872db92e",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_00.jpg",
+      "sha256": "4bc83910c601ba8b59781a23af871df853dd5ce4b42b7723e1c3c8359b5dbff7",
       "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9974,
-      "composite_risk_score": 0.9974,
+      "predicted": "Realism",
+      "confidence": 0.9322,
+      "composite_risk_score": 0.2026,
       "all_scores": {
-        "Deepfake": 0.9974,
-        "Realism": 0.0026
+        "Deepfake": 0.0678,
+        "Realism": 0.9322
       },
-      "spectral_anomaly": 0.3038,
-      "match": true
+      "spectral_anomaly": 0.077,
+      "match": false
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_0a9363a508.jpg",
-      "sha256": "d94889a57c32caa41592124777568b96d7aee0bce0080ccf021a13437d009c3b",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_01.jpg",
+      "sha256": "d4131bac951d89495a5595c83c66f31dbc2488689025eb79b3ea5573d9928d03",
       "ground_truth": "FAKE",
       "predicted": "Deepfake",
-      "confidence": 0.9728,
-      "composite_risk_score": 0.988,
-      "all_scores": {
-        "Deepfake": 0.9728,
-        "Realism": 0.0272
-      },
-      "spectral_anomaly": 0.366,
-      "match": true
-    },
-    {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_0d39b9d90e.jpg",
-      "sha256": "ec1ec3085df1063d2991bbf592027c96b7ae70bd0e874a1247143d583d999c65",
-      "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9901,
-      "composite_risk_score": 0.9902,
-      "all_scores": {
-        "Deepfake": 0.9901,
-        "Realism": 0.0099
-      },
-      "spectral_anomaly": 0.184,
-      "match": true
-    },
-    {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_14381532a1.jpg",
-      "sha256": "e0bc2b66b21a022c576a9525be10123ca96cdb0cb56b551d3d7c43ec7acb15bd",
-      "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9746,
+      "confidence": 0.9763,
       "composite_risk_score": 0.975,
       "all_scores": {
-        "Deepfake": 0.9746,
-        "Realism": 0.0254
+        "Deepfake": 0.9763,
+        "Realism": 0.0237
       },
-      "spectral_anomaly": 0.2013,
+      "spectral_anomaly": 0.0003,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_1959b1e326.jpg",
-      "sha256": "11d1778691c0caf56f865efb86079523b52e2fb099e88d90c652e1769bcdca1a",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_02.jpg",
+      "sha256": "98a21389c05df5c38259a9abc25a9aa31a1d50a6d83f607f643e7e1e14fdc10c",
       "ground_truth": "FAKE",
       "predicted": "Deepfake",
-      "confidence": 0.9765,
-      "composite_risk_score": 0.9769,
-      "all_scores": {
-        "Deepfake": 0.9765,
-        "Realism": 0.0235
-      },
-      "spectral_anomaly": 0.2301,
-      "match": true
-    },
-    {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_26d5d7ceb6.jpg",
-      "sha256": "8729825d546cc42edf0d952816ff64064593cf588685b3bc73f8133cda5eb03e",
-      "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9969,
-      "composite_risk_score": 0.9969,
-      "all_scores": {
-        "Deepfake": 0.9969,
-        "Realism": 0.0031
-      },
-      "spectral_anomaly": 0.2861,
-      "match": true
-    },
-    {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_27b2b187dc.jpg",
-      "sha256": "d18abf007f9495f40e355c3f2355c2b0defb0d694258c5a6c832007ae09f504d",
-      "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9746,
+      "confidence": 0.9763,
       "composite_risk_score": 0.975,
       "all_scores": {
-        "Deepfake": 0.9746,
-        "Realism": 0.0254
+        "Deepfake": 0.9763,
+        "Realism": 0.0237
       },
-      "spectral_anomaly": 0.3919,
+      "spectral_anomaly": 0.0589,
       "match": true
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_317201cad7.jpg",
-      "sha256": "5c8d2d87143fcc7c54155becd4067e44be0ae10274c722a9739911de24305626",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_03.jpg",
+      "sha256": "4afda82b37a6ab587b10e9be5d613563a95d7a5a2c372aa1a0a95dd0b66e34dd",
       "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9746,
-      "composite_risk_score": 0.975,
+      "predicted": "Realism",
+      "confidence": 0.7496,
+      "composite_risk_score": 0.3892,
       "all_scores": {
-        "Deepfake": 0.9746,
-        "Realism": 0.0254
+        "Deepfake": 0.2504,
+        "Realism": 0.7496
       },
-      "spectral_anomaly": 0.2638,
-      "match": true
+      "spectral_anomaly": 0.3551,
+      "match": false
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_4c562cab62.jpg",
-      "sha256": "d97068c494ea22956447be73cc3b2de76c531ab49e952adadb3a60b6a26117e1",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_04.jpg",
+      "sha256": "73a7e21513ec0dd963207ec19979dac50c74ce0687e9601a4411c8df1e6b9cf5",
       "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9728,
-      "composite_risk_score": 0.988,
+      "predicted": "Realism",
+      "confidence": 0.9956,
+      "composite_risk_score": 0.0517,
       "all_scores": {
-        "Deepfake": 0.9728,
-        "Realism": 0.0272
+        "Deepfake": 0.0044,
+        "Realism": 0.9956
       },
-      "spectral_anomaly": 0.5607,
-      "match": true
+      "spectral_anomaly": 0.2204,
+      "match": false
     },
     {
-      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\scratch\\test_full_abc_out\\03_manipulated_openweight\\openweight_threads_20260922_4cbf258aa4.jpg",
-      "sha256": "7d4c6973e7fd00576763e6a2e3df75b7ecf7f190c65ef25fb0a392fa3a796743",
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_05.jpg",
+      "sha256": "a88619783b2ccc5392ce19f1e2de34c67bfdb7577a77f033622550b331410ef9",
       "ground_truth": "FAKE",
-      "predicted": "Deepfake",
-      "confidence": 0.9966,
-      "composite_risk_score": 0.9966,
+      "predicted": "Realism",
+      "confidence": 0.9962,
+      "composite_risk_score": 0.0477,
       "all_scores": {
-        "Deepfake": 0.9966,
-        "Realism": 0.0034
+        "Deepfake": 0.0038,
+        "Realism": 0.9962
       },
-      "spectral_anomaly": 0.26,
-      "match": true
+      "spectral_anomaly": 0.0,
+      "match": false
+    },
+    {
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_06.jpg",
+      "sha256": "0eac829a32789282acbeb1c41fdf85e7e6f18312e61162e6d580da2954e706f4",
+      "ground_truth": "FAKE",
+      "predicted": "Realism",
+      "confidence": 0.9403,
+      "composite_risk_score": 0.19,
+      "all_scores": {
+        "Deepfake": 0.0597,
+        "Realism": 0.9403
+      },
+      "spectral_anomaly": 0.3137,
+      "match": false
+    },
+    {
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_07.jpg",
+      "sha256": "cd798390c18dd6967091df66af15971caacaeb44fac95b2b60ec12738d50c1f0",
+      "ground_truth": "FAKE",
+      "predicted": "Realism",
+      "confidence": 0.9603,
+      "composite_risk_score": 0.155,
+      "all_scores": {
+        "Deepfake": 0.0397,
+        "Realism": 0.9603
+      },
+      "spectral_anomaly": 0.2042,
+      "match": false
+    },
+    {
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_08.jpg",
+      "sha256": "0bd3a804c5c3bf406a14a85e386aec0448dadfb297dca29a64fffc077606f4a9",
+      "ground_truth": "FAKE",
+      "predicted": "Realism",
+      "confidence": 0.9437,
+      "composite_risk_score": 0.1846,
+      "all_scores": {
+        "Deepfake": 0.0563,
+        "Realism": 0.9437
+      },
+      "spectral_anomaly": 0.336,
+      "match": false
+    },
+    {
+      "path": "/tmp/eval_bench_fakes_duqw05or/eval_faceswap_09.jpg",
+      "sha256": "205c4aa30c544f5a6748fc20ea4c48896dccc2c9bac527fad3a9ccfafff5d986",
+      "ground_truth": "FAKE",
+      "predicted": "Realism",
+      "confidence": 0.9776,
+      "composite_risk_score": 0.1165,
+      "all_scores": {
+        "Deepfake": 0.0224,
+        "Realism": 0.9776
+      },
+      "spectral_anomaly": 0.1173,
+      "match": false
     }
   ]
 }
