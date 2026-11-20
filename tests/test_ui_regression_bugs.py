@@ -210,6 +210,22 @@ class TestUIRegressionBugs(unittest.TestCase):
         for route_tok in ("/dfagent/agentic-ai", "/dfagent/api/agentic/model", "_collect_agentic_model_payload"):
             self.assertIn(route_tok, app_txt, f"Missing '{route_tok}' in web_ui/app.py")
 
+        # Observability SRE Cockpit integration checks
+        obs_static = REPO_ROOT / "observability" / "static" / "agentic_ai_model.html"
+        obs_dir_idx = REPO_ROOT / "observability" / "static" / "agentic-ai" / "index.html"
+        obs_index = REPO_ROOT / "observability" / "static" / "index.html"
+        obs_main = REPO_ROOT / "observability" / "app" / "main.py"
+
+        self.assertTrue(obs_static.exists(), "observability/static/agentic_ai_model.html missing!")
+        self.assertTrue(obs_dir_idx.exists(), "observability/static/agentic-ai/index.html missing!")
+        obs_index_txt = obs_index.read_text(encoding="utf-8")
+        self.assertIn("nav-agentic-model", obs_index_txt, "Missing nav-agentic-model in SRE Cockpit sidebar")
+        self.assertIn("/dfagent/agentic-ai", obs_index_txt, "Missing /dfagent/agentic-ai in SRE Cockpit")
+
+        obs_main_txt = obs_main.read_text(encoding="utf-8")
+        for obs_tok in ("/dfagent/agentic-ai", "/agentic-ai", "/api/agentic/model", "/dfagent/api/agentic/model", "serve_agentic_ai_ui"):
+            self.assertIn(obs_tok, obs_main_txt, f"Missing '{obs_tok}' in observability/app/main.py")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
