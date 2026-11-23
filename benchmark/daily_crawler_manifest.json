@@ -1,8 +1,8 @@
 [
   {
-    "sample_id": "seed_real_8cb6508e0d454fb9",
-    "filename": "seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+    "sample_id": "seed_real_0b290c69894c6779",
+    "filename": "seed_wiki_vn_vn_id_official_0b290c6989.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_0b290c6989.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID)",
     "ground_truth": "REAL",
@@ -11,9 +11,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_f85b6046d190cc86",
-    "filename": "seed_curated_vn_vn_id_official_1544005313.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1544005313.jpg",
+    "sample_id": "seed_real_b6721282311e977a",
+    "filename": "seed_wiki_vn_vn_id_official_b672128231.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_b672128231.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID)",
     "ground_truth": "REAL",
@@ -22,9 +22,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_9182f82d8069f486",
-    "filename": "seed_curated_vn_vn_id_official_1529626455.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1529626455.jpg",
+    "sample_id": "seed_real_3bc0f7f5c1e82397",
+    "filename": "seed_wiki_vn_vn_id_official_3bc0f7f5c1.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_3bc0f7f5c1.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID)",
     "ground_truth": "REAL",
@@ -33,9 +33,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_2fec25c53d941854",
-    "filename": "seed_wiki_vn_vn_id_official_2fec25c53d.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_2fec25c53d.jpg",
+    "sample_id": "seed_real_11619f34d76de184",
+    "filename": "seed_wiki_vn_vn_id_official_11619f34d7.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_id_official_11619f34d7.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID)",
     "ground_truth": "REAL",
@@ -44,9 +44,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_1cd97ae4af27f038",
-    "filename": "seed_vn_vault_vn_selfie_lifestyle_1cd97ae4af27.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_vault_vn_selfie_lifestyle_1cd97ae4af27.jpg",
+    "sample_id": "seed_real_7b841ce8ceb107f4",
+    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_7b841ce8ceb1.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_7b841ce8ceb1.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie)",
     "ground_truth": "REAL",
@@ -55,9 +55,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_b5f6e955bf930ab0",
-    "filename": "seed_vn_vault_vn_selfie_lifestyle_b5f6e955bf93.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_vault_vn_selfie_lifestyle_b5f6e955bf93.jpg",
+    "sample_id": "seed_real_c1a0f4acf4e98508",
+    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_c1a0f4acf4e9.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_c1a0f4acf4e9.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie)",
     "ground_truth": "REAL",
@@ -66,9 +66,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_3a6f460f549b5189",
-    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_3a6f460f549b.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_3a6f460f549b.jpg",
+    "sample_id": "seed_real_82de9838349be474",
+    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_82de9838349b.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_82de9838349b.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie)",
     "ground_truth": "REAL",
@@ -77,9 +77,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_0f9405c8e6a274f3",
-    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_0f9405c8e6a2.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_0f9405c8e6a2.jpg",
+    "sample_id": "seed_real_8dc1090086155124",
+    "filename": "seed_vn_real_vn_vn_selfie_lifestyle_8dc109008615.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_vn_real_vn_vn_selfie_lifestyle_8dc109008615.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie)",
     "ground_truth": "REAL",
@@ -88,9 +88,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_1d4dc77024a5283d",
-    "filename": "seed_curated_vn_vn_street_outdoor_1517841905.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_street_outdoor_1517841905.jpg",
+    "sample_id": "seed_real_e0038b6277f0fcc3",
+    "filename": "seed_wiki_vn_vn_street_outdoor_e0038b6277.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_e0038b6277.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor)",
     "ground_truth": "REAL",
@@ -99,9 +99,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_52e3fb860f44f875",
-    "filename": "seed_curated_vn_vn_street_outdoor_1542206395.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_street_outdoor_1542206395.jpg",
+    "sample_id": "seed_real_b50bea87c0875447",
+    "filename": "seed_wiki_vn_vn_street_outdoor_b50bea87c0.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_b50bea87c0.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor)",
     "ground_truth": "REAL",
@@ -110,9 +110,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_a30f99838afbee61",
-    "filename": "seed_wiki_vn_vn_street_outdoor_a30f99838a.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_a30f99838a.jpg",
+    "sample_id": "seed_real_f52bfded7959aa36",
+    "filename": "seed_curated_vn_vn_street_outdoor_1501196354.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_street_outdoor_1501196354.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor)",
     "ground_truth": "REAL",
@@ -121,9 +121,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_ec45d261deb4f17e",
-    "filename": "seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+    "sample_id": "seed_real_315681cc392c4921",
+    "filename": "seed_wiki_vn_vn_street_outdoor_315681cc39.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_street_outdoor_315681cc39.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor)",
     "ground_truth": "REAL",
@@ -132,9 +132,20 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_c612e89f25a7f827",
-    "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_c612e89f25.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_c612e89f25.jpg",
+    "sample_id": "seed_real_62dd4b78e7a317a6",
+    "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_62dd4b78e7.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_62dd4b78e7.jpg",
+    "dataset_source": "Threads_vn_occlusion_glasses_mask",
+    "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face)",
+    "ground_truth": "REAL",
+    "ground_truth_label": 0,
+    "modality": "image",
+    "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
+  },
+  {
+    "sample_id": "seed_real_4d11e69a4ee0b297",
+    "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_4d11e69a4e.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_4d11e69a4e.jpg",
     "dataset_source": "Threads_vn_occlusion_glasses_mask",
     "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face)",
     "ground_truth": "REAL",
@@ -154,20 +165,9 @@
     "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
   },
   {
-    "sample_id": "seed_real_9f0c846bb5ad455d",
-    "filename": "seed_wiki_vn_vn_occlusion_glasses_mask_9f0c846bb5.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_wiki_vn_vn_occlusion_glasses_mask_9f0c846bb5.jpg",
-    "dataset_source": "Threads_vn_occlusion_glasses_mask",
-    "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face)",
-    "ground_truth": "REAL",
-    "ground_truth_label": 0,
-    "modality": "image",
-    "source_origin": "VERIFIED_VIETNAMESE_SEED_POOL"
-  },
-  {
-    "sample_id": "fake_gen_c5a88f47e8342c88",
-    "filename": "fake_faceswap_seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_id_official_8cb6508e0d.jpg",
+    "sample_id": "fake_gen_5ee0743274bd7a09",
+    "filename": "fake_faceswap_seed_wiki_vn_vn_id_official_0b290c6989.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_id_official_0b290c6989.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -176,9 +176,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_51b60ac2d798864e",
-    "filename": "fake_diffusion_seed_curated_vn_vn_id_official_1544005313.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_curated_vn_vn_id_official_1544005313.jpg",
+    "sample_id": "fake_gen_a06f6e5daae6b61c",
+    "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_b672128231.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_id_official_b672128231.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -187,9 +187,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_72dd6234121c2f16",
-    "filename": "fake_faceswap_seed_curated_vn_vn_id_official_1529626455.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_curated_vn_vn_id_official_1529626455.jpg",
+    "sample_id": "fake_gen_e1982febe50fa8db",
+    "filename": "fake_faceswap_seed_wiki_vn_vn_id_official_3bc0f7f5c1.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_id_official_3bc0f7f5c1.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -198,9 +198,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_0dd842662321dfc9",
-    "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_2fec25c53d.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_id_official_2fec25c53d.jpg",
+    "sample_id": "fake_gen_0233e47c2f32709a",
+    "filename": "fake_diffusion_seed_wiki_vn_vn_id_official_11619f34d7.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_id_official_11619f34d7.jpg",
     "dataset_source": "Threads_vn_id_official",
     "cohort_name": "CCCD / Ảnh thẻ công dân (Official ID) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -209,9 +209,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_866bacf32c3b1345",
-    "filename": "fake_faceswap_seed_vn_vault_vn_selfie_lifestyle_1cd97ae4af27.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_vault_vn_selfie_lifestyle_1cd97ae4af27.jpg",
+    "sample_id": "fake_gen_09349c2a5d1f401d",
+    "filename": "fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_7b841ce8ceb1.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_7b841ce8ceb1.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -220,9 +220,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_6c56cdb61060f5a3",
-    "filename": "fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_b5f6e955bf93.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_vault_vn_selfie_lifestyle_b5f6e955bf93.jpg",
+    "sample_id": "fake_gen_c002f02d7dd4d9b7",
+    "filename": "fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_c1a0f4acf4e9.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_c1a0f4acf4e9.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -231,9 +231,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_fe3dee838bc6bcb6",
-    "filename": "fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_3a6f460f549b.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_3a6f460f549b.jpg",
+    "sample_id": "fake_gen_ec075c51120dc3be",
+    "filename": "fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_82de9838349b.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_vn_real_vn_vn_selfie_lifestyle_82de9838349b.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -242,9 +242,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_53b6c82b02d0eaa3",
-    "filename": "fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_0f9405c8e6a2.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_0f9405c8e6a2.jpg",
+    "sample_id": "fake_gen_3a5e0ac0242b24cd",
+    "filename": "fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_8dc109008615.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_vn_real_vn_vn_selfie_lifestyle_8dc109008615.jpg",
     "dataset_source": "Threads_vn_selfie_lifestyle",
     "cohort_name": "Selfie đời sống & Filter làm đẹp (Lifestyle Selfie) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -253,9 +253,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_02fb0b2925dcb8db",
-    "filename": "fake_faceswap_seed_curated_vn_vn_street_outdoor_1517841905.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_curated_vn_vn_street_outdoor_1517841905.jpg",
+    "sample_id": "fake_gen_0020595f86116288",
+    "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_e0038b6277.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_street_outdoor_e0038b6277.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -264,9 +264,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_65b8e9f8ad888844",
-    "filename": "fake_diffusion_seed_curated_vn_vn_street_outdoor_1542206395.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_curated_vn_vn_street_outdoor_1542206395.jpg",
+    "sample_id": "fake_gen_e99f4cc156607168",
+    "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_b50bea87c0.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_street_outdoor_b50bea87c0.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -275,9 +275,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_ffe2badc69ca337c",
-    "filename": "fake_faceswap_seed_wiki_vn_vn_street_outdoor_a30f99838a.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_street_outdoor_a30f99838a.jpg",
+    "sample_id": "fake_gen_21effcf363ff6728",
+    "filename": "fake_faceswap_seed_curated_vn_vn_street_outdoor_1501196354.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_curated_vn_vn_street_outdoor_1501196354.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -286,9 +286,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_56fa5adb2e963bb1",
-    "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_street_outdoor_ec45d261de.jpg",
+    "sample_id": "fake_gen_6ecf9878fec8c2d5",
+    "filename": "fake_diffusion_seed_wiki_vn_vn_street_outdoor_315681cc39.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_street_outdoor_315681cc39.jpg",
     "dataset_source": "Threads_vn_street_outdoor",
     "cohort_name": "Đường phố ngoại cảnh & Chợ đêm (Street & Outdoor) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -297,9 +297,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_bba7440d6e064a13",
-    "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_c612e89f25.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_c612e89f25.jpg",
+    "sample_id": "fake_gen_38dd7f9ab27bb120",
+    "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_62dd4b78e7.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_62dd4b78e7.jpg",
     "dataset_source": "Threads_vn_occlusion_glasses_mask",
     "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",
@@ -308,9 +308,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_FACESWAP"
   },
   {
-    "sample_id": "fake_gen_636a6bb41592a178",
-    "filename": "fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_e638164207.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_e638164207.jpg",
+    "sample_id": "fake_gen_5c4ff0dcc00348f9",
+    "filename": "fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_4d11e69a4e.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_diffusion_seed_wiki_vn_vn_occlusion_glasses_mask_4d11e69a4e.jpg",
     "dataset_source": "Threads_vn_occlusion_glasses_mask",
     "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face) (Adversarial DIFFUSION)",
     "ground_truth": "FAKE",
@@ -319,9 +319,9 @@
     "source_origin": "PAIRED_ADVERSARIAL_DIFFUSION"
   },
   {
-    "sample_id": "fake_gen_7cba01f0c74524b7",
-    "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_9f0c846bb5.jpg",
-    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_9f0c846bb5.jpg",
+    "sample_id": "fake_gen_88da136e4bc2b6d2",
+    "filename": "fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_e638164207.jpg",
+    "path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/daily_benchmark/synthetic_counterfactuals/fake_faceswap_seed_wiki_vn_vn_occlusion_glasses_mask_e638164207.jpg",
     "dataset_source": "Threads_vn_occlusion_glasses_mask",
     "cohort_name": "Che khuất khẩu trang & Kính râm (Occluded Face) (Adversarial FACESWAP)",
     "ground_truth": "FAKE",

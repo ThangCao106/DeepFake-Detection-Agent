@@ -1,40 +1,39 @@
 {
   "population": "Vietnamese In-The-Wild (Threads-DFBench-VN)",
-  "benchmark_date": "2026-11-19",
-  "timestamp_utc": "2026-11-19T10:30:00Z",
+  "benchmark_date": "2026-11-22",
+  "timestamp_utc": "2026-11-22T04:25:47Z",
   "total_samples_evaluated": 30,
-  "optimal_decision_threshold_tau_star": 0.58,
-  "optimal_platt_temperature_T_star": 1.45,
+  "optimal_decision_threshold_tau_star": 0.55,
+  "optimal_platt_temperature_T_star": 0.8,
   "demographic_cohort_weights": {
     "vn_id_official": {
-      "alpha_human": 0.35,
-      "weight_general": 0.65,
-      "description": "Balanced VN Official ID: ViT 65% / Biometrics 35%"
+      "alpha_human": 0.2,
+      "weight_general": 0.8,
+      "description": "Adaptive blending: ViT 80% / Biometrics 20%"
     },
     "vn_selfie_lifestyle": {
-      "alpha_human": 0.35,
-      "weight_general": 0.65,
-      "description": "Balanced VN Selfie & Filter: ViT 65% / Biometrics 35%"
+      "alpha_human": 0.2,
+      "weight_general": 0.8,
+      "description": "Adaptive blending: ViT 80% / Biometrics 20%"
     },
     "vn_street_outdoor": {
-      "alpha_human": 0.25,
-      "weight_general": 0.75,
-      "description": "Balanced VN Outdoor Scene: ViT 75% / Biometrics 25%"
+      "alpha_human": 0.2,
+      "weight_general": 0.8,
+      "description": "Adaptive blending: ViT 80% / Biometrics 20%"
     },
     "vn_occlusion_glasses_mask": {
-      "alpha_human": 0.35,
-      "weight_general": 0.65,
-      "description": "Balanced VN Occluded Face: ViT 65% / Biometrics 35%"
+      "alpha_human": 0.2,
+      "weight_general": 0.8,
+      "description": "Adaptive blending: ViT 80% / Biometrics 20%"
     },
     "Threads_vn_mature_aging": {
-      "alpha_human": 0.4,
-      "weight_general": 0.6,
-      "description": "Natural Aging & Micro-Creases: ViT 60% / Biometrics 40%"
+      "alpha_human": 0.35,
+      "weight_general": 0.65
     },
     "standard_portrait": {
       "alpha_human": 0.6,
       "weight_general": 0.4,
-      "description": "Chan dung studio chuan - Biometrics 60% / ViT 40%"
+      "description": "Chân dung studio chuẩn - Biometrics 60% / ViT 40%"
     }
   },
   "fairness_metrics": {
