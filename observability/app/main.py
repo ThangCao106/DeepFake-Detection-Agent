@@ -83,11 +83,23 @@ def _verify_gate_credentials(username: str, password: str) -> bool:
     return hmac.compare_digest(given_hash, expected_hash)
 
 
-def _resolve_custom_vit_dir_obs() -> Path:
-    for c in (Path("/app/custom_vit_model"), PROJECT_ROOT / "custom_vit_model", Path.cwd() / "custom_vit_model"):
+def _resolve_repo_path_obs(*parts: str) -> Path:
+    """Resolve a repo-relative asset across /app container mount, PROJECT_ROOT, repo root, or cwd."""
+    pr = Path(PROJECT_ROOT)
+    candidates = [
+        Path("/app").joinpath(*parts),
+        pr.joinpath(*parts),
+        pr.parent.joinpath(*parts),
+        Path.cwd().joinpath(*parts),
+    ]
+    for c in candidates:
         if c.exists():
             return c
-    return PROJECT_ROOT / "custom_vit_model"
+    return pr.parent.joinpath(*parts) if pr.parent.joinpath(parts[0]).exists() else pr.joinpath(*parts)
+
+
+def _resolve_custom_vit_dir_obs() -> Path:
+    return _resolve_repo_path_obs("custom_vit_model")
 
 
 def _load_json_obs(path: Path, default: Optional[dict] = None) -> dict:
@@ -1948,7 +1960,7 @@ async def get_calibration_metrics_api() -> dict:
         "optimal_decision_threshold_tau": float(img_cal.get("optimal_threshold_tau", 0.8118)),
         "raw_ece": raw_ece,
         "calibrated_ece": ece_val,
-        "ece_reduction_percent": e_red,
+        "ece_reduction_percent": ece_red,
         "brier_score_raw": float(bench_meta.get("brier_score_raw", 0.0712)),
         "brier_score_calibrated": float(bench_meta.get("brier_score_calibrated", 0.0142)),
         "youden_j_index": float(bench_meta.get("youden_j_index", 0.9960)),
@@ -1968,9 +1980,7 @@ async def get_calibration_metrics_api() -> dict:
 async def get_lora_status_api() -> dict:
     """Return LIVE LoRA adapter configuration and empirical ablation results from benchmark JSON."""
     cdir = _resolve_custom_vit_dir_obs()
-    lora_file = PROJECT_ROOT / "benchmark" / "lora_benchmark_results.json"
-    if not lora_file.exists():
-        lora_file = Path("/app/benchmark/lora_benchmark_results.json")
+    lora_file = _resolve_repo_path_obs("benchmark", "lora_benchmark_results.json")
     lora_data = _load_json_obs(lora_file, {})
     gen_meta = _load_json_obs(cdir / "general_training_meta.json", {})
     aud_meta = _load_json_obs(cdir / "audio_training_meta.json", {})
@@ -2015,16 +2025,16 @@ async def get_reports_detail_api(cadence: str = "daily", target: str = "") -> di
     cal = get_available_calendar()
     if cadence == "weekly":
         if not target:
-            target = cal.get("weekly", [{}])[0].get("week_id", "")
-        return {"status": "SUCCESS", "report": parse_weekly_report_detail(target)}
+            target = (cal.get("weekly") or [{}])[0].get("week_id", "")
+        return {"status": "SUCCESS", "report": parse_weekly_report_detail(target) if target else {}}
     elif cadence == "monthly":
         if not target:
-            target = cal.get("monthly", [{}])[0].get("month_id", "")
-        return {"status": "SUCCESS", "report": parse_monthly_report_detail(target)}
+            target = (cal.get("monthly") or [{}])[0].get("month_id", "")
+        return {"status": "SUCCESS", "report": parse_monthly_report_detail(target) if target else {}}
     else:
         if not target:
-            target = cal.get("daily", [{}])[0].get("date", "")
-        return {"status": "SUCCESS", "report": parse_daily_report_detail(target)}
+            target = (cal.get("daily") or [{}])[0].get("date", "")
+        return {"status": "SUCCESS", "report": parse_daily_report_detail(target) if target else {}}
 
 
 @app.get("/api/reports/digest")
@@ -2038,9 +2048,9 @@ async def get_reports_digest_api() -> dict:
     )
     live = await _build_live_reports_summary()
     cal = get_available_calendar()
-    latest_date = cal.get("daily", [{}])[0].get("date", live["daily"]["date"])
-    latest_week = cal.get("weekly", [{}])[0].get("week_id", "")
-    latest_month = cal.get("monthly", [{}])[0].get("month_id", "")
+    latest_date = (cal.get("daily") or [{}])[0].get("date", live["daily"]["date"])
+    latest_week = (cal.get("weekly") or [{}])[0].get("week_id", "")
+    latest_month = (cal.get("monthly") or [{}])[0].get("month_id", "")
     live["cadences"] = {
         "daily": parse_daily_report_detail(latest_date) if latest_date else {},
         "weekly": parse_weekly_report_detail(latest_week) if latest_week else {},
@@ -2110,7 +2120,7 @@ async def get_agents_lifecycle_api() -> dict:
         except Exception:
             pass
 
-    curation_audit_file = PROJECT_ROOT / "report_colab" / "curation_agent_audit.json"
+    curation_audit_file = _resolve_repo_path_obs("report_colab", "curation_agent_audit.json")
     curation_data = _load_json_obs(curation_audit_file, {"status": "READY", "total_known_dhashes": 0})
     curation_info = {
         "status": f"ACTIVE ({curation_data.get('status', 'READY')})",
@@ -2394,7 +2404,7 @@ def _collect_agentic_model_payload_observability() -> dict:
             pass
 
     short_video_pentest = {"overall": {"accuracy": 1.0, "sample_count": 41, "tpr": 1.0, "fpr": 0.0}}
-    svp_file = PROJECT_ROOT / "report_colab" / "pentest" / "short_video_pentest_latest.json"
+    svp_file = _resolve_repo_path_obs("report_colab", "pentest", "short_video_pentest_latest.json")
     if svp_file.exists():
         try:
             with open(svp_file, "r", encoding="utf-8") as f:

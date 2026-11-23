@@ -256,6 +256,77 @@ class TestUIRegressionBugs(unittest.TestCase):
             "Duplicate @app.get('/api/reports/digest') route detected in observability/app/main.py!",
         )
 
+    def test_12_observability_fastapi_routes_runtime(self):
+        """Boot FastAPI observability app in an isolated subprocess and assert HTTP 200 on core routes."""
+        script = r'''
+import os, sys, types
+from pathlib import Path
+
+try:
+    from fastapi.testclient import TestClient
+except ImportError:
+    print("SKIP_FASTAPI_NOT_INSTALLED")
+    raise SystemExit(0)
+
+if "claude_agent_sdk" not in sys.modules:
+    class _StubMod(types.ModuleType):
+        def __getattr__(self, name):
+            if name == "tool":
+                return lambda *a, **kw: (lambda f: f)
+            return type(name, (), {"__init__": lambda self, *a, **kw: None})
+    sys.modules["claude_agent_sdk"] = _StubMod("claude_agent_sdk")
+    sys.modules["claude_agent_sdk.types"] = _StubMod("claude_agent_sdk.types")
+
+obs_dir = (Path(os.environ["REPO_ROOT"]) / "observability").resolve()
+os.chdir(str(obs_dir))
+sys.path.insert(0, str(obs_dir))
+os.environ["DEEPFAKE_WEB_UI_URL"] = "http://127.0.0.1:59999"
+
+from app.main import app as obs_app
+client = TestClient(obs_app)
+
+for path in (
+    "/",
+    "/agentic-ai",
+    "/dfagent/agentic-ai",
+    "/api/agents/lifecycle",
+    "/api/feedback/review-queue",
+    "/api/calibration/metrics",
+    "/api/lora/status",
+    "/api/reports/digest",
+    "/dfagent/api/benchmark/modality_params",
+    "/dfagent/api/orchestrator/status",
+    "/dfagent/api/agentic/model",
+):
+    r = client.get(path)
+    assert r.status_code == 200, f"{path} returned HTTP {r.status_code}: {r.text[:200]}"
+    if path == "/dfagent/api/benchmark/modality_params":
+        d = r.json()
+        assert d.get("image") and d.get("video") and d.get("audio"), f"Empty modality_params: {d}"
+    elif path == "/api/agents/lifecycle":
+        assert r.json().get("operational_agents_count") == 9
+    elif path == "/dfagent/api/agentic/model":
+        assert r.json().get("formal_model", {}).get("agent_count") == 9
+print("FASTAPI_RUNTIME_OK")
+'''
+        env = dict(os.environ)
+        env["REPO_ROOT"] = str(REPO_ROOT)
+        res = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=30,
+        )
+        if "SKIP_FASTAPI_NOT_INSTALLED" in res.stdout:
+            self.skipTest("fastapi.testclient not installed in current test environment")
+        self.assertEqual(
+            res.returncode,
+            0,
+            f"FastAPI runtime route check failed:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}",
+        )
+        self.assertIn("FASTAPI_RUNTIME_OK", res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
