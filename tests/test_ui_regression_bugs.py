@@ -18,7 +18,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_JS_PATH = REPO_ROOT / "web_ui" / "static" / "js" / "app.js"
-TEMPLATE_HTML_PATH = REPO_ROOT / "web_ui" / "templates" / "index.html"
+TEMPLATE_HTML_PATH = REPO_ROOT / "web_ui" / "templates" / "public_studio.html"
+PUBLIC_BODY_PATH = REPO_ROOT / "web_ui" / "templates" / "partials" / "public_studio_body.html"
+MODALS_FOOTER_PATH = REPO_ROOT / "web_ui" / "templates" / "partials" / "modals_footer.html"
+BENCHMARK_HTML_PATH = REPO_ROOT / "web_ui" / "templates" / "benchmark_hub.html"
+BENCHMARK_BODY_PATH = REPO_ROOT / "web_ui" / "templates" / "partials" / "benchmark_hub_body.html"
 DETECTOR_PY_PATH = REPO_ROOT / "web_ui" / "deepfake_detector.py"
 
 
@@ -29,8 +33,20 @@ class TestUIRegressionBugs(unittest.TestCase):
         assert TEMPLATE_HTML_PATH.exists(), f"File not found: {TEMPLATE_HTML_PATH}"
         with open(STATIC_JS_PATH, "r", encoding="utf-8") as f:
             cls.js_content = f.read()
-        with open(TEMPLATE_HTML_PATH, "r", encoding="utf-8") as f:
-            cls.html_content = f.read()
+        parts = [
+            TEMPLATE_HTML_PATH.read_text(encoding="utf-8"),
+            PUBLIC_BODY_PATH.read_text(encoding="utf-8"),
+            MODALS_FOOTER_PATH.read_text(encoding="utf-8"),
+        ]
+        cls.html_content = "\n".join(parts)
+        cls.public_only_html = parts[0] + "\n" + parts[1]
+        cls.benchmark_html = (
+            BENCHMARK_HTML_PATH.read_text(encoding="utf-8")
+            + "\n"
+            + BENCHMARK_BODY_PATH.read_text(encoding="utf-8")
+            + "\n"
+            + parts[2]
+        )
 
     def test_01_node_syntax_validity(self):
         """Regression test: Check that app.js compiles cleanly without syntax errors in Node.js."""
@@ -199,7 +215,8 @@ class TestUIRegressionBugs(unittest.TestCase):
             self.assertIn(token, agentic_txt, f"Missing '{token}' in agentic_ai_model.html")
 
         # Public web UI must remain clean for end-users, while /dfagent houses the full C-Dec-POMDP modeling
-        self.assertNotIn("agenticModelPreviewCard", self.html_content, "agenticModelPreviewCard should not be shown on public index.html")
+        self.assertNotIn("agenticModelPreviewCard", self.public_only_html, "agenticModelPreviewCard should not be shown on public Studio!")
+        self.assertNotIn("benchmarkCard", self.public_only_html, "benchmarkCard should not be shown on public Studio!")
 
         orch_txt = orch_html.read_text(encoding="utf-8")
         self.assertIn("linkAgenticModelNav", orch_txt)
@@ -218,14 +235,26 @@ class TestUIRegressionBugs(unittest.TestCase):
         self.assertTrue(obs_static.exists(), "observability/static/agentic_ai_model.html missing!")
         self.assertTrue(obs_dir_idx.exists(), "observability/static/agentic-ai/index.html missing!")
         obs_index_txt = obs_index.read_text(encoding="utf-8")
-        self.assertIn("nav-agentic-model", obs_index_txt, "Missing nav-agentic-model in SRE Cockpit sidebar")
-        self.assertIn("tab-agentic-model", obs_index_txt, "Missing tab-agentic-model in SRE Cockpit")
-        self.assertIn("agenticModelPreviewCard", obs_index_txt, "Missing agenticModelPreviewCard in SRE Cockpit /dfagent")
-        self.assertIn("/dfagent/agentic-ai", obs_index_txt, "Missing /dfagent/agentic-ai in SRE Cockpit")
+        for tok in ("nav-agentic-model", "tab-agentic-model", "agenticModelPreviewCard", "/dfagent/agentic-ai", "nav-review-queue", "tab-review-queue"):
+            self.assertIn(tok, obs_index_txt, f"Missing '{tok}' in SRE Cockpit /dfagent/static/index.html")
+        self.assertNotIn("DeepSeek Janus-Pro", obs_index_txt, "Stale DeepSeek Janus-Pro reference remains in SRE Cockpit")
 
         obs_main_txt = obs_main.read_text(encoding="utf-8")
         for obs_tok in ("/dfagent/agentic-ai", "/agentic-ai", "/api/agentic/model", "/dfagent/api/agentic/model", "serve_agentic_ai_ui"):
             self.assertIn(obs_tok, obs_main_txt, f"Missing '{obs_tok}' in observability/app/main.py")
+
+    def test_11_security_hardening_and_route_uniqueness(self):
+        """Verify zero hardcoded plaintext passwords and no duplicate FastAPI report digest routes."""
+        for rel in ("web_ui/app.py", "web_ui/static/js/app.js", "observability/app/main.py"):
+            content = (REPO_ROOT / rel).read_text(encoding="utf-8")
+            self.assertNotIn("Thang@123", content, f"Hardcoded plaintext credential leaked in {rel}!")
+
+        obs_main_txt = (REPO_ROOT / "observability" / "app" / "main.py").read_text(encoding="utf-8")
+        self.assertEqual(
+            obs_main_txt.count('@app.get("/api/reports/digest")'),
+            1,
+            "Duplicate @app.get('/api/reports/digest') route detected in observability/app/main.py!",
+        )
 
 
 if __name__ == "__main__":

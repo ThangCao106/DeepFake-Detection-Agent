@@ -19,14 +19,22 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - OBSERVABILITY_AGENT_URL=http://observability-agent:8787
+      - SHORT_VIDEO_AUTO_JOB_ENABLED=${SHORT_VIDEO_AUTO_JOB_ENABLED:-0}
+      - CUSTOM_VIT_HF_REPO=${CUSTOM_VIT_HF_REPO:-ThangCao/custom-deepfake-vit}
     volumes:
       # Persistent storage for uploaded media (Image, Video, Audio)
       - ./uploads:/app/uploads
       # Persistent storage for benchmark runs, live logs & generated reports
       - ./runs/benchmarks:/app/runs/benchmarks
-      # Live hot-reload/sync for application code without container rebuilds
+      # Live hot-reload/sync for application code, trained checkpoints & calibration weights
       - ./web_ui:/app/web_ui
       - ./benchmark:/app/benchmark
+      - ./agents:/app/agents
+      - ./forensics_kernel:/app/forensics_kernel
+      - ./observability/ppo_meta_controller.py:/app/observability/ppo_meta_controller.py
+      - ./custom_vit_model:/app/custom_vit_model
+      - ./human_vit_model:/app/human_vit_model
+      - ./models:/app/models
       - ./report_colab:/app/report_colab
       # Cache Hugging Face model weights so they are not re-downloaded on container restart
       - hf_model_cache:/root/.cache/huggingface
@@ -36,36 +44,18 @@ services:
       - deepfake-agent-network
 
   # =========================================================
-  # ⚡ 2. DEDICATED BENCHMARK HUB (Subsystem & Live Logs - Port 5010)
+  # ⚡ 2. LIGHTWEIGHT BENCHMARK GATEWAY PROXY (Port 5010 -> Core :5000)
   # =========================================================
   deepfake-benchmark-hub:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: nginx:alpine
     container_name: deepfake_benchmark_hub
     restart: unless-stopped
     ports:
       - "5010:5010"
-    env_file:
-      - .env
-    environment:
-      - PORT=5010
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
-      - OBSERVABILITY_AGENT_URL=http://observability-agent:8787
     volumes:
-      # Persistent storage for uploaded media (Image, Video, Audio)
-      - ./uploads:/app/uploads
-      # Persistent storage for benchmark runs, live logs & generated reports
-      - ./runs/benchmarks:/app/runs/benchmarks
-      # Live hot-reload/sync for application code without container rebuilds
-      - ./web_ui:/app/web_ui
-      - ./benchmark:/app/benchmark
-      - ./report_colab:/app/report_colab
-      # Cache Hugging Face model weights so they are not re-downloaded on container restart
-      - hf_model_cache:/root/.cache/huggingface
+      - ./nginx_benchmark_proxy.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - observability-agent
+      - deepfake-web-ui
     networks:
       - deepfake-agent-network
 
@@ -90,10 +80,13 @@ services:
       - META_MUSE_API_KEY=${META_MUSE_API_KEY:-}
       - MUSE_ENGINE_MODE=${MUSE_ENGINE_MODE:-EMBEDDED_LOCAL}
       - MUSE_MODEL=${MUSE_MODEL:-meta-muse-spark}
+      - DEEPFAKE_WEB_UI_URL=http://deepfake-web-ui:5000
     volumes:
       - claude-home-new:/home/agent
       - ./report_colab:/app/report_colab
       - ./observability/static:/app/static
+      - ./custom_vit_model:/app/custom_vit_model:ro
+      - ./human_vit_model:/app/human_vit_model:ro
     networks:
       - deepfake-agent-network
 

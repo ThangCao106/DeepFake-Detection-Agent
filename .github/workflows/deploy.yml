@@ -65,7 +65,7 @@ jobs:
             echo "🔍 Checking container status and Ports 5000 & 8787..."
             
             # 1. Stop existing containers by name
-            for CONTAINER_NAME in deepfake_detection_web observability_agent; do
+            for CONTAINER_NAME in deepfake_detection_web deepfake_benchmark_hub observability_agent; do
               RUNNING_CID=$(docker ps -q -f name=$CONTAINER_NAME)
               if [ -n "$RUNNING_CID" ]; then
                 echo "🛑 Container '$CONTAINER_NAME' is running ($RUNNING_CID). Stopping container..."
@@ -74,8 +74,8 @@ jobs:
               fi
             done
 
-            # 2. Check if any docker container is binding Port 5000 or 8787
-            for PORT_NUM in 5000 8787; do
+            # 2. Check if any docker container is binding Port 5000, 5010 or 8787
+            for PORT_NUM in 5000 5010 8787; do
               CONTAINER_BY_PORT=$(docker ps -q -f publish=$PORT_NUM)
               if [ -n "$CONTAINER_BY_PORT" ]; then
                 echo "⚠️ Port $PORT_NUM is occupied by container ID(s): $CONTAINER_BY_PORT. Stopping occupied container(s)..."
@@ -116,6 +116,10 @@ jobs:
             OLD_MUSE=""
             OLD_MUSE_MODE=""
             OLD_MUSE_MODEL=""
+            OLD_HF_TOKEN=""
+            OLD_GATE_USER=""
+            OLD_GATE_PASS=""
+            OLD_FLASK_SECRET=""
 
             if [ -f .env ]; then
               OLD_GEMINI=$(grep "^GEMINI_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
@@ -123,6 +127,10 @@ jobs:
               OLD_MUSE=$(grep "^META_MUSE_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
               OLD_MUSE_MODE=$(grep "^MUSE_ENGINE_MODE=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
               OLD_MUSE_MODEL=$(grep "^MUSE_MODEL=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_HF_TOKEN=$(grep "^HF_TOKEN=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_GATE_USER=$(grep "^BENCHMARK_GATE_USER=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_GATE_PASS=$(grep "^BENCHMARK_GATE_PASS=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_FLASK_SECRET=$(grep "^FLASK_SECRET_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
             fi
 
             if [ -z "$OLD_GEMINI" ] && [ -f report_colab/.credentials/.env.backup ]; then
@@ -137,6 +145,7 @@ jobs:
 
             SECRET_GEMINI="${{ secrets.GEMINI_API_KEY }}"
             SECRET_CLAUDE="${{ secrets.CLAUDE_API_KEY }}"
+            SECRET_HF="${{ secrets.HF_TOKEN }}"
 
             FINAL_GEMINI="$OLD_GEMINI"
             if [ -n "$SECRET_GEMINI" ] && [ "$SECRET_GEMINI" != "null" ]; then
@@ -146,6 +155,11 @@ jobs:
             FINAL_CLAUDE="$OLD_CLAUDE"
             if [ -n "$SECRET_CLAUDE" ] && [ "$SECRET_CLAUDE" != "null" ]; then
               FINAL_CLAUDE="$SECRET_CLAUDE"
+            fi
+
+            FINAL_HF="$OLD_HF_TOKEN"
+            if [ -n "$SECRET_HF" ] && [ "$SECRET_HF" != "null" ]; then
+              FINAL_HF="$SECRET_HF"
             fi
 
             FINAL_MUSE_MODE="${OLD_MUSE_MODE:-EMBEDDED_LOCAL}"
@@ -159,6 +173,12 @@ jobs:
             echo "MUSE_ENGINE_MODE=${FINAL_MUSE_MODE}" >> .env
             echo "MUSE_MODEL=${FINAL_MUSE_MODEL}" >> .env
             echo "OBSERVABILITY_AGENT_URL=http://observability-agent:8787" >> .env
+            echo "DEEPFAKE_WEB_UI_URL=http://deepfake-web-ui:5000" >> .env
+            echo "SHORT_VIDEO_AUTO_JOB_ENABLED=0" >> .env
+            if [ -n "$FINAL_HF" ]; then echo "HF_TOKEN=${FINAL_HF}" >> .env; fi
+            if [ -n "$OLD_GATE_USER" ]; then echo "BENCHMARK_GATE_USER=${OLD_GATE_USER}" >> .env; fi
+            if [ -n "$OLD_GATE_PASS" ]; then echo "BENCHMARK_GATE_PASS=${OLD_GATE_PASS}" >> .env; fi
+            if [ -n "$OLD_FLASK_SECRET" ]; then echo "FLASK_SECRET_KEY=${OLD_FLASK_SECRET}" >> .env; fi
 
             # Build Docker Image & Run Container with Docker Compose (Reusing Layer Cache)
             echo "🐳 Building Docker images (reusing layer cache) & launching containers..."
@@ -184,9 +204,19 @@ jobs:
             sleep 10
             if curl -s -f http://localhost:5000/api/status > /dev/null; then
               echo "✅ Web UI Deployment Successful! Service running on http://localhost:5000"
+              curl -s http://localhost:5000/api/benchmark/modality_params | head -c 300 || true
+              echo ""
             else
               echo "⚠️ Warning: Web UI healthcheck endpoint did not respond immediately, checking logs..."
               docker logs deepfake_detection_web --tail 20
+            fi
+
+            if curl -s -f http://localhost:5010/api/benchmark/ping > /dev/null; then
+              echo "✅ Benchmark Gateway Proxy running on http://localhost:5010"
+              curl -s http://localhost:5010/api/benchmark/ping || true
+              echo ""
+            else
+              echo "⚠️ Warning: Benchmark Gateway Proxy on port 5010 did not respond immediately."
             fi
 
             if curl -s -f http://localhost:8787/api/auth/status > /dev/null || curl -s -f -H "Authorization: Bearer observability-agent-key" http://localhost:8787/v1/models > /dev/null || curl -s http://localhost:8787/ > /dev/null; then

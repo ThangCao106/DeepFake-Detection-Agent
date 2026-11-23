@@ -305,7 +305,7 @@ def generate_forensic_answer(question: str, detection_result: dict = None, langu
                 f"- **Mã tranh biện**: `DISPUTE-{token}` liên kết Chứng thư `{cert_id}`\n"
                 f"- **Trạng thái**: Đã nạp vào Sổ cái Kiểm định Pháp y (EU AI Act Art. 50 & ISO/IEC 17025).\n\n"
                 f"**Quy Trình Xử Lý Thẩm Định Độc Lập**:\n"
-                f"1. **Hội đồng Tam Giác Độc Lập (Triad Council)**: Kích hoạt đối chất chéo giữa 3 mô hình nền tảng (Gemini 2.5 Pro kiểm định giả định; Claude 3.5 Sonnet phản biện độc lập; DeepSeek Janus-Pro thẩm tra cấu trúc sinh).\n"
+                f"1. **Hội đồng Tam Giác Độc Lập (Triad Council)**: Kích hoạt đối chất chéo giữa 3 mô hình nền tảng (Gemini 3.8 Flash kiểm định giả định; Meta Muse Spark thẩm tra cấu trúc sinh; Claude Sonnet 5.5 phản biện độc lập).\n"
                 f"2. **Thẩm định Nhiễu Nén & Cảm biến**: Tách lớp PRNU vật lý để kiểm tra xem có hiện tượng nén suy giảm tín hiệu (Lossy Compression Attenuation) do mạng xã hội làm mờ dấu vết hay không.\n"
                 f"3. **Thử nghiệm Độ nhạy Ngưỡng Youden (\\tau^*)**: Bạn có thể trực tiếp kéo thanh trượt **Ngưỡng Quyết Định Youden** trên bảng điều khiển: với mức dung sai chặt chẽ (\\tau^* = 0.95), mẫu này sẽ yêu cầu bằng chứng giả mạo mạnh hơn mới kết luận Deepfake.\n\n"
                 f"📌 *Hồ sơ tranh biện đã được lưu trữ và sẵn sàng trích xuất báo cáo JSON-LD / Word phục vụ giám định tư pháp.*"

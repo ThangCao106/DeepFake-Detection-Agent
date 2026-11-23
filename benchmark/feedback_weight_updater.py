@@ -950,6 +950,8 @@ class FeedbackWeightUpdater:
         trigger_lora_update: bool = False,
         detector=None,
         db_path: Optional[str] = None,
+        source_type: str = "HUMAN_REVIEW",
+        review_status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         End-to-end entry point for user/pentest reflection:
@@ -1008,6 +1010,8 @@ class FeedbackWeightUpdater:
             feedback_type=fb_type,
         )
 
+        norm_source = str(source_type or "HUMAN_REVIEW").upper()
+        norm_review = str(review_status or ("AUTO_LOGGED" if norm_source == "AUTO_PENTEST" else "PENDING")).upper()
         event_payload = {
             "feedback_id": feedback_id,
             "certificate_id": certificate_id,
@@ -1024,6 +1028,8 @@ class FeedbackWeightUpdater:
             "vault_sample_ids": vault_ids,
             "calibration_applied": False,
             "lora_trained": False,
+            "source_type": norm_source,
+            "review_status": norm_review,
         }
         save_user_feedback(event_payload, db_path=db_path)
 

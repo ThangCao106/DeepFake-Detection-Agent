@@ -2276,88 +2276,18 @@ class DeepfakeDetector:
 
     def reload_calibration_params(self):
         """
-        Hot-reload calibration_params.json, vietnamese_demographic_params.json,
-        and video_calibration_params.json without restarting the detector.
+        Hot-reloads calibration_params.json, vietnamese_demographic_params.json,
+        video_calibration_params.json, and audio_calibration_params.json via calibration_store.
         """
-        import json
-        custom_dir = getattr(self, "custom_dir", None)
-        if not custom_dir:
-            root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
-            local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
-            custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
-            self.custom_dir = custom_dir
+        from forensics_kernel.calibration_store import load_all_modality_params, resolve_custom_vit_dir
+        custom_dir = str(resolve_custom_vit_dir(getattr(self, "custom_dir", None)))
+        self.custom_dir = custom_dir
 
-        calib_file = os.path.join(custom_dir, "calibration_params.json")
-        if os.path.exists(calib_file):
-            try:
-                with open(calib_file, "r", encoding="utf-8") as f:
-                    self.calibration_params = json.load(f)
-                print(f"[info] Calibration parameters loaded: T={self.calibration_params.get('temperature_scaling_T')}, tau={self.calibration_params.get('optimal_threshold_tau')}")
-            except Exception as e:
-                print(f"[warning] Could not parse calibration_params.json: {e}")
-
-        vn_param_file = os.path.join(custom_dir, "vietnamese_demographic_params.json")
-        if os.path.exists(vn_param_file):
-            try:
-                with open(vn_param_file, "r", encoding="utf-8") as f:
-                    self.vn_demographic_params = json.load(f)
-                print(f"[info] Vietnamese Demographic Parameters loaded: tau*={self.vn_demographic_params.get('optimal_decision_threshold_tau_star')}")
-            except Exception:
-                pass
-
-        default_video_params = {
-            "w_peak": 0.50,
-            "w_avg": 0.35,
-            "w_jitter": 0.15,
-            "weight_general_video": 0.40,
-            "weight_human_video": 0.60,
-            "tau_video": float(self.calibration_params.get("optimal_threshold_tau", 0.8118)) if self.calibration_params else 0.8118,
-            "temperature_T": float(self.calibration_params.get("temperature_scaling_T", 1.6178)) if self.calibration_params else 1.6178,
-            "min_corroborated_ratio": 0.30,
-            "multi_frame_max_prob_gate": 0.85,
-            "deepfake_frame_ratio_gate": 0.45,
-            "ai_art_avg_comp_gate": 0.45,
-        }
-        vid_param_file = os.path.join(custom_dir, "video_calibration_params.json")
-        if os.path.exists(vid_param_file):
-            try:
-                with open(vid_param_file, "r", encoding="utf-8") as f:
-                    loaded_vp = json.load(f)
-                default_video_params.update(loaded_vp)
-                print(
-                    f"[info] Video Calibration Parameters loaded: "
-                    f"w=({default_video_params['w_peak']}, {default_video_params['w_avg']}, {default_video_params['w_jitter']}), "
-                    f"fusion=({default_video_params['weight_general_video']}/{default_video_params['weight_human_video']}), "
-                    f"tau_video={default_video_params['tau_video']}"
-                )
-            except Exception as e:
-                print(f"[warning] Could not parse video_calibration_params.json: {e}")
-        self.video_calibration_params = default_video_params
-
-        default_audio_params = {
-            "w_vocoder": 0.45,
-            "w_pitch": 0.35,
-            "w_phase": 0.20,
-            "tau_audio": 0.8118,
-            "temperature_T": 1.6178,
-            "vocoder_gate": 0.72,
-            "pitch_gate": 0.55,
-            "calibration_status": "DEFAULT_AUDIO",
-        }
-        aud_param_file = os.path.join(custom_dir, "audio_calibration_params.json")
-        if os.path.exists(aud_param_file):
-            try:
-                with open(aud_param_file, "r", encoding="utf-8") as f:
-                    loaded_ap = json.load(f)
-                default_audio_params.update(loaded_ap)
-                print(
-                    f"[info] Audio Calibration Parameters loaded: "
-                    f"w=({default_audio_params['w_vocoder']}, {default_audio_params['w_pitch']}, {default_audio_params['w_phase']}), "
-                    f"tau_audio={default_audio_params['tau_audio']}, T={default_audio_params['temperature_T']}"
-                )
-            except Exception as e:
-                print(f"[warning] Could not parse audio_calibration_params.json: {e}")
-        self.audio_calibration_params = default_audio_params
+        loaded = load_all_modality_params(custom_dir)
+        self.calibration_params = loaded["image"] or None
+        self.vn_demographic_params = loaded["vn_demographic"] or None
+        self.video_calibration_params = loaded["video"]
+        self.audio_calibration_params = loaded["audio"]
         return self.video_calibration_params
 
 

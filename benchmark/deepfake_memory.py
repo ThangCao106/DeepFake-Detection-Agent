@@ -177,6 +177,28 @@ def init_db(db_path=None):
     )
     """)
 
+    # Idempotent schema migrations for feedback triage (HUMAN_REVIEW vs AUTO_PENTEST)
+    for col_sql in (
+        "ALTER TABLE user_feedback_events ADD COLUMN source_type TEXT DEFAULT 'HUMAN_REVIEW'",
+        "ALTER TABLE user_feedback_events ADD COLUMN review_status TEXT DEFAULT 'PENDING'",
+        "ALTER TABLE user_feedback_events ADD COLUMN reviewer_note TEXT DEFAULT ''",
+    ):
+        try:
+            cursor.execute(col_sql)
+        except sqlite3.OperationalError:
+            pass
+
+    # Backfill existing automated pentest rows cleanly
+    try:
+        cursor.execute("""
+            UPDATE user_feedback_events
+            SET source_type = 'AUTO_PENTEST'
+            WHERE (source_type IS NULL OR source_type = 'HUMAN_REVIEW')
+              AND (user_note LIKE 'Automated%pentest%' OR file_path LIKE '%pentest%')
+        """)
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -308,21 +330,27 @@ def get_weight_updates_summary(db_path=None) -> list:
 
 def save_forensic_certificate(cert_data: dict, db_path=None) -> str:
     """Save or update an auditable forensic certificate into SQLite memory."""
+    cert_id = cert_data.get("certificate_id", f"CERT-DT-{datetime.now().strftime('%Y%m%d%H%M%S')}")
+    if os.environ.get("DEEPFAKE_SKIP_CERT_DB_PERSIST") == "1" or cert_data.get("_ephemeral_pentest"):
+        return cert_id
+
     init_db(db_path)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
 
-    cert_id = cert_data.get("certificate_id", f"CERT-DT-{datetime.now().strftime('%Y%m%d%H%M%S')}")
     verdict = cert_data.get("auditable_verdict", "UNKNOWN")
     risk_score = float(cert_data.get("composite_risk_score", 0.0))
-    
+
     proof = cert_data.get("proof", {})
     media_hash = cert_data.get("media_integrity", {}).get("sha256") or proof.get("media_sha256", "")
-    
-    img_meta_str = json.dumps(cert_data.get("image_metadata") or cert_data.get("video_metadata") or {}, ensure_ascii=False)
-    evidence_str = json.dumps(cert_data.get("multi_dimensional_evidence", {}), ensure_ascii=False)
-    proof_str = json.dumps(proof, ensure_ascii=False)
-    full_cert_str = json.dumps(cert_data, ensure_ascii=False)
+
+    img_meta_str = json.dumps(cert_data.get("image_metadata") or cert_data.get("video_metadata") or {}, ensure_ascii=False, separators=(",", ":"))
+    evidence_str = json.dumps(cert_data.get("multi_dimensional_evidence", {}), ensure_ascii=False, separators=(",", ":"))
+    proof_str = json.dumps(proof, ensure_ascii=False, separators=(",", ":"))
+
+    # Avoid duplicating large nested evidence payloads inside full_certificate_json when stored cleanly in columns
+    compact_cert = {k: v for k, v in cert_data.items() if k != "_ephemeral_pentest"}
+    full_cert_str = json.dumps(compact_cert, ensure_ascii=False, separators=(",", ":"))
 
     cursor.execute("""
     INSERT INTO forensic_certificates (
@@ -347,6 +375,28 @@ def save_forensic_certificate(cert_data: dict, db_path=None) -> str:
     conn.close()
     print(f"[deepfake_memory] Successfully saved forensic certificate '{cert_id}'.")
     return cert_id
+
+
+def prune_automated_pentest_certificates(db_path=None) -> int:
+    """Remove ephemeral pentest-generated certificates from SQLite and VACUUM to reclaim space."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM forensic_certificates
+        WHERE image_metadata_json LIKE '%short_vid_pentest_%'
+           OR image_metadata_json LIKE '%audio_pentest_%'
+           OR image_metadata_json LIKE '%pentest_img_fake_%'
+           OR full_certificate_json LIKE '%short_vid_pentest_%'
+           OR full_certificate_json LIKE '%audio_pentest_%'
+           OR full_certificate_json LIKE '%pentest_img_fake_%'
+    """)
+    deleted = cursor.rowcount
+    conn.commit()
+    if deleted > 0:
+        cursor.execute("VACUUM")
+    conn.close()
+    return int(deleted)
 
 
 def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
@@ -402,16 +452,26 @@ def get_forensic_certificate(cert_id: str, db_path=None) -> dict:
     }
 
 
-def get_recent_forensic_certificates(limit: int = 15, db_path=None) -> list:
+def get_recent_forensic_certificates(limit: int = 15, exclude_pentest: bool = True, db_path=None) -> list:
     """Fetch the most recent forensic certificates from SQLite for real-time streaming vault."""
     init_db(db_path)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
-    cursor.execute("""
-    SELECT * FROM forensic_certificates 
-    ORDER BY created_at DESC 
-    LIMIT ?
-    """, (limit,))
+    if exclude_pentest:
+        cursor.execute("""
+        SELECT * FROM forensic_certificates
+        WHERE image_metadata_json NOT LIKE '%short_vid_pentest_%'
+          AND image_metadata_json NOT LIKE '%audio_pentest_%'
+          AND image_metadata_json NOT LIKE '%pentest_img_fake_%'
+        ORDER BY created_at DESC
+        LIMIT ?
+        """, (limit,))
+    else:
+        cursor.execute("""
+        SELECT * FROM forensic_certificates
+        ORDER BY created_at DESC
+        LIMIT ?
+        """, (limit,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -494,7 +554,7 @@ def get_all_certificates(limit: int = 1000, db_path=None) -> list:
 
 
 def save_user_feedback(event: dict, db_path=None) -> str:
-    """Persist user/pentest misclassification feedback for active weight updating."""
+    """Persist user/pentest misclassification feedback for active weight updating & human review queue."""
     init_db(db_path)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
@@ -502,19 +562,28 @@ def save_user_feedback(event: dict, db_path=None) -> str:
     feedback_id = event.get("feedback_id") or f"FB-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
     telemetry_str = json.dumps(event.get("feature_telemetry") or {}, ensure_ascii=False)
     vault_ids_str = json.dumps(event.get("vault_sample_ids") or [], ensure_ascii=False)
+    note_val = str(event.get("user_note") or "")
+    fp_val = str(event.get("file_path") or "")
+    inferred_src = "AUTO_PENTEST" if ("automated" in note_val.lower() and "pentest" in note_val.lower()) or "pentest_" in fp_val else "HUMAN_REVIEW"
+    source_type = str(event.get("source_type") or inferred_src).upper()
+    review_status = str(event.get("review_status") or ("AUTO_LOGGED" if source_type == "AUTO_PENTEST" else "PENDING")).upper()
+    reviewer_note = str(event.get("reviewer_note") or "")
 
     cursor.execute("""
     INSERT INTO user_feedback_events (
         feedback_id, certificate_id, platform, media_type, file_path, source_url,
         predicted_label, true_label, feedback_type, composite_risk_score,
         feature_telemetry_json, user_note, vault_sample_ids_json,
-        calibration_applied, lora_trained
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        calibration_applied, lora_trained, source_type, review_status, reviewer_note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(feedback_id) DO UPDATE SET
         calibration_applied = excluded.calibration_applied,
         lora_trained = excluded.lora_trained,
         vault_sample_ids_json = excluded.vault_sample_ids_json,
-        feature_telemetry_json = excluded.feature_telemetry_json
+        feature_telemetry_json = excluded.feature_telemetry_json,
+        source_type = excluded.source_type,
+        review_status = excluded.review_status,
+        reviewer_note = excluded.reviewer_note
     """, (
         feedback_id,
         event.get("certificate_id"),
@@ -527,28 +596,44 @@ def save_user_feedback(event: dict, db_path=None) -> str:
         event.get("feedback_type", "CORRECTION"),
         float(event.get("composite_risk_score", 0.0)),
         telemetry_str,
-        event.get("user_note", ""),
+        note_val,
         vault_ids_str,
         1 if event.get("calibration_applied") else 0,
         1 if event.get("lora_trained") else 0,
+        source_type,
+        review_status,
+        reviewer_note,
     ))
     conn.commit()
     conn.close()
     return feedback_id
 
 
-def get_recent_feedback(limit: int = 100, media_type: str = None, db_path=None) -> list:
-    """Fetch recent feedback reflection events from SQLite."""
+def get_recent_feedback(
+    limit: int = 100,
+    media_type: str = None,
+    source_type: str = None,
+    review_status: str = None,
+    db_path=None,
+) -> list:
+    """Fetch recent feedback reflection events from SQLite with optional source/status filters."""
     init_db(db_path)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
+    clauses, params = [], []
     if media_type:
-        cursor.execute(
-            "SELECT * FROM user_feedback_events WHERE media_type = ? ORDER BY id DESC LIMIT ?",
-            (media_type, limit),
-        )
-    else:
-        cursor.execute("SELECT * FROM user_feedback_events ORDER BY id DESC LIMIT ?", (limit,))
+        clauses.append("media_type = ?")
+        params.append(media_type)
+    if source_type:
+        clauses.append("COALESCE(source_type, 'HUMAN_REVIEW') = ?")
+        params.append(source_type.upper())
+    if review_status:
+        clauses.append("COALESCE(review_status, 'PENDING') = ?")
+        params.append(review_status.upper())
+
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    params.append(limit)
+    cursor.execute(f"SELECT * FROM user_feedback_events {where_sql} ORDER BY id DESC LIMIT ?", tuple(params))
     rows = cursor.fetchall()
     conn.close()
     items = []
@@ -561,6 +646,80 @@ def get_recent_feedback(limit: int = 100, media_type: str = None, db_path=None) 
                 d[out_col] = {} if out_col == "feature_telemetry" else []
         items.append(d)
     return items
+
+
+def update_feedback_review_status(
+    feedback_id: str,
+    review_status: str,
+    reviewer_note: str = "",
+    true_label: str = None,
+    db_path=None,
+) -> bool:
+    """Update human reviewer disposition on a feedback queue item."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    if true_label:
+        cursor.execute(
+            """
+            UPDATE user_feedback_events
+            SET review_status = ?, reviewer_note = ?, true_label = ?
+            WHERE feedback_id = ?
+            """,
+            (review_status.upper(), reviewer_note, true_label, feedback_id),
+        )
+    else:
+        cursor.execute(
+            """
+            UPDATE user_feedback_events
+            SET review_status = ?, reviewer_note = ?
+            WHERE feedback_id = ?
+            """,
+            (review_status.upper(), reviewer_note, feedback_id),
+        )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def get_human_review_stats(db_path=None) -> dict:
+    """Aggregate counts separating authentic Human Review queue items from Automated Pentest logs."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    stats = {
+        "human_pending": 0,
+        "human_approved": 0,
+        "human_dismissed": 0,
+        "human_total": 0,
+        "auto_pentest_total": 0,
+    }
+    try:
+        rows = cursor.execute("""
+            SELECT COALESCE(source_type, 'HUMAN_REVIEW') AS src,
+                   COALESCE(review_status, 'PENDING') AS st,
+                   COUNT(*) AS cnt
+            FROM user_feedback_events
+            GROUP BY src, st
+        """).fetchall()
+        for r in rows:
+            src = str(r["src"]).upper()
+            st = str(r["st"]).upper()
+            cnt = int(r["cnt"])
+            if src == "AUTO_PENTEST":
+                stats["auto_pentest_total"] += cnt
+            else:
+                stats["human_total"] += cnt
+                if st == "PENDING":
+                    stats["human_pending"] += cnt
+                elif "APPROV" in st:
+                    stats["human_approved"] += cnt
+                elif st == "DISMISSED":
+                    stats["human_dismissed"] += cnt
+    finally:
+        conn.close()
+    return stats
 
 
 def save_short_video_pentest_run(row_data: dict, db_path=None) -> str:

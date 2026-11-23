@@ -149,11 +149,17 @@ class TestCalibrationDeliberationCouncil(unittest.TestCase):
         self.assertIn("Claude", report_text)
 
     def test_06_ui_template_and_js_wiring(self):
-        """Test that index.html and app.js correctly wire the Council Deliberation features."""
-        index_html_path = PROJECT_ROOT / "web_ui" / "templates" / "index.html"
+        """Test that modular Benchmark Hub templates and app.js correctly wire the Council Deliberation features."""
+        hub_html_path = PROJECT_ROOT / "web_ui" / "templates" / "benchmark_hub.html"
+        hub_body_path = PROJECT_ROOT / "web_ui" / "templates" / "partials" / "benchmark_hub_body.html"
+        modals_path = PROJECT_ROOT / "web_ui" / "templates" / "partials" / "modals_footer.html"
         app_js_path = PROJECT_ROOT / "web_ui" / "static" / "js" / "app.js"
-        
-        index_text = index_html_path.read_text(encoding="utf-8")
+
+        index_text = "\n".join([
+            hub_html_path.read_text(encoding="utf-8"),
+            hub_body_path.read_text(encoding="utf-8"),
+            modals_path.read_text(encoding="utf-8"),
+        ])
         app_js_text = app_js_path.read_text(encoding="utf-8")
 
         # HTML checks

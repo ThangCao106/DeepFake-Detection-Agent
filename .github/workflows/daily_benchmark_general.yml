@@ -2,7 +2,7 @@ name: Daily Benchmark Job - General Deepfake Model (24h)
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Daily at 00:00 UTC
+    - cron: '30 0 * * *' # Daily at 00:30 UTC (staggered from daily_benchmark.yml)
   workflow_dispatch:
 
 permissions:

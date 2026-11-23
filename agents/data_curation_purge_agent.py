@@ -25,8 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from crawler.dedup_engine import PerceptualDeduplicationRegistry
-from scripts.purge_synthetic_video_and_audio_gdrive import purge_synthetic_media
-from scripts.purge_synthetic_audio_and_drive_artifacts import purge_synthetic_and_corrupt_artifacts
+from scripts.data_hygiene_cli import purge_synthetic_media, purge_synthetic_and_corrupt_artifacts
 
 DB_PATH = PROJECT_ROOT / "report_colab" / "deepfake_database.sqlite"
 AUDIT_JSON_PATH = PROJECT_ROOT / "report_colab" / "curation_agent_audit.json"

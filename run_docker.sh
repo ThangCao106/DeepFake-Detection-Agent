@@ -1,44 +1,25 @@
 #!/usr/bin/env bash
 # ========================================================
-# 🚀 Build and Run 2 Separate Docker Containers (Ports 5000 & 5010)
+# 🚀 Build and Run Deepfake Multi-Zone Services via Docker Compose
+#   - Port 5000: Public Forensic Studio (/)
+#   - Port 5010: Benchmark Hub Nginx Proxy (/benchmark/)
+#   - Port 8787: Forensic SRE Cockpit (/dfagent/)
 # ========================================================
-set -e
+set -euo pipefail
 
 echo "========================================================"
-echo "🚀 Building and Running Deepfake Services on Ports 5000 & 5010"
+echo "🚀 Starting Deepfake Multi-Zone Architecture (Ports 5000, 5010, 8787)"
 echo "========================================================"
 
-# Stop old containers if exist
-docker rm -f deepfake_detection_web deepfake_benchmark_hub 2>/dev/null || true
+# Stop legacy duplicate containers if present
+docker rm -f deepfake_detection_web deepfake_benchmark_hub deepfake_observability_agent 2>/dev/null || true
 
-# 1. Build and Run Public Forensic Web UI (Port 5000 Only)
-echo "[1/2] Building and Starting Container 1: Forensic Web UI (Port 5000)..."
-docker build -f Dockerfile -t deepfake-web-ui:latest .
-docker run -d \
-  --name deepfake_detection_web \
-  -p 5000:5000 \
-  -e PORT=5000 \
-  -v "$(pwd)/uploads:/app/uploads" \
-  -v "$(pwd)/runs/benchmarks:/app/runs/benchmarks" \
-  --restart unless-stopped \
-  deepfake-web-ui:latest
-
-# 2. Build and Run Dedicated Benchmark Hub (Port 5010 Only)
-echo "[2/2] Building and Starting Container 2: Benchmark Hub (Port 5010)..."
-docker build -f Dockerfile.benchmark -t deepfake-benchmark-hub:latest .
-docker run -d \
-  --name deepfake_benchmark_hub \
-  -p 5010:5010 \
-  -e PORT=5010 \
-  -v "$(pwd)/uploads:/app/uploads" \
-  -v "$(pwd)/runs/benchmarks:/app/runs/benchmarks" \
-  --restart unless-stopped \
-  deepfake-benchmark-hub:latest
+docker compose up -d --build --remove-orphans
 
 echo "========================================================"
-echo "✅ Both Docker containers started successfully and independently!"
-echo "🌐 Container 1 (Public Forensic Web UI):  http://localhost:5000"
-echo "⚡ Container 2 (Benchmark Hub Subsystem): http://localhost:5010"
-echo "📋 To view logs Web UI:       docker logs -f deepfake_detection_web"
-echo "📋 To view logs Benchmark:    docker logs -f deepfake_benchmark_hub"
+echo "✅ All Docker Compose services started cleanly!"
+echo "🌐 Public Forensic Studio : http://localhost:5000/"
+echo "🔬 Benchmark Hub Proxy    : http://localhost:5010/benchmark/"
+echo "🛡️ Forensic SRE Cockpit   : http://localhost:8787/dfagent/"
+echo "📋 Logs (Web UI / SRE)    : docker compose logs -f deepfake-web-ui observability-agent"
 echo "========================================================"

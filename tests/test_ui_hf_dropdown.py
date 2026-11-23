@@ -5,10 +5,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 class TestUIHfDropdown(unittest.TestCase):
     def setUp(self):
-        self.html_path = PROJECT_ROOT / "web_ui" / "templates" / "index.html"
+        self.html_path = PROJECT_ROOT / "web_ui" / "templates" / "benchmark_hub.html"
+        self.partial_path = PROJECT_ROOT / "web_ui" / "templates" / "partials" / "benchmark_hub_body.html"
         self.js_path = PROJECT_ROOT / "web_ui" / "static" / "js" / "app.js"
         with open(self.html_path, "r", encoding="utf-8") as f:
-            self.html = f.read()
+            hub_html = f.read()
+        with open(self.partial_path, "r", encoding="utf-8") as f:
+            partial_html = f.read()
+        self.html = hub_html + "\n" + partial_html
         with open(self.js_path, "r", encoding="utf-8") as f:
             self.js = f.read()
 

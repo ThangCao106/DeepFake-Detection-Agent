@@ -14,8 +14,11 @@ try:
 except Exception:
     pass
 
+import hashlib
+import hmac
 import os
 import json
+import secrets
 import time
 import threading
 import logging
@@ -50,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'deepfake-detection-secret-key-2024'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 250 * 1024 * 1024  # 250MB max file size
 
@@ -104,6 +107,16 @@ def init_orchestrator():
             logger.error(f"Failed to initialize orchestrator: {e}")
 
 
+def _is_benchmark_request() -> bool:
+    current_port = str(os.environ.get("PORT", "5000"))
+    return (
+        request.headers.get("X-Benchmark-Mode") == "1"
+        or current_port == "5010"
+        or request.path.startswith("/benchmark")
+        or request.path.startswith("/dfagent/benchmark")
+    )
+
+
 # Routes
 @app.route('/')
 @app.route('/dfagent')
@@ -113,19 +126,26 @@ def init_orchestrator():
 @app.route('/dfagent/benchmark')
 @app.route('/dfagent/benchmark/')
 def index():
-    """Serve the web interface with environment-aware port separation."""
+    """Serve dedicated Public Forensic Studio (/) or Benchmark & Calibration Lab (/benchmark)."""
     current_port = os.environ.get("PORT", "5000")
-    is_benchmark_mode = (str(current_port) == "5010") or ("/benchmark" in request.path)
-    return render_template('index.html', is_benchmark_mode=is_benchmark_mode, current_port=current_port)
+    is_benchmark_mode = _is_benchmark_request()
+    template_name = 'benchmark_hub.html' if is_benchmark_mode else 'public_studio.html'
+    fallback_path = Path(web_ui_dir) / 'templates' / template_name
+    if not fallback_path.exists():
+        template_name = 'index.html'
+    return render_template(template_name, is_benchmark_mode=is_benchmark_mode, current_port=current_port)
 
 
 @app.route('/api/status')
 def status():
-    """Check API and agent status."""
+    """Check API, detector weights health, and agent status."""
+    from forensics_kernel.calibration_store import inspect_weights_health
+    weights_health = inspect_weights_health()
     return jsonify({
         'status': 'online',
         'agent_ready': orchestrator is not None,
         'gemini_configured': bool(Config.GEMINI_API_KEY),
+        'weights_health': weights_health,
         'timestamp': datetime.now().isoformat()
     })
 
@@ -462,26 +482,13 @@ def api_agentic_model():
 
 def _collect_orchestrator_telemetry():
     """Collect active calibration params, short-video pentest metrics, and feedback Vault telemetry."""
-    custom_dir = Path(project_root) / "custom_vit_model"
-    active_params = {"image": {}, "audio": {}, "video": {}, "vn_demographic": {}}
-    for key, fname in [
-        ("image", "calibration_params.json"),
-        ("audio", "audio_calibration_params.json"),
-        ("video", "video_calibration_params.json"),
-        ("vn_demographic", "vietnamese_demographic_params.json"),
-    ]:
-        fpath = custom_dir / fname
-        if fpath.exists():
-            try:
-                with open(fpath, "r", encoding="utf-8") as cf:
-                    active_params[key] = json.load(cf)
-            except Exception:
-                pass
+    from forensics_kernel.calibration_store import load_all_modality_params
+    active_params = load_all_modality_params()
 
     short_video_pentest = {"overall": {}, "by_platform": {}, "latest_runs": []}
-    feedback_summary = {"total_events": 0, "fp_count": 0, "fn_count": 0, "vault_pending_count": 0, "recent_events": []}
+    feedback_summary = {"total_events": 0, "fp_count": 0, "fn_count": 0, "vault_pending_count": 0, "recent_events": [], "human_review_stats": {}}
     try:
-        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback
+        from benchmark.deepfake_memory import get_latest_short_video_pentest, get_recent_feedback, get_human_review_stats
         from forensics_kernel.zero_day_vault import ZeroDayActiveLearningVault
 
         svp_rows = get_latest_short_video_pentest(limit=20)
@@ -501,6 +508,7 @@ def _collect_orchestrator_telemetry():
             "fn_count": sum(1 for x in fb_rows if x.get("feedback_type") == "FALSE_NEGATIVE"),
             "vault_pending_count": len(pending_vault),
             "recent_events": fb_rows[:12],
+            "human_review_stats": get_human_review_stats(),
         }
     except Exception as tel_err:
         logger.warning(f"Orchestrator telemetry warning: {tel_err}")
@@ -563,7 +571,7 @@ def orchestrator_status():
 
 _short_video_job_lock = threading.Lock()
 _short_video_job_state = {
-    "enabled": os.environ.get("ENABLE_AUTO_SHORT_VIDEO_JOB", "1") == "1" and os.environ.get("DISABLE_AUTO_JOBS", "0") != "1",
+    "enabled": os.environ.get("SHORT_VIDEO_AUTO_JOB_ENABLED", "0") == "1" and os.environ.get("DISABLE_AUTO_JOBS", "0") != "1",
     "interval_hours": float(os.environ.get("SHORT_VIDEO_JOB_INTERVAL_HOURS", "6")),
     "download_urls": os.environ.get("SHORT_VIDEO_DOWNLOAD_URLS", "1") == "1",
     "auto_feedback": True,
@@ -942,7 +950,7 @@ def generate_forensic_answer(question: str, detection_result: dict = None, langu
                 f"- **Mã tranh biện**: `DISPUTE-{token}` liên kết Chứng thư `{cert_id}`\n"
                 f"- **Trạng thái**: Đã nạp vào Sổ cái Kiểm định Pháp y (EU AI Act Art. 50 & ISO/IEC 17025).\n\n"
                 f"**Quy Trình Xử Lý Thẩm Định Độc Lập**:\n"
-                f"1. **Hội đồng Tam Giác Độc Lập (Triad Council)**: Kích hoạt đối chất chéo giữa 3 mô hình nền tảng (Gemini 2.5 Pro kiểm định giả định; Claude 3.5 Sonnet phản biện độc lập; DeepSeek Janus-Pro thẩm tra cấu trúc sinh).\n"
+                f"1. **Hội đồng Tam Giác Độc Lập (Triad Council)**: Kích hoạt đối chất chéo giữa 3 mô hình nền tảng (Gemini 3.8 Flash kiểm định giả định; Meta Muse Spark thẩm tra cấu trúc sinh; Claude Sonnet 5.5 phản biện độc lập).\n"
                 f"2. **Thẩm định Nhiễu Nén & Cảm biến**: Tách lớp PRNU vật lý để kiểm tra xem có hiện tượng nén suy giảm tín hiệu (Lossy Compression Attenuation) do mạng xã hội làm mờ dấu vết hay không.\n"
                 f"3. **Thử nghiệm Độ nhạy Ngưỡng Youden (\\tau^*)**: Bạn có thể trực tiếp kéo thanh trượt **Ngưỡng Quyết Định Youden** trên bảng điều khiển: với mức dung sai chặt chẽ (\\tau^* = 0.95), mẫu này sẽ yêu cầu bằng chứng giả mạo mạnh hơn mới kết luận Deepfake.\n\n"
                 f"📌 *Hồ sơ tranh biện đã được lưu trữ và sẵn sàng trích xuất báo cáo JSON-LD / Word phục vụ giám định tư pháp.*"
@@ -1817,85 +1825,34 @@ def api_ask_question():
         }), 200
 
 
-@app.route('/api/colab/callback', methods=['POST'])
-def colab_callback():
-    """Receive live tuning hyperparameters & evaluation metrics from Google Colab."""
-    try:
-        data = request.get_json(force=True) or {}
-        logger.info(f"[colab_bridge] Received tuning callback from Colab: {data}")
-        
-        root_custom_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "custom_vit_model"))
-        local_custom_dir = os.path.join(os.path.dirname(__file__), "custom_vit_model")
-        custom_dir = root_custom_dir if os.path.exists(root_custom_dir) else local_custom_dir
-        os.makedirs(custom_dir, exist_ok=True)
-        
-        # Ingest tuned calibration parameters
-        calib_file = os.path.join(custom_dir, "calibration_params.json")
-        calib_data = {
-            "temperature_scaling_T": data.get("temperature_scaling_T", 1.6178),
-            "optimal_threshold_tau": data.get("optimal_threshold_tau", 0.8118),
-            "calibration_status": "CALIBRATED_FROM_COLAB_GPU",
-            "accuracy": data.get("out_of_distribution_accuracy"),
-            "dataset_trained": data.get("dataset_trained"),
-            "timestamp": datetime.now().isoformat()
-        }
-        with open(calib_file, "w", encoding="utf-8") as f:
-            import json
-            json.dump(calib_data, f, indent=2)
-
-        # Notify Web Dashboard UI via SocketIO
-        socketio.emit('colab_sync_received', calib_data)
-
-        # Reload orchestrator detector in memory
-        global orchestrator
-        if orchestrator and hasattr(orchestrator, "detector"):
-            from deepfake_detector import DeepfakeDetector
-            orchestrator.detector = DeepfakeDetector()
-            logger.info("[colab_bridge] DeepfakeDetector reloaded with new Colab tuning parameters.")
-
-        return jsonify({"status": "success", "message": "Colab tuning parameters ingested successfully", "calibrated": calib_data}), 200
-    except Exception as e:
-        logger.error(f"[colab_bridge] Callback error: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@socketio.on('save_session')
-def handle_save_session():
-    """Handle session save request."""
-    try:
-        if orchestrator is None:
-            emit('error', {'message': 'No active session to save'})
-            return
-        
-        orchestrator.save_session()
-        
-        emit('session_saved', {
-            'message': 'Session saved successfully',
-            'session_id': orchestrator.memory.session_id
-        })
-        
-        logger.info(f"Session saved: {orchestrator.memory.session_id}")
-    
-    except Exception as e:
-        logger.error(f"Save session error: {e}")
-        emit('error', {'message': f'Failed to save session: {str(e)}'})
-
-
 # =========================================================================
 # 🔒 SUBSYSTEM ACCESS GATE LOGIN AUTHENTICATION (PORT 5010 / BENCHMARK HUB)
 # =========================================================================
 
 GATE_ADMIN_USER = os.environ.get("BENCHMARK_GATE_USER", "thang.cd")
-GATE_ADMIN_PASS = os.environ.get("BENCHMARK_GATE_PASS", "Thang@123")
+_DEFAULT_GATE_PASS_SHA256 = "acc489bb1964c2b933bac0469ff95e3e55bd6fedf032187f25cd06aca281c293"
+
+
+def _verify_gate_credentials(username: str, password: str) -> bool:
+    if not hmac.compare_digest(username.strip(), GATE_ADMIN_USER):
+        return False
+    env_pass = os.environ.get("BENCHMARK_GATE_PASS")
+    if env_pass:
+        return hmac.compare_digest(password, env_pass)
+    expected_hash = os.environ.get("BENCHMARK_GATE_PASS_HASH", _DEFAULT_GATE_PASS_SHA256).lower()
+    given_hash = hashlib.sha256(password.encode("utf-8")).hexdigest().lower()
+    return hmac.compare_digest(given_hash, expected_hash)
+
 
 @app.route('/api/auth/gate-login', methods=['POST'])
+@app.route('/benchmark/api/auth/gate-login', methods=['POST'])
 def gate_login():
     """Authenticate user for Subsystem Benchmark & Telemetry access."""
     data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
-    
-    if username == GATE_ADMIN_USER and password == GATE_ADMIN_PASS:
+
+    if _verify_gate_credentials(username, password):
         logger.info(f"[gate_auth] Successful login for user '{username}'")
         return jsonify({
             "status": "success",
@@ -1941,7 +1898,7 @@ def ping_benchmark_api():
     return jsonify({
         "status": "pong",
         "port": current_port,
-        "is_benchmark_mode": (str(current_port) == "5010") or request.path.startswith("/benchmark"),
+        "is_benchmark_mode": _is_benchmark_request(),
         "runner_available": benchmark_runner is not None,
         "is_running": benchmark_runner.is_running if benchmark_runner else False,
         "timestamp": datetime.now().isoformat()
@@ -2473,139 +2430,33 @@ def get_ablation_audit_certificate():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@app.route('/api/feedback', methods=['POST'])
-@app.route('/benchmark/api/feedback', methods=['POST'])
-@app.route('/dfagent/api/feedback', methods=['POST'])
-@app.route('/dfagent/benchmark/api/feedback', methods=['POST'])
-def api_submit_feedback():
-    """
-    Closed-loop user reflection endpoint:
-    Accepts misclassification reports (False Positive / False Negative) for a certificate
-    or video file, extracts hard frames into ZeroDayActiveLearningVault, updates calibration
-    fusion weights + reloads DeepfakeDetector, and optionally runs LoRA continual update.
-    """
+def _get_active_detector():
+    return orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
+
+
+def _reload_active_detector(full_reinit: bool = False):
+    global orchestrator
+    if not orchestrator or not hasattr(orchestrator, "detector"):
+        return
+    if full_reinit:
+        from deepfake_detector import DeepfakeDetector
+        orchestrator.detector = DeepfakeDetector()
+    else:
+        orchestrator.detector.reload_calibration_params()
+    logger.info("[colab_bridge] DeepfakeDetector parameters/weights reloaded.")
+
+
+from web_ui.routes.feedback_routes import create_feedback_blueprint
+from web_ui.routes.colab_routes import create_colab_blueprint
+
+app.register_blueprint(create_feedback_blueprint(_get_active_detector, socketio.emit, _execute_short_video_pentest_job))
+app.register_blueprint(create_colab_blueprint(_reload_active_detector, socketio.emit))
+
+if Config.GEMINI_API_KEY and os.environ.get("FLASK_ENV") != "testing":
     try:
-        data = request.get_json(silent=True) or {}
-        true_label = data.get("true_label")
-        if not true_label:
-            return jsonify({"status": "error", "message": "Missing required field: true_label ('Realism' or 'Deepfake')"}), 400
-
-        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
-
-        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
-        res = FeedbackWeightUpdater.submit_feedback(
-            true_label=true_label,
-            certificate_id=data.get("certificate_id") or data.get("cert_id"),
-            platform=data.get("platform"),
-            media_type=data.get("media_type", "video"),
-            file_path=data.get("file_path") or data.get("filepath"),
-            source_url=data.get("source_url"),
-            predicted_label=data.get("predicted_label"),
-            composite_risk_score=data.get("composite_risk_score"),
-            feature_telemetry=data.get("feature_telemetry"),
-            user_note=data.get("user_note", ""),
-            auto_update_calibration=bool(data.get("auto_update_calibration", True)),
-            trigger_lora_update=bool(data.get("trigger_lora_update", False)),
-            detector=active_detector,
-        )
-        calib = res.get("calibration_update") or {}
-        if calib.get("accepted") and calib.get("after_params"):
-            socketio.emit('optimal_weights_applied', calib["after_params"])
-        return jsonify(res), 200
-    except Exception as e:
-        logger.error(f"Feedback submission error: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@app.route('/api/feedback/history', methods=['GET'])
-@app.route('/benchmark/api/feedback/history', methods=['GET'])
-@app.route('/dfagent/api/feedback/history', methods=['GET'])
-@app.route('/dfagent/benchmark/api/feedback/history', methods=['GET'])
-def api_feedback_history():
-    """Return recent user/pentest feedback reflections and calibration weight status."""
-    try:
-        from benchmark.deepfake_memory import get_recent_feedback
-        from benchmark.feedback_weight_updater import FeedbackWeightUpdater
-        limit = int(request.args.get("limit", 50))
-        return jsonify({
-            "status": "success",
-            "events": get_recent_feedback(limit=limit),
-            "active_video_params": FeedbackWeightUpdater.load_video_calibration_params(),
-        }), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@app.route('/api/pentest/short-video', methods=['GET', 'POST'])
-@app.route('/benchmark/api/pentest/short-video', methods=['GET', 'POST'])
-@app.route('/dfagent/api/pentest/short-video', methods=['GET', 'POST'])
-@app.route('/dfagent/benchmark/api/pentest/short-video', methods=['GET', 'POST'])
-def api_short_video_pentest():
-    """GET latest 4-platform short-video pentest metrics or POST to run a new pentest."""
-    try:
-        if request.method == 'GET':
-            from benchmark.deepfake_memory import get_latest_short_video_pentest
-            return jsonify({"status": "success", "runs": get_latest_short_video_pentest(limit=20)}), 200
-
-        data = request.get_json(silent=True) or {}
-        res = _execute_short_video_pentest_job(
-            platforms=data.get("platforms"),
-            attacks=data.get("attacks"),
-            manifest_path=data.get("manifest_path"),
-            download_urls=bool(data.get("download_urls", True)),
-            auto_feedback=bool(data.get("auto_feedback", True)),
-            trigger_lora=bool(data.get("trigger_lora", False)),
-        )
-        if res.get("skipped"):
-            return jsonify({"status": "skipped", "message": "Short-video pentest job already running"}), 202
-        return jsonify({
-            "status": "success",
-            "run_id": res["run_id"],
-            "overall_metrics": res["overall_metrics"],
-            "by_platform": res["by_platform"],
-            "by_attack_vector": res["by_attack_vector"],
-            "misclassified_count": res["misclassified_count"],
-            "report_md_path": res["report_md_path"],
-        }), 200
-    except Exception as e:
-        logger.error(f"Short-video pentest API error: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@app.route('/api/pentest/audio', methods=['GET', 'POST'])
-@app.route('/benchmark/api/pentest/audio', methods=['GET', 'POST'])
-@app.route('/dfagent/api/pentest/audio', methods=['GET', 'POST'])
-@app.route('/dfagent/benchmark/api/pentest/audio', methods=['GET', 'POST'])
-def api_audio_pentest():
-    """GET latest multi-channel audio pentest metrics or POST to run a new audio pentest."""
-    try:
-        if request.method == 'GET':
-            from benchmark.deepfake_memory import get_latest_audio_pentest
-            return jsonify({"status": "success", "runs": get_latest_audio_pentest(limit=20)}), 200
-
-        from benchmark.audio_pentest import run_audio_pentest
-        data = request.get_json(silent=True) or {}
-        active_detector = orchestrator.detector if (orchestrator and hasattr(orchestrator, "detector")) else None
-        res = run_audio_pentest(
-            channels=data.get("channels"),
-            attacks=data.get("attacks"),
-            manifest_path=data.get("manifest_path"),
-            include_cache=bool(data.get("include_cache", True)),
-            auto_feedback=bool(data.get("auto_feedback", False)),
-            detector=active_detector,
-        )
-        return jsonify({
-            "status": "success",
-            "run_id": res["run_id"],
-            "overall_metrics": res["overall_metrics"],
-            "by_channel": res["by_channel"],
-            "by_attack_vector": res["by_attack_vector"],
-            "misclassified_count": res["misclassified_count"],
-            "report_md_path": res["report_md_path"],
-        }), 200
-    except Exception as e:
-        logger.error(f"Audio pentest API error: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        init_orchestrator()
+    except Exception:
+        pass
 
 
 @socketio.on('benchmark_start')

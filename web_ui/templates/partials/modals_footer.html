@@ -1,0 +1,141 @@
+    <!-- Benchmark Report Modal -->
+    <div class="modal-backdrop" id="reportModalBackdrop" style="display: none;" onclick="closeReportModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 Benchmark Report & Forensic Audit</h3>
+                <button type="button" class="btn-close-modal" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body markdown-body" id="reportModalBody">
+                <div style="text-align: center; padding: 25px; color: #64748b;">Loading report data...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 🏛️ LLM COUNCIL DELIBERATION MODAL (GEMINI + META MUSE + CLAUDE) -->
+    <!-- ========================================================= -->
+    <div class="modal-backdrop" id="councilDebateModalBackdrop" style="display: none; z-index: 10050;"
+        onclick="closeCouncilDebateModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()"
+            style="max-width: 1080px; max-height: 90vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;">
+
+            <!-- Header -->
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12);">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div
+                        style="font-size: 1.85rem; background: rgba(255,255,255,0.12); width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        🏛️</div>
+                    <div>
+                        <h3 class="modal-title"
+                            style="color: white; margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em;">
+                            Hội Đồng LLM Tranh Luận & Thẩm Định Trọng Số
+                        </h3>
+                        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #cbd5e1;">
+                            Đối chiếu Dữ liệu Benchmark & Pentest • 3 Trụ Cột: Gemini 3.8 Flash, Meta Muse Critic,
+                            Claude 3.7 Sonnet
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="closeCouncilDebateModal()"
+                    style="color: white; font-size: 1.2rem; background: rgba(255,255,255,0.12); border: none; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Body (Dynamic Deliberation Container) -->
+            <div class="modal-body" id="councilDebateModalBody"
+                style="padding: 22px 26px; overflow-y: auto; background: #f8fafc; flex: 1;">
+                <div style="text-align: center; padding: 50px 20px; color: #64748b;">
+                    <div style="font-size: 2.2rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">⚖️</div>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: #1e293b;">Đang Triệu Tập Hội Đồng LLM Tranh
+                        Luận...</div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">Đang trích xuất telemetry
+                        Benchmark & Pentest và khởi tạo phiên phản biện 3 bên.</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer"
+                style="padding: 14px 24px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <div id="councilFooterStatus"
+                    style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #64748b;">
+                    <span
+                        style="background: #ede9fe; color: #6366f1; padding: 4px 10px; border-radius: 6px; font-weight: 700;">🛡️
+                        EU AI Act Art. 50 Governance Ready</span>
+                    <span id="councilCertTag"
+                        style="font-family: monospace; font-size: 0.78rem; color: #94a3b8;"></span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-browse" onclick="closeCouncilDebateModal()"
+                        style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Đóng
+                    </button>
+                    <button type="button" id="btnApplyCouncilWeights" class="btn"
+                        onclick="applyCouncilApprovedWeights()"
+                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 8px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        <span>✅</span> Phê Duyệt & Áp Dụng Vào Huấn Luyện
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% if is_benchmark_mode %}
+    <!-- ========================================================= -->
+    <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (PIXEL-PERFECT FROM OBSAGENT) -->
+    <!-- ========================================================= -->
+    <div class="modal-overlay" id="gateOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); justify-content: center; align-items: center; font-family: 'Outfit', sans-serif;">
+        <div class="modal"
+            style="width: 90%; max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center; border-radius: 12px; background: #ffffff; box-sizing: border-box; font-family: 'Outfit', sans-serif;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; line-height: 1;">🔐</div>
+            <h2
+                style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">
+                AI Deepfake Subsystem</h2>
+            <p
+                style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem; line-height: 1.4; font-family: 'Outfit', sans-serif;">
+                Vui lòng đăng nhập tài khoản hệ thống để truy cập Deepfake Detection Agent & Claude Subsystem.
+            </p>
+
+            <form id="benchmarkGateForm" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;"
+                onsubmit="handleBenchmarkGateLogin(event)">
+                <div>
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Tên
+                        đăng nhập (Username):</label>
+                    <input type="text" id="gateUser" value="thang.cd" required
+                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Mật
+                        khẩu (Password):</label>
+                    <input type="password" id="gatePass" placeholder="••••••••" required
+                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
+                </div>
+
+                <div id="gateError"
+                    style="display: none; font-size: 0.85rem; color: #ff1744; font-weight: 600; text-align: center; font-family: 'Outfit', sans-serif;">
+                    ❌ Tên đăng nhập hoặc mật khẩu không chính xác!
+                </div>
+
+                <button type="submit" id="gateSubmitBtn"
+                    style="margin-top: 0.5rem; background: #7c4dff; color: #fff; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Outfit', sans-serif;"
+                    onmouseover="this.style.background='#651fff'" onmouseout="this.style.background='#7c4dff'">
+                    🔑 Đăng nhập Subsystem
+                </button>
+
+                <div id="gateCancelBox" style="text-align: center; margin-top: 0.25rem;">
+                    <button type="button" onclick="cancelGateLogin()"
+                        style="background: none; border: none; font-size: 0.8rem; color: #7c4dff; text-decoration: underline; cursor: pointer; font-weight: 500; font-family: 'Outfit', sans-serif;">
+                        ← Quay lại Giao Diện Giám Định (Port 5000)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+

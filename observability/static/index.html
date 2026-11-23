@@ -1024,6 +1024,10 @@
         <span>⚡</span>
         <span>Live Forensic Studio (GenUI)</span>
       </a>
+      <a href="/benchmark/" class="btn-toggle-agent" style="text-decoration: none; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; box-shadow: 0 0 15px rgba(37, 99, 235, 0.35); display: flex; align-items: center; gap: 6px;" title="Mở Khu vực Thực nghiệm & Hiệu chuẩn (/benchmark)">
+        <span>🔬</span>
+        <span>Benchmark Lab</span>
+      </a>
       <button type="button" class="btn-toggle-agent" onclick="switchTab('agentic-model')" style="background: linear-gradient(135deg, #059669, #0d9488); color: #fff; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 6px; cursor: pointer; border: none;" title="Mô hình hóa Toán học & Kiến trúc C-Dec-POMDP 9 Tác Thể Pháp Y">
         <span>🧠</span>
         <span>Agentic AI Model</span>
@@ -1066,11 +1070,19 @@
             </div>
             <span class="nav-badge emerald" style="background: rgba(16, 185, 129, 0.35); color: #a7f3d0;">C-Dec-POMDP</span>
           </li>
+          <!-- NAVIGATION TO HUMAN-IN-THE-LOOP USER REVIEW QUEUE -->
+          <li class="nav-item" id="nav-review-queue" onclick="switchTab('review-queue')" style="background: rgba(245, 158, 11, 0.14); border-left: 3px solid #f59e0b; margin-bottom: 8px; cursor: pointer;">
+            <div class="nav-left-part">
+              <span class="nav-icon">🧑‍⚖️</span>
+              <span style="font-weight: 700; color: #fcd34d;">User Review Queue</span>
+            </div>
+            <span class="nav-badge amber" id="badgeReviewPending">0 Pending</span>
+          </li>
           <!-- NAVIGATION TO LIVE AGENT METRICS & LIFECYCLE -->
           <li class="nav-item" id="nav-live-agent" onclick="switchTab('live-agent')" style="background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; margin-bottom: 8px; cursor: pointer;">
             <div class="nav-left-part">
               <span class="nav-icon">🤖</span>
-              <span style="font-weight: 700; color: #a5b4fc;">Live Agent</span>
+              <span style="font-weight: 700; color: #a5b4fc;">Orchestrator &amp; Lifecycle</span>
             </div>
             <span class="nav-badge cyan" style="background: rgba(99, 102, 241, 0.35); color: #c7d2fe;">Active</span>
           </li>
@@ -1182,34 +1194,71 @@
               <span>🔬</span>
               <span>Cổng Phân Tích Media (Port :5000)</span>
             </a>
-            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff;">
-              <span>🧭</span>
-              <span>Mở LangGraph Studio</span>
+            <a href="/benchmark/" class="btn btn-secondary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff;">
+              <span>📊</span>
+              <span>Benchmark Lab (/benchmark)</span>
             </a>
           </div>
         </div>
 
-        <!-- 4 KPI CARDS -->
+        <!-- 4 LIVE TELEMETRY KPI CARDS -->
         <div class="grid-4" style="margin-bottom: 1.5rem;">
           <div class="stat-pill">
             <span class="label">Vòng Đời MLOps Tự Động</span>
-            <span class="val" style="color: var(--accent-emerald);">4 Operational Agents</span>
+            <span class="val" id="kpiActiveAgents" style="color: var(--accent-emerald);">9 Agents</span>
             <span class="sub">Autonomous MLOps Closed-Loop</span>
           </div>
           <div class="stat-pill">
             <span class="label">Pentest Tấn Công Xuyên Phá</span>
-            <span class="val" style="color: var(--accent-cyan);">FPR = 2.14%</span>
-            <span class="sub">Robustness Pass (&lt; 5.0% Target)</span>
+            <span class="val" id="kpiPentestPerf" style="color: var(--accent-cyan);">--</span>
+            <span class="sub" id="kpiPentestSub">Loading live SQLite telemetry...</span>
           </div>
           <div class="stat-pill">
-            <span class="label">Continual LoRA &amp; Hard Mining</span>
-            <span class="val" style="color: #b388ff;">H(P) &ge; 0.70</span>
-            <span class="sub">+8.4% Acc | Colab GPU Isolated</span>
+            <span class="label">Continual LoRA &amp; PPO Control</span>
+            <span class="val" id="kpiLoraPpo" style="color: #b388ff;">--</span>
+            <span class="sub" id="kpiLoraSub">Loading LoRA &amp; PPO status...</span>
           </div>
           <div class="stat-pill">
-            <span class="label">Quản trị Dữ liệu &amp; Lưu trữ</span>
-            <span class="val" style="color: var(--accent-amber);">100% Real Media</span>
-            <span class="sub">64-bit dHash | Decoupled Purge Job</span>
+            <span class="label">Quản trị Dữ liệu &amp; Review</span>
+            <span class="val" id="kpiHygieneStat" style="color: var(--accent-amber);">--</span>
+            <span class="sub" id="kpiHygieneSub">Human Queue &amp; 64-bit dHash Hygiene</span>
+          </div>
+        </div>
+
+        <!-- AUTONOMOUS MLOPS ORCHESTRATOR ACTION BAR & WEIGHTS MOUNT HEALTH -->
+        <div class="grid-2" style="margin-bottom: 1.5rem;">
+          <div class="card" style="border-left: 3px solid var(--accent-cyan);">
+            <div class="card-title" style="margin-bottom: 0.75rem;">
+              <span>🧭</span>
+              <span>Điều Phối MLOps &amp; Pentest Trực Tiếp (Live Reverse-Proxy :5000)</span>
+            </div>
+            <div style="display: flex; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="triggerOrchestratorAction('api/orchestrator/trigger', 'Autonomous Pipeline')">
+                <span>🚀</span><span>Autonomous Pipeline</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="triggerOrchestratorAction('api/orchestrator/trigger_short_video_pentest', 'Short-Video Pentest (41)')">
+                <span>🎬</span><span>Short-Video Pentest (41)</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="triggerOrchestratorAction('api/pentest/audio', 'Audio Pentest (52)')">
+                <span>🎙️</span><span>Audio Pentest (52)</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="triggerOrchestratorAction('api/orchestrator/trigger_lora_update', 'LoRA PEFT Update')">
+                <span>🧠</span><span>LoRA PEFT Update</span>
+              </button>
+            </div>
+            <div id="orchActionStatus" style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted); background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
+              Sẵn sàng điều phối qua /dfagent/api/orchestrator/*.
+            </div>
+          </div>
+
+          <div class="card" style="border-left: 3px solid var(--accent-emerald);">
+            <div class="card-title" style="margin-bottom: 0.75rem;">
+              <span>🧬</span>
+              <span>Weights Mount Health &amp; Calibration Store</span>
+            </div>
+            <div id="weightsHealthGrid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; font-size: 0.74rem; font-family: var(--font-mono);">
+              <div style="background: var(--bg-darker); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm);">Đang kiểm tra weights mount...</div>
+            </div>
           </div>
         </div>
 
@@ -1228,7 +1277,7 @@
               <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">ONLINE (CRON 4H / DAILY)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Tự động khởi tạo và kiểm thử 30 vector tấn công biến dị đối kháng mỗi ngày theo <strong>Khung Phân Loại Kiến Trúc 5 Bậc (5-Tier Architectural Taxonomy)</strong>: <em>Tier 1 (01_raw_originals)</em>, <em>Tier 2 (02_manipulated_faceswap)</em>, <em>Tier 3 (03_manipulated_openweight - SDXL/FLUX.1)</em>, <em>Tier 4 (04_manipulated_commercial_frontier - Imagen 3/DALL-E 3/Meta)</em>, và <em>Tier 5 (05_manipulated_autoregressive - DeepSeek Janus-Pro/Chameleon)</em>. Giám sát chặt chẽ FPR &lt; 5% và FNR &lt; 3.5%.
+              Tự động khởi tạo và kiểm thử 30 vector tấn công biến dị đối kháng mỗi ngày theo <strong>Khung Phân Loại Kiến Trúc 5 Bậc (5-Tier Architectural Taxonomy)</strong>: <em>Tier 1 (01_raw_originals)</em>, <em>Tier 2 (02_manipulated_faceswap)</em>, <em>Tier 3 (03_manipulated_openweight - SDXL/FLUX.1)</em>, <em>Tier 4 (04_manipulated_commercial_frontier - Imagen 3/DALL-E 3/Meta)</em>, và <em>Tier 5 (05_manipulated_autoregressive - Autoregressive &amp; Next-Gen Multimodal Generators)</em>. Giám sát chặt chẽ FPR &lt; 5% và FNR &lt; 3.5%.
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Mục Tiêu Tấn Công Ngày: <strong>30 Samples/Day</strong></span>
@@ -1270,7 +1319,7 @@
               <span class="badge-sub" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.3);">CALIBRATED (DAILY AUDIT)</span>
             </div>
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.8rem;">
-              Đánh giá trên 14 bộ dữ liệu quốc tế kết hợp <strong>Bộ dữ liệu Thích nghi Nhân khẩu học Việt Nam</strong> (tông da châu Á Fitzpatrick III-IV, bối cảnh ngoại cảnh Việt Nam). Tích hợp Hội đồng Đối chất 3 LLM (Triad Council: Gemini 2.5 Pro, Claude 3.5 Sonnet, DeepSeek Janus-Pro) và hiệu chuẩn Platt Scaling (T*=1.6178, Youden &tau;*=0.8118, ECE 0.0195).
+              Đánh giá trên 14 bộ dữ liệu quốc tế kết hợp <strong>Bộ dữ liệu Thích nghi Nhân khẩu học Việt Nam</strong> (tông da châu Á Fitzpatrick III-IV, bối cảnh ngoại cảnh Việt Nam). Tích hợp Hội đồng Đối chất 3 LLM (Triad Council: Gemini 3.8 Flash, Meta Muse Spark, Claude Sonnet 5.5) và hiệu chuẩn Platt Scaling (T*=1.6178, Youden &tau;*=0.8118, ECE 0.0195).
             </p>
             <div style="display: flex; justify-content: space-between; font-size: 0.72rem; background: var(--bg-darker); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);">
               <span>Ngưỡng Youden τ*: <strong>0.8118</strong></span>
@@ -1319,7 +1368,7 @@
               <span style="font-family: var(--font-mono); font-weight: 700; color: #7c3aed; min-width: 80px;">STAGE 2</span>
               <div style="flex: 1;">
                 <strong style="color: #fff; font-size: 0.82rem;">Automated Adversarial Red-Teaming (Pentest)</strong>
-                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Autonomous Pentest Agent tự động kiểm thử 30 vector tấn công theo Kiến trúc 5 Bậc: 01_raw, 02_faceswap, 03_openweight (SDXL/FLUX), 04_commercial_frontier (Imagen 3/DALL-E 3/Meta), và 05_autoregressive (DeepSeek Janus-Pro).</p>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Autonomous Pentest Agent tự động kiểm thử 30 vector tấn công theo Kiến trúc 5 Bậc: 01_raw, 02_faceswap, 03_openweight (SDXL/FLUX), 04_commercial_frontier (Imagen 3/DALL-E 3/Meta), và 05_autoregressive (Next-Gen Multimodal Generators).</p>
               </div>
               <span class="badge-sub" style="color: var(--accent-emerald);">PENTEST PASS</span>
             </div>
@@ -1343,6 +1392,78 @@
         </div>
       </section>
 
+      <!-- TAB REVIEW QUEUE: HUMAN-IN-THE-LOOP USER FEEDBACK & ESCALATION -->
+      <section id="tab-review-queue" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">🧑‍⚖️ Human-in-the-Loop User Review Queue</h2>
+            <p class="view-desc">Hàng đợi thẩm định các ca người dùng yêu cầu kiểm tra lại từ Live Forensic Studio (tách biệt hoàn toàn khỏi luồng <code>AUTO_PENTEST</code> nội bộ) trước khi chốt Ground Truth cho Calibration &amp; LoRA.</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <select id="rqStatusFilter" class="form-input" onchange="loadReviewQueue()" style="width: auto; min-width: 170px; padding: 0.4rem 0.65rem; font-size: 0.8rem;">
+              <option value="PENDING" selected>PENDING (Chờ duyệt)</option>
+              <option value="APPROVED_REAL">APPROVED_REAL</option>
+              <option value="APPROVED_FAKE">APPROVED_FAKE</option>
+              <option value="APPROVED_CALIBRATED">APPROVED_CALIBRATED</option>
+              <option value="DISMISSED">DISMISSED</option>
+              <option value="ALL">ALL (Tất cả Human Review)</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" onclick="loadReviewQueue()">
+              <span>🔄</span><span>Làm mới Queue</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 1.5rem;">
+          <div class="stat-pill">
+            <span class="label">Human Pending Review</span>
+            <span class="val" id="rqPendingCount" style="color: var(--accent-amber);">0</span>
+            <span class="sub">Chờ chuyên gia xét duyệt</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Approved Ground Truth</span>
+            <span class="val" id="rqApprovedCount" style="color: var(--accent-emerald);">0</span>
+            <span class="sub">Đã gán nhãn sạch vào Replay</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Dismissed / False Report</span>
+            <span class="val" id="rqDismissedCount" style="color: var(--text-muted);">0</span>
+            <span class="sub">Không đưa vào Calibration</span>
+          </div>
+          <div class="stat-pill">
+            <span class="label">Auto-Pentest Isolated</span>
+            <span class="val" id="rqAutoPentestCount" style="color: var(--accent-cyan);">0</span>
+            <span class="sub">Tách riêng khỏi Human Queue</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom: 0.9rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>📋 Danh sách Ca Người Dùng Yêu Cầu Kiểm Định (<code>source_type = HUMAN_REVIEW</code>)</span>
+            <span id="rqLastSyncBadge" class="badge-sub">Chưa đồng bộ</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Feedback ID &amp; Cert</th>
+                  <th>Media / Nguồn</th>
+                  <th>Dự đoán &amp; Risk</th>
+                  <th>Đề xuất của User</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác Chuyên gia</th>
+                </tr>
+              </thead>
+              <tbody id="reviewQueueTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.2rem;">Đang tải hàng đợi Human Review...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- TAB 1: TRA CỨU CHỨNG THƯ (FORENSIC CERTIFICATE VAULT) -->
       <section id="tab-vault" class="tab-view active">
         <div class="view-header">
@@ -1355,10 +1476,10 @@
               <span>📥</span>
               <span>Xuất Hồ Sơ Giám Định Thầy Hướng Dẫn (.docx)</span>
             </a>
-            <a href="/orchestrator" class="btn btn-secondary btn-sm" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('live-agent')" style="display: inline-flex; align-items: center; gap: 0.4rem;">
               <span>🧭</span>
-              <span>Dashboard LangGraph (/orchestrator)</span>
-            </a>
+              <span>MLOps Orchestrator</span>
+            </button>
             <button class="btn btn-secondary btn-sm" onclick="exportModuleReport('vault')">
               <span>📄</span>
               <span>Xuất Báo Cáo Vault (.md)</span>
@@ -2234,6 +2355,8 @@
       renderAllMath();
       checkAuthStatus();
       loadLiveAgentLifecycle();
+      loadOrchestratorTelemetry();
+      loadReviewQueue();
       loadRecentVaultLookups();
       loadReportsDigest();
       loadCalibrationMetrics();
@@ -2264,9 +2387,16 @@
         navEl.classList.add('active');
       }
 
-      // Re-trigger Math render if calibration is opened
-      if (tabId === 'calibration') {
+      // Re-trigger Math render if calibration or agentic-model is opened
+      if (tabId === 'calibration' || tabId === 'agentic-model') {
         setTimeout(renderAllMath, 50);
+      }
+      if (tabId === 'review-queue') {
+        loadReviewQueue();
+      }
+      if (tabId === 'live-agent') {
+        loadLiveAgentLifecycle();
+        loadOrchestratorTelemetry();
       }
       if (tabId === 'reports') {
         if (!reportsCalendarCache) {
@@ -2673,15 +2803,265 @@
       }
     }
 
-    // TAB 0: LIVE AGENT LIFECYCLE METRICS
+    function escapeHtml(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderWeightsHealthCards(weightsHealth, benchAgent, trainAgent) {
+      const grid = document.getElementById('weightsHealthGrid');
+      if (!grid) return;
+      const wh = weightsHealth || {};
+      const vitOk = typeof wh.vit_model_safetensors === 'boolean' ? wh.vit_model_safetensors : Boolean(trainAgent?.vit_safetensors_loaded);
+      const audOk = typeof wh.audio_fusionnet_pt === 'boolean' ? wh.audio_fusionnet_pt : Boolean(trainAgent?.audio_fusionnet_loaded);
+      const ppoOk = typeof wh.ppo_meta_controller_pt === 'boolean' ? wh.ppo_meta_controller_pt : Boolean(trainAgent?.ppo_model_loaded);
+      const calOk = typeof wh.calibration_params_json === 'boolean' ? wh.calibration_params_json : Boolean(benchAgent?.platt_temp_T);
+
+      const chip = (label, ok, extra) => `
+        <div style="background: var(--bg-darker); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm); border-left: 3px solid ${ok ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#fff;">${escapeHtml(label)}</strong>
+            <span style="color:${ok ? 'var(--accent-emerald)' : 'var(--accent-rose)'}; font-weight:700;">${ok ? 'MOUNTED' : 'MISSING'}</span>
+          </div>
+          <div style="color:var(--text-muted); font-size:0.68rem; margin-top:2px;">${escapeHtml(extra)}</div>
+        </div>
+      `;
+
+      const tStar = benchAgent?.platt_temp_T ?? '--';
+      const tauImg = benchAgent?.youden_tau_img ?? '--';
+      const tauVid = benchAgent?.youden_tau_vid ?? '--';
+      const tauAud = benchAgent?.youden_tau_aud ?? '--';
+      const vnTau = benchAgent?.vn_tau_star ?? '--';
+
+      grid.innerHTML = [
+        chip('ViT model.safetensors', vitOk, `Img tau*=${tauImg} | T*=${tStar}`),
+        chip('AudioFusionNet (.pt)', audOk, `Audio tau=${tauAud}`),
+        chip('PPO MetaController (.pt)', ppoOk, `Trajectories=${trainAgent?.ppo_trajectories ?? 0}`),
+        chip('Calibration Store JSON', calOk, `Vid tau=${tauVid} | VN tau*=${vnTau}`),
+      ].join('');
+    }
+
+    // TAB 0: ORCHESTRATOR & LIVE AGENT LIFECYCLE METRICS
     async function loadLiveAgentLifecycle() {
       try {
         const res = await fetch(getApiUrl('api/agents/lifecycle'));
         const data = await res.json();
         if (data.status !== 'SUCCESS') return;
-        console.debug('Operational Lifecycle Agents loaded:', data.operational_agents_count);
+
+        const counts = data.counts || {};
+        const agents = data.agents || {};
+        const pentest = agents.pentest_agent || {};
+        const train = agents.continual_training_agent || {};
+        const bench = agents.benchmark_agent || {};
+        const curation = agents.curation_purge_agent || {};
+
+        const kpiAgents = document.getElementById('kpiActiveAgents');
+        if (kpiAgents) kpiAgents.textContent = `${data.operational_agents_count || 9} Agents`;
+
+        const fmtPct = (v) => (typeof v === 'number' && !Number.isNaN(v))
+          ? `${(v <= 1.0 ? v * 100 : v).toFixed(1)}%`
+          : '--';
+
+        const kpiPentest = document.getElementById('kpiPentestPerf');
+        const kpiPentestSub = document.getElementById('kpiPentestSub');
+        if (kpiPentest) {
+          kpiPentest.textContent = `Vid ${fmtPct(pentest.short_video_accuracy)} | Aud ${fmtPct(pentest.audio_accuracy)}`;
+        }
+        if (kpiPentestSub) {
+          kpiPentestSub.textContent = `${pentest.total_pentest_runs ?? 0} SQLite runs | SVP FPR=${fmtPct(pentest.short_video_fpr)}`;
+        }
+
+        const kpiLora = document.getElementById('kpiLoraPpo');
+        const kpiLoraSub = document.getElementById('kpiLoraSub');
+        if (kpiLora) {
+          kpiLora.textContent = `r=${train.lora_rank ?? 8}, PPO=${train.ppo_trajectories ?? 0}`;
+        }
+        if (kpiLoraSub) {
+          const rewardTxt = typeof train.latest_ppo_reward === 'number' ? train.latest_ppo_reward.toFixed(3) : '--';
+          kpiLoraSub.textContent = `Updates=${train.calibration_weight_updates ?? 0} | R=${rewardTxt}`;
+        }
+
+        const pending = counts.human_review_pending ?? 0;
+        const autoCnt = counts.auto_pentest_feedbacks ?? 0;
+        const kpiHyg = document.getElementById('kpiHygieneStat');
+        const kpiHygSub = document.getElementById('kpiHygieneSub');
+        if (kpiHyg) kpiHyg.textContent = `${pending} Pending Review`;
+        if (kpiHygSub) {
+          kpiHygSub.textContent = `dHash=${curation.total_known_dhashes ?? 0} | AutoPentest=${autoCnt}`;
+        }
+
+        const badgeReview = document.getElementById('badgeReviewPending');
+        if (badgeReview) badgeReview.textContent = `${pending} Pending`;
+
+        renderWeightsHealthCards(null, bench, train);
       } catch (err) {
         console.debug('Notice loading live agent lifecycle:', err);
+      }
+    }
+
+    async function loadOrchestratorTelemetry() {
+      try {
+        const res = await fetch(getApiUrl('api/orchestrator/status'));
+        if (!res.ok) return;
+        const data = await res.json();
+        const life = data.lifecycle || {};
+        const lifeAgents = life.agents || {};
+        const activeParams = data.active_parameters || {};
+        const benchFallback = {
+          platt_temp_T: activeParams.image?.temperature_scaling_T ?? lifeAgents.benchmark_agent?.platt_temp_T,
+          youden_tau_img: activeParams.image?.optimal_threshold_tau ?? lifeAgents.benchmark_agent?.youden_tau_img,
+          youden_tau_vid: activeParams.video?.tau_video ?? lifeAgents.benchmark_agent?.youden_tau_vid,
+          youden_tau_aud: activeParams.audio?.tau_audio ?? lifeAgents.benchmark_agent?.youden_tau_aud,
+          vn_tau_star: activeParams.vn_demographic?.optimal_decision_threshold_tau_star ?? lifeAgents.benchmark_agent?.vn_tau_star,
+        };
+        renderWeightsHealthCards(data.weights_health, benchFallback, lifeAgents.continual_training_agent);
+      } catch (err) {
+        console.debug('Notice loading orchestrator telemetry:', err);
+      }
+    }
+
+    async function triggerOrchestratorAction(endpoint, label) {
+      const box = document.getElementById('orchActionStatus');
+      if (box) {
+        box.style.color = 'var(--accent-cyan)';
+        box.textContent = `⏳ Đang kích hoạt ${label} via /dfagent/${endpoint} ...`;
+      }
+      try {
+        const res = await fetch(getApiUrl(endpoint), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (box) {
+            box.style.color = 'var(--accent-rose)';
+            box.textContent = `❌ ${label} lỗi HTTP ${res.status}: ${data.detail || data.message || 'Unknown error'}`;
+          }
+          return;
+        }
+        if (box) {
+          box.style.color = 'var(--accent-emerald)';
+          const summary = data.message || data.status || 'Triggered cleanly';
+          box.textContent = `✅ ${label}: ${summary}`;
+        }
+        loadLiveAgentLifecycle();
+        loadOrchestratorTelemetry();
+        loadReviewQueue();
+      } catch (err) {
+        if (box) {
+          box.style.color = 'var(--accent-rose)';
+          box.textContent = `❌ Lỗi gọi ${label}: ${err.message}`;
+        }
+      }
+    }
+
+    async function loadReviewQueue() {
+      const tbody = document.getElementById('reviewQueueTableBody');
+      const filterEl = document.getElementById('rqStatusFilter');
+      const syncBadge = document.getElementById('rqLastSyncBadge');
+      const statusVal = filterEl ? filterEl.value : 'PENDING';
+      try {
+        const q = `limit=100${statusVal && statusVal !== 'ALL' ? `&review_status=${encodeURIComponent(statusVal)}` : ''}`;
+        const res = await fetch(getApiUrl(`api/feedback/review-queue?${q}`));
+        const data = await res.json();
+        if (data.status !== 'success') {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--accent-rose);">Lỗi tải Queue: ${escapeHtml(data.message || 'unknown')}</td></tr>`;
+          return;
+        }
+
+        const stats = data.stats || {};
+        const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v ?? 0); };
+        setTxt('rqPendingCount', stats.human_pending);
+        setTxt('rqApprovedCount', stats.human_approved);
+        setTxt('rqDismissedCount', stats.human_dismissed);
+        setTxt('rqAutoPentestCount', stats.auto_pentest_total);
+        const badgeReview = document.getElementById('badgeReviewPending');
+        if (badgeReview) badgeReview.textContent = `${stats.human_pending ?? 0} Pending`;
+        if (syncBadge) syncBadge.textContent = `Synced ${new Date().toLocaleTimeString()}`;
+
+        const events = Array.isArray(data.events) ? data.events : [];
+        if (!tbody) return;
+        if (events.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:1.2rem;">Không có ca nào ở trạng thái "${escapeHtml(statusVal)}".</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = events.map(ev => {
+          const fid = ev.feedback_id || '';
+          const certId = ev.certificate_id || '--';
+          const mediaSrc = ev.file_path ? ev.file_path.split(/[\\/]/).pop() : (ev.source_url || '--');
+          const pred = ev.predicted_label || '--';
+          const risk = typeof ev.composite_risk_score === 'number' ? `${(ev.composite_risk_score * 100).toFixed(1)}%` : '--';
+          const suggested = ev.true_label || '--';
+          const note = ev.user_note || ev.reviewer_note || '';
+          const rStatus = ev.review_status || 'PENDING';
+          const badgeColor = rStatus === 'PENDING' ? 'var(--accent-amber)' : (rStatus.startsWith('APPROVED') ? 'var(--accent-emerald)' : 'var(--text-muted)');
+
+          return `
+            <tr>
+              <td style="font-family:var(--font-mono);font-size:0.74rem;">
+                <div><strong>${escapeHtml(fid)}</strong></div>
+                <div style="color:var(--text-muted);">${escapeHtml(certId)}</div>
+                <div style="color:var(--text-dim);">${escapeHtml(String(ev.created_at || '').slice(0, 19))}</div>
+              </td>
+              <td style="font-size:0.76rem;max-width:220px;word-break:break-word;">
+                <div><span class="badge-sub">${escapeHtml(ev.media_type || 'media')}</span> ${escapeHtml(ev.platform || 'studio')}</div>
+                <div style="color:var(--accent-cyan);margin-top:3px;">${escapeHtml(mediaSrc)}</div>
+              </td>
+              <td style="font-family:var(--font-mono);font-size:0.76rem;">
+                <div>${escapeHtml(pred)}</div>
+                <div style="color:var(--text-muted);">Risk: ${escapeHtml(risk)}</div>
+              </td>
+              <td style="font-size:0.76rem;max-width:220px;word-break:break-word;">
+                <div><strong>${escapeHtml(suggested)}</strong> (${escapeHtml(ev.feedback_type || '')})</div>
+                <div style="color:var(--text-muted);margin-top:2px;">${escapeHtml(note)}</div>
+              </td>
+              <td>
+                <span class="badge-sub" style="color:${badgeColor};border-color:${badgeColor};">${escapeHtml(rStatus)}</span>
+              </td>
+              <td>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_REAL', false)">✓ REAL</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_FAKE', false)">✓ FAKE</button>
+                  <button type="button" class="btn btn-primary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'TRIGGER_CALIBRATION', true)">⚡ Calibrate</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;color:var(--accent-rose);" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'DISMISS', false)">✕ Bỏ qua</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--accent-rose);">Lỗi kết nối Review Queue: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function submitReviewDecision(feedbackId, decision, triggerCalib) {
+      if (!feedbackId) return;
+      try {
+        const res = await fetch(getApiUrl(`api/feedback/review-queue/${encodeURIComponent(feedbackId)}/decision`), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            decision,
+            trigger_calibration: Boolean(triggerCalib),
+            trigger_lora: false,
+            reviewer_note: `Reviewed in /dfagent SRE Cockpit (${decision})`,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          alert(`Review decision failed (${res.status}): ${data.message || data.detail || 'Error'}`);
+          return;
+        }
+        await loadReviewQueue();
+        loadLiveAgentLifecycle();
+      } catch (err) {
+        alert(`Network error submitting review decision: ${err.message}`);
       }
     }
 

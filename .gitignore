@@ -92,6 +92,7 @@ benchmark_data/
 report_colab/2026-*/
 report_colab/gdrive_storage/
 report_colab/pentest/
+deeptrace-browser-extension-*.zip
 report_colab/cache_real_faces/
 report_colab/temp_media_samples/
 scratch/

@@ -1138,16 +1138,16 @@ async function submitForensicFeedback(certId, trueLabel, triggerLora = false) {
                 composite_risk_score: latest.composite_risk_score,
                 feature_telemetry: latest.saraab_feature_telemetry || null,
                 user_note: note,
-                auto_update_calibration: true,
+                source_type: 'HUMAN_REVIEW',
+                auto_update_calibration: false,
                 trigger_lora_update: Boolean(triggerLora),
             }),
         });
         const data = await res.json();
         if (data.status === 'success') {
-            const after = (data.calibration_update && data.calibration_update.after_params) || {};
-            const msg = `✅ **Đã ghi nhận phản ánh (${data.feedback_id})** [${data.feedback_type} | nền tảng: \`${data.platform}\`]\n` +
-                `- Hard frames lưu Vault: **${data.extracted_frames_count}** khung hình\n` +
-                `- Calibration Video cập nhật: \`τ_video=${after.tau_video || 'N/A'}\`, \`w_peak=${after.w_peak || 'N/A'}\`, \`w_avg=${after.w_avg || 'N/A'}\``;
+            const msg = `✅ **Đã gửi yêu cầu Review (${data.feedback_id})** [${data.feedback_type} | nền tảng: \`${data.platform}\`]\n` +
+                `- Trạng thái: **Chờ kiểm duyệt trong ` / dfagent` → Hàng đợi Review (PENDING)**\n` +
+                `- Hard frames lưu Zero-Day Vault: **${data.extracted_frames_count}** khung hình (trọng số hệ thống được bảo vệ cho tới khi Quản trị viên phê duyệt).`;
             if (typeof addMessage === 'function') {
                 addMessage(msg, 'agent');
             } else {
@@ -1665,20 +1665,9 @@ async function handleBenchmarkGateLogin(event) {
             }
         }
     } catch (err) {
-        // Fallback local verification
-        if (user === "thang.cd" && pass === "Thang@123") {
-            sessionStorage.setItem("benchmark_gate_user", user);
-            hideBenchmarkGateOverlay();
-            updateGateUserBadge(user);
-            const card = document.getElementById('benchmarkCard');
-            if (card) card.style.display = 'block';
-            appendTerminalLogLine('INFO', `Subsystem Gate Login verified for '${user}'.`);
-            fetchBenchmarkStatus();
-        } else {
-            if (gateError) {
-                gateError.textContent = "❌ Tên đăng nhập hoặc mật khẩu không chính xác!";
-                gateError.style.display = 'block';
-            }
+        if (gateError) {
+            gateError.textContent = "❌ Không thể kết nối máy chủ xác thực (/api/auth/gate-login). Vui lòng thử lại!";
+            gateError.style.display = 'block';
         }
     } finally {
         if (submitBtn) {

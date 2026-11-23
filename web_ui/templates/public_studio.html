@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#04152E">
+    <meta name="google-site-verification" content="d51260c813ad2ea8">
+    <meta name="description"
+        content="DeepTrace.io.vn - AI Deepfake Multi-Agent Detection &amp; In-the-wild Social Media Digital Forensic Certification.">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <title>DeepTrace.io.vn - Multi-Agent Deepfake Forensic System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6.0.0&t=20261112_152000">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        window.IS_BENCHMARK_PORT = {{ 'true' if is_benchmark_mode else 'false' }};
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => { });
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Background Light Soft Gradient -->
+    <div class="gradient-bg"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/deeptrace-logo.jpg') }}" alt="DeepTrace.io.vn Logo"
+                    class="logo-img">
+                <div class="logo-brand">
+                    <h1 class="logo-text">DeepTrace<span>.io.vn</span></h1>
+                    <span class="logo-sub">AI Forensic &amp; Deepfake Defense</span>
+                </div>
+            </div>
+
+            <div class="nav-links">
+            <div class="nav-links">
+                <div class="lang-switcher">
+                    <button type="button" class="lang-btn active" id="langBtnEn" onclick="switchLanguage('en')">🌐 EN</button>
+                    <button type="button" class="lang-btn" id="langBtnVi" onclick="switchLanguage('vi')">🇻🇳 VI</button>
+                </div>
+
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText" data-i18n="status_connecting">Connecting...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+{% include 'partials/public_studio_body.html' %}
+        </div>
+    </main>
+
+    <!-- Minimal Report Modal for Public Cert Inspection -->
+    <div class="modal-backdrop" id="reportModalBackdrop" style="display: none;" onclick="closeReportModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 Forensic Report</h3>
+                <button type="button" class="btn-close-modal" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body markdown-body" id="reportModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-browse" onclick="closeReportModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=6.3.0&t=20261120_135000"></script>
+</body>
+
+</html>
