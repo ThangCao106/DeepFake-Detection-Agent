@@ -73,7 +73,7 @@ jobs:
           ssl_session_timeout 1440m;
           ssl_protocols TLSv1.2 TLSv1.3;
           EOF
-          openssl dhparam -out "$TMP_LE/ssl-dhparams.pem" 1024 2>/dev/null
+          openssl dhparam -dsaparam -out "$TMP_LE/ssl-dhparams.pem" 2048 2>/dev/null
 
           docker run --rm \
             -v "$PWD/$CONF:/etc/nginx/conf.d/chatbot-dev.dtpsoft.vn.conf:ro" \
