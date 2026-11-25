@@ -1,6 +1,6 @@
 {
-  "run_id": "AUDP-20261125_103450_b8f4e",
-  "timestamp_utc": "2026-11-25T10:34:50Z",
+  "run_id": "AUDP-20261125_225213_4609c",
+  "timestamp_utc": "2026-11-25T22:52:13Z",
   "date": "2026-11-25",
   "evaluation_mode": "EMPIRICAL_LIVE_INFERENCE",
   "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
@@ -33,7 +33,7 @@
     "roc_auc": 1.0,
     "eer_percent": 0.0,
     "ece": 0.0542,
-    "mean_latency_ms": 70.97
+    "mean_latency_ms": 116.76
   },
   "by_channel": {
     "zalo_voice": {
@@ -49,7 +49,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0547,
-      "mean_latency_ms": 72.2
+      "mean_latency_ms": 119.31
     },
     "tiktok_audio": {
       "sample_count": 10,
@@ -64,7 +64,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0541,
-      "mean_latency_ms": 70.9
+      "mean_latency_ms": 117.16
     },
     "threads_voice": {
       "sample_count": 10,
@@ -79,7 +79,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0539,
-      "mean_latency_ms": 70.41
+      "mean_latency_ms": 116.58
     },
     "phone_8khz": {
       "sample_count": 10,
@@ -94,7 +94,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0539,
-      "mean_latency_ms": 70.38
+      "mean_latency_ms": 113.99
     }
   },
   "by_attack_vector": {
@@ -111,7 +111,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.1446,
-      "mean_latency_ms": 57.11
+      "mean_latency_ms": 91.78
     },
     "clean_baseline": {
       "sample_count": 8,
@@ -126,7 +126,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0351,
-      "mean_latency_ms": 74.96
+      "mean_latency_ms": 123.28
     },
     "hf_dither_bypass": {
       "sample_count": 4,
@@ -141,7 +141,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0227,
-      "mean_latency_ms": 72.79
+      "mean_latency_ms": 119.0
     },
     "jitter_spoof": {
       "sample_count": 4,
@@ -156,7 +156,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0367,
-      "mean_latency_ms": 71.97
+      "mean_latency_ms": 118.52
     },
     "partial_audio_splice": {
       "sample_count": 4,
@@ -171,7 +171,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0367,
-      "mean_latency_ms": 71.74
+      "mean_latency_ms": 119.83
     },
     "pitch_speed_shift": {
       "sample_count": 8,
@@ -186,7 +186,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.035,
-      "mean_latency_ms": 71.34
+      "mean_latency_ms": 117.22
     },
     "telephony_8khz_codec": {
       "sample_count": 8,
@@ -201,7 +201,7 @@
       "roc_auc": 1.0,
       "eer_percent": 0.0,
       "ece": 0.0803,
-      "mean_latency_ms": 71.75
+      "mean_latency_ms": 118.73
     }
   },
   "misclassified_count": 0,
@@ -221,10 +221,10 @@
       "correct": true,
       "risk_score": 0.0337,
       "confidence": 0.9991,
-      "latency_ms": 91.82,
+      "latency_ms": 153.68,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_clean_baseline_real.wav",
-      "certificate_id": "CERT-DT-AUD-E1B8FC31"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_clean_baseline_real.wav",
+      "certificate_id": "CERT-DT-AUD-2ACCB1C4"
     },
     {
       "sample_id": "zalo_voice_clean_baseline_fake",
@@ -238,10 +238,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.29,
+      "latency_ms": 119.56,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_clean_baseline_fake.wav",
-      "certificate_id": "CERT-DT-AUD-5CA6E092"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_clean_baseline_fake.wav",
+      "certificate_id": "CERT-DT-AUD-9E0B28AA"
     },
     {
       "sample_id": "zalo_voice_hf_dither_bypass_fake",
@@ -255,10 +255,10 @@
       "correct": true,
       "risk_score": 0.9727,
       "confidence": 0.9376,
-      "latency_ms": 72.47,
+      "latency_ms": 118.6,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_hf_dither_bypass_fake.wav",
-      "certificate_id": "CERT-DT-AUD-FA049EE9"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_hf_dither_bypass_fake.wav",
+      "certificate_id": "CERT-DT-AUD-BDFBBB0B"
     },
     {
       "sample_id": "zalo_voice_jitter_spoof_fake",
@@ -272,10 +272,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 72.53,
+      "latency_ms": 118.22,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_jitter_spoof_fake.wav",
-      "certificate_id": "CERT-DT-AUD-5DA64076"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_jitter_spoof_fake.wav",
+      "certificate_id": "CERT-DT-AUD-3A01E558"
     },
     {
       "sample_id": "zalo_voice_partial_audio_splice_fake",
@@ -289,10 +289,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.39,
+      "latency_ms": 119.11,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_partial_audio_splice_fake.wav",
-      "certificate_id": "CERT-DT-AUD-78D1CA3B"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_partial_audio_splice_fake.wav",
+      "certificate_id": "CERT-DT-AUD-D96CC01D"
     },
     {
       "sample_id": "zalo_voice_telephony_8khz_codec_real",
@@ -306,10 +306,10 @@
       "correct": true,
       "risk_score": 0.1248,
       "confidence": 0.9882,
-      "latency_ms": 71.64,
+      "latency_ms": 118.48,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_telephony_8khz_codec_real.wav",
-      "certificate_id": "CERT-DT-AUD-F2BEB227"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_telephony_8khz_codec_real.wav",
+      "certificate_id": "CERT-DT-AUD-71F4438B"
     },
     {
       "sample_id": "zalo_voice_telephony_8khz_codec_fake",
@@ -323,10 +323,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.05,
+      "latency_ms": 118.12,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_telephony_8khz_codec_fake.wav",
-      "certificate_id": "CERT-DT-AUD-9CDCD8E8"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_telephony_8khz_codec_fake.wav",
+      "certificate_id": "CERT-DT-AUD-2D820E7E"
     },
     {
       "sample_id": "zalo_voice_ambient_noise_anti_fp_real",
@@ -340,10 +340,10 @@
       "correct": true,
       "risk_score": 0.1446,
       "confidence": 0.9841,
-      "latency_ms": 57.85,
+      "latency_ms": 91.73,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_ambient_noise_anti_fp_real.wav",
-      "certificate_id": "CERT-DT-AUD-FCE75029"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_ambient_noise_anti_fp_real.wav",
+      "certificate_id": "CERT-DT-AUD-5730F1A7"
     },
     {
       "sample_id": "zalo_voice_pitch_speed_shift_real",
@@ -357,10 +357,10 @@
       "correct": true,
       "risk_score": 0.033,
       "confidence": 0.9992,
-      "latency_ms": 70.84,
+      "latency_ms": 117.99,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_pitch_speed_shift_real.wav",
-      "certificate_id": "CERT-DT-AUD-1C04A884"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_pitch_speed_shift_real.wav",
+      "certificate_id": "CERT-DT-AUD-4DC44858"
     },
     {
       "sample_id": "zalo_voice_pitch_speed_shift_fake",
@@ -374,10 +374,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.12,
+      "latency_ms": 117.64,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/zalo_voice_pitch_speed_shift_fake.wav",
-      "certificate_id": "CERT-DT-AUD-36D854C9"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/zalo_voice_pitch_speed_shift_fake.wav",
+      "certificate_id": "CERT-DT-AUD-B767C0CA"
     },
     {
       "sample_id": "tiktok_audio_clean_baseline_real",
@@ -391,10 +391,10 @@
       "correct": true,
       "risk_score": 0.0337,
       "confidence": 0.9991,
-      "latency_ms": 75.3,
+      "latency_ms": 118.4,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_clean_baseline_real.wav",
-      "certificate_id": "CERT-DT-AUD-72470436"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_clean_baseline_real.wav",
+      "certificate_id": "CERT-DT-AUD-EA9F3F20"
     },
     {
       "sample_id": "tiktok_audio_clean_baseline_fake",
@@ -408,10 +408,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.87,
+      "latency_ms": 120.58,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_clean_baseline_fake.wav",
-      "certificate_id": "CERT-DT-AUD-79949613"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_clean_baseline_fake.wav",
+      "certificate_id": "CERT-DT-AUD-79C9ACAE"
     },
     {
       "sample_id": "tiktok_audio_hf_dither_bypass_fake",
@@ -425,10 +425,10 @@
       "correct": true,
       "risk_score": 0.9789,
       "confidence": 0.9519,
-      "latency_ms": 73.64,
+      "latency_ms": 121.11,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_hf_dither_bypass_fake.wav",
-      "certificate_id": "CERT-DT-AUD-3EF2C8CF"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_hf_dither_bypass_fake.wav",
+      "certificate_id": "CERT-DT-AUD-424EF28B"
     },
     {
       "sample_id": "tiktok_audio_jitter_spoof_fake",
@@ -442,10 +442,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.6,
+      "latency_ms": 120.64,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_jitter_spoof_fake.wav",
-      "certificate_id": "CERT-DT-AUD-793745D6"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_jitter_spoof_fake.wav",
+      "certificate_id": "CERT-DT-AUD-898B9F89"
     },
     {
       "sample_id": "tiktok_audio_partial_audio_splice_fake",
@@ -459,10 +459,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.6,
+      "latency_ms": 120.51,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_partial_audio_splice_fake.wav",
-      "certificate_id": "CERT-DT-AUD-D45022F5"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_partial_audio_splice_fake.wav",
+      "certificate_id": "CERT-DT-AUD-029C2B1B"
     },
     {
       "sample_id": "tiktok_audio_telephony_8khz_codec_real",
@@ -476,10 +476,10 @@
       "correct": true,
       "risk_score": 0.1241,
       "confidence": 0.9883,
-      "latency_ms": 72.59,
+      "latency_ms": 121.0,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_telephony_8khz_codec_real.wav",
-      "certificate_id": "CERT-DT-AUD-58DAEA32"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_telephony_8khz_codec_real.wav",
+      "certificate_id": "CERT-DT-AUD-4713D703"
     },
     {
       "sample_id": "tiktok_audio_telephony_8khz_codec_fake",
@@ -493,10 +493,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.67,
+      "latency_ms": 119.65,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_telephony_8khz_codec_fake.wav",
-      "certificate_id": "CERT-DT-AUD-316A9F33"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_telephony_8khz_codec_fake.wav",
+      "certificate_id": "CERT-DT-AUD-4BE96697"
     },
     {
       "sample_id": "tiktok_audio_ambient_noise_anti_fp_real",
@@ -510,10 +510,10 @@
       "correct": true,
       "risk_score": 0.1446,
       "confidence": 0.9841,
-      "latency_ms": 57.54,
+      "latency_ms": 94.22,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_ambient_noise_anti_fp_real.wav",
-      "certificate_id": "CERT-DT-AUD-E96A96CB"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_ambient_noise_anti_fp_real.wav",
+      "certificate_id": "CERT-DT-AUD-D580D9F9"
     },
     {
       "sample_id": "tiktok_audio_pitch_speed_shift_real",
@@ -527,10 +527,10 @@
       "correct": true,
       "risk_score": 0.0337,
       "confidence": 0.9991,
-      "latency_ms": 71.73,
+      "latency_ms": 117.34,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_pitch_speed_shift_real.wav",
-      "certificate_id": "CERT-DT-AUD-16B1F987"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_pitch_speed_shift_real.wav",
+      "certificate_id": "CERT-DT-AUD-D96FE730"
     },
     {
       "sample_id": "tiktok_audio_pitch_speed_shift_fake",
@@ -544,10 +544,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.47,
+      "latency_ms": 118.13,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/tiktok_audio_pitch_speed_shift_fake.wav",
-      "certificate_id": "CERT-DT-AUD-088C31A2"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/tiktok_audio_pitch_speed_shift_fake.wav",
+      "certificate_id": "CERT-DT-AUD-9EAEE61B"
     },
     {
       "sample_id": "threads_voice_clean_baseline_real",
@@ -561,10 +561,10 @@
       "correct": true,
       "risk_score": 0.0333,
       "confidence": 0.9992,
-      "latency_ms": 71.91,
+      "latency_ms": 119.99,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_clean_baseline_real.wav",
-      "certificate_id": "CERT-DT-AUD-D90C1116"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_clean_baseline_real.wav",
+      "certificate_id": "CERT-DT-AUD-CF26DDF0"
     },
     {
       "sample_id": "threads_voice_clean_baseline_fake",
@@ -578,10 +578,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 73.18,
+      "latency_ms": 120.82,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_clean_baseline_fake.wav",
-      "certificate_id": "CERT-DT-AUD-EBE78543"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_clean_baseline_fake.wav",
+      "certificate_id": "CERT-DT-AUD-C8EE8611"
     },
     {
       "sample_id": "threads_voice_hf_dither_bypass_fake",
@@ -595,10 +595,10 @@
       "correct": true,
       "risk_score": 0.9789,
       "confidence": 0.9519,
-      "latency_ms": 72.73,
+      "latency_ms": 119.88,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_hf_dither_bypass_fake.wav",
-      "certificate_id": "CERT-DT-AUD-8C6C8B7D"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_hf_dither_bypass_fake.wav",
+      "certificate_id": "CERT-DT-AUD-DED71C0C"
     },
     {
       "sample_id": "threads_voice_jitter_spoof_fake",
@@ -612,10 +612,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.97,
+      "latency_ms": 119.18,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_jitter_spoof_fake.wav",
-      "certificate_id": "CERT-DT-AUD-29B1B834"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_jitter_spoof_fake.wav",
+      "certificate_id": "CERT-DT-AUD-909416B6"
     },
     {
       "sample_id": "threads_voice_partial_audio_splice_fake",
@@ -629,10 +629,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.95,
+      "latency_ms": 119.1,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_partial_audio_splice_fake.wav",
-      "certificate_id": "CERT-DT-AUD-50995587"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_partial_audio_splice_fake.wav",
+      "certificate_id": "CERT-DT-AUD-AE4F0A87"
     },
     {
       "sample_id": "threads_voice_telephony_8khz_codec_real",
@@ -646,10 +646,10 @@
       "correct": true,
       "risk_score": 0.1235,
       "confidence": 0.9884,
-      "latency_ms": 71.41,
+      "latency_ms": 120.27,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_telephony_8khz_codec_real.wav",
-      "certificate_id": "CERT-DT-AUD-BBB3603E"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_telephony_8khz_codec_real.wav",
+      "certificate_id": "CERT-DT-AUD-013D412C"
     },
     {
       "sample_id": "threads_voice_telephony_8khz_codec_fake",
@@ -663,10 +663,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.47,
+      "latency_ms": 119.48,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_telephony_8khz_codec_fake.wav",
-      "certificate_id": "CERT-DT-AUD-4809B8D5"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_telephony_8khz_codec_fake.wav",
+      "certificate_id": "CERT-DT-AUD-48C8EBCF"
     },
     {
       "sample_id": "threads_voice_ambient_noise_anti_fp_real",
@@ -680,10 +680,10 @@
       "correct": true,
       "risk_score": 0.1446,
       "confidence": 0.9841,
-      "latency_ms": 56.01,
+      "latency_ms": 91.58,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_ambient_noise_anti_fp_real.wav",
-      "certificate_id": "CERT-DT-AUD-F2827724"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_ambient_noise_anti_fp_real.wav",
+      "certificate_id": "CERT-DT-AUD-565E45DC"
     },
     {
       "sample_id": "threads_voice_pitch_speed_shift_real",
@@ -697,10 +697,10 @@
       "correct": true,
       "risk_score": 0.0333,
       "confidence": 0.9992,
-      "latency_ms": 71.41,
+      "latency_ms": 119.66,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_pitch_speed_shift_real.wav",
-      "certificate_id": "CERT-DT-AUD-0E24BDE5"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_pitch_speed_shift_real.wav",
+      "certificate_id": "CERT-DT-AUD-ED36AA58"
     },
     {
       "sample_id": "threads_voice_pitch_speed_shift_fake",
@@ -714,10 +714,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 72.05,
+      "latency_ms": 115.87,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/threads_voice_pitch_speed_shift_fake.wav",
-      "certificate_id": "CERT-DT-AUD-6505877C"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/threads_voice_pitch_speed_shift_fake.wav",
+      "certificate_id": "CERT-DT-AUD-D346087A"
     },
     {
       "sample_id": "phone_8khz_clean_baseline_real",
@@ -731,10 +731,10 @@
       "correct": true,
       "risk_score": 0.0332,
       "confidence": 0.9992,
-      "latency_ms": 72.09,
+      "latency_ms": 117.09,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_clean_baseline_real.wav",
-      "certificate_id": "CERT-DT-AUD-8D55C730"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_clean_baseline_real.wav",
+      "certificate_id": "CERT-DT-AUD-82ED8FA8"
     },
     {
       "sample_id": "phone_8khz_clean_baseline_fake",
@@ -748,10 +748,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 72.19,
+      "latency_ms": 116.13,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_clean_baseline_fake.wav",
-      "certificate_id": "CERT-DT-AUD-BF7B6FAB"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_clean_baseline_fake.wav",
+      "certificate_id": "CERT-DT-AUD-DD690167"
     },
     {
       "sample_id": "phone_8khz_hf_dither_bypass_fake",
@@ -765,10 +765,10 @@
       "correct": true,
       "risk_score": 0.9789,
       "confidence": 0.9519,
-      "latency_ms": 72.31,
+      "latency_ms": 116.4,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_hf_dither_bypass_fake.wav",
-      "certificate_id": "CERT-DT-AUD-C8272476"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_hf_dither_bypass_fake.wav",
+      "certificate_id": "CERT-DT-AUD-CB8A9155"
     },
     {
       "sample_id": "phone_8khz_jitter_spoof_fake",
@@ -782,10 +782,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.79,
+      "latency_ms": 116.04,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_jitter_spoof_fake.wav",
-      "certificate_id": "CERT-DT-AUD-03679168"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_jitter_spoof_fake.wav",
+      "certificate_id": "CERT-DT-AUD-EE5DB01F"
     },
     {
       "sample_id": "phone_8khz_partial_audio_splice_fake",
@@ -799,10 +799,10 @@
       "correct": true,
       "risk_score": 0.9632,
       "confidence": 0.9156,
-      "latency_ms": 72.03,
+      "latency_ms": 120.61,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_partial_audio_splice_fake.wav",
-      "certificate_id": "CERT-DT-AUD-CEA8BC1D"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_partial_audio_splice_fake.wav",
+      "certificate_id": "CERT-DT-AUD-7FA136E8"
     },
     {
       "sample_id": "phone_8khz_telephony_8khz_codec_real",
@@ -816,10 +816,10 @@
       "correct": true,
       "risk_score": 0.1232,
       "confidence": 0.9885,
-      "latency_ms": 71.92,
+      "latency_ms": 117.59,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_telephony_8khz_codec_real.wav",
-      "certificate_id": "CERT-DT-AUD-F9B5D30E"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_telephony_8khz_codec_real.wav",
+      "certificate_id": "CERT-DT-AUD-D7AE1DB7"
     },
     {
       "sample_id": "phone_8khz_telephony_8khz_codec_fake",
@@ -833,10 +833,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 72.27,
+      "latency_ms": 115.25,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_telephony_8khz_codec_fake.wav",
-      "certificate_id": "CERT-DT-AUD-9C320FE7"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_telephony_8khz_codec_fake.wav",
+      "certificate_id": "CERT-DT-AUD-D44F19A5"
     },
     {
       "sample_id": "phone_8khz_ambient_noise_anti_fp_real",
@@ -850,10 +850,10 @@
       "correct": true,
       "risk_score": 0.1446,
       "confidence": 0.9841,
-      "latency_ms": 57.05,
+      "latency_ms": 89.61,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_ambient_noise_anti_fp_real.wav",
-      "certificate_id": "CERT-DT-AUD-55D7AC01"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_ambient_noise_anti_fp_real.wav",
+      "certificate_id": "CERT-DT-AUD-DE3062D9"
     },
     {
       "sample_id": "phone_8khz_pitch_speed_shift_real",
@@ -867,10 +867,10 @@
       "correct": true,
       "risk_score": 0.0335,
       "confidence": 0.9991,
-      "latency_ms": 70.35,
+      "latency_ms": 115.52,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_pitch_speed_shift_real.wav",
-      "certificate_id": "CERT-DT-AUD-000D00AB"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_pitch_speed_shift_real.wav",
+      "certificate_id": "CERT-DT-AUD-87FCBA21"
     },
     {
       "sample_id": "phone_8khz_pitch_speed_shift_fake",
@@ -884,10 +884,10 @@
       "correct": true,
       "risk_score": 0.9633,
       "confidence": 0.9158,
-      "latency_ms": 71.76,
+      "latency_ms": 115.63,
       "audio_backbone": "ENHANCED_FUSIONNET_HYBRID",
-      "file_path": "/tmp/audio_pentest_j5y6_yrt/phone_8khz_pitch_speed_shift_fake.wav",
-      "certificate_id": "CERT-DT-AUD-4423CC43"
+      "file_path": "/tmp/audio_pentest_3v7ldqeb/phone_8khz_pitch_speed_shift_fake.wav",
+      "certificate_id": "CERT-DT-AUD-0ED4FED8"
     }
   ]
 }
