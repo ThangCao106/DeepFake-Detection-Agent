@@ -13,7 +13,6 @@ import re
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from flask import Blueprint, jsonify, request
 
 from forensics_kernel.calibration_store import resolve_custom_vit_dir
 
@@ -84,6 +83,7 @@ def _download_hf_snapshot_resilient(repo_id: str, dest: Path) -> None:
 
 
 def create_colab_blueprint(reload_detector_fn, emit_fn):
+    from flask import Blueprint, jsonify, request
     bp = Blueprint("colab_routes", __name__)
 
     @bp.route('/api/colab/callback', methods=['POST'])

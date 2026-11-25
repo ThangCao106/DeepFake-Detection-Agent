@@ -125,6 +125,8 @@ jobs:
             OLD_GATE_USER=""
             OLD_GATE_PASS=""
             OLD_FLASK_SECRET=""
+            OLD_COLAB_SECRET=""
+            OLD_CUSTOM_VIT_REPO=""
 
             if [ -f .env ]; then
               OLD_GEMINI=$(grep "^GEMINI_API_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
@@ -136,6 +138,8 @@ jobs:
               OLD_GATE_USER=$(grep "^BENCHMARK_GATE_USER=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
               OLD_GATE_PASS=$(grep "^BENCHMARK_GATE_PASS=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
               OLD_FLASK_SECRET=$(grep "^FLASK_SECRET_KEY=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_COLAB_SECRET=$(grep "^COLAB_CALLBACK_SECRET=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
+              OLD_CUSTOM_VIT_REPO=$(grep "^CUSTOM_VIT_HF_REPO=" .env | cut -d '=' -f2- | tr -d '\r\n' | xargs)
             fi
 
             if [ -z "$OLD_GEMINI" ] && [ -f report_colab/.credentials/.env.backup ]; then
@@ -191,6 +195,8 @@ jobs:
             if [ -n "$OLD_GATE_USER" ]; then echo "BENCHMARK_GATE_USER=${OLD_GATE_USER}" >> .env; fi
             if [ -n "$OLD_GATE_PASS" ]; then echo "BENCHMARK_GATE_PASS=${OLD_GATE_PASS}" >> .env; fi
             if [ -n "$OLD_FLASK_SECRET" ]; then echo "FLASK_SECRET_KEY=${OLD_FLASK_SECRET}" >> .env; fi
+            if [ -n "$OLD_COLAB_SECRET" ]; then echo "COLAB_CALLBACK_SECRET=${OLD_COLAB_SECRET}" >> .env; fi
+            if [ -n "$OLD_CUSTOM_VIT_REPO" ]; then echo "CUSTOM_VIT_HF_REPO=${OLD_CUSTOM_VIT_REPO}" >> .env; fi
 
             # Build Docker Image & Run Container with Docker Compose (Reusing Layer Cache)
             echo "🐳 Building Docker images (reusing layer cache) & launching containers..."
