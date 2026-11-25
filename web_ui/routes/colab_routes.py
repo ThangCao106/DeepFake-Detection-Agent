@@ -14,8 +14,6 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-from forensics_kernel.calibration_store import resolve_custom_vit_dir
-
 logger = logging.getLogger(__name__)
 
 TRUSTED_HF_REPO_PATTERN = re.compile(r"^(ThangCao106|ThangCao)/[A-Za-z0-9._-]+$")
@@ -104,6 +102,7 @@ def create_colab_blueprint(reload_detector_fn, emit_fn):
 
             now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             logger.info(f"[colab_bridge] Received tuning callback from Colab (hf_repo_id={hf_repo_id or 'none'})")
+            from forensics_kernel.calibration_store import resolve_custom_vit_dir
             custom_dir = resolve_custom_vit_dir()
             custom_dir.mkdir(parents=True, exist_ok=True)
 

@@ -425,6 +425,7 @@ print("FASTAPI_RUNTIME_OK")
             self.assertTrue(_verify_callback_auth(SimpleNamespace(headers={"Authorization": "Bearer unit-test-secret-999"}), {}))
 
         try:
+            import numpy  # noqa: F401
             from flask import Flask
         except ImportError:
             return
@@ -442,7 +443,7 @@ print("FASTAPI_RUNTIME_OK")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
-            with patch("web_ui.routes.colab_routes.resolve_custom_vit_dir", return_value=tmp_path):
+            with patch("forensics_kernel.calibration_store.resolve_custom_vit_dir", return_value=tmp_path):
                 r_bad_repo = client.post("/api/colab/callback", json={"hf_repo_id": "attacker/malicious-vit"})
                 self.assertEqual(r_bad_repo.status_code, 403)
 
