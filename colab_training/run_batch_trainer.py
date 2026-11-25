@@ -1,43 +1,42 @@
 """
-Option B Dedicated Batch Trainer for Google Colab.
+Option B Dedicated Batch Trainer for Google Colab (Burst-GPU Closed-Loop Ready).
 Decoupled Architecture:
   - Job 1 (Harvester): Crawls Threads & Wikimedia Commons, creates paired counterfactuals,
-    and uploads 100% of media assets to Google Drive every 4h.
-  - Job 2 (This Trainer): Reads accumulated media batches from Google Drive, stages data
-    to fast local NVMe SSD (/content/train_cache), trains Model 1 (ViT Vision) and
-    Model 2 (Human Biometrics), and commits checkpoints back to Google Drive.
-
-Usage:
-  # Train on all available dates in Google Drive:
-  !python colab_training/run_batch_trainer.py --date all
-
-  # Train on a specific date (including all its batch_* subfolders):
-  !python colab_training/run_batch_trainer.py --date 2026-09-29 --epochs 3
-
-  # Train only Model 1 or Model 2:
-  !python colab_training/run_batch_trainer.py --date 2026-09-29 --model1-only
-  !python colab_training/run_batch_trainer.py --date 2026-09-29 --model2-only
+    and uploads media assets to Google Drive (`Thread_Data/YYYY-MM-DD/batch_*`).
+  - Job 2 (This Trainer): Stages Drive batches + approved Human Review Queue disputes to fast local NVMe SSD,
+    trains Vision ViT (`model.safetensors`), Human Biometrics (`weights_human.pt`), and Audio (`audio_fusionnet.pt`),
+    enforces the OOD Safety Gate, uploads to Hugging Face Hub, and triggers hot-reload on `https://deeptrace.io.vn`.
 """
 
+import argparse
 import os
+import re
+import shutil
 import sys
 import time
-import shutil
-import argparse
-import json
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
-# Add project root to sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+COLAB_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = COLAB_DIR.parent
+for _p in (str(COLAB_DIR), str(PROJECT_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from colab_training.train_threads_continual import run_threads_continual_training, find_all_manifests
+from colab_training.colab_auto_runner import (
+    _build_callback_payload,
+    maybe_auto_disconnect_colab,
+    resolve_credentials,
+)
+from colab_training.colab_dataset_pipeline import ColabAutoSyncManager
 from colab_training.train_human import train_human_model
+from colab_training.train_threads_continual import run_threads_continual_training
+
+DATE_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def resolve_drive_root(custom_path: str = None) -> Path:
-    """Finds the active Google Drive Thread_Data directory."""
+    """Find the active Google Drive Thread_Data directory."""
     candidates = []
     if custom_path:
         candidates.append(Path(custom_path))
@@ -46,53 +45,58 @@ def resolve_drive_root(custom_path: str = None) -> Path:
         Path("/content/drive/MyDrive/DeepFake-Detection-Benchmark"),
         Path("/content/drive/Shareddrives/Thread_Data"),
         PROJECT_ROOT / "report_colab" / "gdrive_storage",
-        PROJECT_ROOT / "report_colab" / "pentest"
+        PROJECT_ROOT / "report_colab" / "pentest",
     ])
     for p in candidates:
         if p.exists():
             return p
-    # Fallback to local
     fallback = PROJECT_ROOT / "report_colab" / "gdrive_storage"
     fallback.mkdir(parents=True, exist_ok=True)
     return fallback
+
+
+def _resolve_target_subdirs(drive_root: Path, target_dates: list[str]) -> list[Path]:
+    """Resolve `latest`, `all`, or explicit `YYYY-MM-DD` folders under `drive_root`."""
+    all_dirs = [
+        c for c in sorted(drive_root.iterdir())
+        if c.is_dir() and not c.name.startswith((".", "checkpoints", "features"))
+    ] if drive_root.exists() else []
+    dated_dirs = [c for c in all_dirs if DATE_DIR_RE.match(c.name)]
+
+    if "all" in target_dates:
+        return all_dirs
+    if "latest" in target_dates:
+        if dated_dirs:
+            return [dated_dirs[-1]]
+        return all_dirs[-1:] if all_dirs else []
+
+    matched = []
+    for d_str in target_dates:
+        p = drive_root / d_str
+        if p.exists() and p.is_dir():
+            matched.append(p)
+    if not matched and dated_dirs:
+        print(f"ℹ️ Requested date(s) {target_dates} not found on Drive; auto-selecting latest batch '{dated_dirs[-1].name}'.")
+        return [dated_dirs[-1]]
+    return matched
 
 
 def stage_drive_data_to_local(
     drive_root: Path,
     target_dates: list[str],
     local_cache_dir: Path,
-    max_workers: int = 16
+    max_workers: int = 16,
 ) -> tuple[Path, int]:
-    """
-    Copies images and manifests from Google Drive FUSE into fast local NVMe SSD
-    to eliminate I/O latency and avoid 403 Drive rate-limiting during training.
-    """
+    """Copy images and manifests from Google Drive FUSE into fast local NVMe SSD."""
     local_cache_dir.mkdir(parents=True, exist_ok=True)
-    print("\n" + "=" * 75)
-    print(f"⚡ [Option B Staging] Pre-caching dataset from Google Drive to local SSD:")
-    print(f"   Source Drive: {drive_root}")
-    print(f"   Local Cache:  {local_cache_dir}")
-    print("=" * 75)
+    subdirs_to_copy = _resolve_target_subdirs(drive_root, target_dates)
 
-    # Collect source subdirectories
-    subdirs_to_copy = []
-    if "all" in target_dates:
-        for child in sorted(drive_root.iterdir()):
-            if child.is_dir() and not child.name.startswith((".", "checkpoints")):
-                subdirs_to_copy.append(child)
-    else:
-        for d_str in target_dates:
-            target_p = drive_root / d_str
-            if target_p.exists() and target_p.is_dir():
-                subdirs_to_copy.append(target_p)
-                
-    # Always include Option B compact biometric features cache if present
     features_p = drive_root / "features"
     if features_p.exists() and features_p.is_dir() and features_p not in subdirs_to_copy:
         subdirs_to_copy.append(features_p)
 
     if not subdirs_to_copy:
-        print("⚠️ No matching date directories found on Google Drive. Training will search Drive directly.")
+        print("⚠️ No date subdirectories found on Google Drive; trainer will scan verified roots directly.")
         return drive_root, 0
 
     files_to_copy = []
@@ -100,10 +104,9 @@ def stage_drive_data_to_local(
         for fpath in sdir.glob("**/*.*"):
             if fpath.is_file() and not fpath.name.startswith("."):
                 rel = fpath.relative_to(drive_root)
-                dest = local_cache_dir / rel
-                files_to_copy.append((fpath, dest))
+                files_to_copy.append((fpath, local_cache_dir / rel))
 
-    print(f"   Identified {len(files_to_copy)} files across {len(subdirs_to_copy)} directories to stage...")
+    print(f"⚡ [Option B Staging] Pre-caching {len(files_to_copy)} files across {[d.name for d in subdirs_to_copy]} -> {local_cache_dir}...")
 
     def _copy_worker(pair):
         src, dst = pair
@@ -114,111 +117,147 @@ def stage_drive_data_to_local(
     start_c = time.time()
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         list(executor.map(_copy_worker, files_to_copy))
-        
+
     duration = time.time() - start_c
-    print(f"✅ [Staging Complete] Cached {len(files_to_copy)} files in {duration:.1f}s ({len(files_to_copy)/(max(duration, 0.1)):.0f} files/sec)!")
+    print(f"✅ [Staging Complete] Cached {len(files_to_copy)} files in {duration:.1f}s!")
     return local_cache_dir, len(files_to_copy)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Option B Dedicated Batch Trainer for Threads-DFBench")
     parser.add_argument("--drive-root", "--drive_root", type=str, default=None, help="Path to Google Drive Thread_Data root")
-    parser.add_argument("--date", type=str, default="2026-09-29", help="Target date(s) (e.g. 2026-09-29, or 'all', default: 2026-09-29)")
+    parser.add_argument("--date", type=str, default="latest", help="Target date ('latest', 'all', or 'YYYY-MM-DD')")
     parser.add_argument("--epochs", type=int, default=3, help="Training epochs (default: 3)")
     parser.add_argument("--batch-size", "--batch_size", type=int, default=16, help="Batch size (default: 16)")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate (default: 1e-5)")
     parser.add_argument("--model1-only", action="store_true", help="Train only Model 1 (General Vision ViT)")
     parser.add_argument("--model2-only", action="store_true", help="Train only Model 2 (Human Biometrics)")
-    parser.add_argument("--no-cache", action="store_true", help="Disable local SSD staging cache and read directly from Google Drive")
+    parser.add_argument("--train-audio", action="store_true", default=True, help="Also train Stream 3 Audio FusionNet")
+    parser.add_argument("--no-audio", action="store_true", help="Skip Stream 3 Audio FusionNet")
+    parser.add_argument("--no-cache", action="store_true", help="Disable local SSD staging cache")
+    parser.add_argument("--upload-hf", action="store_true", default=True, help="Upload trained weights to Hugging Face Hub if HF_TOKEN is present")
+    parser.add_argument("--no-upload-hf", action="store_true", help="Disable Hugging Face Hub upload")
+    parser.add_argument("--callback-url", type=str, default="https://deeptrace.io.vn", help="Production server URL for /api/colab/callback")
+    parser.add_argument("--no-notify", action="store_true", help="Disable POST /api/colab/callback notification")
+    parser.add_argument("--sync-human-review", action="store_true", default=True, help="Ingest approved Human Review Queue disputes")
+    parser.add_argument("--min-auc", type=float, default=0.70, help="OOD Safety Gate minimum ROC-AUC")
+    parser.add_argument("--max-ece", type=float, default=0.15, help="OOD Safety Gate maximum ECE")
+    parser.add_argument("--auto-disconnect", action="store_true", help="Unassign Colab GPU runtime immediately after completion")
     args = parser.parse_args()
 
+    hf_token, gh_token, cb_secret = resolve_credentials()
+    sync_manager = ColabAutoSyncManager()
     drive_root = resolve_drive_root(args.drive_root)
     target_dates = [d.strip() for d in args.date.split(",") if d.strip()]
 
     print("=" * 80)
-    print("🚀 OPTION B: DEDICATED BATCH TRAINER (GOOGLE COLAB)")
-    print(f"📂 Google Drive Root: {drive_root}")
-    print(f"📅 Target Date Filter: {', '.join(target_dates)}")
+    print("🚀 OPTION B: DEDICATED BATCH TRAINER (CLOSED-LOOP BURST GPU)")
+    print(f"📂 Google Drive Root: {drive_root} | Target Date: {', '.join(target_dates)}")
     print(f"⚙️ Config: Epochs={args.epochs} | Batch Size={args.batch_size} | LR={args.lr}")
     print("=" * 80)
 
-    # 1. Staging Data to Local NVMe SSD (Avoid FUSE Bottleneck)
+    extra_manifests = []
+    if args.sync_human_review and args.callback_url:
+        hr_manifest, _ = sync_manager.pull_human_review_feedback(api_base=args.callback_url)
+        if hr_manifest:
+            extra_manifests.append(hr_manifest)
+
     local_cache_dir = Path("/content/train_cache") if Path("/content").exists() else PROJECT_ROOT / "report_colab" / "train_cache"
     data_source_root = drive_root
-    staged_count = 0
     if not args.no_cache:
-        data_source_root, staged_count = stage_drive_data_to_local(drive_root, target_dates, local_cache_dir)
+        data_source_root, _ = stage_drive_data_to_local(drive_root, target_dates, local_cache_dir)
 
     checkpoint_dir = drive_root / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     do_train_model1 = not args.model2_only
     do_train_model2 = not args.model1_only
+    do_train_audio = args.train_audio and not args.no_audio and not args.model1_only and not args.model2_only
 
     model1_res = None
     model2_res = None
+    audio_meta = None
 
-    # 2. Train Model 1 (General Vision & Signal Detector)
     if do_train_model1:
-        print("\n" + "=" * 80)
-        print("[Step 1/2] Training Model 1: General Vision ViT Backbone...")
-        print("=" * 80)
+        print("\n[Step 1/3] Training Model 1: Continual Vision ViT + Spectral FCB...")
         try:
             model1_res = run_threads_continual_training(
                 drive_root=str(data_source_root),
                 epochs=args.epochs,
                 batch_size=args.batch_size,
                 lr=args.lr,
-                output_checkpoint_dir=checkpoint_dir
+                output_checkpoint_dir=checkpoint_dir,
+                extra_manifests=extra_manifests,
+                min_ood_auc=args.min_auc,
+                max_ood_ece=args.max_ece,
             )
-            print(f"🎯 Model 1 Training Completed: Acc={model1_res.get('test_acc')}%, AUC={model1_res.get('auc')}")
+            from colab_training.train_general import train_general_model
+            train_general_model(epochs=max(3, args.epochs * 2), batch_size=args.batch_size, output_dir=str(PROJECT_ROOT / "custom_vit_model"))
         except Exception as e1:
             print(f"❌ Model 1 Training Failed: {e1}")
 
-    # 3. Train Model 2 (Human Biometric Multi-Modal Detector)
     if do_train_model2:
-        print("\n" + "=" * 80)
-        print("[Step 2/2] Training Model 2: Human Biometric Multi-Modal Detector...")
-        print("=" * 80)
+        print("\n[Step 2/3] Training Model 2: Human Biometric Multi-Modal Detector...")
         try:
-            out_human_dir = PROJECT_ROOT / "human_vit_model"
             model2_res = train_human_model(
                 epochs=args.epochs,
                 batch_size=args.batch_size,
-                lr=args.lr,
+                lr=max(args.lr, 1e-4),
                 drive_root=str(data_source_root),
-                output_dir=str(out_human_dir)
+                output_dir=str(PROJECT_ROOT / "human_vit_model"),
             )
-            print(f"🧬 Model 2 Training Completed: Acc={model2_res.get('accuracy')}%, AUC={model2_res.get('auc')}, EER={model2_res.get('eer')}%")
         except Exception as e2:
             print(f"❌ Model 2 Training Failed: {e2}")
 
-    # 4. FUSE Flush & Safety Release Gate
+    if do_train_audio:
+        print("\n[Step 3/3] Training Model 3: EnhancedAudioFusionNet...")
+        try:
+            from colab_training.train_audio_fusionnet import train_audio_fusionnet
+            audio_meta = train_audio_fusionnet(epochs=35)
+        except Exception as e3:
+            print(f"⚠️ Audio FusionNet Training Notice: {e3}")
+
+    safety_passed = bool(model1_res.get("safety_passed", True)) if model1_res else True
+    hf_uploaded = False
+    if safety_passed:
+        if hf_token and args.upload_hf and not args.no_upload_hf:
+            hf_uploaded = sync_manager.auto_upload_hf(model_dir=str(PROJECT_ROOT / "custom_vit_model"), hf_token=hf_token, force=True)
+            if model2_res:
+                sync_manager.auto_upload_hf(model_dir=str(PROJECT_ROOT / "human_vit_model"), hf_token=hf_token, force=True)
+
+        if args.callback_url and not args.no_notify:
+            cb_payload = _build_callback_payload(
+                vit_res=model1_res,
+                audio_meta=audio_meta,
+                hf_repo_id=sync_manager.hf_repo if hf_uploaded else None,
+                dataset_label=f"gdrive_batch:{','.join(target_dates)}",
+            )
+            sync_manager.notify_production_callback(api_base=args.callback_url, payload=cb_payload, callback_secret=cb_secret)
+    else:
+        print("🛑 [OOD Safety Gate HOLD] Validation below threshold; cloud upload & server callback skipped.")
+
+    sync_manager.sync_to_google_drive()
+    if gh_token:
+        sync_manager.auto_sync_metrics_to_github(
+            github_token=gh_token,
+            commit_message=f"Auto-sync Option B batch trainer metrics ({','.join(target_dates)}) [Auto-Bot]",
+        )
+
     try:
         if hasattr(os, "sync"):
-            print("\n[FUSE Final Flush] Committing all weights and reports to Google Drive...")
             os.sync()
-            time.sleep(2)
+            time.sleep(1)
             os.sync()
     except Exception:
         pass
 
-    # 5. Cleanup Local Cache
-    if not args.no_cache and local_cache_dir.exists():
-        try:
-            shutil.rmtree(str(local_cache_dir))
-            print(f"🧹 [Cleanup] Freed temporary local NVMe cache at: {local_cache_dir}")
-        except Exception:
-            pass
+    if not args.no_cache and local_cache_dir.exists() and str(local_cache_dir).startswith("/content/"):
+        shutil.rmtree(str(local_cache_dir), ignore_errors=True)
 
     print("\n" + "=" * 80)
-    print("🏁 [Option B Training Complete] All models successfully fine-tuned!")
-    print(f"📁 Checkpoints Location: {checkpoint_dir}")
-    if model1_res:
-        print(f"   - Model 1 Checkpoint: {checkpoint_dir / 'model_continual_latest.pt'} (Acc: {model1_res.get('test_acc')}%)")
-    if model2_res:
-        print(f"   - Model 2 Checkpoint: {checkpoint_dir / 'weights_human.pt'} (Acc: {model2_res.get('accuracy')}%)")
+    print(f"🏁 [Option B Complete] Checkpoints saved at: {checkpoint_dir}")
     print("=" * 80 + "\n")
+    maybe_auto_disconnect_colab(args.auto_disconnect)
 
 
 if __name__ == "__main__":

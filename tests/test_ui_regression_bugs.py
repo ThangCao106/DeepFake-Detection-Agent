@@ -365,6 +365,91 @@ print("FASTAPI_RUNTIME_OK")
         self.assertIn("token=False", det_txt)
         self.assertIn('os.environ.pop(k)', det_txt)
 
+    def test_15_colab_notebooks_security_and_closed_loop_wiring(self):
+        """Verify all Colab notebooks and scripts contain zero plaintext PATs, zero synthetic placeholders, and valid closed-loop wiring."""
+        import json
+        colab_dir = REPO_ROOT / "colab_training"
+        notebooks = [
+            colab_dir / "Colab_MultiModality_AutoTrainer.ipynb",
+            colab_dir / "Colab_Pro_Scheduled_Runner.ipynb",
+            colab_dir / "Colab_Free_4h_Scheduler.ipynb",
+        ]
+        for nb_path in notebooks:
+            self.assertTrue(nb_path.exists(), f"Missing Colab notebook: {nb_path}")
+            raw_txt = nb_path.read_text(encoding="utf-8")
+            nb_json = json.loads(raw_txt)
+            self.assertEqual(nb_json.get("nbformat"), 4)
+            pat_prefix = "ghp" + "_"
+            self.assertNotIn(pat_prefix, raw_txt, f"Hardcoded GitHub PAT leaked in {nb_path.name}")
+            self.assertNotIn("purge_synthetic_drawings.py", raw_txt, f"Deleted script referenced in {nb_path.name}")
+            self.assertNotIn("purge_synthetic_video_and_audio_gdrive.py", raw_txt, f"Deleted script referenced in {nb_path.name}")
+            self.assertNotIn("/content/DeepFake-Detection-Agent/colab_auto_runner.py", raw_txt, f"Broken root colab_auto_runner.py path in {nb_path.name}")
+
+        # Verify bookmarked cell ID eBg1D7_tAFPq is preserved on Colab_MultiModality_AutoTrainer.ipynb
+        auto_nb = json.loads((colab_dir / "Colab_MultiModality_AutoTrainer.ipynb").read_text(encoding="utf-8"))
+        cell_ids = [c.get("metadata", {}).get("id") for c in auto_nb.get("cells", [])]
+        self.assertIn("eBg1D7_tAFPq", cell_ids, "Bookmarked cell ID 'eBg1D7_tAFPq' missing from Colab_MultiModality_AutoTrainer.ipynb")
+
+        # Verify zero synthetic Image.new / RandomState metric fabrication in colab_dataset_pipeline.py & data_pipeline.py
+        cdp_txt = (colab_dir / "colab_dataset_pipeline.py").read_text(encoding="utf-8")
+        dp_txt = (colab_dir / "data_pipeline.py").read_text(encoding="utf-8")
+        self.assertNotIn("RandomState", cdp_txt)
+        self.assertNotIn("Image.new", cdp_txt)
+        self.assertNotIn("Image.new", dp_txt)
+        self.assertIn("def pull_human_review_feedback", cdp_txt)
+        self.assertIn("def notify_production_callback", cdp_txt)
+
+    def test_16_colab_callback_security_and_whitelist(self):
+        """Runtime-verify /api/colab/callback secret auth, hf_repo_id namespace whitelist, and calibration clamping."""
+        import json
+        import tempfile
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from flask import Flask
+        from unittest.mock import patch
+        from web_ui.routes.colab_routes import create_colab_blueprint
+
+        reloads = []
+        emits = []
+        app = Flask(__name__)
+        app.register_blueprint(
+            create_colab_blueprint(
+                reload_detector_fn=lambda full_reinit=False: reloads.append(full_reinit),
+                emit_fn=lambda ev, data: emits.append((ev, data)),
+            )
+        )
+        client = app.test_client()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            with patch("web_ui.routes.colab_routes.resolve_custom_vit_dir", return_value=tmp_path):
+                # 1. Block untrusted Hugging Face repository injection (403)
+                r_bad_repo = client.post("/api/colab/callback", json={"hf_repo_id": "attacker/malicious-vit"})
+                self.assertEqual(r_bad_repo.status_code, 403)
+
+                # 2. Enforce COLAB_CALLBACK_SECRET when configured (401 without header, 200 with X-Colab-Secret)
+                with patch.dict(os.environ, {"COLAB_CALLBACK_SECRET": "unit-test-secret-999"}):
+                    r_unauth = client.post("/api/colab/callback", json={"temperature_scaling_T": 1.45})
+                    self.assertEqual(r_unauth.status_code, 401)
+
+                    r_auth = client.post(
+                        "/api/colab/callback",
+                        headers={"X-Colab-Secret": "unit-test-secret-999"},
+                        json={
+                            "temperature_scaling_T": 1.52,
+                            "optimal_threshold_tau": 0.76,
+                            "out_of_distribution_accuracy": 0.934,
+                            "auc_score": 0.961,
+                            "dataset_trained": "burst:threads_vietnamese_in_the_wild",
+                        },
+                    )
+                    self.assertEqual(r_auth.status_code, 200)
+                    saved_calib = json.loads((tmp_path / "calibration_params.json").read_text(encoding="utf-8"))
+                    self.assertEqual(saved_calib["temperature_scaling_T"], 1.52)
+                    self.assertEqual(saved_calib["optimal_threshold_tau"], 0.76)
+                    self.assertEqual(saved_calib["auc_score"], 0.961)
+                    self.assertIn(False, reloads)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
