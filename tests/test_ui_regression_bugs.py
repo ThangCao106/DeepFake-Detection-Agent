@@ -358,6 +358,13 @@ print("FASTAPI_RUNTIME_OK")
         for wf_tok in ("hosting/**", "/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf", "nginx -t", "systemctl restart nginx"):
             self.assertIn(wf_tok, wf_txt, f"Missing '{wf_tok}' in update_nginx_hosting.yml")
 
+    def test_14_hf_resilient_loader_ignores_expired_env_token(self):
+        """Ensure DeepfakeDetector resilient HF loader strips expired HF_TOKEN env vars and passes token=False."""
+        det_txt = DETECTOR_PY_PATH.read_text(encoding="utf-8")
+        self.assertIn("def _hf_load_pretrained_resilient", det_txt)
+        self.assertIn("token=False", det_txt)
+        self.assertIn('os.environ.pop(k)', det_txt)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -609,10 +609,15 @@ class FeedbackWeightUpdater:
                 inputs = self.processor(images=img, return_tensors="pt")
                 return inputs["pixel_values"].squeeze(0), torch.tensor(int(rec["label"]), dtype=torch.long)
 
-        target_model = str(CUSTOM_VIT_DIR) if (CUSTOM_VIT_DIR / "config.json").exists() else "dima806/deepfake_vs_real_image_detection"
+        has_local_vit = (
+            (CUSTOM_VIT_DIR / "config.json").exists()
+            and any((CUSTOM_VIT_DIR / w).exists() for w in ("model.safetensors", "pytorch_model.bin", "model.bin"))
+        )
+        target_model = str(CUSTOM_VIT_DIR) if has_local_vit else "dima806/deepfake_vs_real_image_detection"
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        processor = AutoImageProcessor.from_pretrained(target_model)
-        model = AutoModelForImageClassification.from_pretrained(target_model)
+        hf_kw = {} if has_local_vit else {"token": False}
+        processor = AutoImageProcessor.from_pretrained(target_model, **hf_kw)
+        model = AutoModelForImageClassification.from_pretrained(target_model, **hf_kw)
         if MERGED_FEEDBACK_WEIGHTS_FILE.exists():
             try:
                 model.load_state_dict(torch.load(str(MERGED_FEEDBACK_WEIGHTS_FILE), map_location="cpu"), strict=False)

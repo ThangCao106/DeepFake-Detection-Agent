@@ -2190,6 +2190,29 @@ class DeepfakeDetector:
         }
         return is_synthetic, verdict_label, calibrated_conf, calibrated_scores
 
+    @staticmethod
+    def _hf_load_pretrained_resilient(loader_cls, model_id: str, token=None, **kwargs):
+        """
+        Load a Hugging Face processor/model resiliently even when HF_TOKEN in .env is expired/invalid.
+        """
+        if os.path.isdir(str(model_id)):
+            return loader_cls.from_pretrained(model_id, **kwargs)
+
+        if token:
+            try:
+                return loader_cls.from_pretrained(model_id, token=token, **kwargs)
+            except Exception as auth_err:
+                print(f"[warning] Authenticated HF load for '{model_id}' failed ({auth_err}); retrying anonymously (token=False)...")
+
+        saved_env = {}
+        for k in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HF_API_TOKEN"):
+            if k in os.environ:
+                saved_env[k] = os.environ.pop(k)
+        try:
+            return loader_cls.from_pretrained(model_id, token=False, **kwargs)
+        finally:
+            os.environ.update(saved_env)
+
     def __init__(self, model_name="dima806/deepfake_vs_real_image_detection"):
         """
         Initialize the DeepfakeDetector with a pretrained or custom fine-tuned Hugging Face model.
@@ -2206,7 +2229,7 @@ class DeepfakeDetector:
         )
 
         hf_custom_repo = os.environ.get("CUSTOM_VIT_HF_REPO", "").strip()
-        hf_token = os.environ.get("HF_TOKEN") or None
+        hf_token = (os.environ.get("HF_TOKEN") or "").strip() or None
         target_model = custom_dir if has_custom_weights else (hf_custom_repo if hf_custom_repo else model_name)
         if has_custom_weights:
             print(f"[info] Custom fine-tuned model detected! Loading from: {target_model}")
@@ -2217,24 +2240,41 @@ class DeepfakeDetector:
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"[info] Using device: {self.device}")
-        
+
+        loaded_ok = False
         try:
-            load_kwargs = {"token": hf_token} if (not has_custom_weights and hf_custom_repo and hf_token) else {}
-            self.processor = AutoImageProcessor.from_pretrained(target_model, **load_kwargs)
-            self.model = AutoModelForImageClassification.from_pretrained(target_model, **load_kwargs).to(self.device)
+            req_token = hf_token if (not has_custom_weights and hf_custom_repo and hf_token) else None
+            self.processor = self._hf_load_pretrained_resilient(AutoImageProcessor, target_model, token=req_token)
+            self.model = self._hf_load_pretrained_resilient(AutoModelForImageClassification, target_model, token=req_token).to(self.device)
             self.model.eval()
-            if not has_custom_weights and hf_custom_repo:
+            if not has_custom_weights and hf_custom_repo and target_model == hf_custom_repo:
                 has_custom_weights = True
+            loaded_ok = True
         except Exception as e:
-            if target_model != model_name:
-                print(f"[warning] Failed to load custom model from '{target_model}': {e}. Falling back to base model '{model_name}'...")
-                has_custom_weights = False
-                target_model = model_name
-                self.processor = AutoImageProcessor.from_pretrained(target_model)
-                self.model = AutoModelForImageClassification.from_pretrained(target_model).to(self.device)
-                self.model.eval()
-            else:
-                raise e
+            print(f"[warning] Primary model load from '{target_model}' failed: {e}")
+            has_custom_weights = False
+
+        if not loaded_ok:
+            fallback_models = []
+            for cand in (model_name, "dima806/deepfake_vs_real_image_detection", "prithivMLmods/Deep-Fake-Detector-v2-Model", "Wvolf/ViT_Deepfake_Detection"):
+                if cand and cand not in fallback_models:
+                    fallback_models.append(cand)
+            last_err = None
+            for fb_repo in fallback_models:
+                try:
+                    print(f"[info] Attempting resilient public ViT fallback: '{fb_repo}' (token=False)...")
+                    self.processor = self._hf_load_pretrained_resilient(AutoImageProcessor, fb_repo, token=None)
+                    self.model = self._hf_load_pretrained_resilient(AutoModelForImageClassification, fb_repo, token=None).to(self.device)
+                    self.model.eval()
+                    target_model = fb_repo
+                    loaded_ok = True
+                    print(f"[info] Successfully loaded public ViT backbone: '{fb_repo}'")
+                    break
+                except Exception as fb_err:
+                    last_err = fb_err
+                    print(f"[warning] Fallback '{fb_repo}' failed: {fb_err}")
+            if not loaded_ok and last_err is not None:
+                raise last_err
 
         self.using_custom_weights = bool(has_custom_weights)
         self.loaded_model_id = str(target_model)
@@ -3626,8 +3666,8 @@ class DeepfakeDetector:
                 repo = str(local_aud_dir) if (local_aud_dir / "config.json").exists() else os.environ.get(
                     "AUDIO_DEEPFAKE_HF_REPO", "MelodyMachine/Deepfake-audio-detection-V2"
                 )
-                self._audio_feature_extractor = AutoFeatureExtractor.from_pretrained(repo)
-                self._audio_neural_model = AutoModelForAudioClassification.from_pretrained(repo).to(self.device)
+                self._audio_feature_extractor = self._hf_load_pretrained_resilient(AutoFeatureExtractor, repo)
+                self._audio_neural_model = self._hf_load_pretrained_resilient(AutoModelForAudioClassification, repo).to(self.device)
                 self._audio_neural_model.eval()
             sig_16k = y.astype(np.float32)
             if sr != 16000 and sr > 0:

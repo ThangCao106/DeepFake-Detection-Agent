@@ -180,7 +180,14 @@ jobs:
             echo "OBSERVABILITY_AGENT_URL=http://observability-agent:8787" >> .env
             echo "DEEPFAKE_WEB_UI_URL=http://deepfake-web-ui:5000" >> .env
             echo "SHORT_VIDEO_AUTO_JOB_ENABLED=0" >> .env
-            if [ -n "$FINAL_HF" ]; then echo "HF_TOKEN=${FINAL_HF}" >> .env; fi
+            if [ -n "$FINAL_HF" ]; then
+              if curl -s -f -H "Authorization: Bearer $FINAL_HF" https://huggingface.co/api/whoami-v2 > /dev/null; then
+                echo "HF_TOKEN=${FINAL_HF}" >> .env
+                echo "✅ Validated HF_TOKEN against Hugging Face Hub."
+              else
+                echo "⚠️ Skipping invalid/expired HF_TOKEN so public Hugging Face models load cleanly without HTTP 401."
+              fi
+            fi
             if [ -n "$OLD_GATE_USER" ]; then echo "BENCHMARK_GATE_USER=${OLD_GATE_USER}" >> .env; fi
             if [ -n "$OLD_GATE_PASS" ]; then echo "BENCHMARK_GATE_PASS=${OLD_GATE_PASS}" >> .env; fi
             if [ -n "$OLD_FLASK_SECRET" ]; then echo "FLASK_SECRET_KEY=${OLD_FLASK_SECRET}" >> .env; fi
