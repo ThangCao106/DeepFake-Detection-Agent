@@ -229,7 +229,7 @@ jobs:
             fi
 
             # Sync /etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf if drifted
-            NGINX_SRC="$TARGET_DIR/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
+            NGINX_SRC="$(pwd)/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
             NGINX_DEST="/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf"
             SUDO=""
             if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi

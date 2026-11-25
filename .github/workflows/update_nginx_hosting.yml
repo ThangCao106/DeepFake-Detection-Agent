@@ -111,6 +111,7 @@ jobs:
 
             if [ -d "$TARGET_DIR/.git" ]; then
               cd "$TARGET_DIR"
+              TARGET_DIR="$(pwd)"
               git remote set-url origin "$REPO_URL"
               git fetch origin main
               git checkout origin/main -- hosting/nginx/chatbot-dev.dtpsoft.vn.conf
@@ -118,6 +119,7 @@ jobs:
               mkdir -p "$TARGET_DIR"
               git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
               cd "$TARGET_DIR"
+              TARGET_DIR="$(pwd)"
             fi
 
             SRC_CONF="$TARGET_DIR/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
