@@ -38,11 +38,14 @@ jobs:
 
       - name: Deploy via SSH Password to Target Server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          SERVER_PASS: ${{ secrets.SERVER_PASSWORD }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
+          envs: SERVER_PASS
           command_timeout: 30m
           script: |
             # Clean and sanitize TARGET_DIR path string (strip trailing control characters / newlines)
@@ -231,23 +234,28 @@ jobs:
             # Sync /etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf if drifted
             NGINX_SRC="$(pwd)/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
             NGINX_DEST="/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf"
-            SUDO=""
-            if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
+            run_sudo() {
+              if [ "$(id -u)" -eq 0 ]; then
+                "$@"
+              else
+                printf '%s\n' "$SERVER_PASS" | sudo -S -p '' "$@"
+              fi
+            }
             if [ -f "$NGINX_SRC" ] && command -v nginx &> /dev/null; then
-              if [ ! -f "$NGINX_DEST" ] || ! cmp -s "$NGINX_SRC" "$NGINX_DEST"; then
+              if ! run_sudo test -f "$NGINX_DEST" || ! run_sudo cmp -s "$NGINX_SRC" "$NGINX_DEST"; then
                 echo "🌐 Syncing updated hosting/nginx/chatbot-dev.dtpsoft.vn.conf -> $NGINX_DEST..."
-                $SUDO mkdir -p /etc/nginx/backups /etc/nginx/sites-available /etc/nginx/sites-enabled
-                [ -f "$NGINX_DEST" ] && $SUDO cp -a "$NGINX_DEST" "/etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.$(date +%Y%m%d_%H%M%S)"
-                $SUDO cp "$NGINX_SRC" "$NGINX_DEST"
-                if [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ] && [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ]; then
-                  $SUDO ln -s "$NGINX_DEST" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
+                run_sudo mkdir -p /etc/nginx/backups /etc/nginx/sites-available /etc/nginx/sites-enabled
+                run_sudo test -f "$NGINX_DEST" && run_sudo cp -a "$NGINX_DEST" "/etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.$(date +%Y%m%d_%H%M%S)" || true
+                run_sudo cp "$NGINX_SRC" "$NGINX_DEST"
+                if ! run_sudo test -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" && ! run_sudo test -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn"; then
+                  run_sudo ln -s "$NGINX_DEST" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
                 fi
-                if $SUDO nginx -t; then
-                  $SUDO systemctl restart nginx && echo "✅ Host Nginx updated and restarted!"
+                if run_sudo nginx -t; then
+                  run_sudo systemctl restart nginx && echo "✅ Host Nginx updated and restarted!"
                 else
                   echo "⚠️ Warning: nginx -t failed during sync; rolling back..."
-                  LATEST_BAK=$(ls -1t /etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.* 2>/dev/null | head -n 1 || true)
-                  [ -n "$LATEST_BAK" ] && $SUDO cp -a "$LATEST_BAK" "$NGINX_DEST"
+                  LATEST_BAK=$(run_sudo ls -1t /etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.* 2>/dev/null | head -n 1 || true)
+                  [ -n "$LATEST_BAK" ] && run_sudo cp -a "$LATEST_BAK" "$NGINX_DEST"
                 fi
               fi
             fi

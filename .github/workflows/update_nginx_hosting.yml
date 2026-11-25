@@ -84,11 +84,14 @@ jobs:
 
       - name: Update /etc/nginx/sites-available & Restart Nginx via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          SERVER_PASS: ${{ secrets.SERVER_PASSWORD }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
+          envs: SERVER_PASS
           command_timeout: 10m
           script: |
             set -euo pipefail
@@ -100,10 +103,13 @@ jobs:
             fi
             REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
-            SUDO=""
-            if [ "$(id -u)" -ne 0 ]; then
-              SUDO="sudo"
-            fi
+            run_sudo() {
+              if [ "$(id -u)" -eq 0 ]; then
+                "$@"
+              else
+                printf '%s\n' "$SERVER_PASS" | sudo -S -p '' "$@"
+              fi
+            }
 
             echo "=================================================="
             echo "🌐 Updating Nginx Hosting Configuration on Server"
@@ -133,59 +139,59 @@ jobs:
               exit 1
             fi
 
-            $SUDO mkdir -p "$BACKUP_DIR" /etc/nginx/sites-available /etc/nginx/sites-enabled
+            run_sudo mkdir -p "$BACKUP_DIR" /etc/nginx/sites-available /etc/nginx/sites-enabled
 
             CHANGED=1
-            if [ -f "$DEST_AVAIL" ] && cmp -s "$SRC_CONF" "$DEST_AVAIL"; then
+            if run_sudo test -f "$DEST_AVAIL" && run_sudo cmp -s "$SRC_CONF" "$DEST_AVAIL"; then
               CHANGED=0
               echo "ℹ️ $DEST_AVAIL is already identical to repository version."
             fi
 
             BACKUP_FILE=""
-            if [ -f "$DEST_AVAIL" ]; then
+            if run_sudo test -f "$DEST_AVAIL"; then
               BACKUP_FILE="$BACKUP_DIR/chatbot-dev.dtpsoft.vn.conf.bak.$TS"
-              $SUDO cp -a "$DEST_AVAIL" "$BACKUP_FILE"
+              run_sudo cp -a "$DEST_AVAIL" "$BACKUP_FILE"
               echo "📦 Backed up existing config to $BACKUP_FILE"
             fi
 
-            $SUDO cp "$SRC_CONF" "$DEST_AVAIL"
-            $SUDO chmod 644 "$DEST_AVAIL"
+            run_sudo cp "$SRC_CONF" "$DEST_AVAIL"
+            run_sudo chmod 644 "$DEST_AVAIL"
 
             # Ensure single clean symlink in /etc/nginx/sites-enabled/
-            if [ -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ] && [ -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ]; then
-              $SUDO rm -f "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn"
-            elif [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ] && [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ]; then
-              $SUDO ln -s "$DEST_AVAIL" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
+            if run_sudo test -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" && run_sudo test -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"; then
+              run_sudo rm -f "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn"
+            elif ! run_sudo test -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" && ! run_sudo test -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn"; then
+              run_sudo ln -s "$DEST_AVAIL" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
               CHANGED=1
               echo "🔗 Linked /etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf -> $DEST_AVAIL"
             fi
 
             # Disable any standalone Certbot default /var/www/html stub for deeptrace.io.vn that would shadow our proxy
             for STUB in /etc/nginx/sites-enabled/deeptrace.io.vn /etc/nginx/sites-enabled/deeptrace.io.vn.conf; do
-              if [ -e "$STUB" ] && grep -q "/var/www/html" "$STUB" 2>/dev/null; then
+              if run_sudo test -e "$STUB" && run_sudo grep -q "/var/www/html" "$STUB" 2>/dev/null; then
                 echo "⚠️ Archiving conflicting /var/www/html stub $STUB -> $BACKUP_DIR/"
-                $SUDO mv "$STUB" "$BACKUP_DIR/$(basename "$STUB").stub.$TS"
+                run_sudo mv "$STUB" "$BACKUP_DIR/$(basename "$STUB").stub.$TS"
                 CHANGED=1
               fi
             done
 
             echo "🔍 Active server_name declarations in /etc/nginx/sites-enabled/:"
-            $SUDO grep -rn "server_name" /etc/nginx/sites-enabled/ || true
+            run_sudo grep -rn "server_name" /etc/nginx/sites-enabled/ || true
 
             echo "🧪 Testing Nginx configuration (nginx -t)..."
-            if ! $SUDO nginx -t; then
+            if ! run_sudo nginx -t; then
               echo "❌ nginx -t FAILED! Rolling back to previous configuration..."
-              if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
-                $SUDO cp -a "$BACKUP_FILE" "$DEST_AVAIL"
-                $SUDO nginx -t || true
+              if [ -n "$BACKUP_FILE" ] && run_sudo test -f "$BACKUP_FILE"; then
+                run_sudo cp -a "$BACKUP_FILE" "$DEST_AVAIL"
+                run_sudo nginx -t || true
               fi
               exit 1
             fi
 
             if [ "$CHANGED" -eq 1 ] || [ "$FORCE_RESTART" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
               echo "🔄 Restarting Nginx service..."
-              $SUDO systemctl restart nginx
-              $SUDO systemctl is-active --quiet nginx
+              run_sudo systemctl restart nginx
+              run_sudo systemctl is-active --quiet nginx
               echo "✅ Nginx restarted and verified active!"
             else
               echo "✅ Config unchanged and Nginx healthy; skipping restart."
