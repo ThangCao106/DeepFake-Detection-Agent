@@ -2850,7 +2850,7 @@ class DeepfakeDetector:
                     "sha256": media_sha256,
                     "media_filename": media_filename,
                     "media_url": media_url,
-                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
+                    "verification_url": f"https://deeptrace.io.vn/api/verify/{cert_id}"
                 },
                 "image_metadata": {
                     "dimensions": f"{image.width}x{image.height}",
@@ -2892,7 +2892,7 @@ class DeepfakeDetector:
                 "auditable_verdict": auditable_verdict,
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
-                    "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
+                    "verification_method": f"https://deeptrace.io.vn/api/verify/{cert_id}",
                     "signature_hex": sig_hex,
                     "status": "VERIFIED_VALID"
                 }
@@ -2901,7 +2901,7 @@ class DeepfakeDetector:
             # Save certificate persistently to SQLite memory for internet query lookup
             try:
                 save_forensic_certificate(forensic_certificate)
-                publish_google_indexing_url(f"https://detection.dtpsoft.vn/certificate/{cert_id}")
+                publish_google_indexing_url(f"https://deeptrace.io.vn/certificate/{cert_id}")
             except Exception as se:
                 print(f"[warning] Failed to save forensic certificate or notify Google indexer: {se}")
 
@@ -3504,7 +3504,7 @@ class DeepfakeDetector:
                 "media_type": "video",
                 "media_integrity": {
                     "sha256": video_sha256,
-                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
+                    "verification_url": f"https://deeptrace.io.vn/api/verify/{cert_id}"
                 },
                 "scene_context": scene_context_vid,
                 "dual_stream_breakdown": dual_stream_breakdown,
@@ -3540,7 +3540,7 @@ class DeepfakeDetector:
                 "auditable_verdict": "SYNTHETIC_VIDEO_DETECTED" if is_synthetic_vid else "AUTHENTIC_VIDEO_LIKELY",
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
-                    "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
+                    "verification_method": f"https://deeptrace.io.vn/api/verify/{cert_id}",
                     "status": "VERIFIED_VALID"
                 }
             }
@@ -3864,7 +3864,7 @@ class DeepfakeDetector:
                 "media_type": "audio",
                 "media_integrity": {
                     "sha256": media_sha256,
-                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{cert_id}"
+                    "verification_url": f"https://deeptrace.io.vn/api/verify/{cert_id}"
                 },
                 "audio_metadata": {
                     "filename": audio_path.name,
@@ -3905,7 +3905,7 @@ class DeepfakeDetector:
                 "xai_explanation": xai_explanation,
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
-                    "verification_method": f"https://detection.dtpsoft.vn/api/verify/{cert_id}",
+                    "verification_method": f"https://deeptrace.io.vn/api/verify/{cert_id}",
                     "signature_hex": sig_hex,
                     "status": "VERIFIED_VALID"
                 }

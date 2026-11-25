@@ -1409,7 +1409,7 @@ def view_certificate_page(cert_id):
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
                 "media_integrity": {
                     "sha256": f"662cbe7b{clean_cid.lower()}a8f902472e389b0129",
-                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{clean_cid}"
+                    "verification_url": f"https://deeptrace.io.vn/api/verify/{clean_cid}"
                 },
                 "image_metadata": {
                     "dimensions": "1024x1024",
@@ -1426,7 +1426,7 @@ def view_certificate_page(cert_id):
                 "auditable_verdict": "AUTHENTIC_MEDIA_LIKELY",
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
-                    "verification_method": f"https://detection.dtpsoft.vn/api/verify/{clean_cid}",
+                    "verification_method": f"https://deeptrace.io.vn/api/verify/{clean_cid}",
                     "status": "VERIFIED_VALID"
                 }
             }

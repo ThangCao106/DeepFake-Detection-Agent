@@ -327,6 +327,37 @@ print("FASTAPI_RUNTIME_OK")
         )
         self.assertIn("FASTAPI_RUNTIME_OK", res.stdout)
 
+    def test_13_nginx_hosting_config_and_ci_workflow(self):
+        """Verify Nginx sites-available config removes detection.dtpsoft.vn, keeps sibling domains, and configures deeptrace.io.vn."""
+        nginx_conf = REPO_ROOT / "hosting" / "nginx" / "chatbot-dev.dtpsoft.vn.conf"
+        workflow_yml = REPO_ROOT / ".github" / "workflows" / "update_nginx_hosting.yml"
+
+        self.assertTrue(nginx_conf.exists(), f"Missing {nginx_conf}")
+        self.assertTrue(workflow_yml.exists(), f"Missing {workflow_yml}")
+
+        conf_txt = nginx_conf.read_text(encoding="utf-8")
+        self.assertNotIn("detection.dtpsoft.vn", conf_txt, "detection.dtpsoft.vn must be completely removed from Nginx config!")
+        self.assertNotIn("return 301 https://$host/dfagent;", conf_txt, "Infinite redirect loop on /dfagent detected!")
+        self.assertNotIn("return 301 https://$host/benchmark;", conf_txt, "Infinite redirect loop on /benchmark detected!")
+
+        for required in (
+            "server_name chatbot-dev.dtpsoft.vn;",
+            "server_name zalo-dev.dtpsoft.vn;",
+            "location /n8n/",
+            "server_name deeptrace.io.vn;",
+            "return 301 https://$host/dfagent/;",
+            "location /dfagent/",
+            "return 301 https://$host/benchmark/;",
+            "location /benchmark/",
+            "location /socket.io/",
+            "client_max_body_size 250M;",
+        ):
+            self.assertIn(required, conf_txt, f"Missing required Nginx directive '{required}'")
+
+        wf_txt = workflow_yml.read_text(encoding="utf-8")
+        for wf_tok in ("hosting/**", "/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf", "nginx -t", "systemctl restart nginx"):
+            self.assertIn(wf_tok, wf_txt, f"Missing '{wf_tok}' in update_nginx_hosting.yml")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

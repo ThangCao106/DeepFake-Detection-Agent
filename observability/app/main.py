@@ -1349,7 +1349,7 @@ async def view_certificate_page(cert_id: str):
                 "compliance_standard": "EU AI Act Article 50 & DSA Auditable Media",
                 "media_integrity": {
                     "sha256": f"662cbe7b{clean_cid.lower()}a8f902472e389b0129",
-                    "verification_url": f"https://detection.dtpsoft.vn/api/verify/{clean_cid}"
+                    "verification_url": f"https://deeptrace.io.vn/api/verify/{clean_cid}"
                 },
                 "image_metadata": {
                     "dimensions": "1024x1024",
@@ -1366,7 +1366,7 @@ async def view_certificate_page(cert_id: str):
                 "auditable_verdict": "AUTHENTIC_MEDIA_LIKELY",
                 "proof": {
                     "type": "Ed25519SHA256Signature2026",
-                    "verification_method": f"https://detection.dtpsoft.vn/api/verify/{clean_cid}",
+                    "verification_method": f"https://deeptrace.io.vn/api/verify/{clean_cid}",
                     "status": "VERIFIED_VALID"
                 }
             }
@@ -1431,7 +1431,7 @@ Allow: /
 Allow: /certificate/
 Allow: /verify/
 Allow: /api/verify/
-Sitemap: https://detection.dtpsoft.vn/sitemap.xml
+Sitemap: https://deeptrace.io.vn/sitemap.xml
 """
 
 
@@ -1450,15 +1450,15 @@ async def get_sitemap_xml():
         ]
 
         today_iso = datetime.utcnow().strftime("%Y-%m-%d")
-        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
-        xml_lines.append(f"  <url><loc>https://detection.dtpsoft.vn/obsagent/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
+        xml_lines.append(f"  <url><loc>https://deeptrace.io.vn/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>")
+        xml_lines.append(f"  <url><loc>https://deeptrace.io.vn/dfagent/</loc><lastmod>{today_iso}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>")
 
         for c in certs:
             cid = c.get("certificate_id")
             created_at = (c.get("created_at") or today_iso)[:10]
             if cid:
-                loc_url = f"https://detection.dtpsoft.vn/certificate/{cid}"
-                verify_url = f"https://detection.dtpsoft.vn/verify/{cid}"
+                loc_url = f"https://deeptrace.io.vn/certificate/{cid}"
+                verify_url = f"https://deeptrace.io.vn/verify/{cid}"
                 xml_lines.append(f"  <url><loc>{loc_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
                 xml_lines.append(f"  <url><loc>{verify_url}</loc><lastmod>{created_at}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>")
 
@@ -1648,10 +1648,11 @@ async def serve_uploaded_media(filename: str):
 
     # Proxy fallback to main web_ui domain
     import urllib.request
+    core_base = os.environ.get("DEEPFAKE_WEB_UI_URL", "http://127.0.0.1:5000").rstrip("/")
     remote_urls = [
+        f"{core_base}/uploads/{filename}",
         f"http://127.0.0.1:5000/uploads/{filename}",
-        f"https://detection.dltsoft.vn/uploads/{filename}",
-        f"https://detection.dtpsoft.vn/uploads/{filename}"
+        f"https://deeptrace.io.vn/uploads/{filename}",
     ]
     for r_url in remote_urls:
         try:
@@ -1742,10 +1743,11 @@ async def get_vault_recent_lookups() -> dict:
     # Fallback to REST if SQLite yielded no records
     if not recent_records:
         import urllib.request
+        core_base = os.environ.get("DEEPFAKE_WEB_UI_URL", "http://127.0.0.1:5000").rstrip("/")
         fallback_urls = [
+            f"{core_base}/api/certificates/recent",
             "http://127.0.0.1:5000/api/certificates/recent",
-            "https://detection.dltsoft.vn/api/certificates/recent",
-            "https://detection.dtpsoft.vn/api/certificates/recent"
+            "https://deeptrace.io.vn/api/certificates/recent",
         ]
         for url in fallback_urls:
             try:
@@ -1808,13 +1810,14 @@ async def get_vault_certificate_api(cert_id: str) -> dict:
         # Tier 2: REST Fallback to web_ui API
         if not cert_data:
             import urllib.request
+            core_base = os.environ.get("DEEPFAKE_WEB_UI_URL", "http://127.0.0.1:5000").rstrip("/")
             fallback_urls = [
+                f"{core_base}/api/verify/{clean_id}",
                 f"http://127.0.0.1:5000/api/verify/{clean_id}",
-                f"https://detection.dltsoft.vn/api/verify/{clean_id}",
-                f"https://detection.dtpsoft.vn/api/verify/{clean_id}",
+                f"https://deeptrace.io.vn/api/verify/{clean_id}",
+                f"{core_base}/api/verify/{prefix_id}",
                 f"http://127.0.0.1:5000/api/verify/{prefix_id}",
-                f"https://detection.dltsoft.vn/api/verify/{prefix_id}",
-                f"https://detection.dtpsoft.vn/api/verify/{prefix_id}",
+                f"https://deeptrace.io.vn/api/verify/{prefix_id}",
             ]
             for url in fallback_urls:
                 try:

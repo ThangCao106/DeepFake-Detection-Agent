@@ -1,0 +1,197 @@
+name: Update Nginx Hosting & Restart Nginx
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'hosting/**'
+      - '.github/workflows/update_nginx_hosting.yml'
+  workflow_dispatch:
+    inputs:
+      force_restart:
+        description: 'Force restart Nginx even if hosting config is identical'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+concurrency:
+  group: nginx-hosting-update
+  cancel-in-progress: false
+
+jobs:
+  update-nginx:
+    name: Validate, Deploy Nginx Config & Restart Nginx
+    runs-on: ubuntu-latest
+    environment: DTP_DEV
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Policy & Syntax Pre-Flight Check (Docker nginx -t)
+        run: |
+          set -euo pipefail
+          CONF="hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
+          test -f "$CONF"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          txt = Path("hosting/nginx/chatbot-dev.dtpsoft.vn.conf").read_text(encoding="utf-8")
+          assert "detection.dtpsoft.vn" not in txt, "ERROR: detection.dtpsoft.vn must be completely removed!"
+          for required in (
+              "server_name chatbot-dev.dtpsoft.vn;",
+              "server_name zalo-dev.dtpsoft.vn;",
+              "location /n8n/",
+              "server_name deeptrace.io.vn;",
+              "location = /dfagent",
+              "return 301 https://$host/dfagent/;",
+              "location /dfagent/",
+              "location = /benchmark",
+              "return 301 https://$host/benchmark/;",
+              "location /benchmark/",
+              "location /socket.io/",
+          ):
+              assert required in txt, f"Missing required Nginx directive: {required}"
+          print("✅ Hosting policy assertions passed!")
+          PY
+
+          # Generate ephemeral self-signed certs at Let's Encrypt paths to run real `nginx -t`
+          TMP_LE="$(mktemp -d)"
+          for dom in chatbot-dev.dtpsoft.vn zalo-dev.dtpsoft.vn deeptrace.io.vn; do
+            mkdir -p "$TMP_LE/live/$dom"
+            openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+              -subj "/CN=$dom" \
+              -keyout "$TMP_LE/live/$dom/privkey.pem" \
+              -out "$TMP_LE/live/$dom/fullchain.pem" 2>/dev/null
+          done
+          cat > "$TMP_LE/options-ssl-nginx.conf" <<'EOF'
+          ssl_session_cache shared:le_nginx_SSL:10m;
+          ssl_session_timeout 1440m;
+          ssl_protocols TLSv1.2 TLSv1.3;
+          EOF
+          openssl dhparam -out "$TMP_LE/ssl-dhparams.pem" 1024 2>/dev/null
+
+          docker run --rm \
+            -v "$PWD/$CONF:/etc/nginx/conf.d/chatbot-dev.dtpsoft.vn.conf:ro" \
+            -v "$TMP_LE:/etc/letsencrypt:ro" \
+            nginx:1.26-alpine nginx -t
+          rm -rf "$TMP_LE"
+          echo "✅ Pre-flight nginx -t passed inside clean nginx:alpine container!"
+
+      - name: Update /etc/nginx/sites-available & Restart Nginx via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT != '' && secrets.SERVER_PORT || '22' }}
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+
+            RAW_DIR="${{ secrets.TARGET_DIR }}"
+            TARGET_DIR=$(echo "$RAW_DIR" | tr -d '\r\n' | xargs)
+            if [ -z "$TARGET_DIR" ]; then
+              TARGET_DIR="$HOME/DeepFake-Detection-Agent"
+            fi
+            REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+
+            SUDO=""
+            if [ "$(id -u)" -ne 0 ]; then
+              SUDO="sudo"
+            fi
+
+            echo "=================================================="
+            echo "🌐 Updating Nginx Hosting Configuration on Server"
+            echo "=================================================="
+
+            if [ -d "$TARGET_DIR/.git" ]; then
+              cd "$TARGET_DIR"
+              git remote set-url origin "$REPO_URL"
+              git fetch origin main
+              git checkout origin/main -- hosting/nginx/chatbot-dev.dtpsoft.vn.conf
+            else
+              mkdir -p "$TARGET_DIR"
+              git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
+              cd "$TARGET_DIR"
+            fi
+
+            SRC_CONF="$TARGET_DIR/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
+            DEST_AVAIL="/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf"
+            BACKUP_DIR="/etc/nginx/backups"
+            TS="$(date +%Y%m%d_%H%M%S)"
+            FORCE_RESTART="${{ github.event.inputs.force_restart || 'false' }}"
+
+            if [ ! -f "$SRC_CONF" ]; then
+              echo "❌ Source config missing at $SRC_CONF"
+              exit 1
+            fi
+
+            $SUDO mkdir -p "$BACKUP_DIR" /etc/nginx/sites-available /etc/nginx/sites-enabled
+
+            CHANGED=1
+            if [ -f "$DEST_AVAIL" ] && cmp -s "$SRC_CONF" "$DEST_AVAIL"; then
+              CHANGED=0
+              echo "ℹ️ $DEST_AVAIL is already identical to repository version."
+            fi
+
+            BACKUP_FILE=""
+            if [ -f "$DEST_AVAIL" ]; then
+              BACKUP_FILE="$BACKUP_DIR/chatbot-dev.dtpsoft.vn.conf.bak.$TS"
+              $SUDO cp -a "$DEST_AVAIL" "$BACKUP_FILE"
+              echo "📦 Backed up existing config to $BACKUP_FILE"
+            fi
+
+            $SUDO cp "$SRC_CONF" "$DEST_AVAIL"
+            $SUDO chmod 644 "$DEST_AVAIL"
+
+            # Ensure single clean symlink in /etc/nginx/sites-enabled/
+            if [ -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ] && [ -L "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ]; then
+              $SUDO rm -f "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn"
+            elif [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ] && [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ]; then
+              $SUDO ln -s "$DEST_AVAIL" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
+              CHANGED=1
+              echo "🔗 Linked /etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf -> $DEST_AVAIL"
+            fi
+
+            # Disable any standalone Certbot default /var/www/html stub for deeptrace.io.vn that would shadow our proxy
+            for STUB in /etc/nginx/sites-enabled/deeptrace.io.vn /etc/nginx/sites-enabled/deeptrace.io.vn.conf; do
+              if [ -e "$STUB" ] && grep -q "/var/www/html" "$STUB" 2>/dev/null; then
+                echo "⚠️ Archiving conflicting /var/www/html stub $STUB -> $BACKUP_DIR/"
+                $SUDO mv "$STUB" "$BACKUP_DIR/$(basename "$STUB").stub.$TS"
+                CHANGED=1
+              fi
+            done
+
+            echo "🔍 Active server_name declarations in /etc/nginx/sites-enabled/:"
+            $SUDO grep -rn "server_name" /etc/nginx/sites-enabled/ || true
+
+            echo "🧪 Testing Nginx configuration (nginx -t)..."
+            if ! $SUDO nginx -t; then
+              echo "❌ nginx -t FAILED! Rolling back to previous configuration..."
+              if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                $SUDO cp -a "$BACKUP_FILE" "$DEST_AVAIL"
+                $SUDO nginx -t || true
+              fi
+              exit 1
+            fi
+
+            if [ "$CHANGED" -eq 1 ] || [ "$FORCE_RESTART" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+              echo "🔄 Restarting Nginx service..."
+              $SUDO systemctl restart nginx
+              $SUDO systemctl is-active --quiet nginx
+              echo "✅ Nginx restarted and verified active!"
+            else
+              echo "✅ Config unchanged and Nginx healthy; skipping restart."
+            fi
+
+            echo "🏥 Verifying live HTTPS routing for deeptrace.io.vn..."
+            sleep 2
+            curl -sk -o /dev/null -w "  https://deeptrace.io.vn/ -> HTTP %{http_code}\n" --resolve deeptrace.io.vn:443:127.0.0.1 https://deeptrace.io.vn/ || true
+            curl -sk -o /dev/null -w "  https://deeptrace.io.vn/api/status -> HTTP %{http_code}\n" --resolve deeptrace.io.vn:443:127.0.0.1 https://deeptrace.io.vn/api/status || true
+            curl -sk -o /dev/null -w "  https://deeptrace.io.vn/benchmark/api/benchmark/ping -> HTTP %{http_code}\n" --resolve deeptrace.io.vn:443:127.0.0.1 https://deeptrace.io.vn/benchmark/api/benchmark/ping || true
+            curl -sk -o /dev/null -w "  https://deeptrace.io.vn/dfagent/api/agents/lifecycle -> HTTP %{http_code}\n" --resolve deeptrace.io.vn:443:127.0.0.1 https://deeptrace.io.vn/dfagent/api/agents/lifecycle || true

@@ -6,6 +6,8 @@ on:
       - main
     paths-ignore:
       - 'report_colab/**'
+      - 'hosting/**'
+      - '.github/workflows/update_nginx_hosting.yml'
       - '**.md'
   workflow_dispatch:
 
@@ -224,4 +226,28 @@ jobs:
             else
               echo "⚠️ Warning: Observability Agent on port 8787 did not respond immediately, checking logs..."
               docker logs observability_agent --tail 20 2>/dev/null || docker compose logs --tail 20 observability-agent 2>/dev/null || true
+            fi
+
+            # Sync /etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf if drifted
+            NGINX_SRC="$TARGET_DIR/hosting/nginx/chatbot-dev.dtpsoft.vn.conf"
+            NGINX_DEST="/etc/nginx/sites-available/chatbot-dev.dtpsoft.vn.conf"
+            SUDO=""
+            if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
+            if [ -f "$NGINX_SRC" ] && command -v nginx &> /dev/null; then
+              if [ ! -f "$NGINX_DEST" ] || ! cmp -s "$NGINX_SRC" "$NGINX_DEST"; then
+                echo "🌐 Syncing updated hosting/nginx/chatbot-dev.dtpsoft.vn.conf -> $NGINX_DEST..."
+                $SUDO mkdir -p /etc/nginx/backups /etc/nginx/sites-available /etc/nginx/sites-enabled
+                [ -f "$NGINX_DEST" ] && $SUDO cp -a "$NGINX_DEST" "/etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.$(date +%Y%m%d_%H%M%S)"
+                $SUDO cp "$NGINX_SRC" "$NGINX_DEST"
+                if [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf" ] && [ ! -e "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn" ]; then
+                  $SUDO ln -s "$NGINX_DEST" "/etc/nginx/sites-enabled/chatbot-dev.dtpsoft.vn.conf"
+                fi
+                if $SUDO nginx -t; then
+                  $SUDO systemctl restart nginx && echo "✅ Host Nginx updated and restarted!"
+                else
+                  echo "⚠️ Warning: nginx -t failed during sync; rolling back..."
+                  LATEST_BAK=$(ls -1t /etc/nginx/backups/chatbot-dev.dtpsoft.vn.conf.bak.* 2>/dev/null | head -n 1 || true)
+                  [ -n "$LATEST_BAK" ] && $SUDO cp -a "$LATEST_BAK" "$NGINX_DEST"
+                fi
+              fi
             fi
