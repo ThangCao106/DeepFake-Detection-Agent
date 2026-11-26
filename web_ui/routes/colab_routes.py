@@ -120,10 +120,29 @@ def create_colab_blueprint(reload_detector_fn, emit_fn):
             clamped_t = round(min(5.0, max(0.25, raw_t)), 4)
             clamped_tau = round(min(0.98, max(0.20, raw_tau)), 4)
 
+            raw_a = data.get("platt_a", existing_img.get("platt_a"))
+            raw_b = data.get("platt_b", existing_img.get("platt_b", 0.0))
+            clamped_a = round(min(10.0, max(0.10, float(raw_a))), 4) if raw_a is not None else round(1.0 / clamped_t, 4)
+            clamped_b = round(min(5.0, max(-5.0, float(raw_b))), 4) if raw_b is not None else 0.0
+
+            raw_clow = data.get("conformal_low", existing_img.get("conformal_low", max(0.20, clamped_tau - 0.14)))
+            raw_chigh = data.get("conformal_high", existing_img.get("conformal_high", min(0.96, clamped_tau + 0.10)))
+            clamped_clow = round(min(0.90, max(0.05, float(raw_clow))), 4)
+            clamped_chigh = round(min(0.98, max(0.10, float(raw_chigh))), 4)
+            if clamped_clow > clamped_chigh:
+                clamped_clow, clamped_chigh = clamped_chigh, clamped_clow
+
             calib_data = {
                 **existing_img,
                 "temperature_scaling_T": clamped_t,
+                "platt_a": clamped_a,
+                "platt_b": clamped_b,
                 "optimal_threshold_tau": clamped_tau,
+                "conformal_low": clamped_clow,
+                "conformal_high": clamped_chigh,
+                "model_sha256": str(data.get("model_sha256", existing_img.get("model_sha256", ""))),
+                "peft_method": str(data.get("peft_method", existing_img.get("peft_method", "dora"))),
+                "backbone_family": str(data.get("backbone_family", existing_img.get("backbone_family", "vit"))),
                 "calibration_status": "CALIBRATED_FROM_COLAB_GPU",
                 "accuracy": data.get("out_of_distribution_accuracy", data.get("accuracy", existing_img.get("accuracy"))),
                 "auc_score": data.get("auc_score", existing_img.get("auc_score")),

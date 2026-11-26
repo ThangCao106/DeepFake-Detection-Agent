@@ -2293,12 +2293,22 @@ class DeepfakeDetector:
             except Exception as fb_err:
                 print(f"[warning] Could not load feedback_merged_weights.pt: {fb_err}")
 
-        # Load calibration & adaptive video parameters
+        # Load calibration & adaptive video parameters + bind active model SHA-256
         self.custom_dir = custom_dir
         self.calibration_params = None
         self.vn_demographic_params = None
         self.video_calibration_params = {}
         self.audio_calibration_params = {}
+        self.loaded_model_sha256 = ""
+        try:
+            from forensics_kernel.calibration_store import compute_active_model_sha256
+            self.loaded_model_sha256 = (
+                compute_active_model_sha256(custom_dir)
+                if self.using_custom_weights
+                else f"fallback:{self.loaded_model_id}"
+            )
+        except Exception:
+            self.loaded_model_sha256 = ""
         self.reload_calibration_params()
 
         # Initialize Human-Centric Multi-Modal Detector (Model 2) for Dual-Stream Execution
@@ -2329,6 +2339,42 @@ class DeepfakeDetector:
         self.video_calibration_params = loaded["video"]
         self.audio_calibration_params = loaded["audio"]
         return self.video_calibration_params
+
+    def _resolve_bound_calibration(self, modality: str = "image", has_human: bool = False):
+        """
+        Model-bound calibration resolver: prevents applying high custom_vit thresholds
+        to uncalibrated fallback backbones (which causes AUC=1.0 / TPR=0% collapse),
+        applies 2-parameter Platt adjustment helper and returns conformal band metadata.
+        """
+        from forensics_kernel.calibration_store import evaluate_conformal_band
+        if modality == "video":
+            params = dict(getattr(self, "video_calibration_params", None) or {})
+            base_tau = float(
+                params.get(
+                    "tau_video",
+                    (self.calibration_params or {}).get("optimal_threshold_tau", 0.68),
+                )
+            )
+        elif modality == "audio":
+            params = dict(getattr(self, "audio_calibration_params", None) or {})
+            base_tau = float(params.get("tau_audio", 0.8118))
+        else:
+            params = dict(getattr(self, "calibration_params", None) or {})
+            if has_human and self.vn_demographic_params and "optimal_decision_threshold_tau_star" in self.vn_demographic_params:
+                base_tau = max(0.55, float(self.vn_demographic_params["optimal_decision_threshold_tau_star"]))
+            else:
+                base_tau = float(params.get("optimal_threshold_tau", 0.8118))
+
+        expected_sha = str(params.get("model_sha256") or "").strip()
+        active_sha = str(getattr(self, "loaded_model_sha256", "") or "").strip()
+        bound_match = True
+        if not getattr(self, "using_custom_weights", True) and modality in ("image", "video"):
+            bound_match = False
+            base_tau = min(base_tau, 0.55 if modality == "video" else 0.58)
+        elif expected_sha and active_sha and not active_sha.startswith("fallback:") and expected_sha != active_sha:
+            bound_match = False
+
+        return base_tau, params, bound_match, evaluate_conformal_band
 
 
     def _crop_face_if_possible(self, pil_image, detected_faces=None):
@@ -2795,18 +2841,25 @@ class DeepfakeDetector:
                 }
             }
 
-            # 6. Step 6 Post-Hoc Platt Scaling & Decision Calibration
-            if has_human and self.vn_demographic_params and "optimal_decision_threshold_tau_star" in self.vn_demographic_params:
-                tau_star = max(0.55, float(self.vn_demographic_params["optimal_decision_threshold_tau_star"]))
-            elif self.calibration_params:
-                tau_star = float(self.calibration_params.get("optimal_threshold_tau", 0.8118))
-            else:
-                tau_star = 0.8118
+            # 6. Step 6 Post-Hoc 2-Param Platt Scaling, Model-Bound Threshold & Conformal Band
+            tau_star, img_cal_params, cal_bound_match, _eval_conformal = self._resolve_bound_calibration(
+                modality="image", has_human=has_human
+            )
+            try:
+                from forensics_kernel.calibration_store import apply_platt_2param
+                if img_cal_params.get("platt_b", 0.0) != 0.0 and cal_bound_match:
+                    calibrated_composite_risk = apply_platt_2param(composite_risk, img_cal_params, is_logit=False)
+                else:
+                    calibrated_composite_risk = composite_risk
+            except Exception:
+                calibrated_composite_risk = composite_risk
+            conformal_meta = _eval_conformal(calibrated_composite_risk, img_cal_params)
+            conformal_meta["model_bound_match"] = cal_bound_match
 
             # 7. Natural Language Explainability Statement (EU AI Act Article 50 aligned with Youden tau*)
             xai_explanation = XAIExplainabilityGenerator.generate_statement(
                 evidence_matrix=evidence_matrix_6d,
-                composite_risk=composite_risk,
+                composite_risk=calibrated_composite_risk,
                 analysis_mode=analysis_mode,
                 has_human=has_human,
                 scene_context=scene_context,
@@ -2814,7 +2867,7 @@ class DeepfakeDetector:
             )
             # Calibrated classification aligned with Youden optimal threshold tau*
             is_synthetic, final_label, calibrated_confidence, calibrated_scores = self.calibrate_posterior_probability(
-                composite_risk=composite_risk,
+                composite_risk=calibrated_composite_risk,
                 tau_star=tau_star
             )
             calibrated_fake_prob = calibrated_scores["Deepfake"]
@@ -2952,6 +3005,7 @@ class DeepfakeDetector:
                 "composite_risk_score": composite_risk,
                 "calibrated_probability": calibrated_fake_prob,
                 "decision_threshold": tau_star,
+                "conformal_abstention": conformal_meta,
                 "analysis_mode": analysis_mode,
                 "scene_context": scene_context,
                 "triad_council_debate": triad_debate_result,
@@ -3346,8 +3400,19 @@ class DeepfakeDetector:
                 )
                 composite_video_risk = round(float(min(0.995, max(composite_video_risk, dominant_floor))), 4)
 
-            # Post-hoc Platt Scaling & Youden Optimal Threshold
-            tau_star = float(vp.get("tau_video", self.calibration_params.get("optimal_threshold_tau", 0.8118) if self.calibration_params else 0.8118))
+            # Post-hoc 2-Param Platt Scaling, Model-Bound Threshold & Conformal Band
+            tau_star, vid_cal_params, vid_bound_match, _eval_vid_conformal = self._resolve_bound_calibration(
+                modality="video", has_human=has_human_video
+            )
+            try:
+                from forensics_kernel.calibration_store import apply_platt_2param
+                if vid_cal_params.get("platt_b", 0.0) != 0.0 and vid_bound_match:
+                    composite_video_risk = round(apply_platt_2param(composite_video_risk, vid_cal_params, is_logit=False), 4)
+            except Exception:
+                pass
+            vid_conformal_meta = _eval_vid_conformal(composite_video_risk, vid_cal_params)
+            vid_conformal_meta["model_bound_match"] = vid_bound_match
+
             is_synthetic_vid, verdict_label, confidence, all_scores = self.calibrate_posterior_probability(
                 composite_risk=composite_video_risk,
                 tau_star=tau_star
@@ -3597,6 +3662,7 @@ class DeepfakeDetector:
                 "composite_risk_score": composite_video_risk,
                 "calibrated_probability": composite_video_risk,
                 "decision_threshold": tau_star,
+                "conformal_abstention": vid_conformal_meta,
                 "analysis_mode": analysis_mode,
                 "media_type": "video",
                 "scene_context": scene_context_vid,
@@ -3712,8 +3778,9 @@ class DeepfakeDetector:
             audio_metrics = AudioForensicAnalyzer.analyze_audio(str(audio_path), audio_params=ap)
             raw_risk = audio_metrics["acoustic_risk"]
 
-            # Post-hoc Platt calibration alignment using separated audio_calibration_params
-            tau_star = float(ap.get("tau_audio", 0.8118))
+            # Post-hoc 2-Param Platt calibration alignment & Conformal band for Audio
+            tau_star, aud_cal_params, _, _eval_aud_conformal = self._resolve_bound_calibration(modality="audio", has_human=True)
+            ap = aud_cal_params or ap
             voc_gate = float(ap.get("vocoder_gate", 0.72))
             pit_gate = float(ap.get("pitch_gate", 0.55))
             if audio_metrics.get("is_non_speech", False):

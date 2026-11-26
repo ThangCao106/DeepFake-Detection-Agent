@@ -545,6 +545,163 @@ print("FASTAPI_RUNTIME_OK")
         for sf in stale_fonts:
             self.assertNotIn(sf, style_css, f"Stale font '{sf}' still present in style.css")
 
+    def test_19_three_phase_finetune_enhancements_and_corpus_crawler(self):
+        """
+        Verify all 3 Fine-Tuning Enhancement Phases + Multi-Source Training Corpus Crawler:
+          - Stdlib checks (always run in bare GitHub Actions runner)
+          - PyTorch/NumPy/PIL runtime checks (run locally / Colab)
+        """
+        import ast
+        import tempfile
+
+        required_files = [
+            REPO_ROOT / "colab_training" / "forensic_augmentations.py",
+            REPO_ROOT / "colab_training" / "foundation_backbones.py",
+            REPO_ROOT / "colab_training" / "temporal_mil_video.py",
+            REPO_ROOT / "crawler" / "training_corpus_harvester.py",
+            REPO_ROOT / ".github" / "workflows" / "crawl_training_corpus.yml",
+        ]
+        for fp in required_files:
+            self.assertTrue(fp.exists(), f"Missing Phase 1-3 / Crawler deliverable: {fp}")
+            if fp.suffix == ".py":
+                ast.parse(fp.read_text(encoding="utf-8"), filename=str(fp))
+
+        # No synthetic blank canvas or legacy RandomState in forensic_augmentations.py
+        aug_txt = (REPO_ROOT / "colab_training" / "forensic_augmentations.py").read_text(encoding="utf-8")
+        self.assertNotIn("Image." + "new", aug_txt)
+        self.assertNotIn("Random" + "State", aug_txt)
+
+        # Verify crawl_training_corpus.yml schedules & lightweight manifest-only commits
+        wf_txt = (REPO_ROOT / ".github" / "workflows" / "crawl_training_corpus.yml").read_text(encoding="utf-8")
+        for req in ("cron:", "workflow_dispatch:", "training_corpus_harvester.py", "report_colab/corpus/*.jsonl", "[skip ci]"):
+            self.assertIn(req, wf_txt, f"Missing '{req}' in crawl_training_corpus.yml")
+
+        # Verify stdlib calibration_store 2-param Platt & Conformal helpers (safe in bare stdlib CI)
+        import importlib.util
+        cal_spec = importlib.util.spec_from_file_location(
+            "cal_store_stdlib",
+            str(REPO_ROOT / "forensics_kernel" / "calibration_store.py"),
+        )
+        cal_mod = importlib.util.module_from_spec(cal_spec)
+        cal_spec.loader.exec_module(cal_mod)
+        apply_platt_2param = cal_mod.apply_platt_2param
+        evaluate_conformal_band = cal_mod.evaluate_conformal_band
+
+        p_shifted = apply_platt_2param(0.0, {"platt_a": 1.5, "platt_b": -2.0}, is_logit=True)
+        self.assertLess(p_shifted, 0.2)
+        p_pos = apply_platt_2param(2.0, {"platt_a": 1.5, "platt_b": -1.0}, is_logit=True)
+        self.assertGreater(p_pos, 0.85)
+        band = evaluate_conformal_band(0.74, {"optimal_threshold_tau": 0.8118, "conformal_low": 0.67, "conformal_high": 0.90})
+        self.assertTrue(band["in_uncertain_band"])
+        self.assertEqual(band["action"], "ESCALATE_TO_TRIAD_COUNCIL")
+
+        try:
+            import numpy as np
+            import torch
+            import torch.nn as nn
+            from PIL import Image
+        except ImportError:
+            return
+
+        from colab_training.lora_adapter import (
+            DiagonalEWC,
+            NativeDoRALinear,
+            apply_lora_to_vit,
+            build_loraplus_param_groups,
+            compute_orthogonal_adapter_loss,
+            merge_native_adapters,
+        )
+        from colab_training.foundation_backbones import (
+            OrthogonalSubspaceLinear,
+            compute_effort_orthogonality_loss,
+        )
+        from colab_training.forensic_augmentations import (
+            SocialMediaForensicAugment,
+            generate_self_blended_image,
+            rawboost_augment_waveform,
+        )
+        from colab_training.train_general import DualStreamGeneralDetector
+        from colab_training.train_human import BiometricFusionHead
+        from colab_training.temporal_mil_video import TemporalAttentionMIL
+        from colab_training.train_audio_fusionnet import AASISTGraphAttentionHead
+        from colab_training.train_threads_continual import _calibrate_platt_and_youden
+
+        # 1. DoRA + LoRA+ + Orthogonal Loss + EWC + Merge
+        lin = nn.Linear(32, 32)
+        dora = NativeDoRALinear(lin, r=4, lora_alpha=8)
+        x_in = torch.randn(3, 32)
+        out_d = dora(x_in)
+        self.assertEqual(out_d.shape, (3, 32))
+
+        toy = nn.Sequential(nn.Linear(32, 32), nn.ReLU(), nn.Linear(32, 2))
+        toy[0] = NativeDoRALinear(toy[0], r=4, lora_alpha=8)
+        groups = build_loraplus_param_groups(toy, lr=1e-4, loraplus_lr_ratio=16.0)
+        self.assertEqual(len(groups), 2)
+        self.assertGreater(groups[1]["lr"], groups[0]["lr"])
+        ortho_l = compute_orthogonal_adapter_loss(toy)
+        self.assertGreaterEqual(float(ortho_l.item()), 0.0)
+        ewc = DiagonalEWC.from_model(toy, dataloader=None)
+        self.assertGreaterEqual(float(ewc.penalty(toy).item()), 0.0)
+        merged = merge_native_adapters(toy)
+        self.assertIsInstance(merged[0], nn.Linear)
+
+        # 2. Effort Orthogonal Subspace SVD
+        effort_layer = OrthogonalSubspaceLinear(nn.Linear(32, 32), residual_rank=4)
+        self.assertEqual(effort_layer(x_in).shape, (3, 32))
+        self.assertGreaterEqual(float(effort_layer.orthogonality_loss().item()), 0.0)
+
+        # 3. Augmentations (JPEG/WebP/Blur/Caption + SBI + RawBoost) from deterministic gradient array
+        grad = np.linspace(0, 255, 64 * 64 * 3, dtype=np.uint8).reshape(64, 64, 3)
+        base_im = Image.fromarray(grad, mode="RGB")
+        aug_im = SocialMediaForensicAugment(p_jpeg=1.0, p_blur=1.0, p_overlay=1.0, seed=7)(base_im)
+        self.assertEqual(aug_im.size, (64, 64))
+        sbi_im = generate_self_blended_image(base_im, seed=7)
+        self.assertEqual(sbi_im.size, (64, 64))
+        wav = np.sin(2.0 * np.pi * 440.0 * np.linspace(0, 1.0, 16000, dtype=np.float32))
+        rb_wav = rawboost_augment_waveform(wav, sr=16000, seed=7)
+        self.assertEqual(rb_wav.shape, wav.shape)
+        self.assertLessEqual(float(np.max(np.abs(rb_wav))), 1.0 + 1e-5)
+
+        # 4. DualStreamGeneralDetector (active gating, 2-ch and 1-ch compat)
+        gen = DualStreamGeneralDetector(spectral_channels=2)
+        logits_2ch, gates = gen(torch.randn(2, 768), torch.randn(2, 2, 64, 64), return_gates=True)
+        self.assertEqual(logits_2ch.shape, (2, 2))
+        self.assertTrue(torch.allclose(gates.sum(dim=-1), torch.ones(2), atol=1e-4))
+        logits_1ch = gen(torch.randn(2, 768), torch.randn(2, 1, 64, 64))
+        self.assertEqual(logits_1ch.shape, (2, 2))
+
+        # 5. Cross-Modal Human Biometric Attention + TemporalAttentionMIL + AASIST
+        hum = BiometricFusionHead()
+        self.assertEqual(hum(torch.randn(2, 768), torch.randn(2, 768), torch.randn(2, 128), torch.randn(2, 64)).shape, (2, 2))
+        mil = TemporalAttentionMIL(feat_dim=64, hidden_dim=128)
+        bag_logits, attn_w, frame_logits = mil(torch.randn(2, 12, 64))
+        self.assertEqual(bag_logits.shape, (2, 2))
+        self.assertTrue(torch.allclose(attn_w.sum(dim=-1), torch.ones(2), atol=1e-4))
+        aasist = AASISTGraphAttentionHead(hidden_dim=128)
+        self.assertEqual(aasist(torch.randn(2, 16, 128)).shape, (2, 2))
+
+        # 6. 2-Param Platt fixes shifted logits (AUC=1.0, negative shift recovered by bias b)
+        y_shifted = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+        z_shifted = [-5.0, -4.5, -4.0, -3.5, -3.0, -1.5, -1.0, -0.5, 0.0, 0.5]
+        _, tau_s, ece_s, pa, pb, clow, chigh = _calibrate_platt_and_youden(y_shifted, z_shifted)
+        self.assertGreater(pa, 0.2)
+        self.assertGreater(pb, 0.5)
+        self.assertLessEqual(clow, chigh)
+
+        # 7. Offline Multi-Source Corpus Harvester dry-run
+        from crawler.training_corpus_harvester import harvest_training_corpus
+        with tempfile.TemporaryDirectory(prefix="corpus_test_") as td:
+            summary = harvest_training_corpus(
+                output_dir=td,
+                target_images=12,
+                target_sbi_pairs=4,
+                target_audios=6,
+                offline_local_only=True,
+            )
+            self.assertTrue((Path(td) / "training_corpus_manifest.jsonl").exists())
+            self.assertTrue((Path(td) / "corpus_summary.json").exists())
+            self.assertGreater(summary["total_images"], 0)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

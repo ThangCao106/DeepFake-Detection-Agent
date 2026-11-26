@@ -108,3 +108,6 @@ runs/
 crawler/vietnamese_face_vault/
 crawler/verified_threads_seeds/real_vn_*.jpg
 report_colab/daily_benchmark/synthetic_counterfactuals/
+report_colab/corpus/media_shards/
+report_colab/train_cache/
+report_colab/feedback_frames/

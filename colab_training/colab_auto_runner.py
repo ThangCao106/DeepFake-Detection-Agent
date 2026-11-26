@@ -136,21 +136,36 @@ def conduct_council_preflight(requested_alpha=None, apply_if_approved=True):
         return False, None
 
 
-def _build_callback_payload(vit_res: dict | None, audio_meta: dict | None, hf_repo_id: str | None, dataset_label: str) -> dict:
-    """Assemble calibrated multimodal payload for POST /api/colab/callback."""
+def _build_callback_payload(
+    vit_res: dict | None,
+    audio_meta: dict | None,
+    hf_repo_id: str | None,
+    dataset_label: str,
+) -> dict:
+    """Assemble calibrated multimodal payload (2-Param Platt, Conformal Band, SHA-256) for POST /api/colab/callback."""
     payload = {
         "dataset_trained": dataset_label,
     }
     if vit_res:
         payload["temperature_scaling_T"] = float(vit_res.get("temperature_scaling_T", 1.6178))
+        payload["platt_a"] = float(vit_res.get("platt_a", 0.6181))
+        payload["platt_b"] = float(vit_res.get("platt_b", 0.0))
         payload["optimal_threshold_tau"] = float(vit_res.get("optimal_threshold_tau", 0.8118))
+        payload["conformal_low"] = float(vit_res.get("conformal_low", 0.67))
+        payload["conformal_high"] = float(vit_res.get("conformal_high", 0.90))
+        payload["model_sha256"] = str(vit_res.get("model_sha256", ""))
+        payload["peft_method"] = str(vit_res.get("peft_method", "dora"))
+        payload["backbone_family"] = str(vit_res.get("backbone_family", "vit"))
         payload["out_of_distribution_accuracy"] = float(vit_res.get("accuracy", 0.0))
         payload["auc_score"] = float(vit_res.get("auc_score", vit_res.get("auc", 0.0)))
         payload["eer_score"] = float(vit_res.get("eer_score", 0.0))
         payload["ece_score"] = float(vit_res.get("ece_score", 0.0))
         payload["video_calibration_params"] = {
             "temperature_T": float(vit_res.get("temperature_scaling_T", 1.6178)),
+            "platt_a": float(vit_res.get("platt_a", 0.6181)),
+            "platt_b": float(vit_res.get("platt_b", 0.0)),
             "tau_video": round(min(0.85, max(0.50, float(vit_res.get("optimal_threshold_tau", 0.68)))), 4),
+            "model_sha256": str(vit_res.get("model_sha256", "")),
             "calibration_status": "CALIBRATED_FROM_COLAB_BURST_GPU",
         }
     if audio_meta and isinstance(audio_meta.get("metrics"), dict):
@@ -159,6 +174,9 @@ def _build_callback_payload(vit_res: dict | None, audio_meta: dict | None, hf_re
             "calibration_status": "CALIBRATED_AUDIO_FUSIONNET_COLAB",
             "holdout_auc": float(am.get("holdout_auc", 0.0)),
             "holdout_accuracy": float(am.get("holdout_accuracy", 0.0)),
+            "platt_a": float(am.get("platt_a", 0.6181)),
+            "platt_b": float(am.get("platt_b", 0.0)),
+            "tau_audio": float(am.get("tau_audio", 0.8118)),
         }
     if hf_repo_id:
         payload["hf_repo_id"] = hf_repo_id
@@ -167,10 +185,10 @@ def _build_callback_payload(vit_res: dict | None, audio_meta: dict | None, hf_re
 
 def run_burst_all_streams(
     dataset_key: str = "threads_vietnamese_in_the_wild",
-    max_samples: int = 1000,
+    max_samples: int = 2000,
     epochs: int = 3,
     batch_size: int = 16,
-    lr: float = 1e-5,
+    lr: float = 1e-4,
     hf_token: str | None = None,
     github_token: str | None = None,
     callback_secret: str | None = None,
@@ -183,16 +201,24 @@ def run_burst_all_streams(
     min_auc: float = 0.70,
     max_ece: float = 0.15,
     auto_disconnect: bool = False,
+    backbone_family: str = "vit",
+    peft_method: str = "dora",
+    use_ewc: bool = True,
+    sbi_prob: float = 0.15,
+    train_video_mil: bool = True,
+    train_audio_ssl: bool = False,
+    crawl_before_train: bool = False,
 ):
     """
-    Execute a complete Single-Pass Burst-GPU Closed-Loop Training Run across Vision, Human Biometrics, and Audio,
+    Execute a complete Single-Pass Burst-GPU Closed-Loop Training Run across Vision,
+    Temporal MIL Video, Human Biometrics, and Audio (with optional SSL LoRA),
     validate via the OOD Safety Gate, publish to Hugging Face + deeptrace.io.vn, and optionally release GPU.
     """
     hf_token, github_token, callback_secret = resolve_credentials(hf_token, github_token, callback_secret)
     sync_manager = ColabAutoSyncManager()
 
     print("\n" + "=" * 78)
-    print("🚀 STARTING BURST-GPU CLOSED-LOOP AUTOTRAINER (VISION + BIOMETRICS + AUDIO)")
+    print(f"🚀 STARTING BURST-GPU CLOSED-LOOP AUTOTRAINER (backbone={backbone_family}, peft={peft_method})")
     print("=" * 78)
 
     if auto_pull:
@@ -201,7 +227,31 @@ def run_burst_all_streams(
     if council_audit:
         conduct_council_preflight()
 
+    corpus_manifest = PROJECT_ROOT / "report_colab" / "corpus" / "training_corpus_manifest.jsonl"
+    existing_corpus_cnt = 0
+    if corpus_manifest.exists():
+        try:
+            existing_corpus_cnt = sum(1 for _ in open(corpus_manifest, "r", encoding="utf-8"))
+        except Exception:
+            existing_corpus_cnt = 0
+
+    if crawl_before_train or existing_corpus_cnt < 200:
+        try:
+            from crawler.training_corpus_harvester import harvest_training_corpus
+            print(f"[burst_runner] 🕸️ Running Multi-Source Corpus Harvester (existing={existing_corpus_cnt})...")
+            harvest_training_corpus(
+                output_dir=str(PROJECT_ROOT / "report_colab" / "corpus"),
+                target_images=max(200, max_samples),
+                target_sbi_pairs=max(50, max_samples // 4),
+                target_audios=min(400, max(50, max_samples // 5)),
+            )
+        except Exception as exc_cr:
+            print(f"[burst_runner] Corpus harvester notice: {exc_cr}")
+
     extra_manifests = []
+    if corpus_manifest.exists():
+        extra_manifests.append(str(corpus_manifest))
+
     if sync_human_review and callback_url:
         hr_manifest, _ = sync_manager.pull_human_review_feedback(api_base=callback_url)
         if hr_manifest:
@@ -216,7 +266,7 @@ def run_burst_all_streams(
     if img_manifest:
         extra_manifests.append(img_manifest)
 
-    # Stream 1A: Continual ViT Backbone -> custom_vit_model/model.safetensors
+    # Stream 1A: Continual ViT/Foundation Backbone -> custom_vit_model/model.safetensors
     vit_res = None
     try:
         from train_threads_continual import run_threads_continual_training
@@ -228,14 +278,23 @@ def run_burst_all_streams(
             max_train_samples=max_samples,
             min_ood_auc=min_auc,
             max_ood_ece=max_ece,
+            backbone_family=backbone_family,
+            peft_method=peft_method,
+            use_ewc=use_ewc,
+            sbi_prob=sbi_prob,
         )
     except Exception as exc_vit:
         print(f"[burst_runner] ⚠️ Continual ViT training error: {exc_vit}")
 
-    # Stream 1B: DualStreamGeneralDetector (Spatial + Spectral FCB) -> custom_vit_model/weights_general.pt
+    # Stream 1B: DualStreamGeneralDetector (Spatial + 2Ch FFT/SRM FCB + Adaptive Gate) -> weights_general.pt
     try:
         from train_general import train_general_model
-        train_general_model(epochs=max(3, epochs * 2), batch_size=batch_size, output_dir=str(PROJECT_ROOT / "custom_vit_model"))
+        train_general_model(
+            epochs=max(3, epochs * 2),
+            batch_size=batch_size,
+            output_dir=str(PROJECT_ROOT / "custom_vit_model"),
+            max_samples=max_samples,
+        )
     except Exception as exc_gen:
         print(f"[burst_runner] ⚠️ General FCB stream notice: {exc_gen}")
 
@@ -247,7 +306,7 @@ def run_burst_all_streams(
         target_model="general",
     )
 
-    # Stream 2: Human Biometric Multi-Modal Detector -> human_vit_model/weights_human.pt
+    # Stream 2: Human Biometric Cross-Modal Attention Detector -> human_vit_model/weights_human.pt
     human_res = None
     try:
         from train_human import train_human_model
@@ -261,11 +320,22 @@ def run_burst_all_streams(
     except Exception as exc_hum:
         print(f"[burst_runner] ⚠️ Human Biometrics stream notice: {exc_hum}")
 
-    # Stream 3: EnhancedAudioFusionNet -> custom_vit_model/audio_fusionnet.pt
+    # Stream 2B: Temporal Attention MIL Video Model -> custom_vit_model/video_temporal_mil.pt
+    video_mil_meta = None
+    if train_video_mil:
+        try:
+            from temporal_mil_video import train_temporal_mil_model
+            video_mil_meta = train_temporal_mil_model(epochs=20, output_dir=str(PROJECT_ROOT / "custom_vit_model"))
+        except Exception as exc_mil:
+            print(f"[burst_runner] ⚠️ Temporal Video MIL notice: {exc_mil}")
+
+    # Stream 3: EnhancedAudioFusionNet (+ RawBoost) -> custom_vit_model/audio_fusionnet.pt
     audio_meta = None
     try:
-        from train_audio_fusionnet import train_audio_fusionnet
-        audio_meta = train_audio_fusionnet(epochs=35)
+        from train_audio_fusionnet import train_audio_fusionnet, train_audio_ssl_lora
+        audio_meta = train_audio_fusionnet(epochs=35, apply_rawboost=True)
+        if train_audio_ssl:
+            train_audio_ssl_lora(epochs=3)
         sync_manager.generate_and_save_report(
             modality="AUDIO",
             dataset_key="garystafford_audio",
@@ -313,7 +383,7 @@ def run_burst_all_streams(
     print("🏁 [BURST-GPU COMPLETE] Empirical training, HF sync & production callback finished!")
     print("=" * 78)
     maybe_auto_disconnect_colab(auto_disconnect)
-    return {"vit": vit_res, "human": human_res, "audio": audio_meta, "hf_uploaded": hf_uploaded}
+    return {"vit": vit_res, "human": human_res, "video_mil": video_mil_meta, "audio": audio_meta, "hf_uploaded": hf_uploaded}
 
 
 def run_colab_auto_pipeline(
@@ -585,6 +655,13 @@ def main():
     parser.add_argument("--listen", action="store_true", help="Poll GitHub and run Burst training on new commits")
     parser.add_argument("--poll-interval", type=int, default=30, help="Polling interval in seconds for --listen")
     parser.add_argument("--council-audit", action="store_true", help="Run 3-Pillar LLM Council preflight audit")
+    parser.add_argument("--backbone", type=str, default="vit", choices=["vit", "clip", "siglip2", "dinov2"], help="Vision foundation backbone family")
+    parser.add_argument("--peft", type=str, default="dora", choices=["dora", "lora", "effort", "full"], help="PEFT adaptation strategy")
+    parser.add_argument("--sbi-prob", type=float, default=0.15, help="On-the-fly Self-Blended Image probability")
+    parser.add_argument("--no-ewc", action="store_true", help="Disable Diagonal EWC anchor penalty")
+    parser.add_argument("--no-video-mil", action="store_true", help="Skip TemporalAttentionMIL video training")
+    parser.add_argument("--train-audio-ssl", action="store_true", help="Train Phase 3 WavLM/XLS-R LoRA + AASIST head")
+    parser.add_argument("--crawl-before-train", action="store_true", help="Harvest multi-source training corpus before fine-tuning")
     args = parser.parse_args()
 
     hf_token, github_token, cb_secret = resolve_credentials(args.hf_token, args.github_token, args.callback_secret)
@@ -626,6 +703,13 @@ def main():
             min_auc=args.min_auc,
             max_ece=args.max_ece,
             auto_disconnect=args.auto_disconnect,
+            backbone_family=args.backbone,
+            peft_method=args.peft,
+            use_ewc=not args.no_ewc,
+            sbi_prob=args.sbi_prob,
+            train_video_mil=not args.no_video_mil,
+            train_audio_ssl=args.train_audio_ssl,
+            crawl_before_train=args.crawl_before_train,
         )
     else:
         run_colab_auto_pipeline(
