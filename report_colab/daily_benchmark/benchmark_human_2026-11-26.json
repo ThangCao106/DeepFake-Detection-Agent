@@ -1,0 +1,202 @@
+{
+  "timestamp_utc": "2026-11-26T10:16:01Z",
+  "evaluation_mode": "EMPIRICAL_LIVE_INFERENCE",
+  "model_type": "human",
+  "loaded_model_id": "dima806/deepfake_vs_real_image_detection",
+  "using_custom_weights": false,
+  "target_model": "Human-Centric Detector (WAVIE + Full-Duration Acoustic + DF26 LipSync + Tri-Stream ViT)",
+  "human_image_evaluation": {
+    "media_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/crawler/verified_threads_seeds/seed_curated_vn_vn_id_official_1500648767.jpg",
+    "modality": "image",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": 3.3,
+    "calibrated_probability": 0.8849,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": true,
+    "forensic_decision": "DEEPFAKE_SUSPECT",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "wavelet_high_freq_energy": 0.0032,
+      "wavelet_high_freq_artifacts": true,
+      "corneal_reflection_symmetry": 0.0,
+      "corneal_asymmetry_score": 1.0,
+      "optical_gaze_consistent": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 2.72,
+    "detector_label": "Realism",
+    "detector_risk_score": 0.2432,
+    "sha256": "3b09fa90412492be57d8f35e79ce3c9caa5a2e1840c8bd12f2add64306d3533a",
+    "total_latency_ms": 534.43
+  },
+  "human_audio_evaluation": {
+    "media_path": "/tmp/human_bench_4ct77frq/aud/zalo_voice_clean_baseline_real.wav",
+    "modality": "audio",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": -3.356,
+    "calibrated_probability": 0.1116,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "ssl_vocal_trajectory_smoothness": 0.9481,
+      "voiced_unvoiced_transition_anomaly": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 31.03,
+    "suite_metrics": {
+      "sample_count": 7,
+      "tp": 5,
+      "tn": 2,
+      "fp": 0,
+      "fn": 0,
+      "accuracy": 1.0,
+      "tpr": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0,
+      "roc_auc": 1.0,
+      "eer_percent": 0.0,
+      "ece": 0.0475,
+      "mean_latency_ms": 58.11
+    },
+    "manifest": [
+      {
+        "sample_id": "zalo_voice_clean_baseline_real",
+        "sha256": "a1de4c630c2ee00dd8ea1f099a03dfd647d9a8e12af5e54700f12ffe72d97fe6",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.0337
+      },
+      {
+        "sample_id": "zalo_voice_clean_baseline_fake",
+        "sha256": "892ea002e039c6c2f95f5315c9fb8e0e6b2607278bf9142aff6e2f15adfd866f",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "zalo_voice_hf_dither_bypass_fake",
+        "sha256": "4fc98e725290d6c81ebdd065ba2724320b5e9f1286a696c86069fc07049cec2b",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9727
+      },
+      {
+        "sample_id": "zalo_voice_jitter_spoof_fake",
+        "sha256": "d23ad1bbf24236ab8c2a7043efe882581f04caa7e6946fbe1d01dfbb033765a3",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "zalo_voice_partial_audio_splice_fake",
+        "sha256": "81fd7d20fceb2f91ce90d784da920f31be2de6facb572f2d6ad90486ea6dfec6",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      },
+      {
+        "sample_id": "zalo_voice_telephony_8khz_codec_real",
+        "sha256": "127f7cdec134dd127bdb5468c5201c03df87f3458e5d5c4fd27c8e65e8f3328e",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.1248
+      },
+      {
+        "sample_id": "zalo_voice_telephony_8khz_codec_fake",
+        "sha256": "53c5609c1b5d99f3c4a43c453c96478e646773d7db5a43aab6b3d1a5ccddbbe7",
+        "true_binary": 1,
+        "pred_binary": 1,
+        "risk_score": 0.9633
+      }
+    ]
+  },
+  "human_video_evaluation": {
+    "media_path": "/tmp/human_bench_4ct77frq/vid/threads_clean_baseline_real.mp4",
+    "modality": "video",
+    "evaluation_mode": "EMPIRICAL_SIGNAL_EXTRACTION",
+    "raw_logit": -4.1448,
+    "calibrated_probability": 0.0716,
+    "platt_temperature_T": 1.6178,
+    "decision_threshold_tau": 0.8118,
+    "is_deepfake": false,
+    "forensic_decision": "AUTHENTIC_HUMAN",
+    "ece_target_status": "COMPLIANT (ECE < 0.020)",
+    "forensic_indicators": {
+      "df26_lipsync_correlation": 0.951,
+      "microexpression_temporal_jitter": 0.0005,
+      "lipsync_desync": false,
+      "file_verified_on_disk": true
+    },
+    "inference_latency_ms": 15.5,
+    "suite_metrics": {
+      "sample_count": 6,
+      "tp": 0,
+      "tn": 2,
+      "fp": 0,
+      "fn": 4,
+      "accuracy": 0.3333,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "fnr": 1.0,
+      "roc_auc": 1.0,
+      "eer_percent": 0.0,
+      "ece": 0.4953,
+      "mean_latency_ms": 1894.89,
+      "mean_duration_error_sec": 0.0
+    },
+    "manifest": [
+      {
+        "sample_id": "threads_clean_baseline_real",
+        "sha256": "f86f64a111829fee5f52fc5efa98f2d287a6615cce6af6954b7cdf597200e896",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.0156
+      },
+      {
+        "sample_id": "threads_clean_baseline_fake",
+        "sha256": "e4d8969d6f6fb181ba4dabd077030393499679b5717c383d6cd8d368fc77cc0e",
+        "true_binary": 1,
+        "pred_binary": 0,
+        "risk_score": 0.3022
+      },
+      {
+        "sample_id": "threads_h264_heavy_reencode_real",
+        "sha256": "ace786378ec85bf9c4345c1784dde2d2e5168bf4b1a9a82029e0990a32c0d1e9",
+        "true_binary": 0,
+        "pred_binary": 0,
+        "risk_score": 0.0281
+      },
+      {
+        "sample_id": "threads_h264_heavy_reencode_fake",
+        "sha256": "d39f2afd584e3d2d1bd9a0c04bf906c275cb0e24a54e8e1d83c8ef6c676131b3",
+        "true_binary": 1,
+        "pred_binary": 0,
+        "risk_score": 0.294
+      },
+      {
+        "sample_id": "threads_partial_splicing_fake",
+        "sha256": "88217bd5c177d7c2a903f35700abfcae84053c932776ae7e30aa739a365e0c3d",
+        "true_binary": 1,
+        "pred_binary": 0,
+        "risk_score": 0.1753
+      },
+      {
+        "sample_id": "threads_ai_generative_short_fake",
+        "sha256": "1f172a11cbb0427193bdc11fe20b696ddd16e28f0f9ff1f9e7d0b4d98ce442d6",
+        "true_binary": 1,
+        "pred_binary": 0,
+        "risk_score": 0.3002
+      }
+    ]
+  },
+  "compliance_audit": {
+    "audio_ece": 0.0475,
+    "video_ece": 0.4953,
+    "ece_status": "EMPIRICAL_AUDIT_LOGGED",
+    "platt_temperature_T": 1.6178
+  }
+}
