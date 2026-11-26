@@ -2316,6 +2316,44 @@ async def proxy_submit_feedback(request: Request):
     return res
 
 
+@app.get("/api/feedback/review-job/status")
+@app.get("/dfagent/api/feedback/review-job/status")
+async def proxy_feedback_review_job_status():
+    res = await _proxy_to_core("GET", "/api/feedback/review-job/status", timeout=10.0)
+    if res is not None:
+        return res
+    try:
+        from benchmark.deepfake_memory import get_human_review_stats, get_latest_feedback_review_jobs
+        db_p = str(get_deepfake_db_path())
+        return {
+            "status": "success",
+            "stats": get_human_review_stats(db_path=db_p),
+            "jobs": get_latest_feedback_review_jobs(limit=15, db_path=db_p),
+        }
+    except Exception as exc:
+        return {"status": "success", "stats": {}, "jobs": [], "note": str(exc)}
+
+
+@app.post("/api/feedback/review-job/run")
+@app.post("/dfagent/api/feedback/review-job/run")
+async def proxy_run_feedback_review_job(request: Request):
+    body = await request.json() if await request.body() else {}
+    res = await _proxy_to_core("POST", "/api/feedback/review-job/run", json_body=body, timeout=60.0)
+    if res is not None:
+        return res
+    try:
+        from scripts.review_feedback_queue_job import run_feedback_review_job
+        db_p = str(get_deepfake_db_path())
+        out = run_feedback_review_job(
+            db_path=db_p,
+            apply_approved_weights=bool(body.get("apply_approved_weights", False)),
+            trigger_source="dfagent_fallback_runner",
+        )
+        return {"status": "success", **out}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Feedback review job failed: {exc}")
+
+
 @app.api_route("/api/pentest/short-video", methods=["GET", "POST"])
 @app.api_route("/dfagent/api/pentest/short-video", methods=["GET", "POST"])
 async def proxy_short_video_pentest(request: Request):

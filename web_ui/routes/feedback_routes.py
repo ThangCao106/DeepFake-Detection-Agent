@@ -2,15 +2,35 @@
 """
 Modular Flask Blueprint for Closed-Loop Feedback, Human Review Queue, and Multimodal Pentests.
 Registered by web_ui/app.py with shared detector/socketio callbacks injected via create_feedback_blueprint.
+Strict Governance:
+  - Public /api/feedback submissions are unconditionally quarantined in /dfagent (PENDING) and
+    NEVER modify calibration params, model weights, or LoRA checkpoints until an admin approves
+    them in /dfagent -> Human-in-the-Loop User Review Queue.
 """
 
+import hmac
 import logging
-from flask import Blueprint, jsonify, request
+import os
 
 logger = logging.getLogger(__name__)
 
 
+def _is_trusted_internal_pentest(req, data: dict) -> bool:
+    """Allow direct AUTO_PENTEST logging only when explicitly authorized by internal secret."""
+    source_type = str(data.get("source_type") or "HUMAN_REVIEW").upper().strip()
+    if source_type != "AUTO_PENTEST":
+        return False
+    expected = (os.environ.get("INTERNAL_PENTEST_SECRET") or "").strip()
+    if not expected:
+        return False
+    provided = (req.headers.get("X-Internal-Pentest-Secret") or "").strip()
+    if not provided:
+        return False
+    return hmac.compare_digest(provided.encode("utf-8"), expected.encode("utf-8"))
+
+
 def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
+    from flask import Blueprint, jsonify, request
     bp = Blueprint("feedback_routes", __name__)
 
     @bp.route('/api/feedback', methods=['POST'])
@@ -26,7 +46,19 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
 
             from benchmark.feedback_weight_updater import FeedbackWeightUpdater
             active_detector = get_detector_fn()
-            source_type = str(data.get("source_type") or "HUMAN_REVIEW").upper()
+
+            # HARD GOVERNANCE GATE: Public submissions strictly go to /dfagent Review Queue (PENDING).
+            if _is_trusted_internal_pentest(request, data):
+                source_type = "AUTO_PENTEST"
+                review_status = str(data.get("review_status") or "AUTO_LOGGED").upper()
+                auto_calib = bool(data.get("auto_update_calibration", False))
+                trigger_lora = bool(data.get("trigger_lora_update", False))
+            else:
+                source_type = "HUMAN_REVIEW"
+                review_status = "PENDING"
+                auto_calib = False
+                trigger_lora = False
+
             res = FeedbackWeightUpdater.submit_feedback(
                 true_label=true_label,
                 certificate_id=data.get("certificate_id") or data.get("cert_id"),
@@ -38,11 +70,11 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
                 composite_risk_score=data.get("composite_risk_score"),
                 feature_telemetry=data.get("feature_telemetry"),
                 user_note=data.get("user_note", ""),
-                auto_update_calibration=bool(data.get("auto_update_calibration", source_type == "AUTO_PENTEST")),
-                trigger_lora_update=bool(data.get("trigger_lora_update", False)),
+                auto_update_calibration=auto_calib,
+                trigger_lora_update=trigger_lora,
                 detector=active_detector,
                 source_type=source_type,
-                review_status=data.get("review_status"),
+                review_status=review_status,
             )
             calib = res.get("calibration_update") or {}
             if calib.get("accepted") and calib.get("after_params"):
@@ -113,8 +145,22 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
             trigger_calib = bool(data.get("trigger_calibration", False))
             trigger_lora = bool(data.get("trigger_lora", False))
 
-            if decision not in ("APPROVE_REAL", "APPROVE_FAKE", "DISMISS", "TRIGGER_CALIBRATION"):
+            allowed = ("APPROVE_REAL", "APPROVE_FAKE", "DISMISS", "TRIGGER_CALIBRATION", "APPROVE_AND_UPDATE_WEIGHTS")
+            if decision not in allowed:
                 return jsonify({"status": "error", "message": f"Unsupported decision: {decision}"}), 400
+
+            conn = get_db_connection()
+            row = conn.execute(
+                "SELECT media_type, true_label FROM user_feedback_events WHERE feedback_id = ?",
+                (feedback_id,),
+            ).fetchone()
+            conn.close()
+            if not row:
+                return jsonify({"status": "error", "message": f"Feedback '{feedback_id}' not found"}), 404
+
+            row_d = dict(row)
+            mtype = str(row_d.get("media_type", "video")).strip().lower()
+            existing_true = str(row_d.get("true_label") or "Deepfake")
 
             true_label = None
             new_status = "DISMISSED"
@@ -124,7 +170,8 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
             elif decision == "APPROVE_FAKE":
                 true_label = "Deepfake"
                 new_status = "APPROVED_FAKE"
-            elif decision == "TRIGGER_CALIBRATION":
+            elif decision in ("TRIGGER_CALIBRATION", "APPROVE_AND_UPDATE_WEIGHTS"):
+                true_label = data.get("true_label") or existing_true
                 new_status = "APPROVED_CALIBRATED"
                 trigger_calib = True
 
@@ -135,27 +182,38 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
                 true_label=true_label,
             )
             if not ok:
-                return jsonify({"status": "error", "message": f"Feedback '{feedback_id}' not found"}), 404
+                return jsonify({"status": "error", "message": f"Feedback '{feedback_id}' update failed"}), 500
+
+            FeedbackWeightUpdater.sync_manifest_approval_status(
+                feedback_id=feedback_id,
+                review_status=new_status,
+                true_label=true_label,
+            )
 
             calib_res = None
             lora_res = None
             active_detector = get_detector_fn()
-            if trigger_calib or decision in ("APPROVE_REAL", "APPROVE_FAKE"):
-                conn = get_db_connection()
-                row = conn.execute("SELECT media_type FROM user_feedback_events WHERE feedback_id = ?", (feedback_id,)).fetchone()
-                conn.close()
-                mtype = str(dict(row).get("media_type", "video")).lower() if row else "video"
-                if trigger_calib:
-                    if mtype == "audio":
-                        calib_res = FeedbackWeightUpdater.run_audio_calibration_update(
-                            detector=active_detector, trigger_source=f"human_review:{feedback_id}:{new_status}"
-                        )
-                    elif mtype == "video":
-                        calib_res = FeedbackWeightUpdater.run_fast_calibration_update(
-                            detector=active_detector, trigger_source=f"human_review:{feedback_id}:{new_status}"
-                        )
-                if trigger_lora:
-                    lora_res = FeedbackWeightUpdater.run_slow_lora_weight_update(detector=active_detector)
+            if trigger_calib:
+                if mtype == "audio":
+                    calib_res = FeedbackWeightUpdater.run_audio_calibration_update(
+                        detector=active_detector,
+                        trigger_source=f"dfagent_review:{feedback_id}:{new_status}",
+                    )
+                elif mtype == "image":
+                    calib_res = FeedbackWeightUpdater.run_image_calibration_update(
+                        detector=active_detector,
+                        trigger_source=f"dfagent_review:{feedback_id}:{new_status}",
+                    )
+                else:
+                    calib_res = FeedbackWeightUpdater.run_fast_calibration_update(
+                        detector=active_detector,
+                        trigger_source=f"dfagent_review:{feedback_id}:{new_status}",
+                    )
+                if isinstance(calib_res, dict) and calib_res.get("accepted") and calib_res.get("after_params"):
+                    emit_fn('optimal_weights_applied', calib_res["after_params"])
+
+            if trigger_lora and decision != "DISMISS":
+                lora_res = FeedbackWeightUpdater.run_slow_lora_weight_update(detector=active_detector)
 
             return jsonify({
                 "status": "success",
@@ -167,6 +225,38 @@ def create_feedback_blueprint(get_detector_fn, emit_fn, execute_short_video_fn):
             }), 200
         except Exception as e:
             logger.error(f"Review decision error: {e}", exc_info=True)
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @bp.route('/api/feedback/review-job/status', methods=['GET'])
+    @bp.route('/dfagent/api/feedback/review-job/status', methods=['GET'])
+    def api_feedback_review_job_status():
+        """Return latest Feedback Review & Triage job history + queue stats."""
+        try:
+            from benchmark.deepfake_memory import get_human_review_stats, get_latest_feedback_review_jobs
+            return jsonify({
+                "status": "success",
+                "stats": get_human_review_stats(),
+                "jobs": get_latest_feedback_review_jobs(limit=15),
+            }), 200
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @bp.route('/api/feedback/review-job/run', methods=['POST'])
+    @bp.route('/dfagent/api/feedback/review-job/run', methods=['POST'])
+    def api_run_feedback_review_job():
+        """Run Feedback Review & AI Pre-Triage job on demand from /dfagent."""
+        try:
+            data = request.get_json(silent=True) or {}
+            apply_weights = bool(data.get("apply_approved_weights", False))
+            from scripts.review_feedback_queue_job import run_feedback_review_job
+            result = run_feedback_review_job(
+                apply_approved_weights=apply_weights,
+                trigger_source="dfagent_ui_manual",
+                detector=get_detector_fn(),
+            )
+            return jsonify({"status": "success", **result}), 200
+        except Exception as e:
+            logger.error(f"Feedback review job error: {e}", exc_info=True)
             return jsonify({"status": "error", "message": str(e)}), 500
 
     @bp.route('/api/pentest/short-video', methods=['GET', 'POST'])

@@ -1459,9 +1459,21 @@
               <option value="DISMISSED">DISMISSED</option>
               <option value="ALL">ALL (Tất cả Human Review)</option>
             </select>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnRunReviewJob" onclick="runFeedbackReviewJob()">
+              <span>🤖</span><span>Chạy Job Review Phản Hồi</span>
+            </button>
             <button type="button" class="btn btn-primary btn-sm" onclick="loadReviewQueue()">
               <span>🔄</span><span>Làm mới Queue</span>
             </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.25rem; border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.06);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; font-size:0.82rem;">
+            <div>
+              <strong>🛡️ Cổng Kiểm Duyệt Trọng Số (Weight Update Gate):</strong> Mọi phản ánh từ giao diện công khai bị khóa ở trạng thái <code>PENDING</code> và <strong>chỉ được cập nhật vào trọng số/LoRA</strong> sau khi Quản trị viên phê duyệt trực tiếp tại đây.
+            </div>
+            <span id="rqReviewJobStatus" class="badge-sub" style="font-family:var(--font-mono);">Review Job: Đang tải...</span>
           </div>
         </div>
 
@@ -3057,7 +3069,12 @@
           const suggested = ev.true_label || '--';
           const note = ev.user_note || ev.reviewer_note || '';
           const rStatus = ev.review_status || 'PENDING';
+          const aiRec = ev.ai_triage_recommendation || '';
+          const aiReason = ev.ai_triage_reason || '';
           const badgeColor = rStatus === 'PENDING' ? 'var(--accent-amber)' : (rStatus.startsWith('APPROVED') ? 'var(--accent-emerald)' : 'var(--text-muted)');
+          const aiRecHtml = aiRec
+            ? `<div style="margin-top:4px;font-size:0.68rem;color:var(--accent-cyan);font-family:var(--font-mono);">🤖 ${escapeHtml(aiRec)}</div><div style="font-size:0.68rem;color:var(--text-muted);max-width:190px;">${escapeHtml(aiReason)}</div>`
+            : '';
 
           return `
             <tr>
@@ -3080,24 +3097,70 @@
               </td>
               <td>
                 <span class="badge-sub" style="color:${badgeColor};border-color:${badgeColor};">${escapeHtml(rStatus)}</span>
+                ${aiRecHtml}
               </td>
               <td>
                 <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_REAL', false)">✓ REAL</button>
-                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_FAKE', false)">✓ FAKE</button>
-                  <button type="button" class="btn btn-primary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'TRIGGER_CALIBRATION', true)">⚡ Calibrate</button>
-                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;color:var(--accent-rose);" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'DISMISS', false)">✕ Bỏ qua</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_REAL', false, false)">✓ Duyệt REAL</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_FAKE', false, false)">✓ Duyệt FAKE</button>
+                  <button type="button" class="btn btn-primary btn-sm" style="padding:3px 7px;font-size:0.7rem;" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_AND_UPDATE_WEIGHTS', true, false)">⚡ Duyệt &amp; Cập nhật Trọng số</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;color:var(--accent-cyan);" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'APPROVE_AND_UPDATE_WEIGHTS', true, true)">🧠 Duyệt + LoRA</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:0.7rem;color:var(--accent-rose);" data-fid="${escapeHtml(fid)}" onclick="submitReviewDecision(this.dataset.fid, 'DISMISS', false, false)">✕ Từ chối</button>
                 </div>
               </td>
             </tr>
           `;
         }).join('');
+        loadFeedbackReviewJobStatus();
       } catch (err) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--accent-rose);">Lỗi kết nối Review Queue: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
-    async function submitReviewDecision(feedbackId, decision, triggerCalib) {
+    async function loadFeedbackReviewJobStatus() {
+      const badge = document.getElementById('rqReviewJobStatus');
+      if (!badge) return;
+      try {
+        const res = await fetch(getApiUrl('api/feedback/review-job/status'));
+        const data = await res.json();
+        const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+        if (jobs.length === 0) {
+          badge.textContent = 'Review Job: Chưa có lần chạy';
+          return;
+        }
+        const latest = jobs[0];
+        badge.textContent = `Job ${latest.job_run_id}: ${latest.pending_audited ?? 0} pending audited (Approved ready: ${latest.approved_ready_for_weights ?? 0})`;
+      } catch (_) {
+        badge.textContent = 'Review Job: Offline';
+      }
+    }
+
+    async function runFeedbackReviewJob() {
+      const btn = document.getElementById('btnRunReviewJob');
+      const badge = document.getElementById('rqReviewJobStatus');
+      if (btn) btn.disabled = true;
+      if (badge) badge.textContent = 'Review Job: Đang kiểm toán...';
+      try {
+        const res = await fetch(getApiUrl('api/feedback/review-job/run'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apply_approved_weights: false }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          alert(`Chạy Job Review thất bại (${res.status}): ${data.message || data.detail || 'Error'}`);
+        } else if (badge) {
+          badge.textContent = `Job ${data.job_run_id}: Audited ${data.pending_audited ?? 0} (Approve=${data.recommended_approve ?? 0}, Dismiss=${data.recommended_dismiss ?? 0}, Manual=${data.manual_inspection ?? 0})`;
+        }
+        await loadReviewQueue();
+      } catch (err) {
+        alert(`Lỗi chạy Job Review: ${err.message}`);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function submitReviewDecision(feedbackId, decision, triggerCalib, triggerLora = false) {
       if (!feedbackId) return;
       try {
         const res = await fetch(getApiUrl(`api/feedback/review-queue/${encodeURIComponent(feedbackId)}/decision`), {
@@ -3106,7 +3169,7 @@
           body: JSON.stringify({
             decision,
             trigger_calibration: Boolean(triggerCalib),
-            trigger_lora: false,
+            trigger_lora: Boolean(triggerLora),
             reviewer_note: `Reviewed in /dfagent SRE Cockpit (${decision})`,
           }),
         });

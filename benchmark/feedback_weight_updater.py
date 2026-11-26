@@ -35,6 +35,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from benchmark.deepfake_memory import (
+    APPROVED_REVIEW_STATUSES,
+    get_approved_feedback_for_weights,
     get_forensic_certificate,
     get_recent_feedback,
     init_db,
@@ -157,6 +159,8 @@ class FeedbackWeightUpdater:
         platform: str,
         feedback_type: str,
         max_frames: int = 8,
+        approved: bool = False,
+        review_status: str = "PENDING",
     ) -> Tuple[List[str], List[str]]:
         """
         Extracts representative keyframes from misclassified short video (or copies image)
@@ -257,6 +261,8 @@ class FeedbackWeightUpdater:
                     "platform": platform,
                     "feedback_type": feedback_type,
                     "created_at": now_iso,
+                    "approved": bool(approved),
+                    "review_status": str(review_status or "PENDING").upper(),
                     "trained": False,
                 })
 
@@ -264,6 +270,38 @@ class FeedbackWeightUpdater:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
 
         return saved_paths, vault_ids
+
+    @staticmethod
+    def sync_manifest_approval_status(
+        feedback_id: str,
+        review_status: str,
+        true_label: Optional[str] = None,
+    ) -> int:
+        """Synchronize /dfagent human-review decision into labeled_feedback_manifest.json."""
+        if not LABELED_MANIFEST_FILE.exists():
+            return 0
+        try:
+            manifest = json.loads(LABELED_MANIFEST_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return 0
+        if not isinstance(manifest, list):
+            return 0
+
+        r_up = str(review_status or "PENDING").upper()
+        is_approved = r_up in APPROVED_REVIEW_STATUSES
+        updated = 0
+        for item in manifest:
+            if str(item.get("feedback_id") or "") == str(feedback_id):
+                item["review_status"] = r_up
+                item["approved"] = is_approved
+                if true_label:
+                    norm_lbl = normalize_binary_label(true_label)
+                    item["true_label"] = norm_lbl
+                    item["label"] = _label_to_int(norm_lbl)
+                updated += 1
+        if updated > 0:
+            LABELED_MANIFEST_FILE.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+        return updated
 
     @staticmethod
     def _compute_sample_risk(telemetry: Dict[str, Any], params: Dict[str, Any]) -> float:
@@ -382,7 +420,7 @@ class FeedbackWeightUpdater:
         bounded coordinate search with strict non-regression acceptance.
         """
         before_params = cls.load_video_calibration_params()
-        events = get_recent_feedback(limit=250, media_type="video", db_path=db_path)
+        events = get_approved_feedback_for_weights(limit=250, media_type="video", db_path=db_path)
 
         # Build labeled calibration vectors from stored telemetry
         samples: List[Dict[str, Any]] = []
@@ -533,8 +571,23 @@ class FeedbackWeightUpdater:
             m for m in manifest
             if m.get("image_path") and os.path.exists(m["image_path"]) and Path(m["image_path"]).suffix.lower() in image_exts
         ]
+        # Strict /dfagent approval filter: ONLY approved feedback IDs can enter Slow-Loop LoRA updates
+        approved_fids = {
+            str(e.get("feedback_id") or "")
+            for e in get_approved_feedback_for_weights(limit=500, db_path=db_path)
+            if e.get("feedback_id")
+        }
+        valid_entries = [
+            m for m in valid_entries
+            if (str(m.get("feedback_id") or "") in approved_fids)
+            or (bool(m.get("approved")) and str(m.get("review_status") or "").upper() in APPROVED_REVIEW_STATUSES)
+        ]
         if not valid_entries:
-            return {"status": "skipped", "message": "No accessible hard frames on disk for LoRA update."}
+            return {
+                "status": "skipped_no_approved_samples",
+                "accepted": False,
+                "message": "Chưa có mẫu nào được Quản trị viên phê duyệt trên /dfagent để cập nhật LoRA.",
+            }
 
         feedback_batch = valid_entries[-max_feedback_frames:]
 
@@ -846,7 +899,7 @@ class FeedbackWeightUpdater:
         over stored audio feedback telemetry + canonical real/fake anchors with non-regression gate.
         """
         before_params = cls.load_audio_calibration_params()
-        events = get_recent_feedback(limit=250, media_type="audio", db_path=db_path)
+        events = get_approved_feedback_for_weights(limit=250, media_type="audio", db_path=db_path)
         if not events:
             return {
                 "status": "no_audio_feedback_samples",
@@ -939,6 +992,109 @@ class FeedbackWeightUpdater:
         }
 
     @classmethod
+    def run_image_calibration_update(
+        cls,
+        detector=None,
+        trigger_source: str = "dfagent_image_review",
+        db_path: Optional[str] = None,
+        max_delta_tau: float = 0.05,
+    ) -> Dict[str, Any]:
+        """
+        Fast-Loop calibration optimization for Image threshold (calibration_params.json)
+        strictly using /dfagent-approved image feedback events + clean regression anchors.
+        """
+        before_params: Dict[str, Any] = {
+            "temperature_scaling_T": 1.6178,
+            "optimal_threshold_tau": 0.8118,
+            "calibration_status": "INITIALIZED_DEFAULT",
+        }
+        if CALIB_FILE.exists():
+            try:
+                before_params.update(json.loads(CALIB_FILE.read_text(encoding="utf-8")))
+            except Exception:
+                pass
+
+        events = get_approved_feedback_for_weights(limit=250, media_type="image", db_path=db_path)
+        if not events:
+            return {
+                "status": "no_approved_image_feedback_samples",
+                "accepted": False,
+                "before_params": before_params,
+                "after_params": before_params,
+            }
+
+        samples = [
+            {
+                "y": _label_to_int(ev.get("true_label", "Realism")),
+                "risk": float(ev.get("composite_risk_score", 0.5)),
+                "w": 2.0,
+            }
+            for ev in events
+        ]
+        anchors = [
+            {"y": 0, "risk": 0.22, "w": 1.0},
+            {"y": 0, "risk": 0.36, "w": 1.0},
+            {"y": 1, "risk": 0.89, "w": 1.0},
+            {"y": 1, "risk": 0.94, "w": 1.0},
+        ]
+        all_pts = samples + anchors
+
+        def _eval_tau(tau_val: float) -> Tuple[int, float]:
+            errs, bce = 0, 0.0
+            t_s = max(0.5, float(before_params.get("temperature_scaling_T", 1.6178)))
+            for pt in all_pts:
+                pred = 1 if pt["risk"] >= tau_val else 0
+                if pred != pt["y"]:
+                    errs += 1
+                z = (pt["risk"] - tau_val) * (6.0 / t_s)
+                p = min(1.0 - 1e-6, max(1e-6, 1.0 / (1.0 + math.exp(-max(-20.0, min(20.0, z))))))
+                bce += pt["w"] * (-(pt["y"] * math.log(p) + (1 - pt["y"]) * math.log(1.0 - p)))
+            return errs, round(bce + 0.05 * abs(tau_val - float(before_params.get("optimal_threshold_tau", 0.8118))), 5)
+
+        tau_0 = float(before_params.get("optimal_threshold_tau", 0.8118))
+        best_tau = tau_0
+        best_score = _eval_tau(tau_0)
+        for d in np.linspace(-max_delta_tau, max_delta_tau, 11):
+            cand_tau = round(min(0.92, max(0.45, tau_0 + float(d))), 4)
+            sc = _eval_tau(cand_tau)
+            if sc < best_score:
+                best_score = sc
+                best_tau = cand_tau
+
+        before_score = _eval_tau(tau_0)
+        accepted = bool(best_score <= before_score)
+        after_params = dict(before_params)
+        if accepted:
+            after_params["optimal_threshold_tau"] = best_tau
+            after_params["calibration_status"] = "IMAGE_DFAGENT_APPROVED_CALIBRATED"
+            after_params["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            after_params["last_trigger"] = trigger_source
+            CUSTOM_VIT_DIR.mkdir(parents=True, exist_ok=True)
+            CALIB_FILE.write_text(json.dumps(after_params, indent=2, ensure_ascii=False), encoding="utf-8")
+            if detector is not None and hasattr(detector, "reload_calibration_params"):
+                detector.reload_calibration_params()
+
+        update_id = save_weight_update_audit({
+            "trigger_source": trigger_source,
+            "feedback_count": len(samples),
+            "before_params": before_params,
+            "after_params": after_params if accepted else before_params,
+            "before_metrics": {"errors": before_score[0], "objective": before_score[1]},
+            "after_metrics": {"errors": best_score[0], "objective": best_score[1]},
+            "accepted": accepted,
+            "notes": "Image threshold refinement strictly from /dfagent-approved feedback",
+        }, db_path=db_path)
+
+        return {
+            "status": "updated" if accepted else "kept_baseline",
+            "update_id": update_id,
+            "accepted": accepted,
+            "feedback_samples_used": len(samples),
+            "before_params": before_params,
+            "after_params": after_params if accepted else before_params,
+        }
+
+    @classmethod
     def submit_feedback(
         cls,
         true_label: str,
@@ -951,7 +1107,7 @@ class FeedbackWeightUpdater:
         composite_risk_score: Optional[float] = None,
         feature_telemetry: Optional[Dict[str, Any]] = None,
         user_note: str = "",
-        auto_update_calibration: bool = True,
+        auto_update_calibration: bool = False,
         trigger_lora_update: bool = False,
         detector=None,
         db_path: Optional[str] = None,
@@ -961,10 +1117,9 @@ class FeedbackWeightUpdater:
         """
         End-to-end entry point for user/pentest reflection:
           1. Enriches context from forensic_certificates if certificate_id is given.
-          2. Saves feedback event in SQLite (user_feedback_events).
-          3. Extracts hard frames into ZeroDayActiveLearningVault + labeled_feedback_manifest.json.
-          4. Runs Fast-Loop Calibration Weight Update (+ hot-reloads detector).
-          5. Optionally runs Slow-Loop LoRA ViT weight fine-tuning.
+          2. Saves feedback event in SQLite (user_feedback_events) with PENDING status for HUMAN_REVIEW.
+          3. Extracts hard frames into ZeroDayActiveLearningVault + labeled_feedback_manifest.json (approved=False).
+          4. Runs calibration/LoRA ONLY if authorized (AUTO_PENTEST or already approved on /dfagent).
         """
         cert_data = None
         if certificate_id:
@@ -1007,16 +1162,25 @@ class FeedbackWeightUpdater:
         resolved_platform = platform or infer_platform_from_url(source_url)
         feedback_id = f"FB-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
 
+        norm_source = str(source_type or "HUMAN_REVIEW").upper()
+        norm_review = str(review_status or ("AUTO_LOGGED" if norm_source == "AUTO_PENTEST" else "PENDING")).upper()
+        is_pre_approved = norm_review in APPROVED_REVIEW_STATUSES
+
+        # Strict governance gate: unapproved HUMAN_REVIEW items CANNOT trigger calibration or LoRA
+        if norm_source != "AUTO_PENTEST" and not is_pre_approved:
+            auto_update_calibration = False
+            trigger_lora_update = False
+
         extracted_frames, vault_ids = cls.extract_hard_frames(
             media_path=file_path or "",
             feedback_id=feedback_id,
             true_label=norm_true,
             platform=resolved_platform,
             feedback_type=fb_type,
+            approved=is_pre_approved,
+            review_status=norm_review,
         )
 
-        norm_source = str(source_type or "HUMAN_REVIEW").upper()
-        norm_review = str(review_status or ("AUTO_LOGGED" if norm_source == "AUTO_PENTEST" else "PENDING")).upper()
         event_payload = {
             "feedback_id": feedback_id,
             "certificate_id": certificate_id,
@@ -1074,6 +1238,8 @@ class FeedbackWeightUpdater:
             "platform": resolved_platform,
             "predicted_label": norm_pred,
             "true_label": norm_true,
+            "review_status": norm_review,
+            "requires_dfagent_approval": (norm_source != "AUTO_PENTEST" and not is_pre_approved),
             "extracted_frames_count": len(extracted_frames),
             "vault_sample_ids": vault_ids,
             "calibration_update": calib_res,

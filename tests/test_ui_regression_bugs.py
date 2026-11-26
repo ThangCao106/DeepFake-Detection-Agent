@@ -702,6 +702,134 @@ print("FASTAPI_RUNTIME_OK")
             self.assertTrue((Path(td) / "corpus_summary.json").exists())
             self.assertGreater(summary["total_images"], 0)
 
+    def test_20_dfagent_weight_approval_gate_and_feedback_review_job(self):
+        """
+        Verify strict /dfagent approval gate for weight updates + Automated Feedback Review Job:
+          - Public /api/feedback MUST stay PENDING and NEVER update weights/calibration/LoRA directly
+          - Automated review job audits PENDING items with AI Triage without mutating review_status
+          - Calibration & training replay only consume APPROVED_REAL / APPROVED_FAKE / APPROVED_CALIBRATED
+        """
+        import ast
+        import json
+        import tempfile
+        from unittest.mock import patch
+
+        job_script = REPO_ROOT / "scripts" / "review_feedback_queue_job.py"
+        job_wf = REPO_ROOT / ".github" / "workflows" / "feedback_review_job.yml"
+        self.assertTrue(job_script.exists(), "Missing scripts/review_feedback_queue_job.py")
+        self.assertTrue(job_wf.exists(), "Missing .github/workflows/feedback_review_job.yml")
+        ast.parse(job_script.read_text(encoding="utf-8"), filename=str(job_script))
+
+        wf_txt = job_wf.read_text(encoding="utf-8")
+        for tok in ("cron:", "workflow_dispatch:", "review_feedback_queue_job.py", "[skip ci]"):
+            self.assertIn(tok, wf_txt, f"Missing '{tok}' in feedback_review_job.yml")
+
+        app_js = (REPO_ROOT / "web_ui" / "static" / "js" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("Gửi duyệt /dfagent", app_js)
+        self.assertNotIn("` / dfagent`", app_js, "Unescaped template-literal bug still present in app.js")
+        self.assertIn("trigger_lora_update: false", app_js)
+
+        obs_html = (REPO_ROOT / "observability" / "static" / "index.html").read_text(encoding="utf-8")
+        for tok in ("runFeedbackReviewJob", "APPROVE_AND_UPDATE_WEIGHTS", "rqReviewJobStatus"):
+            self.assertIn(tok, obs_html, f"Missing '{tok}' in /dfagent observability UI")
+
+        for fname in (
+            REPO_ROOT / "colab_training" / "train_threads_continual.py",
+            REPO_ROOT / "crawler" / "training_corpus_harvester.py",
+        ):
+            txt = fname.read_text(encoding="utf-8")
+            for st_tok in ("APPROVED_REAL", "APPROVED_FAKE", "APPROVED_CALIBRATED"):
+                self.assertIn(st_tok, txt, f"Missing SQL approval filter '{st_tok}' in {fname.name}")
+
+        # Runtime verification with isolated temp SQLite & Flask test client (when flask + numpy/cv2 exist)
+        try:
+            import cv2  # noqa: F401
+            import numpy  # noqa: F401
+            from flask import Flask
+        except ImportError:
+            return
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from benchmark.deepfake_memory import (
+            get_approved_feedback_for_weights,
+            get_recent_feedback,
+            init_db,
+            update_feedback_review_status,
+        )
+        from scripts.review_feedback_queue_job import run_feedback_review_job
+        from web_ui.routes.feedback_routes import create_feedback_blueprint
+
+        with tempfile.TemporaryDirectory(prefix="fb_gate_test_") as td:
+            tmp_db = str(Path(td) / "test_memory.db")
+            tmp_out = str(Path(td) / "review_out")
+            init_db(db_path=tmp_db)
+
+            app = Flask(__name__)
+            app.register_blueprint(
+                create_feedback_blueprint(
+                    get_detector_fn=lambda: None,
+                    emit_fn=lambda *a, **k: None,
+                    execute_short_video_fn=lambda **k: {},
+                )
+            )
+            client = app.test_client()
+
+            # Spoofed public submission attempting to bypass /dfagent approval
+            import benchmark.feedback_weight_updater as fwu
+            orig_submit = fwu.FeedbackWeightUpdater.submit_feedback
+
+            def _submit_with_tmp_db(*args, **kwargs):
+                kwargs["db_path"] = tmp_db
+                return orig_submit(*args, **kwargs)
+
+            with patch.object(fwu.FeedbackWeightUpdater, "submit_feedback", side_effect=_submit_with_tmp_db):
+                resp = client.post(
+                    "/api/feedback",
+                    json={
+                        "true_label": "Realism",
+                        "predicted_label": "Deepfake",
+                        "media_type": "video",
+                        "composite_risk_score": 0.62,
+                        "source_type": "AUTO_PENTEST",
+                        "auto_update_calibration": True,
+                        "trigger_lora_update": True,
+                        "user_note": "False positive test",
+                    },
+                )
+                self.assertEqual(resp.status_code, 200)
+                payload = resp.get_json()
+                self.assertEqual(payload["review_status"], "PENDING")
+                self.assertTrue(payload["requires_dfagent_approval"])
+                self.assertIsNone(payload["calibration_update"])
+                self.assertIsNone(payload["lora_update"])
+                fid = payload["feedback_id"]
+
+            # Verify PENDING items are blocked from weight/calibration consumption
+            self.assertEqual(len(get_approved_feedback_for_weights(db_path=tmp_db)), 0)
+
+            # Run automated Feedback Review & Pre-Triage Job
+            job_summary = run_feedback_review_job(
+                db_path=tmp_db,
+                apply_approved_weights=True,
+                trigger_source="unit_test_job",
+                output_dir=tmp_out,
+            )
+            self.assertEqual(job_summary["pending_audited"], 1)
+            self.assertFalse(job_summary["weights_applied"])
+            self.assertTrue((Path(tmp_out) / "latest_feedback_review_job.json").exists())
+
+            # Review status MUST remain PENDING with AI triage populated
+            pending_rows = get_recent_feedback(limit=5, source_type="HUMAN_REVIEW", review_status="PENDING", db_path=tmp_db)
+            self.assertEqual(len(pending_rows), 1)
+            self.assertTrue(bool(pending_rows[0].get("ai_triage_recommendation")))
+
+            # Explicit /dfagent Admin approval unlocks feedback for weight updates
+            self.assertTrue(update_feedback_review_status(fid, "APPROVED_REAL", reviewer_note="Admin OK", db_path=tmp_db))
+            approved_rows = get_approved_feedback_for_weights(db_path=tmp_db)
+            self.assertEqual(len(approved_rows), 1)
+            self.assertEqual(approved_rows[0]["feedback_id"], fid)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

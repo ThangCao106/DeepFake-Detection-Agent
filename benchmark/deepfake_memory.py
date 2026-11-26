@@ -177,16 +177,39 @@ def init_db(db_path=None):
     )
     """)
 
-    # Idempotent schema migrations for feedback triage (HUMAN_REVIEW vs AUTO_PENTEST)
+    # Idempotent schema migrations for feedback triage (HUMAN_REVIEW vs AUTO_PENTEST + AI Pre-Triage)
     for col_sql in (
         "ALTER TABLE user_feedback_events ADD COLUMN source_type TEXT DEFAULT 'HUMAN_REVIEW'",
         "ALTER TABLE user_feedback_events ADD COLUMN review_status TEXT DEFAULT 'PENDING'",
         "ALTER TABLE user_feedback_events ADD COLUMN reviewer_note TEXT DEFAULT ''",
+        "ALTER TABLE user_feedback_events ADD COLUMN ai_triage_recommendation TEXT DEFAULT ''",
+        "ALTER TABLE user_feedback_events ADD COLUMN ai_triage_score REAL DEFAULT 0.0",
+        "ALTER TABLE user_feedback_events ADD COLUMN ai_triage_reason TEXT DEFAULT ''",
+        "ALTER TABLE user_feedback_events ADD COLUMN last_reviewed_job_at TEXT DEFAULT ''",
     ):
         try:
             cursor.execute(col_sql)
         except sqlite3.OperationalError:
             pass
+
+    # Table 9: Automated Feedback Review & Triage Job Audit Runs
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS feedback_review_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_run_id TEXT UNIQUE NOT NULL,
+        trigger_source TEXT DEFAULT 'scheduled',
+        pending_audited INTEGER DEFAULT 0,
+        recommended_approve INTEGER DEFAULT 0,
+        recommended_dismiss INTEGER DEFAULT 0,
+        manual_inspection INTEGER DEFAULT 0,
+        approved_ready_for_weights INTEGER DEFAULT 0,
+        weights_applied INTEGER DEFAULT 0,
+        report_json_path TEXT,
+        report_md_path TEXT,
+        summary_json TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     # Backfill existing automated pentest rows cleanly
     try:
@@ -720,6 +743,136 @@ def get_human_review_stats(db_path=None) -> dict:
     finally:
         conn.close()
     return stats
+
+
+APPROVED_REVIEW_STATUSES = ("APPROVED_REAL", "APPROVED_FAKE", "APPROVED_CALIBRATED")
+
+
+def get_approved_feedback_for_weights(
+    limit: int = 250,
+    media_type: str = None,
+    db_path=None,
+) -> list:
+    """
+    Strictly return ONLY feedback events explicitly approved in /dfagent
+    (`APPROVED_REAL`, `APPROVED_FAKE`, `APPROVED_CALIBRATED`).
+    PENDING or DISMISSED feedback can never alter model calibration or LoRA weights.
+    """
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    placeholders = ",".join("?" for _ in APPROVED_REVIEW_STATUSES)
+    clauses = [f"UPPER(COALESCE(review_status, 'PENDING')) IN ({placeholders})"]
+    params = list(APPROVED_REVIEW_STATUSES)
+    if media_type:
+        clauses.append("LOWER(COALESCE(media_type, 'video')) = ?")
+        params.append(str(media_type).strip().lower())
+    params.append(int(limit))
+    where_sql = f"WHERE {' AND '.join(clauses)}"
+    cursor.execute(
+        f"SELECT * FROM user_feedback_events {where_sql} ORDER BY id DESC LIMIT ?",
+        tuple(params),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    items = []
+    for row in rows:
+        d = dict(row)
+        for j_col, out_col in [("feature_telemetry_json", "feature_telemetry"), ("vault_sample_ids_json", "vault_sample_ids")]:
+            try:
+                d[out_col] = json.loads(d.get(j_col) or ("{}" if out_col == "feature_telemetry" else "[]"))
+            except Exception:
+                d[out_col] = {} if out_col == "feature_telemetry" else []
+        items.append(d)
+    return items
+
+
+def update_feedback_triage(
+    feedback_id: str,
+    recommendation: str,
+    score: float,
+    reason: str,
+    reviewed_at: str,
+    db_path=None,
+) -> bool:
+    """Persist AI pre-review triage metadata ONLY (never mutates review_status or weights)."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE user_feedback_events
+        SET ai_triage_recommendation = ?, ai_triage_score = ?, ai_triage_reason = ?, last_reviewed_job_at = ?
+        WHERE feedback_id = ?
+        """,
+        (str(recommendation), float(score), str(reason), str(reviewed_at), str(feedback_id)),
+    )
+    ok = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return ok
+
+
+def save_feedback_review_job(job_data: dict, db_path=None) -> str:
+    """Persist a Feedback Review & Triage job execution record."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    job_run_id = job_data.get("job_run_id") or f"FRJ-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    cursor.execute(
+        """
+        INSERT INTO feedback_review_jobs (
+            job_run_id, trigger_source, pending_audited, recommended_approve,
+            recommended_dismiss, manual_inspection, approved_ready_for_weights,
+            weights_applied, report_json_path, report_md_path, summary_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(job_run_id) DO UPDATE SET
+            pending_audited = excluded.pending_audited,
+            recommended_approve = excluded.recommended_approve,
+            recommended_dismiss = excluded.recommended_dismiss,
+            manual_inspection = excluded.manual_inspection,
+            approved_ready_for_weights = excluded.approved_ready_for_weights,
+            weights_applied = excluded.weights_applied,
+            report_json_path = excluded.report_json_path,
+            report_md_path = excluded.report_md_path,
+            summary_json = excluded.summary_json
+        """,
+        (
+            job_run_id,
+            str(job_data.get("trigger_source", "scheduled")),
+            int(job_data.get("pending_audited", 0)),
+            int(job_data.get("recommended_approve", 0)),
+            int(job_data.get("recommended_dismiss", 0)),
+            int(job_data.get("manual_inspection", 0)),
+            int(job_data.get("approved_ready_for_weights", 0)),
+            1 if job_data.get("weights_applied", False) else 0,
+            str(job_data.get("report_json_path", "")),
+            str(job_data.get("report_md_path", "")),
+            json.dumps(job_data, ensure_ascii=False),
+        ),
+    )
+    conn.commit()
+    conn.close()
+    return job_run_id
+
+
+def get_latest_feedback_review_jobs(limit: int = 15, db_path=None) -> list:
+    """Return latest Feedback Review & Triage job runs."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM feedback_review_jobs ORDER BY id DESC LIMIT ?", (int(limit),))
+    rows = []
+    for r in cursor.fetchall():
+        d = dict(r)
+        if d.get("summary_json"):
+            try:
+                d["summary"] = json.loads(d["summary_json"])
+            except Exception:
+                d["summary"] = {}
+        rows.append(d)
+    conn.close()
+    return rows
 
 
 def save_short_video_pentest_run(row_data: dict, db_path=None) -> str:

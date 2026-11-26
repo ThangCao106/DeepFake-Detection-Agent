@@ -135,7 +135,9 @@ def _collect_feedback_hard_negatives(media_dir: Path, api_base: str = "https://d
             con = sqlite3.connect(str(dbp))
             rows = con.execute(
                 "SELECT feedback_id, file_path, true_label, platform, media_type "
-                "FROM user_feedback_events ORDER BY id DESC LIMIT 200"
+                "FROM user_feedback_events "
+                "WHERE UPPER(COALESCE(review_status, 'PENDING')) IN ('APPROVED_REAL', 'APPROVED_FAKE', 'APPROVED_CALIBRATED') "
+                "ORDER BY id DESC LIMIT 200"
             ).fetchall()
             con.close()
             for fid, fp, true_lbl, platform, mtype in rows:

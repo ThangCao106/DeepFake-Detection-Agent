@@ -1117,7 +1117,7 @@ async function submitForensicFeedback(certId, trueLabel, triggerLora = false) {
     const urlInput = document.getElementById('urlInput');
     const sourceUrl = urlInput ? (urlInput.value || '').trim() : '';
     const note = prompt(
-        `Xác nhận phản ánh kết quả (${certId}) là "${trueLabel === 'Deepfake' ? 'DEEPFAKE / AI' : 'THẬT / REALISM'}" để trích xuất hard-frames & cập nhật trọng số mô hình.\nGhi chú thêm (tùy chọn):`,
+        `Xác nhận gửi phản ánh (${certId}) là "${trueLabel === 'Deepfake' ? 'DEEPFAKE / AI' : 'THẬT / REALISM'}" tới Hàng đợi Kiểm duyệt (/dfagent).\nTrọng số mô hình chỉ được cập nhật sau khi Quản trị viên phê duyệt.\nGhi chú thêm (tùy chọn):`,
         ''
     );
     if (note === null) return;
@@ -1140,14 +1140,14 @@ async function submitForensicFeedback(certId, trueLabel, triggerLora = false) {
                 user_note: note,
                 source_type: 'HUMAN_REVIEW',
                 auto_update_calibration: false,
-                trigger_lora_update: Boolean(triggerLora),
+                trigger_lora_update: false,
             }),
         });
         const data = await res.json();
         if (data.status === 'success') {
             const msg = `✅ **Đã gửi yêu cầu Review (${data.feedback_id})** [${data.feedback_type} | nền tảng: \`${data.platform}\`]\n` +
-                `- Trạng thái: **Chờ kiểm duyệt trong ` / dfagent` → Hàng đợi Review (PENDING)**\n` +
-                `- Hard frames lưu Zero-Day Vault: **${data.extracted_frames_count}** khung hình (trọng số hệ thống được bảo vệ cho tới khi Quản trị viên phê duyệt).`;
+                `- Trạng thái: **Chờ Quản trị viên duyệt tại \`/dfagent\` → Hàng đợi Review (PENDING)**\n` +
+                `- Hard frames lưu Zero-Day Vault: **${data.extracted_frames_count}** khung hình (trọng số hệ thống được bảo vệ và CHỈ cập nhật sau khi được phê duyệt tại \`/dfagent\`).`;
             if (typeof addMessage === 'function') {
                 addMessage(msg, 'agent');
             } else {
@@ -1432,10 +1432,10 @@ function formatAgentChatSummary(text, data, lang = currentLang) {
                         `)}
                         <div style="border-top: 1px dashed #e2e8f0; margin-top: 4px; padding-top: 4px; display: flex; flex-direction: column; gap: 4px;">
                             <button class="chat-dispute-chip" onclick="submitForensicFeedback('${certId}', 'Realism', false)" style="text-align: left; width: 100%; background: #ecfdf5; color: #065f46; border-color: #a7f3d0;">
-                                ✅ Báo sai (FP): Thực tế là THẬT -> Cập nhật trọng số
+                                ✅ Báo sai (FP): Thực tế là THẬT → Gửi duyệt /dfagent
                             </button>
                             <button class="chat-dispute-chip" onclick="submitForensicFeedback('${certId}', 'Deepfake', false)" style="text-align: left; width: 100%; background: #fef2f2; color: #991b1b; border-color: #fecaca;">
-                                🚨 Báo sai (FN): Thực tế là DEEPFAKE/AI -> Cập nhật trọng số
+                                🚨 Báo sai (FN): Thực tế là DEEPFAKE/AI → Gửi duyệt /dfagent
                             </button>
                         </div>
                     </div>

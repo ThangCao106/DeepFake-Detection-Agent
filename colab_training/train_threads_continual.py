@@ -443,7 +443,10 @@ def load_sqlite_feedback_hard_negatives(
         cur = con.cursor()
         rows = cur.execute(
             "SELECT feedback_id, file_path, true_label, platform, media_type "
-            "FROM user_feedback_events WHERE COALESCE(lora_trained, 0) = 0 ORDER BY id DESC LIMIT 200"
+            "FROM user_feedback_events "
+            "WHERE COALESCE(lora_trained, 0) = 0 "
+            "AND UPPER(COALESCE(review_status, 'PENDING')) IN ('APPROVED_REAL', 'APPROVED_FAKE', 'APPROVED_CALIBRATED') "
+            "ORDER BY id DESC LIMIT 200"
         ).fetchall()
         con.close()
     except Exception as e:
