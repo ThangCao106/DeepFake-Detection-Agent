@@ -1,0 +1,23 @@
+{
+  "job_run_id": "FRJ-20261126211735",
+  "timestamp_utc": "2026-11-26T21:17:35Z",
+  "trigger_source": "github_actions_review_job",
+  "approval_gate_enforced": true,
+  "pending_audited": 0,
+  "recommended_approve": 0,
+  "recommended_dismiss": 0,
+  "manual_inspection": 0,
+  "approved_ready_for_weights": 0,
+  "weights_applied": false,
+  "applied_updates": {},
+  "queue_stats": {
+    "human_pending": 0,
+    "human_approved": 0,
+    "human_dismissed": 0,
+    "human_total": 0,
+    "auto_pentest_total": 0
+  },
+  "triaged_items": [],
+  "report_json_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/feedback_reviews/latest_feedback_review_job.json",
+  "report_md_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/feedback_reviews/feedback_review_report_2026-11-26.md"
+}
