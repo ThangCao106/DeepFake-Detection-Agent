@@ -265,7 +265,7 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                         <div>
-                            <h4 style="margin: 0; font-size: 1.15rem; color: #1e1b4b; font-weight: 800;">
+                            <h4 style="margin: 0; font-size: 1.15rem; color: #1e1b4b; font-weight: 600;">
                                 🔬 Khung Kiểm Nghiệm Ablation Study & Hiệu Chỉnh Tham Số (NCS Forensic Audit Suite)
                             </h4>
                             <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">
@@ -323,7 +323,7 @@
                                 <span style="font-size: 0.85rem; font-weight: 700; color: #334155;">⚖️ Tỷ trọng Luồng
                                     Chuyên biệt Ảnh (α)</span>
                                 <span id="currentAlphaBadge"
-                                    style="background: #ede9fe; color: #4338ca; font-weight: 800; font-size: 0.9rem; padding: 2px 10px; border-radius: 8px;">α
+                                    style="background: #ede9fe; color: #4338ca; font-weight: 600; font-size: 0.9rem; padding: 2px 10px; border-radius: 8px;">α
                                     = 0.60</span>
                             </div>
                             <input type="range" id="alphaRangeSlider" min="0.0" max="1.0" step="0.05" value="0.60"
@@ -352,7 +352,7 @@
                                     style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">α
                                     = 1.0</button>
                             </div>
-                            <div style="font-size: 0.78rem; color: #475569; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #f1f5f9; font-family: monospace;"
+                            <div style="font-size: 0.78rem; color: #475569; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #f1f5f9; font-family: 'Roboto Mono', monospace;"
                                 id="fusionFormulaPreview">
                                 Risk_comp = 0.40·R_gen + 0.60·R_spec
                             </div>
@@ -371,7 +371,7 @@
                                         Platt (T*):</label>
                                     <input id="imgPlattTInput" type="number" step="0.01" min="0.4" max="3.5"
                                         value="1.6178"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #0f172a;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #0f172a;">
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid #f1f5f9;">
@@ -379,7 +379,7 @@
                                         Youden (τ*):</label>
                                     <input id="imgYoudenTauInput" type="number" step="0.005" min="0.2" max="0.95"
                                         value="0.8118"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #2563eb;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #2563eb;">
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 8px;">
@@ -453,7 +453,7 @@
                                         style="font-size: 0.75rem; color: #64748b; display: block;">Vocoder
                                         (&gt;7.5kHz):</label>
                                     <input id="audWVocoderInput" type="number" step="0.01" min="0" max="1" value="0.45"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
                                 </div>
                                 <div
                                     style="background: #ffffff; padding: 8px 10px; border-radius: 8px; border: 1px solid #fde68a;">
@@ -461,7 +461,7 @@
                                         style="font-size: 0.75rem; color: #64748b; display: block;">F0 Pitch
                                         Jitter:</label>
                                     <input id="audWPitchInput" type="number" step="0.01" min="0" max="1" value="0.35"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
                                 </div>
                                 <div
                                     style="background: #ffffff; padding: 8px 10px; border-radius: 8px; border: 1px solid #fde68a;">
@@ -469,11 +469,11 @@
                                         style="font-size: 0.75rem; color: #64748b; display: block;">Phase &amp;
                                         ZCR:</label>
                                     <input id="audWPhaseInput" type="number" step="0.01" min="0" max="1" value="0.20"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; margin-top: 4px;">
                                 </div>
                             </div>
                             <div
-                                style="font-size: 0.76rem; color: #78350f; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fde68a; font-family: monospace;">
+                                style="font-size: 0.76rem; color: #78350f; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #fde68a; font-family: 'Roboto Mono', monospace;">
                                 Risk_audio = w_vocoder·R_voc + w_pitch·R_f0 + w_phase·R_zcr
                             </div>
                         </div>
@@ -489,7 +489,7 @@
                                         Platt Audio (T*_aud):</label>
                                     <input id="audPlattTInput" type="number" step="0.01" min="0.4" max="3.5"
                                         value="1.6178"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px;">
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid #f1f5f9;">
@@ -497,7 +497,7 @@
                                         Audio (τ_aud):</label>
                                     <input id="audTauInput" type="number" step="0.005" min="0.2" max="0.95"
                                         value="0.8118"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #b45309;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #b45309;">
                                 </div>
                                 <button type="button" onclick="applyModalityWeights('audio')"
                                     style="width: 100%; margin-top: 6px; background: #d97706; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
@@ -526,21 +526,21 @@
                                     <label for="vidWPeakInput"
                                         style="font-size: 0.72rem; color: #64748b; display: block;">w_peak:</label>
                                     <input id="vidWPeakInput" type="number" step="0.01" min="0" max="1" value="0.62"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
                                 </div>
                                 <div
                                     style="background: #ffffff; padding: 8px; border-radius: 8px; border: 1px solid #c7d2fe;">
                                     <label for="vidWAvgInput"
                                         style="font-size: 0.72rem; color: #64748b; display: block;">w_avg:</label>
                                     <input id="vidWAvgInput" type="number" step="0.01" min="0" max="1" value="0.23"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
                                 </div>
                                 <div
                                     style="background: #ffffff; padding: 8px; border-radius: 8px; border: 1px solid #c7d2fe;">
                                     <label for="vidWJitterInput"
                                         style="font-size: 0.72rem; color: #64748b; display: block;">w_jitter:</label>
                                     <input id="vidWJitterInput" type="number" step="0.01" min="0" max="1" value="0.15"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
                                 </div>
                                 <div
                                     style="background: #ffffff; padding: 8px; border-radius: 8px; border: 1px solid #c7d2fe;">
@@ -548,11 +548,11 @@
                                         style="font-size: 0.72rem; color: #64748b; display: block;">α_vid
                                         (Human):</label>
                                     <input id="vidAlphaInput" type="number" step="0.05" min="0" max="1" value="0.60"
-                                        style="width: 100%; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
+                                        style="width: 100%; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; margin-top: 4px;">
                                 </div>
                             </div>
                             <div
-                                style="font-size: 0.76rem; color: #312e81; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #c7d2fe; font-family: monospace;">
+                                style="font-size: 0.76rem; color: #312e81; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px solid #c7d2fe; font-family: 'Roboto Mono', monospace;">
                                 Risk_vid = w_peak·P_max + w_avg·P_mean + w_jitter·J_motion
                             </div>
                         </div>
@@ -568,7 +568,7 @@
                                         Platt Video (T*_vid):</label>
                                     <input id="vidPlattTInput" type="number" step="0.01" min="0.4" max="3.5"
                                         value="1.9178"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px;">
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid #f1f5f9;">
@@ -576,7 +576,7 @@
                                         Video (τ_vid):</label>
                                     <input id="vidTauInput" type="number" step="0.005" min="0.2" max="0.95"
                                         value="0.7318"
-                                        style="width: 86px; text-align: right; font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #4338ca;">
+                                        style="width: 86px; text-align: right; font-family: 'Roboto Mono', monospace; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; color: #4338ca;">
                                 </div>
                                 <button type="button" onclick="applyModalityWeights('video')"
                                     style="width: 100%; margin-top: 6px; background: #4338ca; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
@@ -746,7 +746,7 @@
                     <div style="margin-top: 22px; border-top: 2px dashed #e2e8f0; padding-top: 18px;">
                         <div style="margin-bottom: 14px;">
                             <h5
-                                style="margin: 0; font-size: 1.05rem; color: #1e1b4b; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 1.05rem; color: #1e1b4b; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                                 🏛️ Khung Tam Giác Chứng Minh 3 Tầng: Căn Cứ Khoa Học Cho Ma Trận Ablation Grid Search
                                 Chuẩn Mực
                             </h5>
@@ -951,7 +951,7 @@
                         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #f1f5f9;">
                         <div>
                             <h4
-                                style="margin: 0; font-size: 1.15rem; color: #1e1b4b; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 1.15rem; color: #1e1b4b; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                                 📊 Báo Cáo Benchmark & Giám Định Pháp Y Đa Tầng (Forensic Audit Dashboard)
                             </h4>
                             <p style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">
@@ -995,7 +995,7 @@
                             <span
                                 style="font-size: 0.76rem; font-weight: 700; color: #4338ca; text-transform: uppercase;">🎯
                                 Độ Chính Xác TB (Accuracy)</span>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #1e1b4b; margin: 4px 0;"
+                            <div style="font-size: 1.6rem; font-weight: 600; color: #1e1b4b; margin: 4px 0;"
                                 id="kpiAvgAcc">100.0%</div>
                             <span style="font-size: 0.72rem; color: #64748b;">Đánh giá trên <strong
                                     id="kpiTotalSamples">500</strong> mẫu thực nghiệm</span>
@@ -1005,7 +1005,7 @@
                             <span
                                 style="font-size: 0.76rem; font-weight: 700; color: #15803d; text-transform: uppercase;">🛡️
                                 Tỷ Lệ Bắt FAKE (Fake Recall / TPR)</span>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #14532d; margin: 4px 0;"
+                            <div style="font-size: 1.6rem; font-weight: 600; color: #14532d; margin: 4px 0;"
                                 id="kpiFakeRecall">99.2%</div>
                             <span style="font-size: 0.74rem; color: #16a34a; font-weight: 700;" id="kpiFakeEdge">+43.8%
                                 so với Tool ngoại 🔥</span>
@@ -1015,7 +1015,7 @@
                             <span
                                 style="font-size: 0.76rem; font-weight: 700; color: #b45309; text-transform: uppercase;">⚔️
                                 Thắng Đấu Trường Commercial</span>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #78350f; margin: 4px 0;"
+                            <div style="font-size: 1.6rem; font-weight: 600; color: #78350f; margin: 4px 0;"
                                 id="kpiWinRate">85.7%</div>
                             <span style="font-size: 0.72rem; color: #92400e;">Vượt trội WasItAI, ZeroGPT, Decopy</span>
                         </div>
@@ -1024,7 +1024,7 @@
                             <span
                                 style="font-size: 0.76rem; font-weight: 700; color: #475569; text-transform: uppercase;">⚡
                                 Độ Trễ Trung Bình (Latency)</span>
-                            <div style="font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 4px 0;"
+                            <div style="font-size: 1.6rem; font-weight: 600; color: #0f172a; margin: 4px 0;"
                                 id="kpiAvgLatency">20.3 ms</div>
                             <span style="font-size: 0.72rem; color: #64748b;">Nhanh gấp 2-3x công cụ đám mây</span>
                         </div>
@@ -1036,7 +1036,7 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h5
-                                style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
                                 🔬 Bảng Đối Chiếu Các Mô Hình Nền Tảng & Checkpoint SOTA (Open-Source Model Checkpoints
                                 & Baselines)
                             </h5>
@@ -1255,7 +1255,7 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h5
-                                style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
                                 🏆 Bảng Đối Chiếu 10 Công Cụ Thương Mại Toàn Cầu (Global Commercial Deepfake Suite)
                             </h5>
                             <span
@@ -1508,7 +1508,7 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <h5
-                                style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
                                 🥊 Đấu Trường Đối Đầu: NCS Tri-Stream (Ours) vs Công Cụ Thương Mại Toàn Cầu & Tool
                                 Online
                             </h5>
@@ -1697,7 +1697,7 @@
                     <div
                         style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 18px;">
                         <h5
-                            style="margin: 0 0 12px; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                            style="margin: 0 0 12px; font-size: 0.95rem; font-weight: 600; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
                             🇻🇳 Đánh Giá Hiệu Năng Theo 5 Nhóm Nhân Khẩu Học Việt Nam (Threads-DFBench 5 Cohorts)
                         </h5>
                         <div style="overflow-x: auto;">
@@ -1801,12 +1801,12 @@
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
                             <h5
-                                style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                                style="margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
                                 🎬 Pentest Video Ngắn 4 Nền Tảng &amp; Trọng Số Phản Hồi (Threads, IG Reels, YT Shorts,
                                 TikTok)
                             </h5>
                             <span id="activeVideoParamsBadge"
-                                style="font-size: 0.74rem; background: #ecfdf5; color: #047857; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-family: monospace;">
+                                style="font-size: 0.74rem; background: #ecfdf5; color: #047857; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-family: 'Roboto Mono', monospace;">
                                 τ_video = 0.8118 | SARAAB = 0.50 / 0.35 / 0.15
                             </span>
                         </div>

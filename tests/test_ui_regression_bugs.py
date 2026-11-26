@@ -498,8 +498,8 @@ print("FASTAPI_RUNTIME_OK")
         self.assertEqual(tpl_txt, v2_obs2.read_text(encoding="utf-8"), "observability/static/diagrams/index.html out of sync!")
 
         for req in (
-            "Instrument+Serif",
-            "Geist+Mono",
+            "family=Inter:",
+            "family=Roboto+Mono:",
             "--color-paper: #f5f5f5;",
             "--color-accent: #bf4520;",
             "switchDiagram('arch')",
@@ -519,6 +519,31 @@ print("FASTAPI_RUNTIME_OK")
         obs_idx_txt = (REPO_ROOT / "observability" / "static" / "index.html").read_text(encoding="utf-8")
         for dual_tok in ("nav-agentic-model", "tab-agentic-model", "nav-editorial-diagrams", "tab-editorial-diagrams", "/dfagent/diagrams"):
             self.assertIn(dual_tok, obs_idx_txt, f"Missing '{dual_tok}' in /dfagent index.html")
+
+    def test_18_grafana_saga_typography_across_all_zones(self):
+        """Verify all Web UI zones (/, /benchmark, /dfagent, v1, v2) use Grafana's Inter + Roboto Mono font stack."""
+        html_targets = [
+            REPO_ROOT / "web_ui" / "templates" / "public_studio.html",
+            REPO_ROOT / "web_ui" / "templates" / "benchmark_hub.html",
+            REPO_ROOT / "web_ui" / "templates" / "index.html",
+            REPO_ROOT / "web_ui" / "templates" / "orchestrator_dashboard.html",
+            REPO_ROOT / "web_ui" / "templates" / "agentic_ai_model.html",
+            REPO_ROOT / "web_ui" / "templates" / "editorial_diagrams.html",
+            REPO_ROOT / "observability" / "static" / "index.html",
+        ]
+        stale_fonts = ("Plus Jakarta Sans", "Plus+Jakarta+Sans", "Instrument Serif", "Instrument+Serif", "'Outfit'", "family=Outfit", "JetBrains Mono", "JetBrains+Mono")
+        for path in html_targets:
+            txt = path.read_text(encoding="utf-8")
+            self.assertIn("family=Inter:", txt, f"Missing Grafana Inter Google Font in {path.name}")
+            self.assertIn("Roboto+Mono", txt, f"Missing Grafana Roboto Mono Google Font in {path.name}")
+            for sf in stale_fonts:
+                self.assertNotIn(sf, txt, f"Stale non-Grafana font '{sf}' still present in {path.name}")
+
+        style_css = (REPO_ROOT / "web_ui" / "static" / "css" / "style.css").read_text(encoding="utf-8")
+        self.assertIn("'Inter'", style_css)
+        self.assertIn("'Roboto Mono'", style_css)
+        for sf in stale_fonts:
+            self.assertNotIn(sf, style_css, f"Stale font '{sf}' still present in style.css")
 
 
 if __name__ == "__main__":

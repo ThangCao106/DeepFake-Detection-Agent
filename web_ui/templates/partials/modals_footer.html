@@ -31,7 +31,7 @@
                         🏛️</div>
                     <div>
                         <h3 class="modal-title"
-                            style="color: white; margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em;">
+                            style="color: white; margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em;">
                             Hội Đồng LLM Tranh Luận & Thẩm Định Trọng Số
                         </h3>
                         <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #cbd5e1;">
@@ -49,7 +49,7 @@
                 style="padding: 22px 26px; overflow-y: auto; background: #f8fafc; flex: 1;">
                 <div style="text-align: center; padding: 50px 20px; color: #64748b;">
                     <div style="font-size: 2.2rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">⚖️</div>
-                    <div style="font-weight: 800; font-size: 1.15rem; color: #1e293b;">Đang Triệu Tập Hội Đồng LLM Tranh
+                    <div style="font-weight: 600; font-size: 1.15rem; color: #1e293b;">Đang Triệu Tập Hội Đồng LLM Tranh
                         Luận...</div>
                     <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">Đang trích xuất telemetry
                         Benchmark & Pentest và khởi tạo phiên phản biện 3 bên.</div>
@@ -65,7 +65,7 @@
                         style="background: #ede9fe; color: #6366f1; padding: 4px 10px; border-radius: 6px; font-weight: 700;">🛡️
                         EU AI Act Art. 50 Governance Ready</span>
                     <span id="councilCertTag"
-                        style="font-family: monospace; font-size: 0.78rem; color: #94a3b8;"></span>
+                        style="font-family: 'Roboto Mono', monospace; font-size: 0.78rem; color: #94a3b8;"></span>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-browse" onclick="closeCouncilDebateModal()"
@@ -87,15 +87,15 @@
     <!-- 🔒 SUBSYSTEM ACCESS GATE LOGIN MODAL (PIXEL-PERFECT FROM OBSAGENT) -->
     <!-- ========================================================= -->
     <div class="modal-overlay" id="gateOverlay"
-        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); justify-content: center; align-items: center; font-family: 'Outfit', sans-serif;">
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: linear-gradient(135deg, #1e1b2e 0%, #110e1b 100%); justify-content: center; align-items: center; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
         <div class="modal"
-            style="width: 90%; max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center; border-radius: 12px; background: #ffffff; box-sizing: border-box; font-family: 'Outfit', sans-serif;">
+            style="width: 90%; max-width: 420px; padding: 2.25rem; border: 1px solid rgba(124, 77, 255, 0.3); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); text-align: center; border-radius: 12px; background: #ffffff; box-sizing: border-box; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem; line-height: 1;">🔐</div>
             <h2
-                style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">
+                style="font-size: 1.35rem; font-weight: 700; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                 AI Deepfake Subsystem</h2>
             <p
-                style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem; line-height: 1.4; font-family: 'Outfit', sans-serif;">
+                style="font-size: 0.85rem; color: #6e6b7e; margin-bottom: 1.5rem; line-height: 1.4; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                 Vui lòng đăng nhập tài khoản hệ thống để truy cập Deepfake Detection Agent & Claude Subsystem.
             </p>
 
@@ -103,34 +103,34 @@
                 onsubmit="handleBenchmarkGateLogin(event)">
                 <div>
                     <label
-                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Tên
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">Tên
                         đăng nhập (Username):</label>
                     <input type="text" id="gateUser" value="thang.cd" required
-                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
+                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;" />
                 </div>
 
                 <div>
                     <label
-                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Outfit', sans-serif;">Mật
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e1b2e; margin-bottom: 0.3rem; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">Mật
                         khẩu (Password):</label>
                     <input type="password" id="gatePass" placeholder="••••••••" required
-                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Outfit', sans-serif;" />
+                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border: 1px solid #e5def0; border-radius: 8px; font-size: 0.95rem; outline: none; background: #ffffff; color: #1e1b2e; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;" />
                 </div>
 
                 <div id="gateError"
-                    style="display: none; font-size: 0.85rem; color: #ff1744; font-weight: 600; text-align: center; font-family: 'Outfit', sans-serif;">
+                    style="display: none; font-size: 0.85rem; color: #ff1744; font-weight: 600; text-align: center; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                     ❌ Tên đăng nhập hoặc mật khẩu không chính xác!
                 </div>
 
                 <button type="submit" id="gateSubmitBtn"
-                    style="margin-top: 0.5rem; background: #7c4dff; color: #fff; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Outfit', sans-serif;"
+                    style="margin-top: 0.5rem; background: #7c4dff; color: #fff; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;"
                     onmouseover="this.style.background='#651fff'" onmouseout="this.style.background='#7c4dff'">
                     🔑 Đăng nhập Subsystem
                 </button>
 
                 <div id="gateCancelBox" style="text-align: center; margin-top: 0.25rem;">
                     <button type="button" onclick="cancelGateLogin()"
-                        style="background: none; border: none; font-size: 0.8rem; color: #7c4dff; text-decoration: underline; cursor: pointer; font-weight: 500; font-family: 'Outfit', sans-serif;">
+                        style="background: none; border: none; font-size: 0.8rem; color: #7c4dff; text-decoration: underline; cursor: pointer; font-weight: 500; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                         ← Quay lại Giao Diện Giám Định (Port 5000)
                     </button>
                 </div>

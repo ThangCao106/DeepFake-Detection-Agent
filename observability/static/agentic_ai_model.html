@@ -6,7 +6,7 @@
     <title>AI Forensic Agent — Autonomous C-Dec-POMDP Mode | DeepTrace.io.vn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -32,7 +32,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
             background-color: var(--bg-void);
             color: var(--text-primary);
             min-height: 100vh;
@@ -56,7 +56,7 @@
             z-index: 0;
         }
 
-        .mono { font-family: 'JetBrains Mono', monospace; }
+        .mono { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
         /* Top Glass Header */
         .header {
@@ -82,7 +82,7 @@
             box-shadow: 0 0 22px rgba(139, 92, 246, 0.5);
         }
         .header-title {
-            font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em;
+            font-size: 1.05rem; font-weight: 500; letter-spacing: -0.02em;
             background: linear-gradient(90deg, #f8fafc, #c4b5fd, #67e8f9);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
@@ -155,7 +155,7 @@
 
         /* Left Card 1: Throughput & Telemetry Spline */
         .kpi-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
-        .mini-stat-val { font-size: 1.25rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; line-height: 1.1; }
+        .mini-stat-val { font-size: 1.25rem; font-weight: 500; color: #fff; font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height: 1.1; }
         .mini-stat-lbl { font-size: 0.67rem; color: var(--text-muted); margin-top: 3px; }
         .mini-stat-delta { font-size: 0.68rem; font-weight: 700; color: #34d399; margin-top: 2px; }
 
@@ -166,7 +166,7 @@
             color: #fff; font-size: 0.68rem; font-weight: 700;
             padding: 3px 8px; border-radius: 999px;
             box-shadow: 0 0 14px rgba(139, 92, 246, 0.7);
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         }
 
         /* Left Card 2: Donut Breakdown */
@@ -176,13 +176,13 @@
             position: absolute; inset: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center;
         }
-        .donut-center strong { font-size: 1.05rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
+        .donut-center strong { font-size: 1.05rem; font-weight: 500; color: #fff; font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
         .donut-center span { font-size: 0.64rem; color: var(--text-muted); }
         .breakdown-list { flex: 1; display: flex; flex-direction: column; gap: 7px; font-size: 0.75rem; }
         .bd-item { display: flex; justify-content: space-between; align-items: center; }
         .bd-left { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); }
         .bd-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .bd-pct { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #e2e8f0; }
+        .bd-pct { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; color: #e2e8f0; }
 
         /* Left Card 3: Vault & Vectors */
         .vault-banner {
@@ -200,7 +200,7 @@
         .v-tile.v2 { background: linear-gradient(155deg, rgba(168, 85, 247, 0.38), rgba(15, 23, 42, 0.9)); }
         .v-tile.v3 { background: linear-gradient(155deg, rgba(6, 182, 212, 0.35), rgba(15, 23, 42, 0.9)); }
         .v-tile-tag { font-size: 0.65rem; font-weight: 700; color: #e0e7ff; }
-        .v-tile-stat { font-size: 0.72rem; font-weight: 700; color: #67e8f9; font-family: 'JetBrains Mono', monospace; }
+        .v-tile-stat { font-size: 0.72rem; font-weight: 700; color: #67e8f9; font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
         /* CENTER HERO: Crystal Core + Orbital Pods */
         .crystal-stage {
@@ -217,7 +217,7 @@
         }
         .hero-core-header { text-align: center; z-index: 2; }
         .hero-core-title {
-            font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em;
+            font-size: 1.55rem; font-weight: 500; letter-spacing: -0.02em;
             color: #f8fafc;
             text-shadow: 0 0 24px rgba(139, 92, 246, 0.55);
         }
@@ -361,13 +361,13 @@
             box-shadow: 0 0 16px rgba(34, 211, 238, 0.28);
         }
         .agent-id-pill {
-            font-family: 'JetBrains Mono', monospace; font-size: 0.69rem; font-weight: 700;
+            font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.69rem; font-weight: 700;
             padding: 2px 7px; border-radius: 6px; background: rgba(34, 211, 238, 0.15); color: var(--neon-cyan);
             flex-shrink: 0;
         }
         .agent-node-meta { min-width: 0; }
         .agent-name { font-size: 0.74rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .agent-metric { font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .agent-metric { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.63rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Right Column Cards */
         .stage-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 12px; }
@@ -376,7 +376,7 @@
             background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(139, 92, 246, 0.16);
             font-size: 0.68rem; color: var(--text-muted); transition: all 0.2s;
         }
-        .stage-pill strong { display: block; font-size: 0.75rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+        .stage-pill strong { display: block; font-size: 0.75rem; color: var(--text-secondary); font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
         .stage-pill.active, .stage-pill:hover {
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
             border-color: #a78bfa; color: #fff; box-shadow: 0 0 14px rgba(124, 58, 237, 0.5);
@@ -389,7 +389,7 @@
             background: rgba(15, 23, 48, 0.72); border: 1px solid rgba(139, 92, 246, 0.18);
             border-radius: 10px; padding: 8px 10px;
         }
-        .sched-time { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); width: 42px; flex-shrink: 0; }
+        .sched-time { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; color: var(--text-muted); width: 42px; flex-shrink: 0; }
         .sched-badge {
             width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
@@ -417,7 +417,7 @@
             border-radius: 11px; padding: 9px 4px; text-align: center;
         }
         .plat-icon { font-size: 1rem; margin-bottom: 5px; }
-        .plat-val { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; font-weight: 800; color: #f8fafc; }
+        .plat-val { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.74rem; font-weight: 500; color: #f8fafc; }
         .plat-lbl { font-size: 0.6rem; color: #34d399; margin-top: 2px; font-weight: 600; }
 
         /* Detailed Inspector + Formal Specification Section */
@@ -442,7 +442,7 @@
         .tag-chip {
             font-size: 0.72rem; padding: 4px 9px; border-radius: 6px;
             background: rgba(99, 102, 241, 0.16); border: 1px solid rgba(99, 102, 241, 0.38);
-            color: #c7d2fe; font-family: 'JetBrains Mono', monospace;
+            color: #c7d2fe; font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         }
         .tag-chip.action {
             background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.36); color: #6ee7b7;
@@ -493,11 +493,11 @@
         .gate-box.warn { border-color: var(--neon-amber); background: rgba(245, 158, 11, 0.14); }
         .latex-code {
             background: rgba(4, 7, 19, 0.92); border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 12px; padding: 14px; font-family: 'JetBrains Mono', monospace;
+            border-radius: 12px; padding: 14px; font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             font-size: 0.73rem; line-height: 1.55; color: #e2e8f0; overflow-x: auto; max-height: 390px;
         }
         .section-heading {
-            font-size: 0.98rem; font-weight: 800; color: #f8fafc;
+            font-size: 0.98rem; font-weight: 500; color: #f8fafc;
             display: flex; align-items: center; gap: 9px; margin-bottom: 14px;
         }
         .section-heading i { color: var(--neon-cyan); }
@@ -568,13 +568,13 @@
                             <path d="M0,74 C32,70 46,45 78,48 C108,51 122,68 152,44 C182,20 198,60 228,50 C258,40 276,18 300,14 L300,95 L0,95 Z" fill="url(#splineGrad)" />
                             <path d="M0,74 C32,70 46,45 78,48 C108,51 122,68 152,44 C182,20 198,60 228,50 C258,40 276,18 300,14" fill="none" stroke="url(#strokeGrad)" stroke-width="2.6" stroke-linecap="round" />
                             <circle cx="294" cy="15" r="4" fill="#22d3ee" />
-                            <text x="4" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Mon</text>
-                            <text x="52" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Tue</text>
-                            <text x="100" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Wed</text>
-                            <text x="148" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Thu</text>
-                            <text x="196" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Fri</text>
-                            <text x="244" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Sat</text>
-                            <text x="280" y="91" fill="#64748b" font-size="8" font-family="JetBrains Mono">Sun</text>
+                            <text x="4" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Mon</text>
+                            <text x="52" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Tue</text>
+                            <text x="100" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Wed</text>
+                            <text x="148" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Thu</text>
+                            <text x="196" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Fri</text>
+                            <text x="244" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Sat</text>
+                            <text x="280" y="91" fill="#64748b" font-size="8" font-family="Roboto Mono, monospace">Sun</text>
                         </svg>
                     </div>
                 </div>
@@ -617,7 +617,7 @@
                     <div class="vault-banner">
                         <div>
                             <div style="font-size:0.7rem; color:var(--text-muted);">Zero-Day Hard Queue</div>
-                            <div style="font-size:1.15rem; font-weight:800; color:#67e8f9;" class="mono" id="kpiVault">0</div>
+                            <div style="font-size:1.15rem; font-weight: 500; color:#67e8f9;" class="mono" id="kpiVault">0</div>
                         </div>
                         <div style="text-align:right; font-size:0.7rem; color:#c4b5fd;" id="kpiFeedbackSub">Feedback events: --</div>
                     </div>
@@ -851,7 +851,7 @@
                     <span class="agent-id-pill" id="inspId" style="font-size:0.82rem; padding:4px 11px;">A0</span>
                     <span style="font-size:0.74rem; font-weight:700; color:#34d399;" id="inspStatus">● ACTIVE</span>
                 </div>
-                <h3 id="inspName" style="font-size:1.08rem; font-weight:800; margin-bottom:5px; color:#f8fafc;">Unified Master Orchestrator</h3>
+                <h3 id="inspName" style="font-size:1.08rem; font-weight: 500; margin-bottom:5px; color:#f8fafc;">Unified Master Orchestrator</h3>
                 <p id="inspRole" style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;"></p>
 
                 <div class="math-banner" style="padding:11px 14px;">
@@ -1067,10 +1067,10 @@
 
                 <!-- Zone Containers -->
                 <rect x="16" y="16" width="540" height="388" rx="18" fill="rgba(15, 23, 48, 0.45)" stroke="rgba(56, 189, 248, 0.35)" stroke-dasharray="6 4"/>
-                <text x="34" y="42" fill="#38bdf8" font-size="12" font-weight="800" font-family="JetBrains Mono">TIER I & II: MODE 1 ONLINE FORENSICS & TRIAD COUNCIL</text>
+                <text x="34" y="42" fill="#38bdf8" font-size="12" font-weight="800" font-family="Roboto Mono, monospace">TIER I & II: MODE 1 ONLINE FORENSICS & TRIAD COUNCIL</text>
 
                 <rect x="614" y="16" width="550" height="388" rx="18" fill="rgba(46, 16, 101, 0.30)" stroke="rgba(168, 85, 247, 0.4)" stroke-dasharray="6 4"/>
-                <text x="634" y="42" fill="#c084fc" font-size="12" font-weight="800" font-family="JetBrains Mono">TIER III: MODE 2 AUTONOMOUS LANGGRAPH & PPO LOOP</text>
+                <text x="634" y="42" fill="#c084fc" font-size="12" font-weight="800" font-family="Roboto Mono, monospace">TIER III: MODE 2 AUTONOMOUS LANGGRAPH & PPO LOOP</text>
 
                 <!-- Flow Connections Mode 1 -->
                 <path d="M165,94 L210,94" stroke="#22d3ee" stroke-width="2" class="flow-anim" marker-end="url(#arrowCyan)"/>
@@ -1083,10 +1083,10 @@
 
                 <!-- Bridge Mode 1 <-> Mode 2 -->
                 <path d="M375,360 C540,360 540,210 645,210" fill="none" stroke="#f59e0b" stroke-width="2.2" class="flow-anim" marker-end="url(#arrowViolet)"/>
-                <text x="530" y="348" fill="#fbbf24" font-size="10" font-weight="700" font-family="JetBrains Mono">Vault π₀</text>
+                <text x="530" y="348" fill="#fbbf24" font-size="10" font-weight="700" font-family="Roboto Mono, monospace">Vault π₀</text>
 
                 <path d="M975,330 C640,330 620,104 532,104" fill="none" stroke="#10b981" stroke-width="2.4" class="flow-anim" marker-end="url(#arrowGreen)"/>
-                <text x="540" y="88" fill="#34d399" font-size="10" font-weight="700" font-family="JetBrains Mono">Atomic Hot-Reload Θ_{t+1}</text>
+                <text x="540" y="88" fill="#34d399" font-size="10" font-weight="700" font-family="Roboto Mono, monospace">Atomic Hot-Reload Θ_{t+1}</text>
 
                 <!-- Flow Connections Mode 2 -->
                 <path d="M795,98 L855,98" stroke="#c084fc" stroke-width="2" class="flow-anim" marker-end="url(#arrowViolet)"/>
@@ -1094,7 +1094,7 @@
                 <path d="M785,204 L885,204" stroke="#22d3ee" stroke-width="2" class="flow-anim" marker-end="url(#arrowCyan)"/>
                 <path d="M970,234 L970,262" stroke="#22d3ee" stroke-width="2" class="flow-anim" marker-end="url(#arrowCyan)"/>
                 <path d="M905,286 C830,286 735,270 735,235" fill="none" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrowViolet)"/>
-                <text x="772" y="294" fill="#fb7185" font-size="9.5" font-family="JetBrains Mono">Self-Heal (EER > 5%)</text>
+                <text x="772" y="294" fill="#fb7185" font-size="9.5" font-family="Roboto Mono, monospace">Self-Heal (EER > 5%)</text>
                 <path d="M1035,286 L1065,286 L1065,335" fill="none" stroke="#10b981" stroke-width="2" class="flow-anim" marker-end="url(#arrowGreen)"/>
 
                 <!-- Mode 1 Nodes -->
@@ -1395,7 +1395,7 @@
                     return;
                 } catch (e) {}
             }
-            container.innerHTML = `<pre style="color:#e2e8f0; font-family:JetBrains Mono,monospace; font-size:0.78rem;">${code}</pre>`;
+            container.innerHTML = `<pre style="color:#e2e8f0; font-family:Roboto Mono,monospace; font-size:0.78rem;">${code}</pre>`;
         }
 
         function switchDiagram(tab) {
