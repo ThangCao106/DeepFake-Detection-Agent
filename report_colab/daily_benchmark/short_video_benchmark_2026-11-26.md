@@ -1,5 +1,5 @@
-# Multi-Platform Short-Video Benchmark & Adversarial Pentest Report (`SVP-20261126_094829_81f68`)
-- **Timestamp (UTC)**: 2026-11-26T09:48:29Z | **Mode**: `EMPIRICAL_LIVE_INFERENCE`
+# Multi-Platform Short-Video Benchmark & Adversarial Pentest Report (`SVP-20261126_223513_d870f`)
+- **Timestamp (UTC)**: 2026-11-26T22:35:13Z | **Mode**: `EMPIRICAL_LIVE_INFERENCE`
 - **Model Loaded**: `dima806/deepfake_vs_real_image_detection` (`using_custom_weights=False`)
 - **Platforms**: threads, instagram_reels, youtube_shorts, tiktok
 - **Download URLs**: `True` | **Auto-Feedback**: `False` (Skipped Reason: `fallback_model_weights`) | **Manifest Clips Evaluated**: 0
@@ -8,17 +8,17 @@
 ## 1. Per-Platform Metrics
 | Platform | Samples | Accuracy | TPR | FPR | FNR | ROC-AUC | EER (%) | ECE | Latency (ms) | Dur Err (s) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `threads` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4673 | 2504.59 | 0.0 |
-| `instagram_reels` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4638 | 2533.2 | 0.0 |
-| `youtube_shorts` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4692 | 2518.07 | 0.0 |
-| `tiktok` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4618 | 2523.22 | 0.0 |
+| `threads` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4673 | 1832.73 | 0.0 |
+| `instagram_reels` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4638 | 1850.2 | 0.0 |
+| `youtube_shorts` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4692 | 1835.03 | 0.0 |
+| `tiktok` | 10 | 40.0% | 0.0% | 0.0% | 100.0% | 1.0 | 0.0% | 0.4618 | 1833.33 | 0.0 |
 
 ## 2. Per-Attack Vector Robustness
 | Attack Vector | Samples | Accuracy | FPR | FNR | Mean Latency (ms) |
 |:---|---:|---:|---:|---:|---:|
-| `ai_generative_short` | 4 | 0.0% | 0.0% | 100.0% | 2549.81 |
-| `caption_sticker` | 8 | 50.0% | 0.0% | 100.0% | 2520.39 |
-| `clean_baseline` | 8 | 50.0% | 0.0% | 100.0% | 2523.6 |
-| `h264_heavy_reencode` | 8 | 50.0% | 0.0% | 100.0% | 2496.19 |
-| `partial_splicing` | 4 | 0.0% | 0.0% | 100.0% | 2515.02 |
-| `vfr_fps_mismatch` | 8 | 50.0% | 0.0% | 100.0% | 2526.26 |
+| `ai_generative_short` | 4 | 0.0% | 0.0% | 100.0% | 1872.91 |
+| `caption_sticker` | 8 | 50.0% | 0.0% | 100.0% | 1808.72 |
+| `clean_baseline` | 8 | 50.0% | 0.0% | 100.0% | 1838.73 |
+| `h264_heavy_reencode` | 8 | 50.0% | 0.0% | 100.0% | 1826.72 |
+| `partial_splicing` | 4 | 0.0% | 0.0% | 100.0% | 1833.46 |
+| `vfr_fps_mismatch` | 8 | 50.0% | 0.0% | 100.0% | 1861.73 |
