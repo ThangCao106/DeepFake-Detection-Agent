@@ -469,6 +469,37 @@ print("FASTAPI_RUNTIME_OK")
                     self.assertEqual(saved_calib["auc_score"], 0.961)
                     self.assertIn(False, reloads)
 
+    def test_17_editorial_diagram_design_system(self):
+        """Verify Agentic AI templates and standalone folio adhere to cathrynlavery/diagram-design editorial standards."""
+        web_tpl = REPO_ROOT / "web_ui" / "templates" / "agentic_ai_model.html"
+        obs_tpl1 = REPO_ROOT / "observability" / "static" / "agentic_ai_model.html"
+        obs_tpl2 = REPO_ROOT / "observability" / "static" / "agentic-ai" / "index.html"
+        standalone = REPO_ROOT / "docs" / "diagrams" / "deeptrace_editorial_diagrams.html"
+
+        for p in (web_tpl, obs_tpl1, obs_tpl2, standalone):
+            self.assertTrue(p.exists(), f"Missing editorial diagram file: {p}")
+
+        tpl_txt = web_tpl.read_text(encoding="utf-8")
+        self.assertEqual(tpl_txt, obs_tpl1.read_text(encoding="utf-8"), "observability/static/agentic_ai_model.html out of sync!")
+        self.assertEqual(tpl_txt, obs_tpl2.read_text(encoding="utf-8"), "observability/static/agentic-ai/index.html out of sync!")
+
+        for req in (
+            "Instrument+Serif",
+            "Geist+Mono",
+            "--color-paper: #f5f5f5;",
+            "--color-accent: #bf4520;",
+            "switchDiagram('arch')",
+            "switchDiagram('swimlane')",
+            "switchDiagram('flowchart')",
+            "switchDiagram('state')",
+            "exportActiveSvg()",
+            "exportActivePng()",
+        ):
+            self.assertIn(req, tpl_txt, f"Missing editorial diagram token '{req}' in agentic_ai_model.html")
+
+        self.assertNotIn("mermaid.min.js", tpl_txt, "Generic Mermaid auto-layout dependency should be replaced by inline editorial SVG!")
+        self.assertNotIn("feGaussianBlur", tpl_txt, "Neon blur filter violates editorial diagram-design hairline guidelines!")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
