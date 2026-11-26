@@ -1,0 +1,22 @@
+{
+  "generated_at_utc": "2026-11-26T23:27:10Z",
+  "offline_local_only": false,
+  "total_images": 653,
+  "real_images": 153,
+  "fake_images": 500,
+  "sbi_counterfactuals": 500,
+  "total_audios": 40,
+  "source_breakdown": {
+    "local_verified_vn_pool": 153,
+    "sbi_vietnamese_counterfactual": 500
+  },
+  "cohort_breakdown": {
+    "vn_id_official": 85,
+    "vn_mature_aging": 93,
+    "vn_occlusion_glasses_mask": 73,
+    "vn_selfie_lifestyle": 325,
+    "vn_street_outdoor": 77
+  },
+  "image_manifest_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/corpus/training_corpus_manifest.jsonl",
+  "audio_manifest_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/corpus/audio_corpus_manifest.jsonl"
+}
