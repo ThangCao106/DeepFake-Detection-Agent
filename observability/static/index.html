@@ -1062,13 +1062,21 @@
           <span style="font-size: 0.6rem; color: var(--accent-cyan); font-weight: 600;">LIVE METRICS</span>
         </div>
         <ul class="nav-list">
-          <!-- NAVIGATION TO FORMAL AGENTIC AI MODEL -->
-          <li class="nav-item" id="nav-agentic-model" onclick="switchTab('agentic-model')" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.18)); border-left: 3px solid #10b981; margin-bottom: 8px; cursor: pointer;">
+          <!-- NAVIGATION TO FORMAL AGENTIC AI MODEL (V1: 3D CRYSTAL) -->
+          <li class="nav-item" id="nav-agentic-model" onclick="switchTab('agentic-model')" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.18)); border-left: 3px solid #10b981; margin-bottom: 6px; cursor: pointer;">
             <div class="nav-left-part">
-              <span class="nav-icon">🧠</span>
-              <span style="font-weight: 700; color: #6ee7b7;">Agentic AI Model</span>
+              <span class="nav-icon">💎</span>
+              <span style="font-weight: 700; color: #6ee7b7;">Agentic AI (3D v1)</span>
             </div>
             <span class="nav-badge emerald" style="background: rgba(16, 185, 129, 0.35); color: #a7f3d0;">C-Dec-POMDP</span>
+          </li>
+          <!-- NAVIGATION TO EDITORIAL DIAGRAMS & FLOWS (V2: DIAGRAM-DESIGN) -->
+          <li class="nav-item" id="nav-editorial-diagrams" onclick="switchTab('editorial-diagrams')" style="background: rgba(240, 138, 89, 0.14); border-left: 3px solid #f08a59; margin-bottom: 8px; cursor: pointer;">
+            <div class="nav-left-part">
+              <span class="nav-icon">📐</span>
+              <span style="font-weight: 700; color: #fdba74;">Editorial Diagrams</span>
+            </div>
+            <span class="nav-badge amber" style="background: rgba(240, 138, 89, 0.25); color: #fed7aa;">SVG Flow v2</span>
           </li>
           <!-- NAVIGATION TO HUMAN-IN-THE-LOOP USER REVIEW QUEUE -->
           <li class="nav-item" id="nav-review-queue" onclick="switchTab('review-queue')" style="background: rgba(245, 158, 11, 0.14); border-left: 3px solid #f59e0b; margin-bottom: 8px; cursor: pointer;">
@@ -1135,17 +1143,21 @@
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-workspace">
 
-      <!-- TAB: FORMAL AGENTIC AI MODELING (C-Dec-POMDP) -->
+      <!-- TAB: FORMAL AGENTIC AI MODELING (V1: 3D CYBER-CRYSTAL STUDIO) -->
       <section id="tab-agentic-model" class="tab-view">
         <div class="view-header">
           <div>
-            <h2 class="view-title" style="color: #38bdf8;">🧠 Mô Hình Hóa Hệ Thống Đa Tác Thể Pháp Y (C-Dec-POMDP &amp; LangGraph StateGraph)</h2>
-            <p class="view-desc">Kiến trúc 9 Tác thể 3 Tầng kết hợp Giám định Trực tuyến (Mode 1), Hội đồng Tranh biện Bất đối xứng (Gemini / Muse / Claude EU AI Act) và Vòng đời Tự trị MLOps Tự phục hồi + PPO Meta-Controller (Mode 2).</p>
+            <h2 class="view-title" style="color: #38bdf8;">💎 Mô Hình Hóa Đa Tác Thể Pháp Y — Bản 3D Crystal Cockpit (v1)</h2>
+            <p class="view-desc">Không gian 3D Holographic Crystal Core 9 Tác thể 3 Tầng, Đồ thị Cyber-Neural, Hội đồng Tranh biện (Gemini / Muse / Claude) và Bộ mô phỏng Cổng PPO.</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('editorial-diagrams')" style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(240, 138, 89, 0.18); border: 1px solid #f08a59; color: #fed7aa; cursor: pointer;">
+              <span>📐</span>
+              <span>Chuyển Sang Editorial Diagrams (v2)</span>
+            </button>
             <a href="/dfagent/agentic-ai" target="_blank" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #059669, #0d9488);">
               <span>↗</span>
-              <span>Mở Cửa Sổ Riêng</span>
+              <span>Mở Cửa Sổ Riêng (v1)</span>
             </a>
             <button type="button" class="btn btn-secondary btn-sm" onclick="const f=document.getElementById('frameAgentic'); if(f) f.src='/dfagent/agentic-ai?'+Date.now();" style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color:#fff; cursor:pointer;">
               <span>↻</span>
@@ -1154,34 +1166,64 @@
           </div>
         </div>
 
-        <!-- Formal Agentic AI Model Preview Card in /dfagent (Editorial Diagram-Design Framing) -->
-        <div class="card" id="agenticModelPreviewCard" style="margin-bottom: 1.5rem; background: #2d3142; border: 1px solid rgba(245, 245, 245, 0.16); border-radius: 8px; padding: 18px 20px; color: #f5f5f5;">
+        <!-- Formal Agentic AI Model Preview Card in /dfagent -->
+        <div class="card" id="agenticModelPreviewCard" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 27, 75, 0.94)); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 14px; padding: 18px; color: #f0f9ff; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
             <div>
-              <div style="font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: #bfc0c0; margin-bottom: 4px;">
-                EDITORIAL SCHEMATICS · INSTRUMENT SERIF &amp; GEIST MONO
-              </div>
-              <h3 style="margin: 0 0 6px 0; font-size: 1.15rem; color: #f5f5f5; font-weight: 600;">
+              <h3 style="margin: 0 0 6px 0; font-size: 1.15rem; color: #38bdf8;">
                 🧠 Mô Hình Hóa Hệ Thống Đa Tác Thể Pháp Y (C-Dec-POMDP &amp; LangGraph StateGraph)
               </h3>
-              <p style="margin: 0 0 10px 0; font-size: 0.84rem; color: #bfc0c0;">
-                4 Sơ đồ biên tập tương tác (01 Architecture · 02 Burst-GPU Swimlane · 03 Decision Flowchart · 04 Self-Healing StateGraph) hỗ trợ xuất trực tiếp SVG / 2x PNG cho luận án.
+              <p style="margin: 0 0 10px 0; font-size: 0.86rem; color: #cbd5e1;">
+                Hỗ trợ song song 2 phiên bản trực quan: <strong>Bản 1 (3D Cyber-Crystal Cockpit)</strong> và <strong>Bản 2 (Editorial Diagram-Design SVG Schematics)</strong>.
               </p>
-              <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.74rem; font-family: var(--font-mono);">
-                <span style="padding: 3px 9px; border-radius: 4px; background: rgba(240, 138, 89, 0.12); border: 1px solid #f08a59; color:#f08a59;">Tầng I: A0–A1 Focal Perception</span>
-                <span style="padding: 3px 9px; border-radius: 4px; background: rgba(245, 245, 245, 0.06); border: 1px solid rgba(245, 245, 245, 0.22); color:#f5f5f5;">Tầng II: A2(G,M,C) Triad Council</span>
-                <span style="padding: 3px 9px; border-radius: 4px; background: rgba(245, 245, 245, 0.06); border: 1px solid rgba(245, 245, 245, 0.22); color:#bfc0c0;">Tầng III: A3–A6 Burst-GPU + PPO</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.78rem;">
+                <span style="padding: 4px 10px; border-radius: 999px; background: rgba(59, 130, 246, 0.22); border: 1px solid rgba(59, 130, 246, 0.45); color:#93c5fd;">Tầng I: A0–A1 Online Routing</span>
+                <span style="padding: 4px 10px; border-radius: 999px; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.45); color:#fcd34d;">Tầng II: A2(G,M,C) Triad Council</span>
+                <span style="padding: 4px 10px; border-radius: 999px; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color:#6ee7b7;">Tầng III: A3–A6 LangGraph + PPO</span>
               </div>
             </div>
-            <a href="/dfagent/agentic-ai" target="_blank" style="padding: 9px 16px; border-radius: 5px; background: rgba(240, 138, 89, 0.14); border: 1px solid #f08a59; color: #f08a59; font-family: var(--font-mono); font-weight: 600; font-size: 0.78rem; text-decoration: none; white-space: nowrap;">
-              Mở Editorial Schematics (Light / Dark) →
-            </a>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <a href="/dfagent/agentic-ai" target="_blank" style="padding: 10px 16px; border-radius: 10px; background: linear-gradient(135deg, #059669, #0d9488); color: #ffffff; font-weight: 700; font-size: 0.82rem; text-decoration: none; white-space: nowrap;">
+                💎 Mở 3D Agentic (v1) →
+              </a>
+              <a href="/dfagent/diagrams" target="_blank" style="padding: 10px 16px; border-radius: 10px; background: rgba(240, 138, 89, 0.18); border: 1px solid #f08a59; color: #fed7aa; font-weight: 700; font-size: 0.82rem; text-decoration: none; white-space: nowrap;">
+                📐 Mở Editorial Diagrams (v2) →
+              </a>
+            </div>
           </div>
         </div>
 
-        <!-- Embedded Editorial Diagram Studio -->
-        <div style="border-radius: 8px; overflow: hidden; border: 1px solid rgba(245, 245, 245, 0.16);">
-          <iframe id="frameAgentic" src="/dfagent/agentic-ai" style="width: 100%; height: 980px; border: none; background: #f5f5f5;"></iframe>
+        <!-- Embedded Interactive 3D Crystal Studio (v1) -->
+        <div style="border-radius: 16px; overflow: hidden; border: 1px solid rgba(139, 92, 246, 0.35); box-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+          <iframe id="frameAgentic" src="/dfagent/agentic-ai" style="width: 100%; height: 980px; border: none; background: #040610;"></iframe>
+        </div>
+      </section>
+
+      <!-- TAB: EDITORIAL DIAGRAMS & FLOWS (V2: CATHRYNLAVERY/DIAGRAM-DESIGN) -->
+      <section id="tab-editorial-diagrams" class="tab-view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title" style="color: #fdba74;">📐 Editorial Diagrams &amp; Flows — Chuẩn Diagram-Design (v2)</h2>
+            <p class="view-desc">Bộ 4 sơ đồ học thuật đường nét 1px (Instrument Serif · Geist · Geist Mono): 01 Architecture · 02 Burst-GPU Swimlane · 03 Decision Flowchart · 04 Self-Healing StateGraph, hỗ trợ xuất SVG / 2x PNG.</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('agentic-model')" style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(16, 185, 129, 0.16); border: 1px solid #10b981; color: #a7f3d0; cursor: pointer;">
+              <span>💎</span>
+              <span>Chuyển Sang 3D Agentic (v1)</span>
+            </button>
+            <a href="/dfagent/diagrams" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: #bf4520; color: #fff;" class="btn btn-primary btn-sm">
+              <span>↗</span>
+              <span>Mở Cửa Sổ Riêng (Light/Dark)</span>
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const f=document.getElementById('frameEditorialDiagrams'); if(f) f.src='/dfagent/diagrams?'+Date.now();" style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color:#fff; cursor:pointer;">
+              <span>↻</span>
+              <span>Tải Lại Diagrams</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="border-radius: 8px; overflow: hidden; border: 1px solid rgba(245, 245, 245, 0.18);">
+          <iframe id="frameEditorialDiagrams" data-src="/dfagent/diagrams" src="about:blank" style="width: 100%; height: 980px; border: none; background: #f5f5f5;"></iframe>
         </div>
       </section>
 
@@ -2393,6 +2435,12 @@
       // Re-trigger Math render if calibration or agentic-model is opened
       if (tabId === 'calibration' || tabId === 'agentic-model') {
         setTimeout(renderAllMath, 50);
+      }
+      if (tabId === 'editorial-diagrams') {
+        const edFrame = document.getElementById('frameEditorialDiagrams');
+        if (edFrame && (!edFrame.getAttribute('src') || edFrame.getAttribute('src') === 'about:blank')) {
+          edFrame.setAttribute('src', edFrame.getAttribute('data-src') || '/dfagent/diagrams');
+        }
       }
       if (tabId === 'review-queue') {
         loadReviewQueue();

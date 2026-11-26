@@ -165,8 +165,16 @@ def orchestrator_dashboard():
 @app.route('/dfagent/agentic-ai')
 @app.route('/dfagent/agentic-ai/')
 def agentic_ai_model_page():
-    """Serve the Interactive Agentic AI C-Dec-POMDP & LangGraph StateGraph Modeling UI."""
+    """Serve Version 1: Interactive 3D Cyber-Crystal Agentic AI C-Dec-POMDP Studio."""
     return render_template('agentic_ai_model.html')
+
+
+@app.route('/diagrams')
+@app.route('/dfagent/diagrams')
+@app.route('/dfagent/diagrams/')
+def editorial_diagrams_page():
+    """Serve Version 2: Editorial Diagram-Design Architecture & Flows Studio."""
+    return render_template('editorial_diagrams.html')
 
 
 def _collect_agentic_model_payload():

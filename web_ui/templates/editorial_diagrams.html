@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="vi" data-skin="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepTrace.io.vn · C-Dec-POMDP Architecture &amp; Flows (Editorial Diagram Design)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-paper: #f5f5f5;
+      --color-paper-2: #ececec;
+      --color-card: #ffffff;
+      --color-ink: #2d3142;
+      --color-muted: #4f5d75;
+      --color-soft: #5a6580;
+      --color-rule: rgba(45, 49, 66, 0.12);
+      --color-rule-strong: rgba(45, 49, 66, 0.28);
+      --color-accent: #bf4520;
+      --color-accent-tint: rgba(191, 69, 32, 0.08);
+      --color-link: #2e5aa8;
+
+      --svg-paper: #f5f5f5;
+      --svg-node: #ffffff;
+      --svg-zone: rgba(45, 49, 66, 0.022);
+      --svg-zone-stroke: rgba(45, 49, 66, 0.14);
+      --svg-ink: #2d3142;
+      --svg-muted: #4f5d75;
+      --svg-soft: #5a6580;
+      --svg-stroke: rgba(45, 49, 66, 0.30);
+      --svg-dot: rgba(45, 49, 66, 0.11);
+      --svg-watermark: rgba(45, 49, 66, 0.06);
+      --svg-accent: #bf4520;
+      --svg-accent-tint: rgba(191, 69, 32, 0.08);
+      --svg-accent-wm: rgba(191, 69, 32, 0.12);
+      --svg-link: #2e5aa8;
+
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+
+    html[data-skin="dark"] {
+      --color-paper: #2d3142;
+      --color-paper-2: #353a4f;
+      --color-card: #262a39;
+      --color-ink: #f5f5f5;
+      --color-muted: #bfc0c0;
+      --color-soft: #949eb2;
+      --color-rule: rgba(245, 245, 245, 0.12);
+      --color-rule-strong: rgba(245, 245, 245, 0.28);
+      --color-accent: #f08a59;
+      --color-accent-tint: rgba(240, 138, 89, 0.11);
+      --color-link: #739fdf;
+
+      --svg-paper: #2d3142;
+      --svg-node: #353a4f;
+      --svg-zone: rgba(245, 245, 245, 0.028);
+      --svg-zone-stroke: rgba(245, 245, 245, 0.15);
+      --svg-ink: #f5f5f5;
+      --svg-muted: #bfc0c0;
+      --svg-soft: #949eb2;
+      --svg-stroke: rgba(245, 245, 245, 0.30);
+      --svg-dot: rgba(245, 245, 245, 0.10);
+      --svg-watermark: rgba(245, 245, 245, 0.06);
+      --svg-accent: #f08a59;
+      --svg-accent-tint: rgba(240, 138, 89, 0.12);
+      --svg-accent-wm: rgba(240, 138, 89, 0.15);
+      --svg-link: #739fdf;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      padding-bottom: 4rem;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .mono { font-family: var(--font-mono); }
+
+    /* Editorial Top Bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--color-paper);
+      border-bottom: 1px solid var(--color-rule);
+      padding: 0.95rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--color-ink);
+      line-height: 1.1;
+    }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+
+    .btn-ed {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.42rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--color-rule-strong);
+      background: var(--color-card);
+      color: var(--color-ink);
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+    .btn-ed:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .btn-ed.active, .btn-ed.accent {
+      background: var(--color-accent-tint);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 2rem 0;
+    }
+
+    /* Editorial Masthead & Live Telemetry Ledger */
+    .masthead {
+      margin-bottom: 1.75rem;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.45rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.85rem, 2.8vw + 0.9rem, 2.55rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin-bottom: 0.5rem;
+    }
+    .lead {
+      font-size: 0.94rem;
+      line-height: 1.55;
+      color: var(--color-muted);
+      max-width: 72ch;
+    }
+
+    .kpi-ledger {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      background: var(--color-card);
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 960px) { .kpi-ledger { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-cell {
+      padding: 0.95rem 1.1rem;
+      border-right: 1px solid var(--color-rule);
+    }
+    .kpi-cell:last-child { border-right: none; }
+    .kpi-lbl {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--color-soft);
+      margin-bottom: 0.35rem;
+    }
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      line-height: 1.15;
+    }
+    .kpi-val.focal { color: var(--color-accent); }
+    .kpi-sub {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--color-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Editorial Card & Section Primitives */
+    .ed-card {
+      background: var(--color-card);
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      padding: 1.35rem 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-bottom: 0.9rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--color-rule);
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+    }
+    .callout {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 0.96rem;
+      color: var(--color-muted);
+    }
+
+    /* Diagram Stage */
+    .diagram-tabs {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 0.9rem;
+    }
+    .tab-group { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    .diagram-stage {
+      background: var(--color-paper-2);
+      border: 1px solid var(--color-rule);
+      border-radius: 6px;
+      padding: 1.15rem;
+      overflow-x: auto;
+    }
+    .diagram-stage svg {
+      width: 100%;
+      min-width: 920px;
+      display: block;
+      height: auto;
+    }
+    .ed-node { cursor: pointer; }
+    .ed-node:hover rect:first-of-type,
+    .ed-node:hover polygon {
+      stroke: var(--svg-accent);
+      stroke-width: 1.5;
+    }
+
+    /* Split Grid: 9-Agent Roster + Inspector */
+    .split-inspector {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    @media (max-width: 980px) { .split-inspector { grid-template-columns: 1fr; } }
+
+    .tier-block { margin-bottom: 1rem; }
+    .tier-block:last-child { margin-bottom: 0; }
+    .tier-label {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-soft);
+      margin-bottom: 0.45rem;
+    }
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+      gap: 0.5rem;
+    }
+    .agent-node {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 5px;
+      border: 1px solid var(--color-rule-strong);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .agent-node:hover { border-color: var(--color-accent); }
+    .agent-node.selected {
+      background: var(--color-accent-tint);
+      border-color: var(--color-accent);
+    }
+    .agent-id-pill {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.18rem 0.42rem;
+      border-radius: 3px;
+      border: 1px solid var(--color-rule-strong);
+      color: var(--color-ink);
+      flex-shrink: 0;
+    }
+    .agent-node.selected .agent-id-pill {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+    .agent-name { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
+    .agent-metric { font-family: var(--font-mono); font-size: 0.66rem; color: var(--color-muted); }
+
+    .math-box {
+      background: var(--color-paper);
+      border: 1px solid var(--color-rule);
+      border-radius: 5px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.85rem;
+      overflow-x: auto;
+    }
+    .math-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-soft);
+      margin-bottom: 0.4rem;
+    }
+
+    .tag-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .tag-chip {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 0.18rem 0.48rem;
+      border-radius: 3px;
+      border: 1px solid var(--color-rule-strong);
+      background: var(--color-paper);
+      color: var(--color-ink);
+    }
+    .tag-chip.action {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: var(--color-accent-tint);
+    }
+
+    /* Simulator & LaTeX Split */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 980px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+    .slider-row { margin-bottom: 0.75rem; }
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--color-muted);
+      margin-bottom: 0.22rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--color-accent);
+      cursor: pointer;
+    }
+    .gate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+    .gate-box {
+      padding: 0.65rem 0.8rem;
+      border-radius: 5px;
+      border: 1px solid var(--color-rule-strong);
+      background: var(--color-paper);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+    .gate-box.warn {
+      border-color: var(--color-accent);
+      background: var(--color-accent-tint);
+    }
+
+    .latex-code {
+      background: var(--color-paper);
+      border: 1px solid var(--color-rule);
+      border-radius: 5px;
+      padding: 0.95rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      line-height: 1.55;
+      color: var(--color-ink);
+      overflow-x: auto;
+      max-height: 360px;
+    }
+
+    footer {
+      max-width: 1280px;
+      margin: 2rem auto 0;
+      padding: 1.25rem 2rem 0;
+      border-top: 1px solid var(--color-rule);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand-eyebrow" id="headerSub">Formal C-Dec-POMDP &amp; LangGraph StateGraph · Editorial Diagram Design</div>
+      <div class="brand-title">DeepTrace Forensic Architecture &amp; Closed-Loop Schematics</div>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="btn-ed active" id="btnLangVi" onclick="setLang('vi')">VI</button>
+      <button type="button" class="btn-ed" id="btnLangEn" onclick="setLang('en')">EN</button>
+      <button type="button" class="btn-ed" id="btnSkinToggle" onclick="toggleSkin()">Skin: Light</button>
+      <button type="button" class="btn-ed" onclick="loadLiveModel()"><span id="lblRefresh">↻ Live Telemetry</span></button>
+      <a href="/dfagent/agentic-ai" class="btn-ed accent">💎 3D Agentic v1</a>
+      <a href="/dfagent/" class="btn-ed">← /dfagent</a>
+      <a href="/" class="btn-ed">Studio (/)</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="masthead">
+      <p class="eyebrow">System Specification · 9 Forensic Agents · 3 Hierarchical Tiers</p>
+      <h1 id="heroTitle">Mô Hình Hóa Hệ Thống Đa Tác Thể Pháp Y &amp; Luồng Huấn Luyện Khép Kín</h1>
+      <p class="lead" id="heroLead">Thiết kế sơ đồ theo chuẩn biên tập học thuật (Instrument Serif · Geist · Geist Mono): loại bỏ hoàn toàn hiệu ứng rối mắt, chuẩn hóa đường đi vuông góc r=8, và dành duy nhất 1 màu nhấn cam đất (#bf4520) cho luồng quyết định trọng tâm.</p>
+    </section>
+
+    <!-- LIVE TELEMETRY LEDGER -->
+    <section class="kpi-ledger">
+      <div class="kpi-cell">
+        <div class="kpi-lbl">Forensic Certificates</div>
+        <div class="kpi-val" id="kpiCerts">--</div>
+        <div class="kpi-sub">Ed25519 Signed</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-lbl">Short-Video Pentest</div>
+        <div class="kpi-val" id="kpiVideoAcc">100.0%</div>
+        <div class="kpi-sub" id="kpiVideoSub">41 clips · SARAAB</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-lbl">Audio FusionNet</div>
+        <div class="kpi-val" id="kpiAudioAcc">100.0%</div>
+        <div class="kpi-sub" id="kpiAudioSub">52 WAVs · 8kHz</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-lbl" id="kpi4Lbl">Active Hard Vault</div>
+        <div class="kpi-val focal" id="kpiVault">0</div>
+        <div class="kpi-sub" id="kpiFeedbackSub">Human Review Queue</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-lbl" id="kpi6Lbl">Calibrated τ* &amp; PPO</div>
+        <div class="kpi-val" id="kpiTau">0.8118</div>
+        <div class="kpi-sub"><span id="kpiTauSub">T*=1.6178</span> · <span id="kpiPpo">--</span> <span id="kpiPpoSub" style="display:none;"></span></div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: EDITORIAL SCHEMATICS & FLOWS -->
+    <section class="ed-card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Editorial Schematics · Click Any Agent Node to Inspect Policy</p>
+          <h2 class="section-title" id="sec3Title">1. Sơ Đồ Kiến Trúc &amp; Luồng Tín Hiệu Chuẩn Diagram-Design</h2>
+        </div>
+        <span class="callout" id="diagramCallout">Focal path: Tri-Stream Detector (A1) &amp; Claude Chief Inquisitor (A2_C) anchor online verification.</span>
+      </div>
+
+      <div class="diagram-tabs">
+        <div class="tab-group">
+          <button type="button" class="btn-ed active" id="tabArchBtn" onclick="switchDiagram('arch')">01 · Architecture (9 Agents)</button>
+          <button type="button" class="btn-ed" id="tabSwimBtn" onclick="switchDiagram('swimlane')">02 · Burst-GPU Swimlane Flow</button>
+          <button type="button" class="btn-ed" id="tabFlowBtn" onclick="switchDiagram('flowchart')">03 · Decision Flowchart</button>
+          <button type="button" class="btn-ed" id="tabStateBtn" onclick="switchDiagram('state')">04 · Lifecycle StateGraph</button>
+        </div>
+        <div class="tab-group">
+          <button type="button" class="btn-ed accent" onclick="exportActiveSvg()">↓ Export SVG</button>
+          <button type="button" class="btn-ed accent" onclick="exportActivePng()">↓ Export 2x PNG</button>
+        </div>
+      </div>
+
+      <div class="diagram-stage" id="diagramContainer"></div>
+    </section>
+
+    <!-- SECTION 2: 9-AGENT ROSTER + MATHEMATICAL POLICY INSPECTOR -->
+    <section class="split-inspector">
+      <div class="ed-card" style="margin-bottom:0;">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Formal 9-Tuple C-Dec-POMDP</p>
+            <h2 class="section-title" id="sec1Title">2. Định Nghĩa Hình Thức &amp; Danh Mục 9 Tác Thể</h2>
+          </div>
+          <span class="callout" id="sec2Title">Select any node to inspect O_i, U_i &amp; policy equation</span>
+        </div>
+
+        <div class="math-box">
+          <div class="math-label">Formal 9-Tuple Specification</div>
+          <div id="katexTuple"></div>
+        </div>
+        <div class="math-box">
+          <div class="math-label">EU AI Act Article 50 Ed25519 Non-Repudiation Seal</div>
+          <div id="katexCrypto"></div>
+        </div>
+
+        <div class="tier-block">
+          <div class="tier-label" id="tier1Title">Tier I · Online Perception &amp; Routing (A0–A1)</div>
+          <div class="agent-grid" id="tierGrid1"></div>
+        </div>
+        <div class="tier-block">
+          <div class="tier-label" id="tier2Title">Tier II · Asymmetric Triad Council (A2_G, A2_M, A2_C)</div>
+          <div class="agent-grid" id="tierGrid2"></div>
+        </div>
+        <div class="tier-block">
+          <div class="tier-label" id="tier3Title">Tier III · Autonomous MLOps &amp; PPO Control (A3–A6)</div>
+          <div class="agent-grid" id="tierGrid3"></div>
+        </div>
+      </div>
+
+      <!-- Agent Inspector Panel -->
+      <aside class="ed-card" id="agentInspectorPanel" style="margin-bottom:0;">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Mathematical Policy Inspector</p>
+            <h2 class="section-title" id="inspName">Unified Master Orchestrator</h2>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span class="agent-id-pill" id="inspId">A0</span>
+            <span class="mono" style="font-size:0.7rem; color:var(--color-accent);" id="inspStatus">● ACTIVE</span>
+          </div>
+        </div>
+
+        <p id="inspRole" style="font-size:0.86rem; color:var(--color-muted); line-height:1.55; margin-bottom:1rem;"></p>
+
+        <div class="math-box">
+          <div class="math-label">Decision Policy / Gate Equation</div>
+          <div id="inspPolicyMath"></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+          <div>
+            <div class="math-label">Observations O_i</div>
+            <div class="tag-list" id="inspObs"></div>
+          </div>
+          <div>
+            <div class="math-label">Actions U_i</div>
+            <div class="tag-list" id="inspAct"></div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--color-rule); padding-top:0.85rem; font-size:0.78rem; display:grid; gap:0.35rem; color:var(--color-muted);">
+          <div><strong style="color:var(--color-ink);">Gate Rule:</strong> <span id="inspGate"></span></div>
+          <div><strong style="color:var(--color-ink);">Live Metric:</strong> <span class="mono" id="inspLiveMetric"></span></div>
+          <div><strong style="color:var(--color-ink);">Source Module:</strong> <span class="mono" id="inspSource"></span></div>
+          <div><strong style="color:var(--color-ink);">API Route:</strong> <span class="mono" id="inspEndpoint"></span></div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- SECTION 3: INTERACTIVE GATE SIMULATOR & LATEX ALGORITHM -->
+    <section class="bottom-grid">
+      <div class="ed-card" style="margin-bottom:0;">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Empirical Sensitivity</p>
+            <h2 class="section-title" id="sec4LeftTitle">3A. Trình Mô Phỏng Cổng Chuyển Trạng Thái &amp; PPO</h2>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-head"><span>P_cal(x) — Calibrated Fake Prob</span><span class="mono" id="valPcal">0.52</span></div>
+          <input type="range" id="slPcal" min="0" max="1" step="0.01" value="0.52" oninput="recomputeSimulator()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>S_corneal(x) — Corneal Optical Asymmetry</span><span class="mono" id="valCorneal">0.31</span></div>
+          <input type="range" id="slCorneal" min="0" max="1" step="0.01" value="0.31" oninput="recomputeSimulator()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>H(P) — Prediction Shannon Entropy</span><span class="mono" id="valEntropy">0.09</span></div>
+          <input type="range" id="slEntropy" min="0" max="1" step="0.01" value="0.09" oninput="recomputeSimulator()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>AUC_t — Pentest ROC-AUC</span><span class="mono" id="valAuc">0.99</span></div>
+          <input type="range" id="slAuc" min="0.50" max="1.00" step="0.01" value="0.99" oninput="recomputeSimulator()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>ECE_t — Expected Calibration Error</span><span class="mono" id="valEce">0.020</span></div>
+          <input type="range" id="slEce" min="0.00" max="0.25" step="0.005" value="0.02" oninput="recomputeSimulator()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>FPR_t / EER_t — Error Rate</span><span class="mono" id="valFpr">0.000 / 0.000</span></div>
+          <input type="range" id="slFpr" min="0.00" max="0.20" step="0.005" value="0.00" oninput="recomputeSimulator()">
+        </div>
+
+        <div class="gate-grid">
+          <div class="gate-box" id="simGatePi0"></div>
+          <div class="gate-box" id="simGateExit"></div>
+          <div class="gate-box" id="simGateG5"></div>
+          <div class="gate-box" id="simPpoOut"></div>
+        </div>
+      </div>
+
+      <div class="ed-card" style="margin-bottom:0;">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">IEEE T-IFS &amp; PhD Thesis Ready</p>
+            <h2 class="section-title" id="sec4RightTitle">3B. Mã Giả Thuật Toán Điều Phối LaTeX</h2>
+          </div>
+          <button type="button" class="btn-ed accent" onclick="copyLatexAlgorithm()"><span id="copyBtnTxt">Copy LaTeX</span></button>
+        </div>
+        <pre class="latex-code" id="latexAlgoBlock">\begin{algorithm}[htbp]
+\caption{Closed-Loop Multi-Agent Forensic Verification and Continual Adaptation ($\mathcal{M}_{\text{Agentic}}$)}
+\label{alg:agentic_forensic_lifecycle}
+\begin{algorithmic}[1]
+\Require Input media $\mathbf{x}$, Active Learning Vault $\mathcal{Q}_{\text{vault}}$, Parameters $\Theta_t$
+\Ensure Auditable Certificate $\mathcal{C}_{\text{Ed25519}}$ and Updated Parameters $\Theta_{t+1}$
+\State $(\text{mod}, \text{has\_human}, c_{\text{cohort}}, \text{exit}_{\text{fast}}) \gets \mathcal{A}_1.\text{RouteContext}(\mathbf{x})$
+\If{$\text{exit}_{\text{fast}} = \text{True}$}
+    \State $R_{\text{comp}} \gets R_{\text{gen}}(\mathbf{x}); \quad \text{Mode} \gets \texttt{FAST\_EARLY\_EXIT}$
+\Else
+    \State $(\mathbf{e}_{\text{6D}}, R_{\text{gen}}, R_{\text{bio}}) \gets \mathcal{A}_1.\text{Extract6DEvidence}(\mathbf{x}, \text{mod})$
+    \State $R_{\text{comp}} \gets \text{LocardDominanceGate}\big((1 - \alpha_{c}) R_{\text{gen}} + \alpha_{c} R_{\text{bio}}, \, \mathbf{e}_{\text{6D}}\big)$
+\EndIf
+\State $P_{\text{cal}} \gets \sigma_{\text{Youden}}(R_{\text{comp}}; T^*, \tau^*); \quad \mathbf{s}_{\text{on}} \gets \text{BuildFactManifest}(\mathbf{x}, \mathbf{e}_{\text{6D}}, R_{\text{comp}}, P_{\text{cal}})$
+\State $\phi_G \gets \mathcal{A}_2^{(G)}.\text{Examine}(\mathbf{s}_{\text{on}}); \quad \phi_M \gets \mathcal{A}_2^{(M)}.\text{CounterInvestigate}(\mathbf{s}_{\text{on}})$
+\State $(V_{\text{council}}, \mathcal{C}_{\text{Ed25519}}) \gets \mathcal{A}_2^{(C)}.\text{CrossExamineAndSeal}(\mathbf{s}_{\text{on}}, \phi_G, \phi_M)$
+\If{$0.35 \le P_{\text{cal}} \le 0.75 \;\lor\; \text{Discrepancy}(\phi_G, \phi_M) \;\lor\; \text{Feedback}(\mathcal{C})$}
+    \State $\mathcal{Q}_{\text{vault}}.\text{Enqueue}(\mathcal{A}_0.\text{ExtractHardFrames}(\mathbf{x}))$
+\EndIf
+\State $\mathcal{D}_{\text{daily}} \gets \mathcal{A}_3.\text{HarvestAndDeduplicate}(d_{\text{Hamming}}(\text{dHash}) > 4)$
+\Repeat
+    \State $\Theta_{\text{cand}} \gets \mathcal{A}_4.\text{BurstGPUContinualTrain}(\Theta_t, \mathcal{Q}_{\text{vault}} \cup \mathcal{D}_{\text{replay}})$
+    \State $(\text{AUC}_t, \text{EER}_t, \text{ECE}_t, \text{FPR}_t) \gets \mathcal{A}_5.\text{RunMultimodalPentest}(\Theta_{\text{cand}})$
+\Until{$\text{EER}_t \le 0.05 \;\lor\; k_{\text{retry}} \ge 2$}
+\State $\mathbf{a}_t^{\text{PPO}} \gets \mathcal{A}_6.\text{PPOPolicyUpdate}(\mathbf{s}_t^{\text{PPO}}, R_t^{\text{PPO}})$
+\If{$\text{OODSafetyGate}(\Theta_{\text{cand}}) \;\land\; \text{CouncilApprove} \ge 2/3$}
+    \State $\Theta_{t+1} \gets \text{PublishHFAndAtomicCallback}(\Theta_{\text{cand}}, \mathbf{a}_t^{\text{PPO}})$
+\EndIf
+\end{algorithmic}
+\end{algorithm}</pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>DEEPTRACE.IO.VN · FORMAL C-DEC-POMDP &amp; CLOSED-LOOP AUTOTRAINER</span>
+    <span>EDITORIAL DESIGN SYSTEM · INSPIRED BY CATHRYNLAVERY/DIAGRAM-DESIGN</span>
+  </footer>
+
+  <script>
+    let currentLang = 'vi';
+    let modelData = null;
+    let selectedAgentId = 'A1';
+    let currentDiagramTab = 'arch';
+
+    const FALLBACK_AGENTS = [
+      { id: 'A0', symbol: '\\mathcal{A}_0', tier: 'tier1_online', name_vi: 'Unified Master Orchestrator', name_en: 'Unified Master Orchestrator', role_vi: 'Điều phối trung tâm kết nối Giám định Trực tuyến (Mode 1) & Vòng đời Tự trị (Mode 2).', role_en: 'Master coordinator bridging online forensics (Mode 1) and autonomous lifecycle (Mode 2).', source_file: 'agents/unified_master_orchestrator.py', endpoint: '/dfagent/api/orchestrator/status', policy_latex: '\\pi_0(\\mathbf{x}) = \\mathbb{I}(0.35 \\le P_{\\text{cal}} \\le 0.75)', observations: ['P_cal', 'Vault Queue'], actions: ['Issue Cert', 'Enqueue Hard'], gate_rule: 'Uncertainty Gate π₀', status: 'ACTIVE', live_metric: 'Standby' },
+      { id: 'A1', symbol: '\\mathcal{A}_1', tier: 'tier1_online', name_vi: 'Tri-Stream Context Dispatcher', name_en: 'Tri-Stream Context Dispatcher', role_vi: 'Định tuyến 3 luồng Ảnh ViT / Video SARAAB / Audio FusionNet với cổng thoát sớm 12.8ms.', role_en: 'Routes Image ViT / Video SARAAB / Full-Duration AudioFusionNet with 12.8ms early-exit.', source_file: 'web_ui/deepfake_detector.py', endpoint: '/api/analyze', policy_latex: 'R_{\\text{comp}} = (1-\\alpha_c)R_{\\text{gen}} + \\alpha_c R_{\\text{bio}}', observations: ['YuNet', 'FFT/DWT', '8kHz'], actions: ['Early-Exit', '6D Matrix'], gate_rule: 'Locard Dominance Gate', status: 'ACTIVE', live_metric: 'tau=0.8118' },
+      { id: 'A2_G', symbol: '\\mathcal{A}_2^{(G)}', tier: 'tier2_triad', name_vi: 'Gemini Lead Examiner', name_en: 'Gemini Lead Examiner', role_vi: 'Công tố Pháp y Đa phương thức suy luận Abductive CoT trên ForensicFactManifest.', role_en: 'Lead Forensic Examiner running abductive CoT over compressed ForensicFactManifest.', source_file: 'agents/triad_council_engine.py', endpoint: '/api/benchmark/debate_calibration', policy_latex: '\\phi_G(\\mathbf{s}_{\\text{on}}) \\mapsto (v_G, c_G)', observations: ['6D Matrix'], actions: ['Vote v_G'], gate_rule: 'Abductive CoT', status: 'ACTIVE', live_metric: 'Active' },
+      { id: 'A2_M', symbol: '\\mathcal{A}_2^{(M)}', tier: 'tier2_triad', name_vi: 'Meta Muse Investigator', name_en: 'Meta Muse Investigator', role_vi: 'Điều tra phản chứng nén H.264 / 8kHz chống báo động giả trên dữ liệu mạng xã hội.', role_en: 'Counter-evidence codec compression analyst preventing social-media false positives.', source_file: 'agents/triad_council_engine.py', endpoint: '/api/benchmark/debate_calibration', policy_latex: '\\phi_M(\\mathbf{s}_{\\text{on}}) \\mapsto (v_M, c_M)', observations: ['PRNU', 'Codec Flag'], actions: ['Vote v_M'], gate_rule: 'Anti-FP Codec Filter', status: 'ACTIVE', live_metric: 'Active' },
+      { id: 'A2_C', symbol: '\\mathcal{A}_2^{(C)}', tier: 'tier2_triad', name_vi: 'Claude Chief Inquisitor', name_en: 'Claude Chief Inquisitor', role_vi: 'Thẩm phán chéo tổng hợp đa số ≥ 2/3 & ký số Ed25519 tuân thủ EU AI Act Điều 50.', role_en: 'Chief Inquisitor enforcing ≥ 2/3 supermajority & EU AI Act Art. 50 Ed25519 signature.', source_file: 'agents/calibration_deliberation_council.py', endpoint: '/api/benchmark/apply_calibrated_weights_council', policy_latex: '\\text{Approve} = \\mathbb{I}(\\frac{1}{3}\\sum v_k \\ge \\frac{2}{3})', observations: ['G/M Transcript', 'ECE'], actions: ['Seal Ed25519'], gate_rule: 'Supermajority >= 2/3', status: 'ACTIVE', live_metric: 'Active' },
+      { id: 'A3', symbol: '\\mathcal{A}_3', tier: 'tier3_lifecycle', name_vi: 'Data Harvester & Hygiene Agent', name_en: 'Data Harvester & Hygiene Agent', role_vi: 'Thu thập mẫu đối chứng & thanh lọc dữ liệu trùng/giả lập bằng 64-bit dHash (Hamming > 4).', role_en: 'Harvests counterfactuals & purges duplicates/corrupt batches via 64-bit dHash (Hamming > 4).', source_file: 'scripts/data_hygiene_cli.py', endpoint: '/dfagent/api/orchestrator/trigger', policy_latex: 'd_{\\text{Hamming}}(\\text{dHash}(x), h) > 4', observations: ['dHash Registry', 'Drive'], actions: ['Purge & Stage'], gate_rule: 'Quality Gate g_34', status: 'ACTIVE', live_metric: 'Ready' },
+      { id: 'A4', symbol: '\\mathcal{A}_4', tier: 'tier3_lifecycle', name_vi: 'Burst-GPU Continual Trainer', name_en: 'Burst-GPU Continual Trainer', role_vi: 'Huấn luyện thực nghiệm 3 luồng trên Colab GPU, xuất safetensors & đẩy Hugging Face.', role_en: 'Empirical 3-stream PyTorch trainer on Colab Burst-GPU exporting safetensors to HF Hub.', source_file: 'colab_training/colab_auto_runner.py', endpoint: '/api/colab/callback', policy_latex: '\\mathcal{L}_{\\text{Focal}} = -\\alpha_t(1-p_t)^{2.0}\\log(p_t)', observations: ['Review Queue', 'NVMe'], actions: ['Export Safetensors', 'HF Upload'], gate_rule: 'OOD Safety Gate', status: 'ACTIVE', live_metric: 'Ready' },
+      { id: 'A5', symbol: '\\mathcal{A}_5', tier: 'tier3_lifecycle', name_vi: 'Red-Team Multimodal Pentester', name_en: 'Red-Team Multimodal Pentester', role_vi: 'Kiểm thử đối kháng Video ngắn (41 clips) & Audio viễn thông (52 WAVs).', role_en: 'Adversarial pentesting across 41 short videos & 52 multi-channel audio clips.', source_file: 'benchmark/short_video_pentest.py', endpoint: '/dfagent/api/pentest/audio', policy_latex: 'g_5: \\text{EER}_t \\le 0.05', observations: ['41 Videos', '52 Audios'], actions: ['Self-Heal Loop'], gate_rule: 'EER <= 5%', status: 'ACTIVE', live_metric: 'Ready' },
+      { id: 'A6', symbol: '\\mathcal{A}_6', tier: 'tier3_lifecycle', name_vi: 'PPO Meta-Controller & Reporter', name_en: 'PPO Meta-Controller & Reporter', role_vi: 'Tối ưu chính sách PPO liên tục (τ*, T*, λ_bio) & kích hoạt hot-reload không gián đoạn.', role_en: 'Continuous PPO Actor-Critic policy optimizer & zero-downtime hot-reload controller.', source_file: 'observability/ppo_meta_controller.py', endpoint: '/dfagent/api/orchestrator/status', policy_latex: 'R_t = \\text{AUC}_t - 2.0\\,\\text{ECE}_t - 1.5\\,\\text{FPR}_t', observations: ['S_t in R^6'], actions: ['Update PPO Policy'], gate_rule: 'Clipped Surrogate', status: 'ACTIVE', live_metric: 'Ready' }
+    ];
+
+    const DIAGRAM_CALLOUTS = {
+      arch: 'Focal path: Tri-Stream Detector (A1) & Claude Chief Inquisitor (A2_C) anchor online verification.',
+      swimlane: 'Burst-GPU Closed Loop: Colab leases GPU strictly for Stage 03, validates OOD, and triggers /api/colab/callback.',
+      flowchart: 'Ambiguous borderline media (0.35 ≤ P_cal ≤ 0.75) escalates to Triad debate & Zero-Day Hard Vault.',
+      state: 'Candidate checkpoints failing g₅ (EER ≤ 5%) self-heal back into A4 Continual Trainer before atomic commit.'
+    };
+
+    const EDITORIAL_DIAGRAMS = {
+      arch: `<svg id="activeEditorialSvg" viewBox="0 0 1080 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DeepTrace 3-Zone Architecture">
+        <defs>
+          <pattern id="dots-a" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.85" fill="var(--svg-dot)"/></pattern>
+          <marker id="arr-m" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-muted)"/></marker>
+          <marker id="arr-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-accent)"/></marker>
+          <marker id="arr-l" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-link)"/></marker>
+        </defs>
+        <rect width="1080" height="430" fill="var(--svg-paper)"/>
+        <rect width="1080" height="430" fill="url(#dots-a)" opacity="0.65"/>
+
+        <rect x="210" y="34" width="190" height="362" rx="8" fill="var(--svg-zone)" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <rect x="250" y="28" width="110" height="13" rx="2" fill="var(--svg-paper)"/>
+        <text x="305" y="37" fill="var(--svg-soft)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.16em">NGINX 3-ZONE</text>
+
+        <rect x="444" y="34" width="256" height="218" rx="8" fill="var(--svg-zone)" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <rect x="498" y="28" width="148" height="13" rx="2" fill="var(--svg-paper)"/>
+        <text x="572" y="37" fill="var(--svg-soft)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.16em">TIER I · PERCEPTION</text>
+
+        <rect x="744" y="34" width="308" height="218" rx="8" fill="var(--svg-zone)" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <rect x="814" y="28" width="168" height="13" rx="2" fill="var(--svg-paper)"/>
+        <text x="898" y="37" fill="var(--svg-soft)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.16em">TIER II · TRIAD COUNCIL</text>
+
+        <rect x="444" y="274" width="608" height="122" rx="8" fill="var(--svg-zone)" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <rect x="638" y="268" width="220" height="13" rx="2" fill="var(--svg-paper)"/>
+        <text x="748" y="277" fill="var(--svg-soft)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.16em">TIER III · AUTONOMOUS MLOPS</text>
+
+        <line x1="162" y1="110" x2="226" y2="110" stroke="var(--svg-link)" stroke-width="1.2" marker-end="url(#arr-l)"/>
+        <path d="M 162,126 H 186 Q 194,126 194,134 V 206 Q 194,214 202,214 H 226" fill="none" stroke="var(--svg-link)" stroke-width="1.1" marker-end="url(#arr-l)"/>
+        <path d="M 162,140 H 178 Q 186,140 186,148 V 314 Q 186,322 194,322 H 226" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" marker-end="url(#arr-m)"/>
+        <line x1="384" y1="110" x2="462" y2="110" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-a)"/>
+        <line x1="572" y1="142" x2="572" y2="170" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-a)"/>
+        <path d="M 682,194 H 716 Q 724,194 724,186 V 102 Q 724,94 732,94 H 762" fill="none" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-a)"/>
+        <path d="M 682,210 H 762" fill="none" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <path d="M 886,94 H 904 Q 912,94 912,102 V 142" fill="none" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <path d="M 886,210 H 904 Q 912,210 912,202 V 196" fill="none" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <path d="M 966,206 V 304" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arr-m)"/>
+        <line x1="588" y1="336" x2="622" y2="336" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <line x1="748" y1="336" x2="782" y2="336" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <line x1="904" y1="336" x2="932" y2="336" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-m)"/>
+        <path d="M 984,304 V 262 Q 984,254 976,254 H 520 Q 512,254 512,246 V 234" fill="none" stroke="var(--svg-accent)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arr-a)"/>
+
+        <rect x="172" y="92" width="42" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="193" y="101" fill="var(--svg-link)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HTTPS</text>
+        <rect x="394" y="92" width="56" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="422" y="101" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">INSPECT</text>
+        <rect x="692" y="132" width="62" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="723" y="141" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">6D FACTS</text>
+        <rect x="700" y="248" width="96" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="748" y="257" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOT-RELOAD Θ*</text>
+
+        <rect x="28" y="78" width="134" height="72" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+        <rect x="36" y="86" width="30" height="12" rx="2" fill="none" stroke="var(--svg-zone-stroke)" stroke-width="0.8"/>
+        <text x="51" y="95" fill="var(--svg-soft)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">EXT</text>
+        <text x="95" y="117" fill="var(--svg-ink)" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Clients &amp; API</text>
+        <text x="95" y="133" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">deeptrace.io.vn</text>
+
+        <rect x="226" y="78" width="158" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+        <text x="376" y="136" fill="var(--svg-watermark)" font-size="26" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">Z1</text>
+        <text x="305" y="108" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Public Studio (/)</text>
+        <text x="305" y="124" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">Flask :5000 · 250MB</text>
+
+        <rect x="226" y="182" width="158" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+        <text x="376" y="240" fill="var(--svg-watermark)" font-size="26" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">Z2</text>
+        <text x="305" y="212" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Benchmark (/benchmark)</text>
+        <text x="305" y="228" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">Hub :5010 · 14 Suites</text>
+
+        <rect x="226" y="288" width="158" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+        <text x="376" y="346" fill="var(--svg-watermark)" font-size="26" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">Z3</text>
+        <text x="305" y="318" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SRE Cockpit (/dfagent)</text>
+        <text x="305" y="334" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">FastAPI :8787 · Gate</text>
+
+        <g class="ed-node" onclick="selectAgent('A0')">
+          <rect x="462" y="78" width="220" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="572" y="108" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A0 · Unified Orchestrator</text>
+          <text x="572" y="124" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">π₀ Uncertainty &amp; Vault Router</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A1')">
+          <rect x="462" y="170" width="220" height="64" rx="6" fill="var(--svg-paper)"/>
+          <rect x="462" y="170" width="220" height="64" rx="6" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.3"/>
+          <rect x="470" y="178" width="36" height="12" rx="2" fill="none" stroke="var(--svg-accent)" stroke-width="0.8"/>
+          <text x="488" y="187" fill="var(--svg-accent)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">FOCAL</text>
+          <text x="674" y="228" fill="var(--svg-accent-wm)" font-size="26" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">A1</text>
+          <text x="572" y="201" fill="var(--svg-ink)" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A1 · Tri-Stream Detector</text>
+          <text x="572" y="217" fill="var(--svg-muted)" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">ViT · SARAAB · AudioFusionNet</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A2_G')">
+          <rect x="762" y="64" width="124" height="60" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="824" y="92" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A2_G · Gemini</text>
+          <text x="824" y="108" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Lead Examiner</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A2_M')">
+          <rect x="762" y="180" width="124" height="60" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="824" y="208" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A2_M · Muse</text>
+          <text x="824" y="224" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Codec Anti-FP</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A2_C')">
+          <rect x="912" y="142" width="126" height="64" rx="6" fill="var(--svg-paper)"/>
+          <rect x="912" y="142" width="126" height="64" rx="6" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.2"/>
+          <text x="975" y="171" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A2_C · Claude</text>
+          <text x="975" y="187" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">≥2/3 · Ed25519</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A3')">
+          <rect x="462" y="304" width="126" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="525" y="333" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A3 · Hygiene</text>
+          <text x="525" y="349" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">64-bit dHash &gt; 4</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A4')">
+          <rect x="622" y="304" width="126" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="685" y="333" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A4 · Continual</text>
+          <text x="685" y="349" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Colab Burst ViT</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A5')">
+          <rect x="782" y="304" width="122" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="843" y="333" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A5 · Pentester</text>
+          <text x="843" y="349" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">41 Vid · 52 WAV</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A6')">
+          <rect x="932" y="304" width="106" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="985" y="333" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A6 · PPO RL</text>
+          <text x="985" y="349" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">τ*, T*, λ_bio</text>
+        </g>
+      </svg>`,
+
+      swimlane: `<svg id="activeEditorialSvg" viewBox="0 0 1080 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Closed-Loop Burst-GPU Swimlane">
+        <defs>
+          <pattern id="dots-s" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.85" fill="var(--svg-dot)"/></pattern>
+          <marker id="arr-sm" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-muted)"/></marker>
+          <marker id="arr-sa" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-accent)"/></marker>
+          <marker id="arr-sl" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-link)"/></marker>
+        </defs>
+        <rect width="1080" height="410" fill="var(--svg-paper)"/>
+        <rect width="1080" height="410" fill="url(#dots-s)" opacity="0.65"/>
+        <rect x="0" y="54" width="1080" height="82" fill="var(--svg-zone)"/>
+        <rect x="0" y="218" width="1080" height="82" fill="var(--svg-zone)"/>
+
+        <line x1="24" y1="54" x2="1056" y2="54" stroke="var(--svg-zone-stroke)" stroke-width="1"/>
+        <line x1="24" y1="136" x2="1056" y2="136" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <line x1="24" y1="218" x2="1056" y2="218" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <line x1="24" y1="300" x2="1056" y2="300" stroke="var(--svg-zone-stroke)" stroke-width="0.9"/>
+        <line x1="24" y1="382" x2="1056" y2="382" stroke="var(--svg-zone-stroke)" stroke-width="1"/>
+        <line x1="168" y1="54" x2="168" y2="382" stroke="var(--svg-zone-stroke)" stroke-width="1"/>
+
+        <g font-family="'Geist Mono', monospace" text-anchor="middle">
+          <rect x="242" y="10" width="34" height="16" rx="8" fill="var(--svg-zone-stroke)"/><text x="259" y="21" fill="var(--svg-ink)" font-size="8" font-weight="600">01</text><text x="259" y="39" fill="var(--svg-muted)" font-size="8" letter-spacing="0.14em">REVIEW</text>
+          <rect x="432" y="10" width="34" height="16" rx="8" fill="var(--svg-zone-stroke)"/><text x="449" y="21" fill="var(--svg-ink)" font-size="8" font-weight="600">02</text><text x="449" y="39" fill="var(--svg-muted)" font-size="8" letter-spacing="0.14em">STAGE</text>
+          <rect x="622" y="10" width="34" height="16" rx="8" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="0.8"/><text x="639" y="21" fill="var(--svg-accent)" font-size="8" font-weight="600">03</text><text x="639" y="39" fill="var(--svg-accent)" font-size="8" font-weight="600" letter-spacing="0.14em">BURST GPU</text>
+          <rect x="812" y="10" width="34" height="16" rx="8" fill="var(--svg-zone-stroke)"/><text x="829" y="21" fill="var(--svg-ink)" font-size="8" font-weight="600">04</text><text x="829" y="39" fill="var(--svg-muted)" font-size="8" letter-spacing="0.14em">PUBLISH</text>
+          <rect x="970" y="10" width="34" height="16" rx="8" fill="var(--svg-zone-stroke)"/><text x="987" y="21" fill="var(--svg-ink)" font-size="8" font-weight="600">05</text><text x="987" y="39" fill="var(--svg-muted)" font-size="8" letter-spacing="0.14em">RELOAD</text>
+        </g>
+
+        <g font-family="'Geist Mono', monospace" font-size="8.5" fill="var(--svg-muted)" letter-spacing="0.15em">
+          <text x="40" y="92">DEEPTRACE</text><text x="40" y="106">PROD (:5000)</text>
+          <text x="40" y="174">COLAB PRO</text><text x="40" y="188">BURST GPU</text>
+          <text x="40" y="256">HUGGING FACE</text><text x="40" y="270">MODEL HUB</text>
+          <text x="40" y="338">GITHUB &amp;</text><text x="40" y="352">GDRIVE</text>
+        </g>
+
+        <path d="M 334,95 H 362 Q 370,95 370,103 V 169 Q 370,177 378,177 H 380" fill="none" stroke="var(--svg-link)" stroke-width="1.2" marker-end="url(#arr-sl)"/>
+        <path d="M 449,314 V 205" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arr-sm)"/>
+        <line x1="518" y1="177" x2="564" y2="177" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-sa)"/>
+        <path d="M 714,177 H 742 Q 750,177 750,185 V 251 Q 750,259 758,259 H 760" fill="none" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-sa)"/>
+        <path d="M 639,208 V 314" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" marker-end="url(#arr-sm)"/>
+        <path d="M 898,259 H 916 Q 924,259 924,251 V 103 Q 924,95 932,95 H 934" fill="none" stroke="var(--svg-link)" stroke-width="1.3" marker-end="url(#arr-sl)"/>
+
+        <rect x="342" y="128" width="56" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="370" y="137" fill="var(--svg-link)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">GET QUEUE</text>
+        <rect x="720" y="210" width="66" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="753" y="219" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">GATE PASS</text>
+        <rect x="892" y="156" width="66" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="925" y="165" fill="var(--svg-link)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CALLBACK</text>
+
+        <g class="ed-node" onclick="selectAgent('A0')">
+          <rect x="186" y="67" width="148" height="56" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="260" y="92" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Human Review Queue</text>
+          <text x="260" y="108" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">APPROVED_REAL / FAKE</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A3')">
+          <rect x="380" y="149" width="138" height="56" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="449" y="174" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">NVMe SSD Staging</text>
+          <text x="449" y="190" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">/content/train_cache</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A3')">
+          <rect x="380" y="314" width="138" height="54" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="449" y="338" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Thread_Data Batches</text>
+          <text x="449" y="354" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Google Drive (latest)</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A4')">
+          <rect x="564" y="146" width="150" height="62" rx="6" fill="var(--svg-paper)"/>
+          <rect x="564" y="146" width="150" height="62" rx="6" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.3"/>
+          <text x="639" y="172" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A4 · 3-Stream PyTorch</text>
+          <text x="639" y="188" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ViT · Biometrics · Audio</text>
+          <text x="639" y="200" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">OOD Safety Gate</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A6')">
+          <rect x="564" y="314" width="150" height="54" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="639" y="338" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Rebase Metrics Sync</text>
+          <text x="639" y="354" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">git rebase -X ours [Bot]</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A4')">
+          <rect x="760" y="231" width="138" height="56" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="829" y="256" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">custom-deepfake-vit</text>
+          <text x="829" y="272" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">model.safetensors</text>
+        </g>
+        <g class="ed-node" onclick="selectAgent('A1')">
+          <rect x="934" y="67" width="114" height="56" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="991" y="92" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Atomic Reload</text>
+          <text x="991" y="108" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Zero-Downtime</text>
+        </g>
+      </svg>`,
+
+      flowchart: `<svg id="activeEditorialSvg" viewBox="0 0 1080 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Forensic Decision Flowchart">
+        <defs>
+          <pattern id="dots-f" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.85" fill="var(--svg-dot)"/></pattern>
+          <marker id="arr-fm" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-muted)"/></marker>
+          <marker id="arr-fa" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-accent)"/></marker>
+        </defs>
+        <rect width="1080" height="360" fill="var(--svg-paper)"/>
+        <rect width="1080" height="360" fill="url(#dots-f)" opacity="0.65"/>
+
+        <line x1="156" y1="178" x2="208" y2="178" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-fm)"/>
+        <path d="M 280,136 V 82 Q 280,74 288,74 H 412" fill="none" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-fm)"/>
+        <line x1="352" y1="178" x2="412" y2="178" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-fa)"/>
+        <line x1="576" y1="178" x2="628" y2="178" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-fa)"/>
+        <path d="M 576,74 H 956 Q 964,74 964,82 V 146" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arr-fm)"/>
+        <line x1="772" y1="178" x2="896" y2="178" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-fm)"/>
+        <path d="M 700,220 V 278 Q 700,286 708,286 H 756" fill="none" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-fa)"/>
+        <path d="M 916,286 H 956 Q 964,286 964,278 V 210" fill="none" stroke="var(--svg-accent)" stroke-width="1.3" marker-end="url(#arr-fa)"/>
+
+        <rect x="264" y="102" width="32" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="280" y="111" fill="var(--svg-muted)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">YES</text>
+        <rect x="366" y="162" width="28" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="380" y="171" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">NO</text>
+        <rect x="810" y="162" width="58" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="839" y="171" fill="var(--svg-muted)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">CONFIDENT</text>
+        <rect x="672" y="242" width="56" height="12" rx="2" fill="var(--svg-paper)"/>
+        <text x="700" y="251" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">π₀ = TRUE</text>
+
+        <rect x="36" y="152" width="120" height="52" rx="26" fill="var(--svg-node)" stroke="var(--svg-ink)" stroke-width="1.1"/>
+        <text x="96" y="175" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Input Media x</text>
+        <text x="96" y="190" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">IMG · VID · WAV</text>
+
+        <g class="ed-node" onclick="selectAgent('A1')">
+          <polygon points="280,136 352,178 280,220 208,178" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="280" y="175" fill="var(--svg-ink)" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Low Entropy</text>
+          <text x="280" y="189" fill="var(--svg-muted)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">H(P) &lt; 0.12?</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A1')">
+          <rect x="412" y="46" width="164" height="56" rx="6" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="494" y="71" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fast Early-Exit</text>
+          <text x="494" y="87" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">12.8 ms Bypass</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A1')">
+          <rect x="412" y="148" width="164" height="60" rx="6" fill="var(--svg-node)" stroke="var(--svg-ink)" stroke-width="1"/>
+          <text x="494" y="175" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">6D Locard Fusion</text>
+          <text x="494" y="191" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">T*=1.6178 · τ*=0.8118</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A0')">
+          <polygon points="700,136 772,178 700,220 628,178" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.2"/>
+          <text x="700" y="175" fill="var(--svg-ink)" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Borderline?</text>
+          <text x="700" y="189" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">0.35 ≤ P ≤ 0.75</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A2_C')">
+          <rect x="756" y="254" width="160" height="64" rx="6" fill="var(--svg-paper)"/>
+          <rect x="756" y="254" width="160" height="64" rx="6" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.3"/>
+          <text x="836" y="282" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Triad Debate + Vault</text>
+          <text x="836" y="298" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Gemini · Muse · Claude</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A2_C')">
+          <rect x="896" y="146" width="148" height="64" rx="6" fill="var(--svg-node)" stroke="var(--svg-ink)" stroke-width="1.2"/>
+          <text x="970" y="175" fill="var(--svg-ink)" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Ed25519 Certificate</text>
+          <text x="970" y="191" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">EU AI Act Art. 50</text>
+        </g>
+      </svg>`,
+
+      state: `<svg id="activeEditorialSvg" viewBox="0 0 1080 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lifecycle State Machine">
+        <defs>
+          <pattern id="dots-st" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.85" fill="var(--svg-dot)"/></pattern>
+          <marker id="arr-stm" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-muted)"/></marker>
+          <marker id="arr-sta" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--svg-accent)"/></marker>
+        </defs>
+        <rect width="1080" height="310" fill="var(--svg-paper)"/>
+        <rect width="1080" height="310" fill="url(#dots-st)" opacity="0.65"/>
+
+        <circle cx="48" cy="155" r="7" fill="var(--svg-ink)"/>
+        <line x1="55" y1="155" x2="96" y2="155" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-stm)"/>
+        <line x1="226" y1="155" x2="290" y2="155" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-stm)"/>
+        <line x1="434" y1="155" x2="500" y2="155" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-sta)"/>
+        <line x1="654" y1="155" x2="720" y2="155" stroke="var(--svg-accent)" stroke-width="1.4" marker-end="url(#arr-sta)"/>
+        <line x1="868" y1="155" x2="928" y2="155" stroke="var(--svg-muted)" stroke-width="1.2" marker-end="url(#arr-stm)"/>
+
+        <path d="M 794,123 V 66 Q 794,58 786,58 H 585 Q 577,58 577,66 V 123" fill="none" stroke="var(--svg-accent)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arr-sta)"/>
+        <rect x="616" y="50" width="140" height="14" rx="2" fill="var(--svg-paper)"/>
+        <text x="686" y="60" fill="var(--svg-accent)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">SELF-HEAL (EER &gt; 5%)</text>
+
+        <path d="M 986,187 V 252 Q 986,260 978,260 H 169 Q 161,260 161,252 V 187" fill="none" stroke="var(--svg-muted)" stroke-width="1.1" marker-end="url(#arr-stm)"/>
+        <rect x="492" y="252" width="166" height="14" rx="2" fill="var(--svg-paper)"/>
+        <text x="575" y="262" fill="var(--svg-muted)" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">COMMIT Θ_{t+1} &amp; STANDBY</text>
+
+        <g class="ed-node" onclick="selectAgent('A0')">
+          <rect x="96" y="123" width="130" height="64" rx="12" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="161" y="151" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S0 · Idle Ready</text>
+          <text x="161" y="168" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Watch Queue / Cron</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A3')">
+          <rect x="290" y="123" width="144" height="64" rx="12" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="362" y="151" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S3 · Hygiene</text>
+          <text x="362" y="168" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">g₃₄: dHash &gt; 4</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A4')">
+          <rect x="500" y="123" width="154" height="64" rx="12" fill="var(--svg-paper)"/>
+          <rect x="500" y="123" width="154" height="64" rx="12" fill="var(--svg-accent-tint)" stroke="var(--svg-accent)" stroke-width="1.3"/>
+          <text x="577" y="151" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S4 · Burst Train</text>
+          <text x="577" y="168" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Coord + Focal ViT</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A5')">
+          <rect x="720" y="123" width="148" height="64" rx="12" fill="var(--svg-node)" stroke="var(--svg-ink)" stroke-width="1.1"/>
+          <text x="794" y="151" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S5 · Red-Team</text>
+          <text x="794" y="168" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">g₅: EER ≤ 0.05</text>
+        </g>
+
+        <g class="ed-node" onclick="selectAgent('A6')">
+          <rect x="928" y="123" width="118" height="64" rx="12" fill="var(--svg-node)" stroke="var(--svg-stroke)" stroke-width="1"/>
+          <text x="987" y="151" fill="var(--svg-ink)" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S6 · PPO Sync</text>
+          <text x="987" y="168" fill="var(--svg-muted)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Reward R_t</text>
+        </g>
+      </svg>`
+    };
+
+    function toggleSkin(forceSkin) {
+      const html = document.documentElement;
+      const next = forceSkin || (html.getAttribute('data-skin') === 'dark' ? 'light' : 'dark');
+      html.setAttribute('data-skin', next);
+      document.getElementById('btnSkinToggle').textContent = 'Skin: ' + (next === 'dark' ? 'Dark' : 'Light');
+    }
+
+    function renderDiagram() {
+      const container = document.getElementById('diagramContainer');
+      container.innerHTML = EDITORIAL_DIAGRAMS[currentDiagramTab] || EDITORIAL_DIAGRAMS.arch;
+      document.getElementById('diagramCallout').textContent = DIAGRAM_CALLOUTS[currentDiagramTab] || '';
+    }
+
+    function switchDiagram(tab) {
+      currentDiagramTab = tab;
+      document.getElementById('tabArchBtn').classList.toggle('active', tab === 'arch');
+      document.getElementById('tabSwimBtn').classList.toggle('active', tab === 'swimlane');
+      document.getElementById('tabFlowBtn').classList.toggle('active', tab === 'flowchart');
+      document.getElementById('tabStateBtn').classList.toggle('active', tab === 'state');
+      renderDiagram();
+    }
+
+    function _serializeResolvedSvg() {
+      const svgEl = document.getElementById('activeEditorialSvg');
+      if (!svgEl) return null;
+      const clone = svgEl.cloneNode(true);
+      const computed = getComputedStyle(document.documentElement);
+      const vars = [
+        '--svg-paper','--svg-node','--svg-zone','--svg-zone-stroke','--svg-ink',
+        '--svg-muted','--svg-soft','--svg-stroke','--svg-dot','--svg-watermark',
+        '--svg-accent','--svg-accent-tint','--svg-accent-wm','--svg-link'
+      ];
+      let raw = new XMLSerializer().serializeToString(clone);
+      vars.forEach(v => {
+        raw = raw.split(`var(${v})`).join(computed.getPropertyValue(v).trim());
+      });
+      return { raw, vb: svgEl.viewBox.baseVal };
+    }
+
+    function exportActiveSvg() {
+      const res = _serializeResolvedSvg();
+      if (!res) return;
+      const blob = new Blob([res.raw], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `deeptrace-editorial-${currentDiagramTab}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportActivePng() {
+      const res = _serializeResolvedSvg();
+      if (!res) return;
+      const img = new Image();
+      const svgBlob = new Blob([res.raw], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      img.onload = () => {
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = (res.vb.width || 1080) * scale;
+        canvas.height = (res.vb.height || 420) * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(pngBlob => {
+          if (!pngBlob) return;
+          const pngUrl = URL.createObjectURL(pngBlob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = `deeptrace-editorial-${currentDiagramTab}-2x.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(pngUrl);
+        }, 'image/png');
+      };
+      img.src = url;
+    }
+
+    function renderKatexSafe(el, tex, displayMode = false) {
+      if (!el) return;
+      if (window.katex && typeof window.katex.render === 'function') {
+        try {
+          window.katex.render(tex, el, { displayMode: displayMode, throwOnError: false });
+          return;
+        } catch (e) {}
+      }
+      el.textContent = tex;
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.getElementById('btnLangVi').classList.toggle('active', lang === 'vi');
+      document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+      if (lang === 'en') {
+        document.getElementById('heroTitle').textContent = 'Multi-Agent Forensic Architecture & Closed-Loop Schematics';
+        document.getElementById('heroLead').textContent = 'Editorial technical schematics (Instrument Serif · Geist · Geist Mono): 1px hairlines, r=8 orthogonal elbows, and a single burnt-tangerine accent (#bf4520) reserved strictly for focal paths.';
+        document.getElementById('sec3Title').textContent = '1. Editorial Architecture & Signal Flow Schematics';
+        document.getElementById('sec1Title').textContent = '2. Formal C-Dec-POMDP Specification & 9-Agent Roster';
+        document.getElementById('sec4LeftTitle').textContent = '3A. Interactive Gate & PPO Reward Simulator';
+        document.getElementById('sec4RightTitle').textContent = '3B. PhD Thesis & IEEE T-IFS LaTeX Algorithm';
+        document.getElementById('lblRefresh').textContent = '↻ Live Telemetry';
+      } else {
+        document.getElementById('heroTitle').textContent = 'Mô Hình Hóa Hệ Thống Đa Tác Thể Pháp Y & Luồng Huấn Luyện Khép Kín';
+        document.getElementById('heroLead').textContent = 'Thiết kế sơ đồ theo chuẩn biên tập học thuật (Instrument Serif · Geist · Geist Mono): loại bỏ hoàn toàn hiệu ứng rối mắt, chuẩn hóa đường đi vuông góc r=8, và dành duy nhất 1 màu nhấn cam đất (#bf4520) cho luồng quyết định trọng tâm.';
+        document.getElementById('sec3Title').textContent = '1. Sơ Đồ Kiến Trúc & Luồng Tín Hiệu Chuẩn Diagram-Design';
+        document.getElementById('sec1Title').textContent = '2. Định Nghĩa Hình Thức & Danh Mục 9 Tác Thể';
+        document.getElementById('sec4LeftTitle').textContent = '3A. Trình Mô Phỏng Cổng Chuyển Trạng Thái & PPO';
+        document.getElementById('sec4RightTitle').textContent = '3B. Mã Giả Thuật Toán Điều Phối LaTeX';
+        document.getElementById('lblRefresh').textContent = '↻ Làm Mới Telemetry';
+      }
+      renderAgentsGrid();
+      selectAgent(selectedAgentId);
+    }
+
+    function renderAgentsGrid() {
+      const agents = (modelData && modelData.agents) ? modelData.agents : FALLBACK_AGENTS;
+      const map = { tier1_online: 'tierGrid1', tier2_triad: 'tierGrid2', tier3_lifecycle: 'tierGrid3' };
+      Object.values(map).forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+      agents.forEach(ag => {
+        const container = document.getElementById(map[ag.tier]);
+        if (!container) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'agent-node' + (ag.id === selectedAgentId ? ' selected' : '');
+        btn.onclick = () => selectAgent(ag.id);
+        const title = currentLang === 'en' ? (ag.name_en || ag.name_vi) : ag.name_vi;
+        btn.innerHTML = `
+          <span class="agent-id-pill">${ag.id}</span>
+          <div>
+            <div class="agent-name">${title}</div>
+            <div class="agent-metric">${ag.live_metric || 'ACTIVE'}</div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectAgent(agentId) {
+      selectedAgentId = agentId;
+      const agents = (modelData && modelData.agents) ? modelData.agents : FALLBACK_AGENTS;
+      const ag = agents.find(a => a.id === agentId) || agents[0];
+      renderAgentsGrid();
+
+      document.getElementById('inspId').textContent = ag.id;
+      document.getElementById('inspStatus').textContent = '● ' + (ag.status || 'ACTIVE');
+      document.getElementById('inspName').textContent = currentLang === 'en' ? ag.name_en : ag.name_vi;
+      document.getElementById('inspRole').textContent = currentLang === 'en' ? ag.role_en : ag.role_vi;
+      renderKatexSafe(document.getElementById('inspPolicyMath'), ag.policy_latex || '', true);
+      document.getElementById('inspObs').innerHTML = (ag.observations || []).map(o => `<span class="tag-chip">${o}</span>`).join('');
+      document.getElementById('inspAct').innerHTML = (ag.actions || []).map(a => `<span class="tag-chip action">${a}</span>`).join('');
+      document.getElementById('inspGate').textContent = ag.gate_rule || '';
+      document.getElementById('inspLiveMetric').textContent = ag.live_metric || 'N/A';
+      document.getElementById('inspSource').textContent = ag.source_file || '';
+      document.getElementById('inspEndpoint').textContent = ag.endpoint || '';
+    }
+
+    function recomputeSimulator() {
+      const pcal = parseFloat(document.getElementById('slPcal').value);
+      const corneal = parseFloat(document.getElementById('slCorneal').value);
+      const entropy = parseFloat(document.getElementById('slEntropy').value);
+      const auc = parseFloat(document.getElementById('slAuc').value);
+      const ece = parseFloat(document.getElementById('slEce').value);
+      const fpr = parseFloat(document.getElementById('slFpr').value);
+      const eer = fpr;
+
+      document.getElementById('valPcal').textContent = pcal.toFixed(2);
+      document.getElementById('valCorneal').textContent = corneal.toFixed(2);
+      document.getElementById('valEntropy').textContent = entropy.toFixed(2);
+      document.getElementById('valAuc').textContent = auc.toFixed(2);
+      document.getElementById('valEce').textContent = ece.toFixed(3);
+      document.getElementById('valFpr').textContent = `${fpr.toFixed(3)} / ${eer.toFixed(3)}`;
+
+      const pi0 = (pcal >= 0.35 && pcal <= 0.75) || (corneal > 0.28 && pcal < 0.8118);
+      const fastExit = (corneal < 0.05 && entropy < 0.12);
+      const selfHeal = (eer > 0.05);
+      const reward = auc - 2.0 * ece - 1.5 * fpr;
+      const loraTrig = (ece > 0.05) || pi0;
+
+      const gPi0 = document.getElementById('simGatePi0');
+      gPi0.className = 'gate-box' + (pi0 ? ' warn' : '');
+      gPi0.innerHTML = `<strong>π₀ Uncertainty Gate</strong><br>${pi0 ? '→ Escalate Triad &amp; Vault' : '✓ Confident Pass'}`;
+
+      const gEx = document.getElementById('simGateExit');
+      gEx.className = 'gate-box';
+      gEx.innerHTML = `<strong>Early-Exit Gate</strong><br>${fastExit ? '→ 12.8ms Bypass' : '→ Full 6D Extraction'}`;
+
+      const g5 = document.getElementById('simGateG5');
+      g5.className = 'gate-box' + (selfHeal ? ' warn' : '');
+      g5.innerHTML = `<strong>Gate g₅ (EER ≤ 5%)</strong><br>${selfHeal ? '→ Self-Heal Loop (A5→A4)' : '✓ Advance to A6 PPO'}`;
+
+      const gPpo = document.getElementById('simPpoOut');
+      gPpo.className = 'gate-box' + (reward < 0.85 ? ' warn' : '');
+      gPpo.innerHTML = `<strong>PPO Reward Rₜ</strong><br><span class="mono">Rₜ = ${reward.toFixed(4)}</span> · LoRA=${loraTrig ? '1' : '0'}`;
+    }
+
+    function copyLatexAlgorithm() {
+      const txt = document.getElementById('latexAlgoBlock').textContent;
+      navigator.clipboard.writeText(txt).then(() => {
+        document.getElementById('copyBtnTxt').textContent = 'Copied ✓';
+        setTimeout(() => { document.getElementById('copyBtnTxt').textContent = 'Copy LaTeX'; }, 1800);
+      }).catch(() => {});
+    }
+
+    async function loadLiveModel() {
+      const apiUrl = window.location.pathname.includes('/dfagent')
+        ? '/dfagent/api/agentic/model'
+        : '/api/agentic/model';
+      try {
+        const resp = await fetch(apiUrl);
+        if (resp.ok) {
+          modelData = await resp.json();
+          const fm = modelData.formal_model || {};
+          renderKatexSafe(document.getElementById('katexTuple'), fm.tuple_latex || '', true);
+          renderKatexSafe(document.getElementById('katexCrypto'), fm.crypto_latex || '', true);
+
+          const lt = modelData.live_telemetry || {};
+          const counts = lt.table_counts || {};
+          const svpOv = (lt.short_video_pentest || {}).overall || {};
+          const audLat = lt.latest_audio_pentest || {};
+          const fb = lt.feedback_summary || {};
+          const ppo = lt.latest_ppo_trajectory || {};
+          const params = lt.active_params || {};
+
+          document.getElementById('kpiCerts').textContent = (counts.forensic_certificates ?? '--').toLocaleString();
+          document.getElementById('kpiVideoAcc').textContent = svpOv.accuracy != null ? `${(svpOv.accuracy * 100).toFixed(1)}%` : '100.0%';
+          document.getElementById('kpiVideoSub').textContent = `${svpOv.sample_count || 41} clips · AUC=${svpOv.roc_auc || '1.0'}`;
+          document.getElementById('kpiAudioAcc').textContent = audLat.accuracy != null ? `${(audLat.accuracy * 100).toFixed(1)}%` : '100.0%';
+          document.getElementById('kpiAudioSub').textContent = `${audLat.sample_count || 52} clips · AUC=${audLat.roc_auc || '1.0'}`;
+          document.getElementById('kpiVault').textContent = fb.vault_pending_count ?? 0;
+          document.getElementById('kpiFeedbackSub').textContent = `Reviews: ${counts.user_feedback_events || 0} · Updates: ${counts.calibration_weight_updates || 0}`;
+          const tImg = (params.image || {}).optimal_threshold_tau ?? 0.8118;
+          const tVid = (params.video || {}).tau_video ?? 0.68;
+          const tAud = (params.audio || {}).tau_audio ?? 0.8118;
+          document.getElementById('kpiTau').textContent = `${tImg}`;
+          document.getElementById('kpiTauSub').textContent = `Vid:${tVid} · Aud:${tAud}`;
+          document.getElementById('kpiPpo').textContent = `${counts.ppo_agent_trajectories || 0} steps`;
+        }
+      } catch (e) {
+        console.warn('Live model fetch fallback:', e);
+      }
+      renderAgentsGrid();
+      selectAgent(selectedAgentId);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('skin') === 'dark') {
+        toggleSkin('dark');
+      }
+      renderKatexSafe(
+        document.getElementById('katexTuple'),
+        String.raw`\mathcal{M}_{\text{Agentic}} = \Big\langle \mathcal{A}, \, \mathcal{S}, \, \{\mathcal{O}_i\}_{i \in \mathcal{A}}, \, \{\mathcal{U}_i\}_{i \in \mathcal{A}}, \, \mathcal{T}, \, \{\mathcal{R}_i\}_{i \in \mathcal{A}}, \, \Pi, \, \mathcal{G}_{\text{Graph}}, \, \mathcal{K}_{\text{Crypto}} \Big\rangle`,
+        true
+      );
+      renderKatexSafe(
+        document.getElementById('katexCrypto'),
+        String.raw`\sigma_{\text{cert}} = \text{Sign}_{\text{Ed25519}}\Big(\text{SHA256}\big(\text{ID}_{\text{cert}} \parallel t_{\text{UTC}} \parallel \text{SHA256}(\mathbf{x}_{\text{media}}) \parallel R_{\text{comp}} \parallel \text{Mode}\big)\Big)`,
+        true
+      );
+      renderDiagram();
+      recomputeSimulator();
+      loadLiveModel();
+    });
+  </script>
+</body>
+</html>

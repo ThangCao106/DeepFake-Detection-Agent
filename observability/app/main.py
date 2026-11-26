@@ -2648,6 +2648,29 @@ async def serve_agentic_ai_ui() -> Response:
     return HTMLResponse(content=fallback_path.read_text(encoding="utf-8"))
 
 
+@app.get("/diagrams", response_class=HTMLResponse)
+@app.get("/diagrams/", response_class=HTMLResponse)
+@app.get("/dfagent/diagrams", response_class=HTMLResponse)
+@app.get("/dfagent/diagrams/", response_class=HTMLResponse)
+async def serve_editorial_diagrams_ui() -> Response:
+    """Serve Version 2: Editorial Diagram-Design Architecture & Flows Studio."""
+    target_paths = [
+        Path("/app/static/editorial_diagrams.html"),
+        Path("/app/static/diagrams/index.html"),
+        Path(__file__).resolve().parent.parent / "static" / "editorial_diagrams.html",
+        Path(__file__).resolve().parent.parent / "static" / "diagrams" / "index.html",
+        Path(PROJECT_ROOT) / "web_ui" / "templates" / "editorial_diagrams.html",
+    ]
+    for p in target_paths:
+        try:
+            if p.exists():
+                return HTMLResponse(content=p.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    fallback_path = Path(__file__).resolve().parent.parent / "static" / "index.html"
+    return HTMLResponse(content=fallback_path.read_text(encoding="utf-8"))
+
+
 @app.get("/api/agentic/model")
 @app.get("/dfagent/api/agentic/model")
 async def get_agentic_model_api() -> dict:

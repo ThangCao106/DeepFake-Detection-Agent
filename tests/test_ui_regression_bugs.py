@@ -289,6 +289,8 @@ for path in (
     "/",
     "/agentic-ai",
     "/dfagent/agentic-ai",
+    "/diagrams",
+    "/dfagent/diagrams",
     "/api/agents/lifecycle",
     "/api/feedback/review-queue",
     "/api/calibration/metrics",
@@ -470,18 +472,30 @@ print("FASTAPI_RUNTIME_OK")
                     self.assertIn(False, reloads)
 
     def test_17_editorial_diagram_design_system(self):
-        """Verify Agentic AI templates and standalone folio adhere to cathrynlavery/diagram-design editorial standards."""
-        web_tpl = REPO_ROOT / "web_ui" / "templates" / "agentic_ai_model.html"
-        obs_tpl1 = REPO_ROOT / "observability" / "static" / "agentic_ai_model.html"
-        obs_tpl2 = REPO_ROOT / "observability" / "static" / "agentic-ai" / "index.html"
+        """Verify BOTH Version 1 (3D Cyber-Crystal Agentic Studio) and Version 2 (Editorial Diagram-Design Studio) coexist cleanly."""
+        # 1. Verify Version 1 (Original 3D Crystal Studio at /dfagent/agentic-ai)
+        v1_web = REPO_ROOT / "web_ui" / "templates" / "agentic_ai_model.html"
+        v1_obs1 = REPO_ROOT / "observability" / "static" / "agentic_ai_model.html"
+        v1_obs2 = REPO_ROOT / "observability" / "static" / "agentic-ai" / "index.html"
+        for p in (v1_web, v1_obs1, v1_obs2):
+            self.assertTrue(p.exists(), f"Missing v1 3D Agentic file: {p}")
+        v1_txt = v1_web.read_text(encoding="utf-8")
+        self.assertEqual(v1_txt, v1_obs1.read_text(encoding="utf-8"))
+        self.assertEqual(v1_txt, v1_obs2.read_text(encoding="utf-8"))
+        self.assertIn("crystalCanvas", v1_txt, "Version 1 must preserve the 3D Holographic Crystal Core!")
+        self.assertIn("/dfagent/diagrams", v1_txt, "Version 1 must cross-link to Version 2 (/dfagent/diagrams)!")
+
+        # 2. Verify Version 2 (cathrynlavery/diagram-design Editorial Studio at /dfagent/diagrams)
+        v2_web = REPO_ROOT / "web_ui" / "templates" / "editorial_diagrams.html"
+        v2_obs1 = REPO_ROOT / "observability" / "static" / "editorial_diagrams.html"
+        v2_obs2 = REPO_ROOT / "observability" / "static" / "diagrams" / "index.html"
         standalone = REPO_ROOT / "docs" / "diagrams" / "deeptrace_editorial_diagrams.html"
+        for p in (v2_web, v2_obs1, v2_obs2, standalone):
+            self.assertTrue(p.exists(), f"Missing v2 editorial diagram file: {p}")
 
-        for p in (web_tpl, obs_tpl1, obs_tpl2, standalone):
-            self.assertTrue(p.exists(), f"Missing editorial diagram file: {p}")
-
-        tpl_txt = web_tpl.read_text(encoding="utf-8")
-        self.assertEqual(tpl_txt, obs_tpl1.read_text(encoding="utf-8"), "observability/static/agentic_ai_model.html out of sync!")
-        self.assertEqual(tpl_txt, obs_tpl2.read_text(encoding="utf-8"), "observability/static/agentic-ai/index.html out of sync!")
+        tpl_txt = v2_web.read_text(encoding="utf-8")
+        self.assertEqual(tpl_txt, v2_obs1.read_text(encoding="utf-8"), "observability/static/editorial_diagrams.html out of sync!")
+        self.assertEqual(tpl_txt, v2_obs2.read_text(encoding="utf-8"), "observability/static/diagrams/index.html out of sync!")
 
         for req in (
             "Instrument+Serif",
@@ -494,11 +508,17 @@ print("FASTAPI_RUNTIME_OK")
             "switchDiagram('state')",
             "exportActiveSvg()",
             "exportActivePng()",
+            "/dfagent/agentic-ai",
         ):
-            self.assertIn(req, tpl_txt, f"Missing editorial diagram token '{req}' in agentic_ai_model.html")
+            self.assertIn(req, tpl_txt, f"Missing editorial diagram token '{req}' in editorial_diagrams.html")
 
-        self.assertNotIn("mermaid.min.js", tpl_txt, "Generic Mermaid auto-layout dependency should be replaced by inline editorial SVG!")
-        self.assertNotIn("feGaussianBlur", tpl_txt, "Neon blur filter violates editorial diagram-design hairline guidelines!")
+        self.assertNotIn("mermaid.min.js", tpl_txt)
+        self.assertNotIn("feGaussianBlur", tpl_txt)
+
+        # 3. Verify /dfagent sidebar & tabs expose BOTH versions
+        obs_idx_txt = (REPO_ROOT / "observability" / "static" / "index.html").read_text(encoding="utf-8")
+        for dual_tok in ("nav-agentic-model", "tab-agentic-model", "nav-editorial-diagrams", "tab-editorial-diagrams", "/dfagent/diagrams"):
+            self.assertIn(dual_tok, obs_idx_txt, f"Missing '{dual_tok}' in /dfagent index.html")
 
 
 if __name__ == "__main__":
