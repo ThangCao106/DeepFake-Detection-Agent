@@ -1,40 +1,40 @@
 {
-  "generated_at_utc": "2026-11-27T10:24:47Z",
-  "offline_local_only": true,
+  "generated_at_utc": "2026-11-27T11:39:43Z",
+  "offline_local_only": false,
   "split_protocol": "ORIGIN_GROUPED_DISJOINT_70_15_15",
   "leakage_audit": {
-    "train_samples": 258,
-    "cal_val_samples": 50,
-    "test_locked_samples": 62,
-    "train_origins": 125,
-    "cal_val_origins": 25,
-    "test_locked_origins": 31,
+    "train_samples": 457,
+    "cal_val_samples": 85,
+    "test_locked_samples": 111,
+    "train_origins": 103,
+    "cal_val_origins": 20,
+    "test_locked_origins": 26,
     "train_cal_overlap": 0,
     "train_test_overlap": 0,
     "cal_test_overlap": 0,
     "status": "ZERO_LEAKAGE_VERIFIED"
   },
   "split_counts": {
-    "train": 258,
-    "cal_val": 50,
-    "test_locked": 62
+    "train": 457,
+    "cal_val": 85,
+    "test_locked": 111
   },
-  "total_images": 370,
-  "real_images": 185,
-  "fake_images": 185,
-  "sbi_counterfactuals": 185,
-  "total_audios": 52,
+  "total_images": 653,
+  "real_images": 153,
+  "fake_images": 500,
+  "sbi_counterfactuals": 500,
+  "total_audios": 0,
   "source_breakdown": {
-    "local_verified_vn_pool": 185,
-    "sbi_vietnamese_counterfactual": 185
+    "local_verified_vn_pool": 153,
+    "sbi_vietnamese_counterfactual": 500
   },
   "cohort_breakdown": {
-    "vn_id_official": 40,
-    "vn_mature_aging": 44,
-    "vn_occlusion_glasses_mask": 34,
-    "vn_selfie_lifestyle": 216,
-    "vn_street_outdoor": 36
+    "vn_id_official": 85,
+    "vn_mature_aging": 93,
+    "vn_occlusion_glasses_mask": 73,
+    "vn_selfie_lifestyle": 325,
+    "vn_street_outdoor": 77
   },
-  "image_manifest_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\corpus\\training_corpus_manifest.jsonl",
-  "audio_manifest_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\corpus\\audio_corpus_manifest.jsonl"
+  "image_manifest_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/corpus/training_corpus_manifest.jsonl",
+  "audio_manifest_path": "/home/runner/work/DeepFake-Detection-Agent/DeepFake-Detection-Agent/report_colab/corpus/audio_corpus_manifest.jsonl"
 }
