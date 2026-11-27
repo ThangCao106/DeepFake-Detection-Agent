@@ -1,6 +1,6 @@
 {
-  "job_run_id": "FRJ-20261127075233",
-  "timestamp_utc": "2026-11-27T07:52:33Z",
+  "job_run_id": "FRJ-20261127180041",
+  "timestamp_utc": "2026-11-27T18:00:41Z",
   "trigger_source": "github_actions_review_job",
   "approval_gate_enforced": true,
   "pending_audited": 0,
