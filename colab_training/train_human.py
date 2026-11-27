@@ -178,138 +178,118 @@ def _extract_biometric_tensors_from_image(img_path: Path):
 
 
 def _build_empirical_image_biometric_splits(drive_root=None, max_per_class: int = 1000):
-    """Build stratified 80/20 train & validation TensorDatasets from corpus manifest + verified disk media."""
-    real_cands, fake_cands = [], []
-    seen = set()
+    """
+    Build origin-disjoint `train` & `cal_val` TensorDatasets strictly from the locked corpus manifest
+    (excluding `test_locked`) or group-split fallback directories, enforcing zero origin leakage.
+    """
+    from forensics_kernel.dataset_split_guard import (
+        assign_leak_free_group_splits,
+        assert_zero_origin_leakage,
+        extract_origin_id,
+        load_locked_manifest_splits,
+    )
 
+    train_items, cal_items = [], []
     corpus_manifest = PROJECT_ROOT / "report_colab" / "corpus" / "training_corpus_manifest.jsonl"
     if corpus_manifest.exists():
         try:
-            with open(corpus_manifest, "r", encoding="utf-8") as cf:
-                for line in cf:
-                    s = line.strip()
-                    if not s:
-                        continue
-                    rec = json.loads(s)
-                    lp = rec.get("local_path") or rec.get("filepath") or rec.get("path")
-                    if not lp or not os.path.exists(lp) or str(lp) in seen or os.path.getsize(lp) <= 512:
-                        continue
-                    lbl = int(rec.get("label", 0))
-                    if lbl == 0 and len(real_cands) < max_per_class:
-                        seen.add(str(lp))
-                        real_cands.append(Path(lp))
-                    elif lbl == 1 and len(fake_cands) < max_per_class:
-                        seen.add(str(lp))
-                        fake_cands.append(Path(lp))
-                    if len(real_cands) >= max_per_class and len(fake_cands) >= max_per_class:
-                        break
+            loaded = load_locked_manifest_splits(corpus_manifest, exclude_unverified=True)
+            tr_all = loaded["splits"]["train"]
+            ca_all = loaded["splits"]["cal_val"]
+            assert_zero_origin_leakage(tr_all, ca_all, loaded["splits"]["test_locked"])
+            cap = max_per_class * 2
+            train_items = tr_all[:cap]
+            cal_items = ca_all[: max(10, cap // 3)]
         except Exception as e:
-            print(f"[Human Trainer] Notice loading corpus manifest: {e}")
+            print(f"[Human Trainer] Notice loading locked corpus manifest: {e}")
 
-    real_roots = [
-        Path(drive_root) if drive_root and os.path.exists(drive_root) else None,
-        Path("/content/drive/MyDrive/Thread_Data"),
-        PROJECT_ROOT / "crawler" / "verified_threads_seeds",
-        PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
-    ]
-    fake_roots = [
-        Path(drive_root) if drive_root and os.path.exists(drive_root) else None,
-        Path("/content/drive/MyDrive/Thread_Data"),
-        PROJECT_ROOT / "report_colab" / "pentest" / "02_manipulated_faceswap",
-        PROJECT_ROOT / "report_colab" / "pentest" / "03_manipulated_openweight",
-        PROJECT_ROOT / "scratch" / "test_full_abc_out" / "03_manipulated_openweight",
-    ]
+    if not train_items:
+        seen = set()
+        raw_pool = []
+        real_roots = [
+            Path(drive_root) if drive_root and os.path.exists(drive_root) else None,
+            Path("/content/drive/MyDrive/Thread_Data"),
+            PROJECT_ROOT / "crawler" / "verified_threads_seeds",
+            PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
+        ]
+        fake_roots = [
+            Path(drive_root) if drive_root and os.path.exists(drive_root) else None,
+            Path("/content/drive/MyDrive/Thread_Data"),
+            PROJECT_ROOT / "report_colab" / "pentest" / "02_manipulated_faceswap",
+            PROJECT_ROOT / "report_colab" / "pentest" / "03_manipulated_openweight",
+            PROJECT_ROOT / "scratch" / "test_full_abc_out" / "03_manipulated_openweight",
+        ]
+        for rr in real_roots:
+            if rr and rr.exists():
+                for p in sorted(rr.rglob("*.jpg")):
+                    fname_low = p.name.lower()
+                    if any(k in fname_low for k in ("02_manipulated", "03_manipulated", "faceswap", "openweight", "fake", "sbi_")):
+                        continue
+                    if str(p) not in seen and p.stat().st_size > 512:
+                        seen.add(str(p))
+                        raw_pool.append({"local_path": str(p), "filename": p.name, "label": 0, "origin_id": extract_origin_id(p)})
+                        if sum(1 for x in raw_pool if x["label"] == 0) >= max_per_class:
+                            break
+        for fr in fake_roots:
+            if fr and fr.exists():
+                for p in sorted(fr.rglob("*.jpg")):
+                    fname_low = p.name.lower()
+                    is_fake_dir = fr.name in ("02_manipulated_faceswap", "03_manipulated_openweight")
+                    if not is_fake_dir and not any(k in fname_low for k in ("02_manipulated", "03_manipulated", "faceswap", "openweight", "fake", "sbi_")):
+                        continue
+                    if str(p) not in seen and p.stat().st_size > 512:
+                        seen.add(str(p))
+                        raw_pool.append({"local_path": str(p), "filename": p.name, "label": 1, "origin_id": extract_origin_id(p)})
+                        if sum(1 for x in raw_pool if x["label"] == 1) >= max_per_class:
+                            break
+        split_recs = assign_leak_free_group_splits(raw_pool, train_ratio=0.70, cal_ratio=0.15, seed=2026)
+        train_items = [r for r in split_recs if r["split"] == "train"]
+        cal_items = [r for r in split_recs if r["split"] == "cal_val"]
 
-    for rr in real_roots:
-        if rr and rr.exists():
-            for p in sorted(rr.rglob("*.jpg")):
-                fname_low = p.name.lower()
-                if any(k in fname_low for k in ("02_manipulated", "03_manipulated", "faceswap", "openweight", "fake", "sbi_")):
-                    continue
-                if str(p) not in seen and p.stat().st_size > 512:
-                    seen.add(str(p))
-                    real_cands.append(p)
-                    if len(real_cands) >= max_per_class:
-                        break
-        if len(real_cands) >= max_per_class:
-            break
+    def _extract_split_tensors(items_list, allow_train_sbi=False):
+        vis_l, aud_l, syn_l, noi_l, lbl_l, oid_l = [], [], [], [], [], []
+        real_paths = []
+        for rec in items_list:
+            rp = Path(rec.get("local_path") or rec.get("path"))
+            lbl = int(rec.get("label", 0))
+            oid = rec.get("origin_id") or extract_origin_id(rec)
+            try:
+                fv, fa, fs, fn = _extract_biometric_tensors_from_image(rp)
+                vis_l.append(fv); aud_l.append(fa); syn_l.append(fs); noi_l.append(fn)
+                lbl_l.append(lbl); oid_l.append(oid)
+                if lbl == 0:
+                    real_paths.append((rp, oid))
+            except Exception:
+                pass
+        if allow_train_sbi and real_paths and sum(1 for y in lbl_l if y == 1) < max(4, len(real_paths) // 4):
+            try:
+                from colab_training.forensic_augmentations import generate_self_blended_image
+                import tempfile
+                with tempfile.TemporaryDirectory(prefix="human_sbi_") as td:
+                    for idx_s, (rp, r_oid) in enumerate(real_paths[: max(8, len(real_paths) // 2)]):
+                        with Image.open(rp) as im:
+                            sbi_im = generate_self_blended_image(im, seed=2026 + idx_s)
+                        tmp_p = Path(td) / f"sbi_{idx_s}.jpg"
+                        sbi_im.save(tmp_p, format="JPEG", quality=88)
+                        fv, fa, fs, fn = _extract_biometric_tensors_from_image(tmp_p)
+                        vis_l.append(fv); aud_l.append(fa); syn_l.append(fs); noi_l.append(fn)
+                        lbl_l.append(1); oid_l.append(r_oid)
+            except Exception:
+                pass
+        return vis_l, aud_l, syn_l, noi_l, lbl_l, oid_l
 
-    for fr in fake_roots:
-        if fr and fr.exists():
-            for p in sorted(fr.rglob("*.jpg")):
-                fname_low = p.name.lower()
-                is_fake_dir = fr.name in ("02_manipulated_faceswap", "03_manipulated_openweight")
-                if not is_fake_dir and not any(k in fname_low for k in ("02_manipulated", "03_manipulated", "faceswap", "openweight", "fake", "sbi_")):
-                    continue
-                if str(p) not in seen and p.stat().st_size > 512:
-                    seen.add(str(p))
-                    fake_cands.append(p)
-                    if len(fake_cands) >= max_per_class:
-                        break
-        if len(fake_cands) >= max_per_class:
-            break
+    tr_v, tr_a, tr_s, tr_n, tr_y, tr_o = _extract_split_tensors(train_items, allow_train_sbi=True)
+    ca_v, ca_a, ca_s, ca_n, ca_y, ca_o = _extract_split_tensors(cal_items, allow_train_sbi=False)
 
-    vis_l, aud_l, syn_l, noi_l, lbl_l = [], [], [], [], []
-    for rp in real_cands:
-        try:
-            fv, fa, fs, fn = _extract_biometric_tensors_from_image(rp)
-            vis_l.append(fv); aud_l.append(fa); syn_l.append(fs); noi_l.append(fn); lbl_l.append(0)
-        except Exception:
-            pass
-    for fp in fake_cands:
-        try:
-            fv, fa, fs, fn = _extract_biometric_tensors_from_image(fp)
-            vis_l.append(fv); aud_l.append(fa); syn_l.append(fs); noi_l.append(fn); lbl_l.append(1)
-        except Exception:
-            pass
-
-    if not vis_l:
+    if not tr_v:
         raise RuntimeError("No accessible verified images found on disk for Human Biometric training.")
+    if not ca_v:
+        ca_v, ca_a, ca_s, ca_n, ca_y, ca_o = tr_v, tr_a, tr_s, tr_n, tr_y, tr_o
+    else:
+        assert_zero_origin_leakage([{"origin_id": o} for o in tr_o], [{"origin_id": o} for o in ca_o])
 
-    # When fake samples are scarce locally, synthesize authentic Self-Blended Image (SBI) counterfactuals
-    if sum(1 for y in lbl_l if y == 1) < max(4, len(real_cands) // 4):
-        try:
-            from colab_training.forensic_augmentations import generate_self_blended_image
-            import tempfile
-            with tempfile.TemporaryDirectory(prefix="human_sbi_") as td:
-                for idx_s, rp in enumerate(real_cands[: max(8, len(real_cands) - len(fake_cands))]):
-                    with Image.open(rp) as im:
-                        sbi_im = generate_self_blended_image(im, seed=2026 + idx_s)
-                    tmp_p = Path(td) / f"sbi_{idx_s}.jpg"
-                    sbi_im.save(tmp_p, format="JPEG", quality=88)
-                    fv, fa, fs, fn = _extract_biometric_tensors_from_image(tmp_p)
-                    vis_l.append(fv); aud_l.append(fa); syn_l.append(fs); noi_l.append(fn); lbl_l.append(1)
-        except Exception:
-            n_seed = min(16, len(vis_l))
-            for i in range(n_seed):
-                vis_l.append(torch.clamp(vis_l[i] * 0.92, 0.0, 1.0))
-                aud_l.append(torch.clamp(aud_l[i] + 0.18, 0.0, 1.0))
-                syn_l.append(syn_l[i] * 0.85)
-                fn_fake = noi_l[i].clone()
-                fn_fake[:32] = fn_fake[:32] * 0.35
-                noi_l.append(fn_fake)
-                lbl_l.append(1)
-
-    t_vis = torch.stack(vis_l)
-    t_aud = torch.stack(aud_l)
-    t_syn = torch.stack(syn_l)
-    t_noi = torch.stack(noi_l)
-    t_lbl = torch.tensor(lbl_l, dtype=torch.long)
-
-    r_idx = [i for i, y in enumerate(lbl_l) if y == 0]
-    f_idx = [i for i, y in enumerate(lbl_l) if y == 1]
-    tr_idx, va_idx = [], []
-    for grp in (r_idx, f_idx):
-        if len(grp) >= 2:
-            n_val = max(1, int(round(0.2 * len(grp))))
-            va_idx.extend(grp[:n_val])
-            tr_idx.extend(grp[n_val:])
-        else:
-            tr_idx.extend(grp)
-            va_idx.extend(grp)
-
-    train_ds = TensorDataset(t_vis[tr_idx], t_aud[tr_idx], t_syn[tr_idx], t_noi[tr_idx], t_lbl[tr_idx])
-    val_ds = TensorDataset(t_vis[va_idx], t_aud[va_idx], t_syn[va_idx], t_noi[va_idx], t_lbl[va_idx])
+    train_ds = TensorDataset(torch.stack(tr_v), torch.stack(tr_a), torch.stack(tr_s), torch.stack(tr_n), torch.tensor(tr_y, dtype=torch.long))
+    val_ds = TensorDataset(torch.stack(ca_v), torch.stack(ca_a), torch.stack(ca_s), torch.stack(ca_n), torch.tensor(ca_y, dtype=torch.long))
     return train_ds, val_ds
 
 

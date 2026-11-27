@@ -1,0 +1,97 @@
+{
+  "locked_at_utc": "2026-11-27T10:29:02Z",
+  "calibration_split": "cal_val",
+  "calibration_samples": 50,
+  "fusion_weight_dual_stream": 0.2,
+  "fusion_weight_biometric": 0.8,
+  "checkpoints": {
+    "baseline_sbi_cvpr2022": {
+      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\baseline_sbi_cvpr2022.pt",
+      "sha256": "a09d09fadf8bcab0e92da18a4ff082e3d845fabffadc32e75f92fc2837ee1940"
+    },
+    "ablation_1_spatial_rgb_only": {
+      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_1_spatial_rgb_only.pt",
+      "sha256": "6c9d77d0121f404289109802f65c4cca24ce826facc4c83533d8eb16986e882b"
+    },
+    "ablation_2_spatial_plus_noise_fft_srm": {
+      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_2_spatial_plus_noise_fft_srm.pt",
+      "sha256": "a6cc6a591b4a565baf97eab069114c0bc72866bed535609300dbc1619a13500d"
+    },
+    "ablation_3_biometric_physiology": {
+      "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_3_biometric_physiology.pt",
+      "sha256": "8621731afdcc64f2af94d00adf31d6c07c62bd609ee089c8241adbe236d70bc1"
+    }
+  },
+  "models": {
+    "baseline_sbi_cvpr2022": {
+      "platt_a": 0.8098,
+      "platt_b": 0.1662,
+      "temperature_T": 1.2349,
+      "locked_tau": 0.42,
+      "cal_val_summary": {
+        "tpr": 0.92,
+        "fpr": 0.72,
+        "accuracy": 0.6,
+        "balanced_accuracy": 0.6,
+        "ece": 0.0217,
+        "roc_auc": 0.584
+      }
+    },
+    "ablation_1_spatial_rgb_only": {
+      "platt_a": 6.2375,
+      "platt_b": 0.3308,
+      "temperature_T": 0.25,
+      "locked_tau": 0.43,
+      "cal_val_summary": {
+        "tpr": 0.92,
+        "fpr": 0.64,
+        "accuracy": 0.64,
+        "balanced_accuracy": 0.64,
+        "ece": 0.0598,
+        "roc_auc": 0.6528
+      }
+    },
+    "ablation_2_spatial_plus_noise_fft_srm": {
+      "platt_a": 0.238,
+      "platt_b": 0.2661,
+      "temperature_T": 4.2017,
+      "locked_tau": 0.54,
+      "cal_val_summary": {
+        "tpr": 0.52,
+        "fpr": 0.24,
+        "accuracy": 0.64,
+        "balanced_accuracy": 0.64,
+        "ece": 0.0605,
+        "roc_auc": 0.6272
+      }
+    },
+    "ablation_3_biometric_physiology": {
+      "platt_a": 6.0878,
+      "platt_b": -0.5637,
+      "temperature_T": 0.25,
+      "locked_tau": 0.46,
+      "cal_val_summary": {
+        "tpr": 0.92,
+        "fpr": 0.76,
+        "accuracy": 0.58,
+        "balanced_accuracy": 0.58,
+        "ece": 0.0456,
+        "roc_auc": 0.5984
+      }
+    },
+    "full_proposed_fusion_calibrated": {
+      "platt_a": 1.0179,
+      "platt_b": 0.1492,
+      "temperature_T": 0.9824,
+      "locked_tau": 0.53,
+      "cal_val_summary": {
+        "tpr": 0.52,
+        "fpr": 0.24,
+        "accuracy": 0.64,
+        "balanced_accuracy": 0.64,
+        "ece": 0.0654,
+        "roc_auc": 0.632
+      }
+    }
+  }
+}

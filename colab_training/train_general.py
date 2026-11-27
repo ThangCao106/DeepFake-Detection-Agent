@@ -238,29 +238,42 @@ def _fit_2param_platt(y_true: list, logit_diffs: list) -> Tuple[float, float, fl
 
 
 def _collect_general_training_samples(max_samples: int = 1200):
-    """Ingest corpus manifest (if available) plus verified local seeds & pentest directories."""
-    labeled = []
-    seen = set()
+    """
+    Load origin-disjoint `train` & `cal_val` splits from locked corpus manifest
+    (strictly excluding `test_locked`), or run group-level split when falling back to local pools.
+    Returns list of dicts: {path, label, split, origin_id}.
+    """
+    from forensics_kernel.dataset_split_guard import (
+        assign_leak_free_group_splits,
+        assert_zero_origin_leakage,
+        extract_origin_id,
+        load_locked_manifest_splits,
+    )
 
     corpus_manifest = PROJECT_ROOT / "report_colab" / "corpus" / "training_corpus_manifest.jsonl"
     if corpus_manifest.exists():
         try:
-            with open(corpus_manifest, "r", encoding="utf-8") as f:
-                for line in f:
-                    s = line.strip()
-                    if not s:
-                        continue
-                    rec = json.loads(s)
-                    lp = rec.get("local_path") or rec.get("filepath") or rec.get("path")
-                    if lp and os.path.exists(lp) and lp not in seen and os.path.getsize(lp) > 256:
-                        seen.add(lp)
-                        lbl = int(rec.get("label", 0))
-                        labeled.append((Path(lp), lbl))
-                        if len(labeled) >= max_samples:
-                            return labeled
+            loaded = load_locked_manifest_splits(corpus_manifest, exclude_unverified=True)
+            tr_recs = loaded["splits"]["train"]
+            va_recs = loaded["splits"]["cal_val"]
+            assert_zero_origin_leakage(tr_recs, va_recs, loaded["splits"]["test_locked"])
+            out = []
+            for rec in (tr_recs + va_recs)[:max_samples]:
+                lp = rec.get("local_path") or rec.get("filepath") or rec.get("path")
+                if lp and os.path.exists(lp) and os.path.getsize(lp) > 256:
+                    out.append({
+                        "path": Path(lp),
+                        "label": int(rec.get("label", 0)),
+                        "split": rec.get("split", "train"),
+                        "origin_id": rec.get("origin_id") or extract_origin_id(rec),
+                    })
+            if out:
+                return out
         except Exception as e:
-            print(f"[Train General] Notice loading corpus manifest: {e}")
+            print(f"[Train General] Notice loading locked corpus manifest: {e}")
 
+    raw_recs = []
+    seen = set()
     for rd in (
         PROJECT_ROOT / "crawler" / "verified_threads_seeds",
         PROJECT_ROOT / "report_colab" / "pentest" / "01_raw_originals",
@@ -272,8 +285,8 @@ def _collect_general_training_samples(max_samples: int = 1200):
                     continue
                 if str(p) not in seen and p.stat().st_size > 256:
                     seen.add(str(p))
-                    labeled.append((p, 0))
-                    if len(labeled) >= max_samples // 2:
+                    raw_recs.append({"local_path": str(p), "filename": p.name, "label": 0, "origin_id": extract_origin_id(p)})
+                    if len(raw_recs) >= max_samples // 2:
                         break
 
     for fd in (
@@ -285,10 +298,16 @@ def _collect_general_training_samples(max_samples: int = 1200):
             for p in sorted(fd.rglob("*.jpg")):
                 if str(p) not in seen and p.stat().st_size > 256:
                     seen.add(str(p))
-                    labeled.append((p, 1))
-                    if len(labeled) >= max_samples:
+                    raw_recs.append({"local_path": str(p), "filename": p.name, "label": 1, "origin_id": extract_origin_id(p)})
+                    if len(raw_recs) >= max_samples:
                         break
-    return labeled
+
+    split_recs = assign_leak_free_group_splits(raw_recs, train_ratio=0.70, cal_ratio=0.15, seed=2026)
+    return [
+        {"path": Path(r["local_path"]), "label": int(r["label"]), "split": r["split"], "origin_id": r["origin_id"]}
+        for r in split_recs
+        if r["split"] in ("train", "cal_val")
+    ]
 
 
 def train_general_model(
@@ -324,26 +343,36 @@ def train_general_model(
         except Exception:
             augmentor = None
 
-    spatial_list, fft_list, label_list = [], [], []
+    from forensics_kernel.dataset_split_guard import assert_zero_origin_leakage
+
+    spatial_list, fft_list, label_list, split_list, origin_list = [], [], [], [], []
     real_imgs_for_sbi = []
-    for p, lbl in labeled_pairs:
+    for item in labeled_pairs:
+        p = item["path"] if isinstance(item, dict) else item[0]
+        lbl = int(item["label"] if isinstance(item, dict) else item[1])
+        sp = item.get("split", "train") if isinstance(item, dict) else "train"
+        oid = item.get("origin_id", p.stem) if isinstance(item, dict) else p.stem
+        if sp == "test_locked":
+            continue
         try:
-            fs, ff = _extract_image_tensors(p, augmentor=augmentor)
+            fs, ff = _extract_image_tensors(p, augmentor=(augmentor if sp == "train" else None))
             spatial_list.append(fs)
             fft_list.append(ff)
             label_list.append(lbl)
-            if lbl == 0 and len(real_imgs_for_sbi) < 64:
-                real_imgs_for_sbi.append(p)
+            split_list.append(sp)
+            origin_list.append(oid)
+            if lbl == 0 and sp == "train" and len(real_imgs_for_sbi) < 64:
+                real_imgs_for_sbi.append((p, oid))
         except Exception:
             pass
 
-    # If Fake samples are scarce (< 25% of Real samples), generate Self-Blended Image counterfactuals
-    n_fake = sum(1 for y in label_list if y == 1)
-    n_real = sum(1 for y in label_list if y == 0)
+    # If Fake samples in TRAIN are scarce (< 25% of Real), generate Self-Blended counterfactuals strictly inside TRAIN
+    n_fake = sum(1 for y, sp in zip(label_list, split_list) if y == 1 and sp == "train")
+    n_real = sum(1 for y, sp in zip(label_list, split_list) if y == 0 and sp == "train")
     if n_fake < max(4, n_real // 3) and real_imgs_for_sbi:
         try:
             from colab_training.forensic_augmentations import generate_self_blended_image
-            for idx_s, rp in enumerate(real_imgs_for_sbi[: max(8, n_real - n_fake)]):
+            for idx_s, (rp, r_oid) in enumerate(real_imgs_for_sbi[: max(8, n_real - n_fake)]):
                 with Image.open(rp) as im:
                     sbi_im = generate_self_blended_image(im, seed=2026 + idx_s)
                 arr = np.asarray(sbi_im.resize((64, 64)), dtype=np.float32) / 255.0
@@ -370,6 +399,8 @@ def train_general_model(
                 spatial_list.append(fs)
                 fft_list.append(torch.stack([torch.from_numpy(mag), sr], dim=0))
                 label_list.append(1)
+                split_list.append("train")
+                origin_list.append(r_oid)
         except Exception as e:
             print(f"[Train General] SBI counterfactual fallback note: {e}")
 
@@ -377,18 +408,15 @@ def train_general_model(
     ff_t = torch.stack(fft_list)
     lb_t = torch.tensor(label_list, dtype=torch.long)
 
-    real_idx = [i for i, y in enumerate(label_list) if y == 0]
-    fake_idx = [i for i, y in enumerate(label_list) if y == 1]
-    tr_idx, va_idx = [], []
-    for grp in (real_idx, fake_idx):
-        if len(grp) >= 2:
-            n_val = max(1, int(round(0.2 * len(grp))))
-            va_idx.extend(grp[:n_val])
-            tr_idx.extend(grp[n_val:])
-        else:
-            tr_idx.extend(grp)
+    tr_idx = [i for i, sp in enumerate(split_list) if sp == "train"]
+    va_idx = [i for i, sp in enumerate(split_list) if sp == "cal_val"]
     if not va_idx:
         va_idx = list(tr_idx)
+    else:
+        assert_zero_origin_leakage(
+            [{"origin_id": origin_list[i]} for i in tr_idx],
+            [{"origin_id": origin_list[i]} for i in va_idx],
+        )
 
     train_loader = DataLoader(TensorDataset(sp_t[tr_idx], ff_t[tr_idx], lb_t[tr_idx]), batch_size=min(batch_size, len(tr_idx)), shuffle=True)
     val_loader = DataLoader(TensorDataset(sp_t[va_idx], ff_t[va_idx], lb_t[va_idx]), batch_size=min(batch_size, len(va_idx)), shuffle=False)

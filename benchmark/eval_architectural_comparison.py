@@ -360,8 +360,10 @@ def run_architectural_benchmarks():
     raw_hash = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
 
     output_payload = {
-        "benchmark_title": "Direct Architectural Comparison on Deepfake Detection Benchmarks",
-        "evaluation_provenance": "SOTA_LITERATURE_PARAMETRIC_COMPARISON",
+        "benchmark_title": "[METHODOLOGY_SIMULATION_ONLY] Parametric Architectural Comparison Simulation",
+        "evaluation_provenance": "METHODOLOGY_SIMULATION_ONLY",
+        "cite_as_empirical_benchmark": False,
+        "empirical_replacement": "benchmark/eval_empirical_thesis_suite.py -> report_colab/empirical_thesis_eval/empirical_ablation_results.json",
         "evaluation_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
         "dataset_sample_count": total_samples,
         "dataset_manifest_path": str(MANIFEST_PATH),
@@ -384,8 +386,8 @@ def run_architectural_benchmarks():
 def generate_markdown_report(data: Dict):
     results = data["results"]
     lines = []
-    lines.append("# 📊 Báo Cáo Đo Đạc Định Lượng Đối Sánh Trực Tiếp Các Kiến Trúc Deepfake (Q1 Benchmark)")
-    lines.append("## Phân Tích Thực Nghiệm Đa Chiều Phục Vụ Bảo Vệ Luận Án Tiến Sĩ & Bài Báo Quốc Tế")
+    lines.append("# 📊 [MÔ PHỎNG PHƯƠNG PHÁP LUẬN — KHÔNG DÙNG LÀM BẢNG THỰC NGHIỆM CHÍNH] Đối Sánh Kiến Trúc Deepfake")
+    lines.append("> ⚠️ **METHODOLOGY_SIMULATION_ONLY:** Điểm của các baseline được tái tạo bằng công thức tham số và nhiễu mô phỏng. Bảng thực nghiệm suy luận thật phục vụ bảo vệ luận án nằm tại `report_colab/empirical_thesis_eval/empirical_ablation_report.md`.")
     lines.append("")
     lines.append(f"- **Thời gian thực hiện**: `{data['evaluation_timestamp']}`")
     lines.append(f"- **Tổng số mẫu kiểm chuẩn**: `{data['dataset_sample_count']}` mẫu phân tầng (14 tập dữ liệu quốc tế + 5 nhóm đặc thù Việt Nam)")

@@ -330,14 +330,16 @@ Trong đó $z_i$ là giá trị Logits đầu ra của mô hình ViT/EfficientNe
   4. `04_manipulated_commercial_frontier`: Biến thể sinh bởi mô hình thương mại Big Tech (Google Imagen 3, OpenAI DALL-E 3, Meta Imagine) áp dụng bộ lọc làm đẹp làm mờ lỗ chân lông và chứa dấu vết sóng mang watermark SynthID/C2PA.
   5. `05_manipulated_autoregressive`: Biến thể sinh bởi mô hình tự hồi quy thị giác (DeepSeek Janus-Pro 7B / 1.3B, Meta Chameleon) với các bước nhảy lượng tử hóa rời rạc token 16x16 thay vì nhiễu Gaussian liên tục.
 
-#### Bảng Phân loại 5 Nhóm Khuôn mặt Người Việt (Vietnamese Facial Taxonomy)
-| Mã Phân loại | Nhóm Khuôn mặt Người Việt | Tỷ lệ | Mục tiêu Kiểm thử Thực nghiệm |
-| :--- | :--- | :--- | :--- |
-| `vn_id_official` | Ảnh thẻ / CCCD / Hộ chiếu | 20% | Chụp chính diện $0^\circ$, ánh sáng studio; kiểm tra đường biên ghép mặt. |
-| `vn_selfie_lifestyle` | Selfie đời thường, quán cafe | 20% | Ánh sáng vàng/trong nhà, góc nghiêng tự nhiên; kiểm tra độ chịu nhiễu ánh sáng. |
-| `vn_street_outdoor` | Đường phố & dã ngoại | 20% | Ánh sáng ngoài trời, bối cảnh giao thông Việt Nam; kiểm tra độ dốc phổ quang học. |
-| `vn_occlusion_glasses_mask` | Vật cản (Kính cận, khẩu trang) | 20% | Kính cận phản quang, khẩu trang y tế/vải, mũ bảo hiểm; thách thức mốc tọa độ Landmark. |
-| `vn_mature_aging` | Trung niên & nếp nhăn lão hóa | 20% | Nếp nhăn khóe mắt, rãnh cười sinh học; tránh hiện tượng cảnh báo nhầm (False Alarm). |
+#### Bảng Phân loại 5 Nhóm Điều kiện chụp & Bối cảnh Ảnh Người Việt (Vietnamese Capture-Condition Taxonomy)
+> **Định vị học thuật chuẩn:** Bốn nhóm đầu (`vn_id_official`, `vn_selfie_lifestyle`, `vn_street_outdoor`, `vn_occlusion_glasses_mask`) đánh giá **độ bền theo điều kiện chụp thực tế (Capture-Condition Robustness)**; riêng nhóm `vn_mature_aging` liên quan tới yếu tố tuổi tác. Để khẳng định **công bằng nhân khẩu học (Demographic Fairness)** ngoài miền, các mẫu cần gắn thêm nhãn nhân khẩu học tường minh (nhóm tuổi, giới tính) theo giao thức ngoài miền của Lin et al. (CVPR 2024).
+
+| Mã Phân loại | Nhóm Điều kiện / Nhân khẩu học | Loại đánh giá | Tỷ lệ | Mục tiêu Kiểm thử Thực nghiệm |
+| :--- | :--- | :--- | :--- | :--- |
+| `vn_id_official` | Ảnh thẻ / CCCD / Hộ chiếu | Điều kiện chụp | 20% | Chụp chính diện $0^\circ$, ánh sáng studio; kiểm tra đường biên ghép mặt. |
+| `vn_selfie_lifestyle` | Selfie đời thường, quán cafe | Điều kiện chụp | 20% | Ánh sáng vàng/trong nhà, góc nghiêng tự nhiên; kiểm tra độ chịu nhiễu ánh sáng. |
+| `vn_street_outdoor` | Đường phố & dã ngoại | Điều kiện chụp | 20% | Ánh sáng ngoài trời, bối cảnh giao thông Việt Nam; kiểm tra độ dốc phổ quang học. |
+| `vn_occlusion_glasses_mask` | Vật cản (Kính cận, khẩu trang) | Điều kiện chụp | 20% | Kính cận phản quang, khẩu trang y tế/vải, mũ bảo hiểm; thách thức mốc tọa độ Landmark. |
+| `vn_mature_aging` | Trung niên & nếp nhăn lão hóa | Nhóm tuổi / Lão hóa | 20% | Nếp nhăn khóe mắt, rãnh cười sinh học; tránh hiện tượng cảnh báo nhầm (False Alarm). |
 
 ### 5.4. Học Chủ động & Huấn luyện Tăng cường Liên tục (Focal Loss Continual Fine-Tuning)
 Nhằm giải quyết triệt để các ca âm tính giả tinh vi (như mẫu sample 9 trong báo cáo benchmark OOD):

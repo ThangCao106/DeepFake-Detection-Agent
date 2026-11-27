@@ -309,8 +309,10 @@ def run_paper_demographic_benchmark():
     # Save Machine-readable JSON
     audit_data = {
         "timestamp_utc": time.strftime("%Y-%m-%d %H:%M:%SZ", time.gmtime()),
-        "evaluation_provenance": "STRATIFIED_COHORT_CALIBRATION_SIMULATION",
-        "dataset": "Threads-DFBench Vietnamese In-The-Wild Cohort",
+        "evaluation_provenance": "METHODOLOGY_SIMULATION_ONLY",
+        "cite_as_empirical_benchmark": False,
+        "empirical_replacement": "benchmark/eval_empirical_thesis_suite.py -> report_colab/empirical_thesis_eval/empirical_ablation_results.json",
+        "dataset": "Threads-DFBench Vietnamese Capture-Condition Simulation Cohort",
         "total_samples": len(samples),
         "optimal_hyperparameters": {
             "youden_optimal_threshold_tau": best_tau,
@@ -348,7 +350,7 @@ def run_paper_demographic_benchmark():
     # Generate LaTeX Table 1: Demographic Fairness Breakdown
     tex_cohort = r"""\begin{table*}[t]
 \centering
-\caption{Demographic ablation and parameter calibration across five Vietnamese In-The-Wild cohorts (Threads-DFBench-VN).}
+\caption{[Methodology Simulation Only] Simulated capture-condition breakdown across five Vietnamese portrait conditions; see empirical evaluation suite for locked-threshold real inference.}
 \label{tab:vietnamese_demographics_benchmark}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lccccccr}
@@ -372,7 +374,7 @@ def run_paper_demographic_benchmark():
     # Generate LaTeX Table 2: SOTA Cross-Dataset Comparison
     tex_sota = r"""\begin{table*}[t]
 \centering
-\caption{Cross-dataset generalization and demographic fairness comparison across competitive SOTA architectures.}
+\caption{[Methodology Simulation Only — Hardcoded Literature Baselines] Parametric cross-dataset reference table; not real inference on held-out split.}
 \label{tab:sota_cross_dataset_comparison}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lcccccccc}

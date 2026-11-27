@@ -1,0 +1,2290 @@
+{
+  "evaluation_provenance": "EMPIRICAL_LOCKED_SPLIT_INFERENCE",
+  "generated_at_utc": "2026-11-27T10:29:06Z",
+  "manifest_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\corpus\\training_corpus_manifest.jsonl",
+  "manifest_sha256": "340c977761f9e3af45f7415d3afa77ba55f86ce347ad69d82061bfc90c999945",
+  "leakage_audit": {
+    "train_samples": 258,
+    "cal_val_samples": 50,
+    "test_locked_samples": 62,
+    "train_origins": 125,
+    "cal_val_origins": 25,
+    "test_locked_origins": 31,
+    "train_cal_overlap": 0,
+    "train_test_overlap": 0,
+    "cal_test_overlap": 0,
+    "skipped_unverified": 0,
+    "skipped_missing": 0
+  },
+  "training_config": {
+    "epochs": 12,
+    "batch_size": 24,
+    "device": "cpu",
+    "n_bootstrap": 1000
+  },
+  "locked_calibration_protocol": {
+    "locked_at_utc": "2026-11-27T10:29:02Z",
+    "calibration_split": "cal_val",
+    "calibration_samples": 50,
+    "fusion_weight_dual_stream": 0.2,
+    "fusion_weight_biometric": 0.8,
+    "checkpoints": {
+      "baseline_sbi_cvpr2022": {
+        "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\baseline_sbi_cvpr2022.pt",
+        "sha256": "a09d09fadf8bcab0e92da18a4ff082e3d845fabffadc32e75f92fc2837ee1940"
+      },
+      "ablation_1_spatial_rgb_only": {
+        "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_1_spatial_rgb_only.pt",
+        "sha256": "6c9d77d0121f404289109802f65c4cca24ce826facc4c83533d8eb16986e882b"
+      },
+      "ablation_2_spatial_plus_noise_fft_srm": {
+        "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_2_spatial_plus_noise_fft_srm.pt",
+        "sha256": "a6cc6a591b4a565baf97eab069114c0bc72866bed535609300dbc1619a13500d"
+      },
+      "ablation_3_biometric_physiology": {
+        "path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\empirical_thesis_eval\\checkpoints\\ablation_3_biometric_physiology.pt",
+        "sha256": "8621731afdcc64f2af94d00adf31d6c07c62bd609ee089c8241adbe236d70bc1"
+      }
+    },
+    "models": {
+      "baseline_sbi_cvpr2022": {
+        "platt_a": 0.8098,
+        "platt_b": 0.1662,
+        "temperature_T": 1.2349,
+        "locked_tau": 0.42,
+        "cal_val_summary": {
+          "tpr": 0.92,
+          "fpr": 0.72,
+          "accuracy": 0.6,
+          "balanced_accuracy": 0.6,
+          "ece": 0.0217,
+          "roc_auc": 0.584
+        }
+      },
+      "ablation_1_spatial_rgb_only": {
+        "platt_a": 6.2375,
+        "platt_b": 0.3308,
+        "temperature_T": 0.25,
+        "locked_tau": 0.43,
+        "cal_val_summary": {
+          "tpr": 0.92,
+          "fpr": 0.64,
+          "accuracy": 0.64,
+          "balanced_accuracy": 0.64,
+          "ece": 0.0598,
+          "roc_auc": 0.6528
+        }
+      },
+      "ablation_2_spatial_plus_noise_fft_srm": {
+        "platt_a": 0.238,
+        "platt_b": 0.2661,
+        "temperature_T": 4.2017,
+        "locked_tau": 0.54,
+        "cal_val_summary": {
+          "tpr": 0.52,
+          "fpr": 0.24,
+          "accuracy": 0.64,
+          "balanced_accuracy": 0.64,
+          "ece": 0.0605,
+          "roc_auc": 0.6272
+        }
+      },
+      "ablation_3_biometric_physiology": {
+        "platt_a": 6.0878,
+        "platt_b": -0.5637,
+        "temperature_T": 0.25,
+        "locked_tau": 0.46,
+        "cal_val_summary": {
+          "tpr": 0.92,
+          "fpr": 0.76,
+          "accuracy": 0.58,
+          "balanced_accuracy": 0.58,
+          "ece": 0.0456,
+          "roc_auc": 0.5984
+        }
+      },
+      "full_proposed_fusion_calibrated": {
+        "platt_a": 1.0179,
+        "platt_b": 0.1492,
+        "temperature_T": 0.9824,
+        "locked_tau": 0.53,
+        "cal_val_summary": {
+          "tpr": 0.52,
+          "fpr": 0.24,
+          "accuracy": 0.64,
+          "balanced_accuracy": 0.64,
+          "ece": 0.0654,
+          "roc_auc": 0.632
+        }
+      }
+    }
+  },
+  "views": {
+    "clean": {
+      "baseline_sbi_cvpr2022": {
+        "display_name": "Baseline: SBI Spatial CNN (CVPR 2022 methodology)",
+        "locked_calibration": {
+          "platt_a": 0.8098,
+          "platt_b": 0.1662,
+          "temperature_T": 1.2349,
+          "locked_tau": 0.42
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.42,
+          "tp": 28,
+          "tn": 5,
+          "fp": 26,
+          "fn": 3,
+          "tpr": 0.9032,
+          "fpr": 0.8387,
+          "fnr": 0.0968,
+          "accuracy": 0.5323,
+          "balanced_accuracy": 0.5323,
+          "f1": 0.6588,
+          "ece": 0.0333,
+          "brier": 0.2459,
+          "roc_auc": 0.5869,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.7742,
+              1.0
+            ],
+            "fpr": [
+              0.7097,
+              0.9677
+            ],
+            "fnr": [
+              0.0,
+              0.2258
+            ],
+            "accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "balanced_accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "f1": [
+              0.5952,
+              0.716
+            ],
+            "ece": [
+              0.0321,
+              0.1664
+            ],
+            "brier": [
+              0.2287,
+              0.2641
+            ],
+            "roc_auc": [
+              0.4329,
+              0.7232
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.751,
+              0.9665
+            ],
+            "fpr": [
+              0.6737,
+              0.9291
+            ],
+            "fnr": [
+              0.0335,
+              0.249
+            ],
+            "accuracy": [
+              0.4098,
+              0.6509
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 15,
+            "fp": 14,
+            "fn": 1,
+            "error_rate": 0.4412,
+            "error_rate_wilson_ci95": [
+              0.2888,
+              0.6055
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          }
+        ]
+      },
+      "ablation_1_spatial_rgb_only": {
+        "display_name": "Ablation 1: Spatial RGB Only (FCB Zeroed)",
+        "locked_calibration": {
+          "platt_a": 6.2375,
+          "platt_b": 0.3308,
+          "temperature_T": 0.25,
+          "locked_tau": 0.43
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.43,
+          "tp": 28,
+          "tn": 11,
+          "fp": 20,
+          "fn": 3,
+          "tpr": 0.9032,
+          "fpr": 0.6452,
+          "fnr": 0.0968,
+          "accuracy": 0.629,
+          "balanced_accuracy": 0.629,
+          "f1": 0.7089,
+          "ece": 0.0959,
+          "brier": 0.2351,
+          "roc_auc": 0.6348,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.8065,
+              1.0
+            ],
+            "fpr": [
+              0.4839,
+              0.8065
+            ],
+            "fnr": [
+              0.0,
+              0.1935
+            ],
+            "accuracy": [
+              0.5323,
+              0.7258
+            ],
+            "balanced_accuracy": [
+              0.5323,
+              0.7258
+            ],
+            "f1": [
+              0.6329,
+              0.7792
+            ],
+            "ece": [
+              0.0479,
+              0.2214
+            ],
+            "brier": [
+              0.2104,
+              0.2613
+            ],
+            "roc_auc": [
+              0.4912,
+              0.7669
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.751,
+              0.9665
+            ],
+            "fpr": [
+              0.4695,
+              0.7888
+            ],
+            "fnr": [
+              0.0335,
+              0.249
+            ],
+            "accuracy": [
+              0.5046,
+              0.7384
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 3,
+            "fp": 2,
+            "fn": 1,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 2,
+            "fn": 1,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 13,
+            "fp": 12,
+            "fn": 1,
+            "error_rate": 0.3824,
+            "error_rate_wilson_ci95": [
+              0.239,
+              0.5496
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.25,
+            "error_rate_wilson_ci95": [
+              0.0715,
+              0.5907
+            ]
+          }
+        ]
+      },
+      "ablation_2_spatial_plus_noise_fft_srm": {
+        "display_name": "Ablation 2: Spatial + Noise/Spectral FCB (FFT+SRM)",
+        "locked_calibration": {
+          "platt_a": 0.238,
+          "platt_b": 0.2661,
+          "temperature_T": 4.2017,
+          "locked_tau": 0.54
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.54,
+          "tp": 17,
+          "tn": 22,
+          "fp": 9,
+          "fn": 14,
+          "tpr": 0.5484,
+          "fpr": 0.2903,
+          "fnr": 0.4516,
+          "accuracy": 0.629,
+          "balanced_accuracy": 0.629,
+          "f1": 0.5965,
+          "ece": 0.1391,
+          "brier": 0.2286,
+          "roc_auc": 0.6972,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.3871,
+              0.7097
+            ],
+            "fpr": [
+              0.1613,
+              0.4516
+            ],
+            "fnr": [
+              0.2903,
+              0.6129
+            ],
+            "accuracy": [
+              0.5161,
+              0.7419
+            ],
+            "balanced_accuracy": [
+              0.5161,
+              0.7419
+            ],
+            "f1": [
+              0.449,
+              0.7273
+            ],
+            "ece": [
+              0.0905,
+              0.243
+            ],
+            "brier": [
+              0.2096,
+              0.2481
+            ],
+            "roc_auc": [
+              0.564,
+              0.8169
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.3777,
+              0.7084
+            ],
+            "fpr": [
+              0.161,
+              0.4659
+            ],
+            "fnr": [
+              0.2916,
+              0.6223
+            ],
+            "accuracy": [
+              0.5046,
+              0.7384
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 1,
+            "fp": 0,
+            "fn": 1,
+            "error_rate": 0.1667,
+            "error_rate_wilson_ci95": [
+              0.0301,
+              0.5635
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 1,
+            "fn": 3,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 12,
+            "fp": 6,
+            "fn": 6,
+            "error_rate": 0.3529,
+            "error_rate_wilson_ci95": [
+              0.2149,
+              0.5209
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "ablation_3_biometric_physiology": {
+        "display_name": "Ablation 3: Biometric Physiology (DWT+rPPG+Attn)",
+        "locked_calibration": {
+          "platt_a": 6.0878,
+          "platt_b": -0.5637,
+          "temperature_T": 0.25,
+          "locked_tau": 0.46
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.46,
+          "tp": 30,
+          "tn": 3,
+          "fp": 28,
+          "fn": 1,
+          "tpr": 0.9677,
+          "fpr": 0.9032,
+          "fnr": 0.0323,
+          "accuracy": 0.5323,
+          "balanced_accuracy": 0.5323,
+          "f1": 0.6742,
+          "ece": 0.054,
+          "brier": 0.2455,
+          "roc_auc": 0.59,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.9032,
+              1.0
+            ],
+            "fpr": [
+              0.8065,
+              1.0
+            ],
+            "fnr": [
+              0.0,
+              0.0968
+            ],
+            "accuracy": [
+              0.4677,
+              0.5968
+            ],
+            "balanced_accuracy": [
+              0.4677,
+              0.5968
+            ],
+            "f1": [
+              0.6364,
+              0.7126
+            ],
+            "ece": [
+              0.0223,
+              0.1529
+            ],
+            "brier": [
+              0.2346,
+              0.2577
+            ],
+            "roc_auc": [
+              0.4339,
+              0.7263
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.8381,
+              0.9943
+            ],
+            "fpr": [
+              0.751,
+              0.9665
+            ],
+            "fnr": [
+              0.0057,
+              0.1619
+            ],
+            "accuracy": [
+              0.4098,
+              0.6509
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 16,
+            "fp": 15,
+            "fn": 1,
+            "error_rate": 0.4706,
+            "error_rate_wilson_ci95": [
+              0.3145,
+              0.6326
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "full_proposed_fusion_calibrated": {
+        "display_name": "Full Proposed: Multi-Stream Fusion (w=0.20) + Locked Platt",
+        "locked_calibration": {
+          "platt_a": 1.0179,
+          "platt_b": 0.1492,
+          "temperature_T": 0.9824,
+          "locked_tau": 0.53
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.53,
+          "tp": 18,
+          "tn": 20,
+          "fp": 11,
+          "fn": 13,
+          "tpr": 0.5806,
+          "fpr": 0.3548,
+          "fnr": 0.4194,
+          "accuracy": 0.6129,
+          "balanced_accuracy": 0.6129,
+          "f1": 0.6,
+          "ece": 0.0956,
+          "brier": 0.2299,
+          "roc_auc": 0.7034,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.4194,
+              0.7419
+            ],
+            "fpr": [
+              0.1935,
+              0.5161
+            ],
+            "fnr": [
+              0.2581,
+              0.5806
+            ],
+            "accuracy": [
+              0.5,
+              0.7258
+            ],
+            "balanced_accuracy": [
+              0.5,
+              0.7258
+            ],
+            "f1": [
+              0.4615,
+              0.7246
+            ],
+            "ece": [
+              0.0635,
+              0.215
+            ],
+            "brier": [
+              0.2128,
+              0.2472
+            ],
+            "roc_auc": [
+              0.5713,
+              0.8221
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.4077,
+              0.7358
+            ],
+            "fpr": [
+              0.2112,
+              0.5305
+            ],
+            "fnr": [
+              0.2642,
+              0.5923
+            ],
+            "accuracy": [
+              0.4885,
+              0.7242
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 13,
+            "fp": 7,
+            "fn": 6,
+            "error_rate": 0.3824,
+            "error_rate_wilson_ci95": [
+              0.239,
+              0.5496
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      }
+    },
+    "social_reupload": {
+      "baseline_sbi_cvpr2022": {
+        "display_name": "Baseline: SBI Spatial CNN (CVPR 2022 methodology)",
+        "locked_calibration": {
+          "platt_a": 0.8098,
+          "platt_b": 0.1662,
+          "temperature_T": 1.2349,
+          "locked_tau": 0.42
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.42,
+          "tp": 28,
+          "tn": 5,
+          "fp": 26,
+          "fn": 3,
+          "tpr": 0.9032,
+          "fpr": 0.8387,
+          "fnr": 0.0968,
+          "accuracy": 0.5323,
+          "balanced_accuracy": 0.5323,
+          "f1": 0.6588,
+          "ece": 0.0443,
+          "brier": 0.2462,
+          "roc_auc": 0.5838,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.7742,
+              1.0
+            ],
+            "fpr": [
+              0.7097,
+              0.9677
+            ],
+            "fnr": [
+              0.0,
+              0.2258
+            ],
+            "accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "balanced_accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "f1": [
+              0.5952,
+              0.716
+            ],
+            "ece": [
+              0.0298,
+              0.1691
+            ],
+            "brier": [
+              0.2288,
+              0.2637
+            ],
+            "roc_auc": [
+              0.435,
+              0.7232
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.751,
+              0.9665
+            ],
+            "fpr": [
+              0.6737,
+              0.9291
+            ],
+            "fnr": [
+              0.0335,
+              0.249
+            ],
+            "accuracy": [
+              0.4098,
+              0.6509
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 15,
+            "fp": 14,
+            "fn": 1,
+            "error_rate": 0.4412,
+            "error_rate_wilson_ci95": [
+              0.2888,
+              0.6055
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          }
+        ]
+      },
+      "ablation_1_spatial_rgb_only": {
+        "display_name": "Ablation 1: Spatial RGB Only (FCB Zeroed)",
+        "locked_calibration": {
+          "platt_a": 6.2375,
+          "platt_b": 0.3308,
+          "temperature_T": 0.25,
+          "locked_tau": 0.43
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.43,
+          "tp": 28,
+          "tn": 11,
+          "fp": 20,
+          "fn": 3,
+          "tpr": 0.9032,
+          "fpr": 0.6452,
+          "fnr": 0.0968,
+          "accuracy": 0.629,
+          "balanced_accuracy": 0.629,
+          "f1": 0.7089,
+          "ece": 0.0946,
+          "brier": 0.2358,
+          "roc_auc": 0.6337,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.8065,
+              1.0
+            ],
+            "fpr": [
+              0.4839,
+              0.8065
+            ],
+            "fnr": [
+              0.0,
+              0.1935
+            ],
+            "accuracy": [
+              0.5323,
+              0.7258
+            ],
+            "balanced_accuracy": [
+              0.5323,
+              0.7258
+            ],
+            "f1": [
+              0.6329,
+              0.7792
+            ],
+            "ece": [
+              0.0481,
+              0.2205
+            ],
+            "brier": [
+              0.2114,
+              0.2622
+            ],
+            "roc_auc": [
+              0.4922,
+              0.7648
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.751,
+              0.9665
+            ],
+            "fpr": [
+              0.4695,
+              0.7888
+            ],
+            "fnr": [
+              0.0335,
+              0.249
+            ],
+            "accuracy": [
+              0.5046,
+              0.7384
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 3,
+            "fp": 2,
+            "fn": 1,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 2,
+            "fn": 1,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 13,
+            "fp": 12,
+            "fn": 1,
+            "error_rate": 0.3824,
+            "error_rate_wilson_ci95": [
+              0.239,
+              0.5496
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.25,
+            "error_rate_wilson_ci95": [
+              0.0715,
+              0.5907
+            ]
+          }
+        ]
+      },
+      "ablation_2_spatial_plus_noise_fft_srm": {
+        "display_name": "Ablation 2: Spatial + Noise/Spectral FCB (FFT+SRM)",
+        "locked_calibration": {
+          "platt_a": 0.238,
+          "platt_b": 0.2661,
+          "temperature_T": 4.2017,
+          "locked_tau": 0.54
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.54,
+          "tp": 17,
+          "tn": 20,
+          "fp": 11,
+          "fn": 14,
+          "tpr": 0.5484,
+          "fpr": 0.3548,
+          "fnr": 0.4516,
+          "accuracy": 0.5968,
+          "balanced_accuracy": 0.5968,
+          "f1": 0.5763,
+          "ece": 0.1359,
+          "brier": 0.23,
+          "roc_auc": 0.6941,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.3871,
+              0.7097
+            ],
+            "fpr": [
+              0.1935,
+              0.5161
+            ],
+            "fnr": [
+              0.2903,
+              0.6129
+            ],
+            "accuracy": [
+              0.4839,
+              0.7097
+            ],
+            "balanced_accuracy": [
+              0.4839,
+              0.7097
+            ],
+            "f1": [
+              0.4333,
+              0.7018
+            ],
+            "ece": [
+              0.0865,
+              0.2413
+            ],
+            "brier": [
+              0.2108,
+              0.2491
+            ],
+            "roc_auc": [
+              0.5588,
+              0.8137
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.3777,
+              0.7084
+            ],
+            "fpr": [
+              0.2112,
+              0.5305
+            ],
+            "fnr": [
+              0.2916,
+              0.6223
+            ],
+            "accuracy": [
+              0.4725,
+              0.7098
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 1,
+            "fn": 3,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 13,
+            "fp": 7,
+            "fn": 6,
+            "error_rate": 0.3824,
+            "error_rate_wilson_ci95": [
+              0.239,
+              0.5496
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "ablation_3_biometric_physiology": {
+        "display_name": "Ablation 3: Biometric Physiology (DWT+rPPG+Attn)",
+        "locked_calibration": {
+          "platt_a": 6.0878,
+          "platt_b": -0.5637,
+          "temperature_T": 0.25,
+          "locked_tau": 0.46
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.46,
+          "tp": 30,
+          "tn": 2,
+          "fp": 29,
+          "fn": 1,
+          "tpr": 0.9677,
+          "fpr": 0.9355,
+          "fnr": 0.0323,
+          "accuracy": 0.5161,
+          "balanced_accuracy": 0.5161,
+          "f1": 0.6667,
+          "ece": 0.0395,
+          "brier": 0.2464,
+          "roc_auc": 0.589,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.9032,
+              1.0
+            ],
+            "fpr": [
+              0.8387,
+              1.0
+            ],
+            "fnr": [
+              0.0,
+              0.0968
+            ],
+            "accuracy": [
+              0.4677,
+              0.5645
+            ],
+            "balanced_accuracy": [
+              0.4677,
+              0.5645
+            ],
+            "f1": [
+              0.6292,
+              0.6966
+            ],
+            "ece": [
+              0.0291,
+              0.1528
+            ],
+            "brier": [
+              0.2353,
+              0.2584
+            ],
+            "roc_auc": [
+              0.436,
+              0.7232
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.8381,
+              0.9943
+            ],
+            "fpr": [
+              0.7928,
+              0.9821
+            ],
+            "fnr": [
+              0.0057,
+              0.1619
+            ],
+            "accuracy": [
+              0.3945,
+              0.6359
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 17,
+            "fp": 16,
+            "fn": 1,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.3407,
+              0.6593
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "full_proposed_fusion_calibrated": {
+        "display_name": "Full Proposed: Multi-Stream Fusion (w=0.20) + Locked Platt",
+        "locked_calibration": {
+          "platt_a": 1.0179,
+          "platt_b": 0.1492,
+          "temperature_T": 0.9824,
+          "locked_tau": 0.53
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.53,
+          "tp": 19,
+          "tn": 19,
+          "fp": 12,
+          "fn": 12,
+          "tpr": 0.6129,
+          "fpr": 0.3871,
+          "fnr": 0.3871,
+          "accuracy": 0.6129,
+          "balanced_accuracy": 0.6129,
+          "f1": 0.6129,
+          "ece": 0.0992,
+          "brier": 0.2312,
+          "roc_auc": 0.6982,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.4194,
+              0.7742
+            ],
+            "fpr": [
+              0.2258,
+              0.5484
+            ],
+            "fnr": [
+              0.2258,
+              0.5806
+            ],
+            "accuracy": [
+              0.5,
+              0.7258
+            ],
+            "balanced_accuracy": [
+              0.5,
+              0.7258
+            ],
+            "f1": [
+              0.4762,
+              0.7333
+            ],
+            "ece": [
+              0.0612,
+              0.2104
+            ],
+            "brier": [
+              0.2136,
+              0.2486
+            ],
+            "roc_auc": [
+              0.565,
+              0.8189
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.4382,
+              0.7627
+            ],
+            "fpr": [
+              0.2373,
+              0.5618
+            ],
+            "fnr": [
+              0.2373,
+              0.5618
+            ],
+            "accuracy": [
+              0.4885,
+              0.7242
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 13,
+            "fp": 7,
+            "fn": 6,
+            "error_rate": 0.3824,
+            "error_rate_wilson_ci95": [
+              0.239,
+              0.5496
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.25,
+            "error_rate_wilson_ci95": [
+              0.0715,
+              0.5907
+            ]
+          }
+        ]
+      }
+    },
+    "unseen_manipulation_ood": {
+      "baseline_sbi_cvpr2022": {
+        "display_name": "Baseline: SBI Spatial CNN (CVPR 2022 methodology)",
+        "locked_calibration": {
+          "platt_a": 0.8098,
+          "platt_b": 0.1662,
+          "temperature_T": 1.2349,
+          "locked_tau": 0.42
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.42,
+          "tp": 28,
+          "tn": 5,
+          "fp": 26,
+          "fn": 3,
+          "tpr": 0.9032,
+          "fpr": 0.8387,
+          "fnr": 0.0968,
+          "accuracy": 0.5323,
+          "balanced_accuracy": 0.5323,
+          "f1": 0.6588,
+          "ece": 0.0248,
+          "brier": 0.2478,
+          "roc_auc": 0.5744,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.7742,
+              1.0
+            ],
+            "fpr": [
+              0.7097,
+              0.9677
+            ],
+            "fnr": [
+              0.0,
+              0.2258
+            ],
+            "accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "balanced_accuracy": [
+              0.4516,
+              0.6129
+            ],
+            "f1": [
+              0.5952,
+              0.716
+            ],
+            "ece": [
+              0.0297,
+              0.1741
+            ],
+            "brier": [
+              0.2302,
+              0.2664
+            ],
+            "roc_auc": [
+              0.4173,
+              0.7086
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.751,
+              0.9665
+            ],
+            "fpr": [
+              0.6737,
+              0.9291
+            ],
+            "fnr": [
+              0.0335,
+              0.249
+            ],
+            "accuracy": [
+              0.4098,
+              0.6509
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 15,
+            "fp": 14,
+            "fn": 1,
+            "error_rate": 0.4412,
+            "error_rate_wilson_ci95": [
+              0.2888,
+              0.6055
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          }
+        ]
+      },
+      "ablation_1_spatial_rgb_only": {
+        "display_name": "Ablation 1: Spatial RGB Only (FCB Zeroed)",
+        "locked_calibration": {
+          "platt_a": 6.2375,
+          "platt_b": 0.3308,
+          "temperature_T": 0.25,
+          "locked_tau": 0.43
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.43,
+          "tp": 24,
+          "tn": 11,
+          "fp": 20,
+          "fn": 7,
+          "tpr": 0.7742,
+          "fpr": 0.6452,
+          "fnr": 0.2258,
+          "accuracy": 0.5645,
+          "balanced_accuracy": 0.5645,
+          "f1": 0.64,
+          "ece": 0.09,
+          "brier": 0.2473,
+          "roc_auc": 0.5848,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.6129,
+              0.9032
+            ],
+            "fpr": [
+              0.4839,
+              0.8065
+            ],
+            "fnr": [
+              0.0968,
+              0.3871
+            ],
+            "accuracy": [
+              0.4516,
+              0.6774
+            ],
+            "balanced_accuracy": [
+              0.4516,
+              0.6774
+            ],
+            "f1": [
+              0.5352,
+              0.7368
+            ],
+            "ece": [
+              0.044,
+              0.2224
+            ],
+            "brier": [
+              0.22,
+              0.2753
+            ],
+            "roc_auc": [
+              0.4443,
+              0.7211
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.6019,
+              0.886
+            ],
+            "fpr": [
+              0.4695,
+              0.7888
+            ],
+            "fnr": [
+              0.114,
+              0.3981
+            ],
+            "accuracy": [
+              0.4409,
+              0.6806
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 2,
+            "fn": 1,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 16,
+            "fp": 12,
+            "fn": 4,
+            "error_rate": 0.4706,
+            "error_rate_wilson_ci95": [
+              0.3145,
+              0.6326
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 2,
+            "fp": 2,
+            "fn": 0,
+            "error_rate": 0.25,
+            "error_rate_wilson_ci95": [
+              0.0715,
+              0.5907
+            ]
+          }
+        ]
+      },
+      "ablation_2_spatial_plus_noise_fft_srm": {
+        "display_name": "Ablation 2: Spatial + Noise/Spectral FCB (FFT+SRM)",
+        "locked_calibration": {
+          "platt_a": 0.238,
+          "platt_b": 0.2661,
+          "temperature_T": 4.2017,
+          "locked_tau": 0.54
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.54,
+          "tp": 16,
+          "tn": 21,
+          "fp": 10,
+          "fn": 15,
+          "tpr": 0.5161,
+          "fpr": 0.3226,
+          "fnr": 0.4839,
+          "accuracy": 0.5968,
+          "balanced_accuracy": 0.5968,
+          "f1": 0.5614,
+          "ece": 0.109,
+          "brier": 0.2305,
+          "roc_auc": 0.6847,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.3226,
+              0.6774
+            ],
+            "fpr": [
+              0.1613,
+              0.4839
+            ],
+            "fnr": [
+              0.3226,
+              0.6774
+            ],
+            "accuracy": [
+              0.4839,
+              0.7097
+            ],
+            "balanced_accuracy": [
+              0.4839,
+              0.7097
+            ],
+            "f1": [
+              0.4082,
+              0.6897
+            ],
+            "ece": [
+              0.0713,
+              0.2159
+            ],
+            "brier": [
+              0.2115,
+              0.2498
+            ],
+            "roc_auc": [
+              0.5505,
+              0.8137
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.3484,
+              0.6803
+            ],
+            "fpr": [
+              0.1857,
+              0.4986
+            ],
+            "fnr": [
+              0.3197,
+              0.6516
+            ],
+            "accuracy": [
+              0.4725,
+              0.7098
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 14,
+            "fp": 6,
+            "fn": 8,
+            "error_rate": 0.4118,
+            "error_rate_wilson_ci95": [
+              0.2637,
+              0.5778
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "ablation_3_biometric_physiology": {
+        "display_name": "Ablation 3: Biometric Physiology (DWT+rPPG+Attn)",
+        "locked_calibration": {
+          "platt_a": 6.0878,
+          "platt_b": -0.5637,
+          "temperature_T": 0.25,
+          "locked_tau": 0.46
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.46,
+          "tp": 30,
+          "tn": 3,
+          "fp": 28,
+          "fn": 1,
+          "tpr": 0.9677,
+          "fpr": 0.9032,
+          "fnr": 0.0323,
+          "accuracy": 0.5323,
+          "balanced_accuracy": 0.5323,
+          "f1": 0.6742,
+          "ece": 0.0417,
+          "brier": 0.2445,
+          "roc_auc": 0.6015,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.9032,
+              1.0
+            ],
+            "fpr": [
+              0.8065,
+              1.0
+            ],
+            "fnr": [
+              0.0,
+              0.0968
+            ],
+            "accuracy": [
+              0.4677,
+              0.5968
+            ],
+            "balanced_accuracy": [
+              0.4677,
+              0.5968
+            ],
+            "f1": [
+              0.6364,
+              0.7126
+            ],
+            "ece": [
+              0.0222,
+              0.1587
+            ],
+            "brier": [
+              0.2334,
+              0.2567
+            ],
+            "roc_auc": [
+              0.4422,
+              0.744
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.8381,
+              0.9943
+            ],
+            "fpr": [
+              0.751,
+              0.9665
+            ],
+            "fnr": [
+              0.0057,
+              0.1619
+            ],
+            "accuracy": [
+              0.4098,
+              0.6509
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 4,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 16,
+            "fp": 15,
+            "fn": 1,
+            "error_rate": 0.4706,
+            "error_rate_wilson_ci95": [
+              0.3145,
+              0.6326
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 3,
+            "fn": 0,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      },
+      "full_proposed_fusion_calibrated": {
+        "display_name": "Full Proposed: Multi-Stream Fusion (w=0.20) + Locked Platt",
+        "locked_calibration": {
+          "platt_a": 1.0179,
+          "platt_b": 0.1492,
+          "temperature_T": 0.9824,
+          "locked_tau": 0.53
+        },
+        "metrics": {
+          "sample_count": 62,
+          "locked_tau": 0.53,
+          "tp": 17,
+          "tn": 19,
+          "fp": 12,
+          "fn": 14,
+          "tpr": 0.5484,
+          "fpr": 0.3871,
+          "fnr": 0.4516,
+          "accuracy": 0.5806,
+          "balanced_accuracy": 0.5806,
+          "f1": 0.5667,
+          "ece": 0.0841,
+          "brier": 0.2316,
+          "roc_auc": 0.6868,
+          "bootstrap_ci95": {
+            "tpr": [
+              0.3871,
+              0.7097
+            ],
+            "fpr": [
+              0.2258,
+              0.5484
+            ],
+            "fnr": [
+              0.2903,
+              0.6129
+            ],
+            "accuracy": [
+              0.4677,
+              0.6935
+            ],
+            "balanced_accuracy": [
+              0.4677,
+              0.6935
+            ],
+            "f1": [
+              0.4211,
+              0.6897
+            ],
+            "ece": [
+              0.0599,
+              0.2062
+            ],
+            "brier": [
+              0.2144,
+              0.2488
+            ],
+            "roc_auc": [
+              0.5484,
+              0.8179
+            ]
+          },
+          "wilson_ci95": {
+            "tpr": [
+              0.3777,
+              0.7084
+            ],
+            "fpr": [
+              0.2373,
+              0.5618
+            ],
+            "fnr": [
+              0.2916,
+              0.6223
+            ],
+            "accuracy": [
+              0.4567,
+              0.6952
+            ]
+          }
+        },
+        "per_capture_condition": [
+          {
+            "capture_condition": "vn_id_official",
+            "n": 6,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.1876,
+              0.8124
+            ]
+          },
+          {
+            "capture_condition": "vn_mature_aging",
+            "n": 8,
+            "errors": 4,
+            "fp": 2,
+            "fn": 2,
+            "error_rate": 0.5,
+            "error_rate_wilson_ci95": [
+              0.2152,
+              0.7848
+            ]
+          },
+          {
+            "capture_condition": "vn_occlusion_glasses_mask",
+            "n": 6,
+            "errors": 2,
+            "fp": 1,
+            "fn": 1,
+            "error_rate": 0.3333,
+            "error_rate_wilson_ci95": [
+              0.0968,
+              0.7
+            ]
+          },
+          {
+            "capture_condition": "vn_selfie_lifestyle",
+            "n": 34,
+            "errors": 14,
+            "fp": 7,
+            "fn": 7,
+            "error_rate": 0.4118,
+            "error_rate_wilson_ci95": [
+              0.2637,
+              0.5778
+            ]
+          },
+          {
+            "capture_condition": "vn_street_outdoor",
+            "n": 8,
+            "errors": 3,
+            "fp": 1,
+            "fn": 2,
+            "error_rate": 0.375,
+            "error_rate_wilson_ci95": [
+              0.1368,
+              0.6943
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

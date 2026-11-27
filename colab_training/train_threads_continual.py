@@ -815,21 +815,39 @@ def run_threads_continual_training(
         raise RuntimeError("No verified image files found on disk for Continual ViT Training.")
     records = existing_records
 
-    reals = [r for r in records if int(r.get("label", 0)) == 0]
-    fakes = [r for r in records if int(r.get("label", 0)) == 1]
-    base_train, test_records = [], []
-    for grp in (reals, fakes):
-        if len(grp) >= 2:
-            k_split = max(1, int(len(grp) * 0.8))
-            base_train.extend(grp[:k_split])
-            test_records.extend(grp[k_split:])
-        else:
-            base_train.extend(grp)
-            test_records.extend(grp)
+    from forensics_kernel.dataset_split_guard import (
+        assign_leak_free_group_splits,
+        assert_zero_origin_leakage,
+        extract_origin_id,
+        normalize_split_name,
+    )
 
-    total_count = len(records)
-    hard_count = sum(1 for r in records if r.get("is_hard_sample"))
-    print(f"\n[Dataset Summary] Verified Samples: {total_count} (Real={len(reals)}, Fake={len(fakes)}) | Hard Negatives: {hard_count}")
+    for rec in records:
+        rec["origin_id"] = rec.get("origin_id") or extract_origin_id(rec)
+
+    has_locked = any(normalize_split_name(r.get("split"), default="") in ("cal_val", "test_locked") for r in records)
+    if has_locked:
+        base_train = [r for r in records if normalize_split_name(r.get("split")) == "train"]
+        test_records = [r for r in records if normalize_split_name(r.get("split")) == "cal_val"]
+        # Strictly isolate `test_locked` from continual training & calibration!
+        locked_held_out = [r for r in records if normalize_split_name(r.get("split")) == "test_locked"]
+        if not base_train or not test_records:
+            grouped = assign_leak_free_group_splits([r for r in records if normalize_split_name(r.get("split")) != "test_locked"], train_ratio=0.80, cal_ratio=0.20, seed=2026)
+            base_train = [r for r in grouped if r["split"] == "train"]
+            test_records = [r for r in grouped if r["split"] == "cal_val"]
+    else:
+        grouped = assign_leak_free_group_splits(records, train_ratio=0.70, cal_ratio=0.15, seed=2026)
+        base_train = [r for r in grouped if r["split"] == "train"]
+        test_records = [r for r in grouped if r["split"] == "cal_val"]
+        locked_held_out = [r for r in grouped if r["split"] == "test_locked"]
+
+    assert_zero_origin_leakage(base_train, test_records, locked_held_out)
+
+    reals = [r for r in base_train + test_records if int(r.get("label", 0)) == 0]
+    fakes = [r for r in base_train + test_records if int(r.get("label", 0)) == 1]
+    total_count = len(base_train) + len(test_records)
+    hard_count = sum(1 for r in base_train + test_records if r.get("is_hard_sample"))
+    print(f"\n[Dataset Summary] Leak-Free Samples (test_locked excluded={len(locked_held_out)}): Train={len(base_train)}, Cal/Val={len(test_records)} (Real={len(reals)}, Fake={len(fakes)}) | Hard Negatives: {hard_count}")
 
     train_records = []
     for r in base_train:

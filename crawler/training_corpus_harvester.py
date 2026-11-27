@@ -29,6 +29,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from forensics_kernel.dataset_split_guard import (
+    assign_leak_free_group_splits,
+    assert_zero_origin_leakage,
+    extract_origin_id,
+)
+
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -95,11 +101,15 @@ def _collect_local_image_pools(max_images: int) -> List[Dict[str, Any]]:
                 continue
             records.append({
                 "sample_id": f"LOCAL_REAL_{p.stem}",
+                "origin_id": extract_origin_id(p),
+                "origin_filename": p.name,
                 "filename": p.name,
                 "local_path": str(p),
                 "label": 0,
                 "label_name": "REAL",
                 "source": "local_verified_vn_pool",
+                "label_verification_basis": "VERIFIED_LOCAL_SEED",
+                "usage_rights": "RESEARCH_INTERNAL_VERIFIED",
                 "vietnamese_category": _infer_cohort(p.name),
                 "is_hard_sample": False,
             })
@@ -253,7 +263,10 @@ def _stream_hf_images(media_dir: Path, target_count: int) -> List[Dict[str, Any]
 
 
 def _generate_sbi_counterfactuals(real_records: List[Dict[str, Any]], media_dir: Path, target_pairs: int) -> List[Dict[str, Any]]:
-    """Build Self-Blended Image (SBI) counterfactuals from verified real portraits."""
+    """
+    Build Self-Blended Image (SBI) counterfactuals strictly INSIDE the same locked `origin_id`
+    and `split` as each verified source real portrait (zero cross-split leakage!).
+    """
     if target_pairs <= 0 or not real_records:
         return []
     try:
@@ -270,20 +283,27 @@ def _generate_sbi_counterfactuals(real_records: List[Dict[str, Any]], media_dir:
         src_path = Path(src_rec["local_path"])
         if not src_path.exists():
             continue
-        dst = sbi_dir / f"sbi_{idx:05d}_{src_path.stem}.jpg"
+        src_split = src_rec.get("split", "train")
+        src_origin = src_rec.get("origin_id") or extract_origin_id(src_rec)
+        dst = sbi_dir / f"sbi_{src_split}_{idx:05d}_{src_path.stem}.jpg"
         try:
             if not dst.exists():
                 with Image.open(src_path) as im:
                     sbi_im = generate_self_blended_image(im, seed=4200 + idx)
                     sbi_im.save(dst, format="JPEG", quality=88)
             out.append({
-                "sample_id": f"SBI_CF_{idx:05d}",
+                "sample_id": f"SBI_CF_{src_split.upper()}_{idx:05d}",
+                "origin_id": src_origin,
+                "origin_filename": src_rec.get("origin_filename") or src_path.name,
                 "filename": dst.name,
                 "local_path": str(dst),
                 "label": 1,
                 "label_name": "FAKE",
                 "source": "sbi_vietnamese_counterfactual",
+                "label_verification_basis": "SYNTHETIC_SBI_COUNTERFACTUAL",
+                "usage_rights": src_rec.get("usage_rights", "RESEARCH_INTERNAL_VERIFIED"),
                 "vietnamese_category": src_rec.get("vietnamese_category", "vn_selfie_lifestyle"),
+                "split": src_split,
                 "is_hard_sample": True,
             })
         except Exception:
@@ -383,13 +403,8 @@ def harvest_training_corpus(
             except Exception as exc:
                 print(f"[Corpus Harvester] Open Harvester notice: {exc}")
 
-    # Generate paired SBI counterfactuals on authentic real portraits
-    real_only = [r for r in all_images if int(r.get("label", 0)) == 0]
-    sbi_records = _generate_sbi_counterfactuals(real_only, media_dir, target_pairs=target_sbi_pairs)
-    all_images.extend(sbi_records)
-
-    # Deduplicate by file SHA-256 + local_path
-    deduped_images: List[Dict[str, Any]] = []
+    # Step 1: Assign provenance fields & deduplicate base images BEFORE generating counterfactuals
+    base_deduped: List[Dict[str, Any]] = []
     seen_hashes: Set[str] = set()
     seen_paths: Set[str] = set()
     for rec in all_images:
@@ -406,15 +421,70 @@ def harvest_training_corpus(
         seen_paths.add(lp)
         rec_copy = dict(rec)
         rec_copy["sha256_prefix"] = fhash
+        rec_copy["origin_id"] = rec_copy.get("origin_id") or extract_origin_id(rec_copy)
+        rec_copy.setdefault("label_verification_basis", "PUBLIC_HF_DATASET" if str(rec_copy.get("source", "")).startswith("hf:") else "VERIFIED_LOCAL_SEED")
+        rec_copy.setdefault("usage_rights", "RESEARCH_PUBLIC_OR_INTERNAL")
+        base_deduped.append(rec_copy)
+
+    # Step 2: Group-level 70 / 15 / 15 split by origin_id BEFORE any SBI generation
+    base_split = assign_leak_free_group_splits(base_deduped, train_ratio=0.70, cal_ratio=0.15, seed=2026)
+
+    # Step 3: Generate SBI counterfactuals strictly INSIDE each split from that split's own reals
+    sbi_records: List[Dict[str, Any]] = []
+    reals_by_split = {
+        sp: [r for r in base_split if int(r.get("label", 0)) == 0 and r.get("split") == sp]
+        for sp in ("train", "cal_val", "test_locked")
+    }
+    total_base_reals = max(1, sum(len(v) for v in reals_by_split.values()))
+    if target_sbi_pairs > 0:
+        allocated = 0
+        for sp_idx, sp in enumerate(("train", "cal_val", "test_locked")):
+            sp_reals = reals_by_split[sp]
+            if not sp_reals:
+                continue
+            if sp_idx == 2:
+                sp_target = max(1, target_sbi_pairs - allocated)
+            else:
+                sp_target = max(1, int(round(target_sbi_pairs * (len(sp_reals) / total_base_reals))))
+                allocated += sp_target
+            sbi_records.extend(_generate_sbi_counterfactuals(sp_reals, media_dir, target_pairs=sp_target))
+
+    # Clean stale legacy sbi files whose filename lacks split prefix to keep media_shards clean
+    sbi_dir_clean = media_dir / "sbi_counterfactuals"
+    if sbi_dir_clean.exists():
+        valid_sbi_paths = {str(r["local_path"]) for r in sbi_records}
+        for stale in sbi_dir_clean.glob("*.jpg"):
+            if str(stale) not in valid_sbi_paths:
+                try:
+                    stale.unlink()
+                except Exception:
+                    pass
+
+    # Step 4: Final dedup + hard zero-leakage assertion
+    deduped_images: List[Dict[str, Any]] = list(base_split)
+    for rec in sbi_records:
+        lp = rec.get("local_path")
+        if not lp or not os.path.exists(lp) or lp in seen_paths:
+            continue
+        try:
+            fhash = _sha256_file(Path(lp))[:20]
+        except Exception:
+            continue
+        if fhash in seen_hashes:
+            continue
+        seen_hashes.add(fhash)
+        seen_paths.add(lp)
+        rec_copy = dict(rec)
+        rec_copy["sha256_prefix"] = fhash
         deduped_images.append(rec_copy)
 
-    # Stratified 80/20 train/val split tagging
     reals = [r for r in deduped_images if int(r.get("label", 0)) == 0]
     fakes = [r for r in deduped_images if int(r.get("label", 0)) == 1]
-    for grp in (reals, fakes):
-        cut = max(1, int(round(0.8 * len(grp)))) if len(grp) >= 2 else len(grp)
-        for i, item in enumerate(grp):
-            item["split"] = "train" if i < cut else "val_ood"
+    train_rows = [r for r in deduped_images if r.get("split") == "train"]
+    cal_rows = [r for r in deduped_images if r.get("split") == "cal_val"]
+    test_rows = [r for r in deduped_images if r.get("split") == "test_locked"]
+    leakage_audit = assert_zero_origin_leakage(train_rows, cal_rows, test_rows)
+    leakage_audit["status"] = "ZERO_LEAKAGE_VERIFIED"
 
     img_manifest_path = out_dir / "training_corpus_manifest.jsonl"
     with open(img_manifest_path, "w", encoding="utf-8") as mf:
@@ -429,6 +499,7 @@ def harvest_training_corpus(
 
     source_counts: Dict[str, int] = {}
     cohort_counts: Dict[str, int] = {}
+    split_counts: Dict[str, int] = {"train": len(train_rows), "cal_val": len(cal_rows), "test_locked": len(test_rows)}
     for rec in deduped_images:
         s = rec.get("source", "unknown")
         source_counts[s] = source_counts.get(s, 0) + 1
@@ -438,10 +509,13 @@ def harvest_training_corpus(
     summary = {
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "offline_local_only": bool(offline_local_only),
+        "split_protocol": "ORIGIN_GROUPED_DISJOINT_70_15_15",
+        "leakage_audit": leakage_audit,
+        "split_counts": split_counts,
         "total_images": len(deduped_images),
         "real_images": len(reals),
         "fake_images": len(fakes),
-        "sbi_counterfactuals": len(sbi_records),
+        "sbi_counterfactuals": len([r for r in deduped_images if r.get("source") == "sbi_vietnamese_counterfactual"]),
         "total_audios": len(audio_records),
         "source_breakdown": source_counts,
         "cohort_breakdown": cohort_counts,

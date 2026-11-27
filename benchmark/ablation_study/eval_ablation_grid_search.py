@@ -334,8 +334,10 @@ def save_outputs(samples: List[Dict], results: List[Dict], optimum: Dict):
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     
     raw_payload = {
-        "title": "Empirical Ablation Grid Search for Multimodal Deepfake Composite Risk Ratio",
-        "evaluation_provenance": "STRATIFIED_MONTE_CARLO_MODEL_SIMULATION",
+        "title": "[METHODOLOGY_SIMULATION_ONLY] Ablation Grid Search for Multimodal Deepfake Composite Risk Ratio",
+        "evaluation_provenance": "METHODOLOGY_SIMULATION_ONLY",
+        "cite_as_empirical_benchmark": False,
+        "empirical_replacement": "benchmark/eval_empirical_thesis_suite.py -> report_colab/empirical_thesis_eval/empirical_ablation_results.json",
         "timestamp_utc": "2026-10-12T10:30:00Z",
         "manifest_path": str(MANIFEST_PATH.resolve()),
         "manifest_sha256": manifest_sha256,
@@ -372,8 +374,8 @@ def save_outputs(samples: List[Dict], results: List[Dict], optimum: Dict):
         print(f"⚠️ CSV write notice: {e}")
     
     # Save Markdown Summary
-    md_content = f"""# 📊 Báo Cáo Thực Nghiệm Ablation Grid Search Xác Định Tỷ Trọng Tối Ưu
-## Dẫn Chứng Khoa Học Kiểm Toán Cho Đề Cương & Bài Báo Tiến Sĩ
+    md_content = f"""# 📊 [MÔ PHỎNG PHƯƠNG PHÁP LUẬN — KHÔNG DÙNG LÀM BẢNG THỰC NGHIỆM CHÍNH] Ablation Grid Search
+> ⚠️ **METHODOLOGY_SIMULATION_ONLY:** Các điểm số dưới đây được sinh mô phỏng theo mô hình lỗi giả định để minh họa tìm tỷ trọng tối ưu. Cho bảng thực nghiệm chạy suy luận thật trên luận án, xem `report_colab/empirical_thesis_eval/empirical_ablation_report.md`.
 
 - **Ngày thực hiện**: `2026-10-12`
 - **Tập mẫu kiểm chuẩn**: `1,000` mẫu phân tầng (500 Real / 500 Fake)

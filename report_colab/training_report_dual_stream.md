@@ -77,13 +77,13 @@
 
 ---
 
-## 4. Thẩm Định Trọng Số Bởi Hội Đồng LLM (3-Pillar Deliberation Council)
+## 4. Rà Soát Tham Số Bởi Hội Đồng LLM & Niêm Phong Toàn Vẹn Báo Cáo
 
-Trước khi áp dụng cấu hình hiệu chuẩn vào vòng lặp huấn luyện liên tục (Continuous Training Loop), toàn bộ telemetry thực nghiệm đã trải qua phiên phản biện độc lập:
+Trước khi đề xuất áp dụng cấu hình hiệu chuẩn vào vòng lặp hậu kiểm định, toàn bộ telemetry được đối soát qua 3 tác thể phân tích nội bộ (lưu ý: đây là bước phản biện kỹ thuật nội bộ, **không phải chứng nhận pháp lý hay đánh giá tuân thủ chính thức**):
 
-1. **Google Gemini 3.8 Flash (Lead ML Optimizer)**: Đề xuất điều chỉnh $\alpha_{\text{human}} = 0.62$ kết hợp tăng Focal Loss $\gamma = 2.25$ nhằm tập trung tối đa gradient vào 15% mẫu biên khó (CCCD, khẩu trang).
-2. **Meta Muse Agent (Robustness & Adversarial Critic)**: Phản biện nguy cơ suy thoái miền ngoài phân phối (OOD), thiết lập rào chắn $\Delta\alpha \le 0.10$ và siết chặt sai số hiệu chuẩn $ECE \le 0.020$ bằng nhiệt độ Platt $T^* = 1.6178$.
-3. **Claude 3.7 Sonnet (Chief Arbiter & Legal Auditor)**: Tuyên bố **APPROVED**, niêm phong chứng thư mật mã Ed25519-SHA256, chứng nhận tuân thủ toàn diện **EU AI Act Điều 50** và tiêu chuẩn **ISO/IEC 42001**.
+1. **Google Gemini 3.8 Flash (Lead ML Optimizer)**: Đề xuất điều chỉnh $\alpha_{\text{human}} = 0.62$ kết hợp tăng Focal Loss $\gamma = 2.25$ nhằm tập trung gradient vào các mẫu biên khó (CCCD, khẩu trang).
+2. **Meta Muse Agent (Robustness & Adversarial Critic)**: Phản biện nguy cơ suy thoái miền ngoài phân phối (OOD), thiết lập rào chắn $\Delta\alpha \le 0.10$ và kiểm tra sai số hiệu chuẩn $ECE$ bằng nhiệt độ Platt $T^* = 1.6178$.
+3. **Claude 3.7 Sonnet (Audit Summarizer)**: Ghi nhận `APPROVED` cho hồ sơ kỹ thuật nội bộ và đính kèm chữ ký **Ed25519 / SHA-256** nhằm **xác minh tính toàn vẹn chống sửa đổi (tamper-evident report integrity)** và truy vết kiểm toán báo cáo theo tinh thần minh bạch của EU AI Act Điều 50.
 
 ### Bộ Tham Số Hiệu Chuẩn Chính Thức:
 * **Tỷ trọng Tổ Hợp Lồi (Convex Blending)**: $\alpha_{\text{human}} = 0.62$, $\alpha_{\text{general}} = 0.38$

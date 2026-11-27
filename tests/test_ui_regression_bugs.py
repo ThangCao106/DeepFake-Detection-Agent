@@ -997,6 +997,102 @@ print("FASTAPI_RUNTIME_OK")
             self.assertIn("-0.08", md)
             self.assertIn("Before", md)
 
+    def test_22_zero_leakage_locked_threshold_and_empirical_ablation_guard(self):
+        """
+        Regression test for Thesis Remediation Phases 1-3:
+          1) Zero origin_id overlap across train / cal_val / test_locked in corpus manifest & trainers.
+          2) Simulation scripts carry explicit METHODOLOGY_SIMULATION_ONLY provenance guards.
+          3) Video & audio pentests report data_provenance, Wilson 95% CI & zero-recall warnings.
+          4) Empirical ablation suite writes reproducible locked-threshold results & per-sample JSONL.
+        """
+        import importlib.util
+        import json
+
+        guard_path = REPO_ROOT / "forensics_kernel" / "dataset_split_guard.py"
+        self.assertTrue(guard_path.exists(), "Missing forensics_kernel/dataset_split_guard.py")
+        spec = importlib.util.spec_from_file_location("dataset_split_guard_mod", str(guard_path))
+        gmod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gmod)
+
+        # Synthetic leakage MUST raise ValueError
+        with self.assertRaises(ValueError):
+            gmod.assert_zero_origin_leakage(
+                [{"filename": "portrait_abc.jpg", "label": 0}],
+                [{"filename": "sbi_0001_portrait_abc.jpg", "label": 1}],
+            )
+
+        # Group-level splitting keeps source & SBI counterfactual inside exact same split
+        toy = [
+            {"filename": f"vn_img_{i}.jpg", "label": 0, "vietnamese_category": "vn_selfie_lifestyle"}
+            for i in range(20)
+        ]
+        grouped = gmod.assign_leak_free_group_splits(toy, train_ratio=0.70, cal_ratio=0.15, seed=2026)
+        audit = gmod.assert_zero_origin_leakage(
+            [r for r in grouped if r["split"] == "train"],
+            [r for r in grouped if r["split"] == "cal_val"],
+            [r for r in grouped if r["split"] == "test_locked"],
+        )
+        self.assertEqual(audit["train_cal_overlap"], 0)
+        self.assertEqual(audit["train_test_overlap"], 0)
+        self.assertGreater(audit["cal_val_samples"], 0)
+        self.assertGreater(audit["test_locked_samples"], 0)
+
+        # Wilson & Bootstrap 95% CI sanity
+        lo, hi = gmod.compute_wilson_ci(18, 20)
+        self.assertTrue(0.65 < lo < 0.90 < hi <= 1.0)
+        bci = gmod.compute_bootstrap_ci([0, 0, 0, 1, 1, 1], [0.1, 0.2, 0.4, 0.6, 0.8, 0.9], tau=0.5, n_boot=100)
+        self.assertAlmostEqual(bci["tpr"], 1.0, places=4)
+        self.assertAlmostEqual(bci["fpr"], 0.0, places=4)
+
+        # Live corpus manifest on disk MUST have zero origin overlap across splits
+        live_manifest = REPO_ROOT / "report_colab" / "corpus" / "training_corpus_manifest.jsonl"
+        if live_manifest.exists():
+            loaded = gmod.load_locked_manifest_splits(live_manifest, exclude_unverified=True, require_existing_files=False)
+            la = loaded["audit"]
+            self.assertEqual(la["train_cal_overlap"], 0)
+            self.assertEqual(la["train_test_overlap"], 0)
+            self.assertEqual(la["cal_test_overlap"], 0)
+            self.assertGreater(la["test_locked_samples"], 0)
+
+        # All 3 trainers must enforce assert_zero_origin_leakage and exclude test_locked
+        for trainer_rel in (
+            "colab_training/train_general.py",
+            "colab_training/train_human.py",
+            "colab_training/train_threads_continual.py",
+        ):
+            txt = (REPO_ROOT / trainer_rel).read_text(encoding="utf-8")
+            self.assertIn("assert_zero_origin_leakage", txt, f"Missing leakage assertion in {trainer_rel}")
+            self.assertIn("test_locked", txt, f"Missing test_locked exclusion in {trainer_rel}")
+
+        # All 3 simulation scripts must carry METHODOLOGY_SIMULATION_ONLY guard
+        for sim_rel in (
+            "benchmark/ablation_study/eval_ablation_grid_search.py",
+            "benchmark/eval_architectural_comparison.py",
+            "benchmark/eval_demographic_fairness_paper.py",
+        ):
+            stxt = (REPO_ROOT / sim_rel).read_text(encoding="utf-8")
+            self.assertIn("METHODOLOGY_SIMULATION_ONLY", stxt, f"Missing simulation banner in {sim_rel}")
+
+        # Video & audio pentests must report operating_threshold_audit & data_provenance
+        for pent_rel in ("benchmark/short_video_pentest.py", "benchmark/audio_pentest.py"):
+            ptxt = (REPO_ROOT / pent_rel).read_text(encoding="utf-8")
+            for tok in ("operating_threshold_audit", "data_provenance", "compute_wilson_ci", "thesis_eligible"):
+                self.assertIn(tok, ptxt, f"Missing '{tok}' in {pent_rel}")
+
+        # Empirical suite existence & schema check
+        emp_py = REPO_ROOT / "benchmark" / "eval_empirical_thesis_suite.py"
+        self.assertTrue(emp_py.exists(), "Missing benchmark/eval_empirical_thesis_suite.py")
+        emp_res = REPO_ROOT / "report_colab" / "empirical_thesis_eval" / "empirical_ablation_results.json"
+        if emp_res.exists():
+            edata = json.loads(emp_res.read_text(encoding="utf-8"))
+            self.assertEqual(edata.get("evaluation_provenance"), "EMPIRICAL_LOCKED_SPLIT_INFERENCE")
+            self.assertEqual(edata["leakage_audit"]["train_test_overlap"], 0)
+            self.assertIn("clean", edata["views"])
+            self.assertIn("social_reupload", edata["views"])
+            self.assertIn("unseen_manipulation_ood", edata["views"])
+            preds_jsonl = REPO_ROOT / "report_colab" / "empirical_thesis_eval" / "per_sample_predictions.jsonl"
+            self.assertTrue(preds_jsonl.exists())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

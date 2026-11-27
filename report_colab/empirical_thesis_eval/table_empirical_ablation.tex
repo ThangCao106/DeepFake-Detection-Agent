@@ -1,0 +1,30 @@
+\begin{table*}[t]
+\centering
+\caption{Empirical ablation and out-of-domain robustness on leak-free locked Vietnamese test split (\texttt{test\_locked}) at calibration-locked threshold $\tau^*$.}
+\label{tab:empirical_thesis_ablation}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llcccccc}
+\hline
+\textbf{Test View} & \textbf{Configuration} & \textbf{TPR@$\tau^*$ (95\% CI)} & \textbf{FPR@$\tau^*$ (95\% CI)} & \textbf{Bal. Acc (\%)} & \textbf{F1 (\%)} & \textbf{ECE ($\downarrow$)} & \textbf{ROC-AUC} \\
+\hline
+clean & Baseline & 90.3\% [77.4, 100.0] & 83.9\% [71.0, 96.8] & 53.2\% & 65.9\% & 0.0333 & 0.5869 \\
+clean & Ablation 1 & 90.3\% [80.7, 100.0] & 64.5\% [48.4, 80.7] & 62.9\% & 70.9\% & 0.0959 & 0.6348 \\
+clean & Ablation 2 & 54.8\% [38.7, 71.0] & 29.0\% [16.1, 45.2] & 62.9\% & 59.7\% & 0.1391 & 0.6972 \\
+clean & Ablation 3 & 96.8\% [90.3, 100.0] & 90.3\% [80.7, 100.0] & 53.2\% & 67.4\% & 0.0540 & 0.5900 \\
+clean & Full Proposed & 58.1\% [41.9, 74.2] & 35.5\% [19.4, 51.6] & 61.3\% & 60.0\% & 0.0956 & 0.7034 \\
+\hline
+social reupload & Baseline & 90.3\% [77.4, 100.0] & 83.9\% [71.0, 96.8] & 53.2\% & 65.9\% & 0.0443 & 0.5838 \\
+social reupload & Ablation 1 & 90.3\% [80.7, 100.0] & 64.5\% [48.4, 80.7] & 62.9\% & 70.9\% & 0.0946 & 0.6337 \\
+social reupload & Ablation 2 & 54.8\% [38.7, 71.0] & 35.5\% [19.4, 51.6] & 59.7\% & 57.6\% & 0.1359 & 0.6941 \\
+social reupload & Ablation 3 & 96.8\% [90.3, 100.0] & 93.5\% [83.9, 100.0] & 51.6\% & 66.7\% & 0.0395 & 0.5890 \\
+social reupload & Full Proposed & 61.3\% [41.9, 77.4] & 38.7\% [22.6, 54.8] & 61.3\% & 61.3\% & 0.0992 & 0.6982 \\
+\hline
+unseen manipulation ood & Baseline & 90.3\% [77.4, 100.0] & 83.9\% [71.0, 96.8] & 53.2\% & 65.9\% & 0.0248 & 0.5744 \\
+unseen manipulation ood & Ablation 1 & 77.4\% [61.3, 90.3] & 64.5\% [48.4, 80.7] & 56.5\% & 64.0\% & 0.0900 & 0.5848 \\
+unseen manipulation ood & Ablation 2 & 51.6\% [32.3, 67.7] & 32.3\% [16.1, 48.4] & 59.7\% & 56.1\% & 0.1090 & 0.6847 \\
+unseen manipulation ood & Ablation 3 & 96.8\% [90.3, 100.0] & 90.3\% [80.7, 100.0] & 53.2\% & 67.4\% & 0.0417 & 0.6015 \\
+unseen manipulation ood & Full Proposed & 54.8\% [38.7, 71.0] & 38.7\% [22.6, 54.8] & 58.1\% & 56.7\% & 0.0841 & 0.6868 \\
+\hline
+\end{tabular}
+}
+\end{table*}
