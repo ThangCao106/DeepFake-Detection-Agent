@@ -1093,6 +1093,99 @@ print("FASTAPI_RUNTIME_OK")
             preds_jsonl = REPO_ROOT / "report_colab" / "empirical_thesis_eval" / "per_sample_predictions.jsonl"
             self.assertTrue(preds_jsonl.exists())
 
+    def test_23_vn_compression_signal_survival_quality_fusion_and_dicome_deferral(self):
+        """
+        Regression test for 2026 Vietnamese Compression Benchmark, Quality-Aware Fusion & DiCoME Deferral:
+          1) calibration_store.py stays 100% pure-stdlib (`py -3 -S`) and provides
+             `compute_signal_quality_weights`, `evaluate_dicome_deferral`, and `select_matched_coverage_decisions`.
+          2) WaveletSpectralAnalyzer & CornealReflectionAnalyzer contain NO `random.uniform` placeholders,
+             produce deterministic identical results on repeat calls, and show monotonic `q_freq` drop under compression.
+          3) Saved empirical results in `report_colab/vn_compression_deferral_eval/` pass zero-leakage and schema checks.
+        """
+        import importlib.util
+        import json
+
+        cal_path = REPO_ROOT / "forensics_kernel" / "calibration_store.py"
+        spec = importlib.util.spec_from_file_location("calibration_store_mod", str(cal_path))
+        cmod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cmod)
+
+        # Clean signal vs heavily degraded frequency + occluded corneal signal
+        w_clean = cmod.compute_signal_quality_weights(q_vision=0.95, q_freq=0.92, q_eye=0.80)
+        w_degraded = cmod.compute_signal_quality_weights(q_vision=0.85, q_freq=0.15, q_eye=0.12)
+        self.assertAlmostEqual(sum(w_clean.values()), 1.0, places=4)
+        self.assertAlmostEqual(sum(w_degraded.values()), 1.0, places=4)
+        self.assertGreater(w_degraded["w_vision"], w_clean["w_vision"])
+        self.assertLess(w_degraded["w_freq"], w_clean["w_freq"])
+        self.assertLess(w_degraded["w_eye"], w_clean["w_eye"])
+
+        # High conflict + poor ocular quality must raise DiCoME deferral score above harmonious confident sample
+        d_harm = cmod.evaluate_dicome_deferral(0.92, 0.89, 0.85, p_fused=0.90, q_face_eye=0.85, compression_severity=0.08, tau=0.45)
+        d_conf = cmod.evaluate_dicome_deferral(0.90, 0.12, 0.25, p_fused=0.48, q_face_eye=0.20, compression_severity=0.75, tau=0.45)
+        self.assertGreater(d_conf["deferral_score"], d_harm["deferral_score"] + 0.30)
+        self.assertTrue(d_conf["should_defer"])
+        self.assertFalse(d_harm["should_defer"])
+
+        keep = cmod.select_matched_coverage_decisions([0.1, 0.8, 0.2, 0.9, 0.3], coverage=0.60)
+        self.assertEqual(keep, [True, False, True, False, True])
+
+        # Source guards against placeholder random.uniform regression
+        for mod_rel in ("forensics_kernel/spectral_wavelet.py", "forensics_kernel/biometric_corneal.py"):
+            mtxt = (REPO_ROOT / mod_rel).read_text(encoding="utf-8")
+            self.assertNotIn("random.uniform", mtxt, f"Placeholder random.uniform found in {mod_rel}")
+
+        orch_txt = (REPO_ROOT / "agents" / "unified_master_orchestrator.py").read_text(encoding="utf-8")
+        self.assertIn("corneal_analyzer.analyze(media_path)", orch_txt)
+        self.assertIn("wavelet_analyzer.analyze(media_path)", orch_txt)
+
+        # Runtime analyzer checks when numpy & PIL are available (skipped cleanly under `py -3 -S`)
+        try:
+            import io
+            import numpy as np
+            from PIL import Image, ImageFilter
+        except ImportError:
+            return
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from forensics_kernel.spectral_wavelet import WaveletSpectralAnalyzer
+        from forensics_kernel.biometric_corneal import CornealReflectionAnalyzer
+
+        yy, xx = np.mgrid[0:128, 0:128]
+        synth = np.stack([
+            (128 + 55 * np.sin(xx / 4.0) * np.cos(yy / 5.0)).clip(0, 255),
+            (115 + 45 * np.cos(xx / 6.0)).clip(0, 255),
+            (105 + 40 * np.sin(yy / 5.0)).clip(0, 255),
+        ], axis=-1).astype(np.uint8)
+        im_clean = Image.fromarray(synth, mode="RGB")
+        buf = io.BytesIO()
+        im_clean.filter(ImageFilter.GaussianBlur(radius=1.2)).save(buf, format="JPEG", quality=22)
+        buf.seek(0)
+        im_comp = Image.open(buf).convert("RGB")
+
+        wa = WaveletSpectralAnalyzer()
+        ca = CornealReflectionAnalyzer()
+        r1 = wa.analyze(im_clean)
+        r2 = wa.analyze(im_clean)
+        r_comp = wa.analyze(im_comp)
+        self.assertEqual(r1, r2, "WaveletSpectralAnalyzer must be deterministic")
+        self.assertGreater(r1["frequency_signal_quality"], r_comp["frequency_signal_quality"])
+
+        c1 = ca.analyze(im_clean)
+        c2 = ca.analyze(im_clean)
+        self.assertEqual(c1, c2, "CornealReflectionAnalyzer must be deterministic")
+        self.assertEqual(len(c1["feature_vector"]), 10)
+
+        # Saved empirical results check
+        res_path = REPO_ROOT / "report_colab" / "vn_compression_deferral_eval" / "vn_compression_deferral_results.json"
+        if res_path.exists():
+            rdata = json.loads(res_path.read_text(encoding="utf-8"))
+            self.assertEqual(rdata.get("evaluation_provenance"), "EMPIRICAL_LOCKED_VN_COMPRESSION_QUALITY_DEFERRAL")
+            self.assertEqual(rdata["leakage_audit"]["train_test_overlap"], 0)
+            self.assertIn("heavy_social_webp_q32_r50_blur", rdata["protocol_a_compression_and_ood"])
+            self.assertIn("by_optical_covariate_light2lie", rdata["protocol_b_vietnamese_conditions"])
+            self.assertIn("pooled_challenge_suite_youden_tau", rdata["selective_deferral_matched_coverage"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

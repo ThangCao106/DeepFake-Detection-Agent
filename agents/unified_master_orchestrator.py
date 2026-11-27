@@ -76,8 +76,8 @@ class UnifiedDeepFakeOrchestrator:
         print(f"\n🔍 [Unified Orchestrator - Mode 1] Investigating {modality.upper()}: {media_path} (Cert: {cert_id})")
 
         # 1. Run Shared Forensics Kernel Tools
-        corneal_res = self.corneal_analyzer.analyze()
-        wavelet_res = self.wavelet_analyzer.analyze()
+        corneal_res = self.corneal_analyzer.analyze(media_path)
+        wavelet_res = self.wavelet_analyzer.analyze(media_path)
         lipsync_res = self.lipsync_analyzer.analyze()
 
         # 2. Extract multi-modal raw logit & compute calibrated probability

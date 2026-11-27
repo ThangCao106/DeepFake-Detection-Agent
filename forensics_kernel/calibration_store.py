@@ -12,7 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -127,6 +127,127 @@ def evaluate_conformal_band(
         "score": round(s_val, 4),
         "action": "ESCALATE_TO_TRIAD_COUNCIL" if uncertain else "CONFIDENT_DECISION",
     }
+
+
+def compute_signal_quality_weights(
+    q_vision: float,
+    q_freq: float,
+    q_eye: float,
+    base_weights: Tuple[float, float, float] = (0.50, 0.28, 0.22),
+    reliability_gamma: float = 1.35,
+) -> Dict[str, float]:
+    """
+    Pure-stdlib signal-quality-aware dynamic fusion weights (FreqFusion / Light2Lie motivated).
+    Scales base branch priors by reliability_i = max(0.05, q_i) ** gamma and renormalizes
+    so heavily compressed frequency or occluded corneal signals cannot dominate clean cues.
+    """
+    qv = min(1.0, max(0.05, float(q_vision)))
+    qf = min(1.0, max(0.05, float(q_freq)))
+    qe = min(1.0, max(0.05, float(q_eye)))
+    g = max(0.0, float(reliability_gamma))
+    bv, bf, be = [max(0.0, float(x)) for x in base_weights]
+
+    rv = bv * (qv ** g)
+    rf = bf * (qf ** g)
+    re = be * (qe ** g)
+    total = rv + rf + re
+    if total <= 1e-12:
+        return {"w_vision": 1.0, "w_freq": 0.0, "w_eye": 0.0}
+    return {
+        "w_vision": round(rv / total, 6),
+        "w_freq": round(rf / total, 6),
+        "w_eye": round(re / total, 6),
+    }
+
+
+def _binary_entropy(prob: float) -> float:
+    p = min(1.0 - 1e-6, max(1e-6, float(prob)))
+    return -(p * math.log(p, 2) + (1.0 - p) * math.log(1.0 - p, 2))
+
+
+def evaluate_dicome_deferral(
+    p_vision: float,
+    p_freq: float,
+    p_eye: float,
+    p_fused: Optional[float] = None,
+    q_face_eye: float = 1.0,
+    compression_severity: float = 0.0,
+    tau: float = 0.5,
+    deferral_threshold: float = 0.42,
+) -> Dict[str, Any]:
+    """
+    Pure-stdlib DiCoME-inspired (ICML 2026) Selective Deferral Estimator.
+    Combines:
+      1) Cross-branch conflict (semantic ViT vs spectral Wavelet/FFT & corneal/periocular cues),
+      2) Boundary proximity & calibrated predictive entropy around operating threshold `tau`,
+      3) Signal degradation penalty (low face/eye quality + heavy JPEG/blur compression).
+    Higher `deferral_score` in [0, 1] indicates higher risk of error if auto-decided.
+    """
+    pv = min(1.0, max(0.0, float(p_vision)))
+    pf = min(1.0, max(0.0, float(p_freq)))
+    pe = min(1.0, max(0.0, float(p_eye)))
+    score_ref = min(1.0, max(0.0, float(p_fused if p_fused is not None else pv)))
+    t_val = min(0.99, max(0.01, float(tau)))
+    q_fe = min(1.0, max(0.0, float(q_face_eye)))
+    comp = min(1.0, max(0.0, float(compression_severity)))
+
+    conflict_vf = abs(pv - pf)
+    conflict_ve = abs(pv - pe)
+    conflict_fe = abs(pf - pe)
+    cross_branch_conflict = min(1.0, 0.45 * conflict_vf + 0.35 * conflict_ve + 0.20 * conflict_fe)
+
+    # Disagreement in binary decision across branches amplifies deferral priority
+    votes = (1 if pv >= t_val else 0) + (1 if pf >= t_val else 0) + (1 if pe >= t_val else 0)
+    vote_disagreement = 1.0 if votes in (1, 2) else 0.0
+
+    # Distance to locked operating threshold normalized to [0, 1]
+    margin = abs(score_ref - t_val) / max(t_val, 1.0 - t_val, 0.5)
+    boundary_ambiguity = max(0.0, 1.0 - margin)
+    entropy = _binary_entropy(score_ref)
+    degradation_risk = min(1.0, 0.55 * (1.0 - q_fe) + 0.45 * comp)
+
+    deferral_score = min(
+        1.0,
+        max(
+            0.0,
+            0.34 * cross_branch_conflict
+            + 0.14 * vote_disagreement
+            + 0.22 * boundary_ambiguity
+            + 0.12 * entropy
+            + 0.18 * degradation_risk,
+        ),
+    )
+    should_defer = deferral_score >= float(deferral_threshold)
+    return {
+        "should_defer": bool(should_defer),
+        "action": "DEFER_TO_HUMAN_REVIEW" if should_defer else "AUTO_DECIDE",
+        "deferral_score": round(deferral_score, 6),
+        "cross_branch_conflict": round(cross_branch_conflict, 6),
+        "vote_disagreement": round(vote_disagreement, 4),
+        "boundary_ambiguity": round(boundary_ambiguity, 6),
+        "predictive_entropy": round(entropy, 6),
+        "degradation_risk": round(degradation_risk, 6),
+        "threshold": round(float(deferral_threshold), 4),
+    }
+
+
+def select_matched_coverage_decisions(
+    deferral_scores: Sequence[float],
+    coverage: float,
+) -> List[bool]:
+    """
+    Select exactly `round(coverage * N)` lowest-deferral-score samples as auto-decided (True),
+    deferring the highest-uncertainty fraction (False) for fair risk-coverage comparison.
+    """
+    n = len(deferral_scores)
+    if n == 0:
+        return []
+    cov = min(1.0, max(0.0, float(coverage)))
+    keep_n = int(round(cov * n))
+    keep_n = min(n, max(0, keep_n))
+    ranked = sorted(range(n), key=lambda idx: (float(deferral_scores[idx]), idx))
+    keep_set = set(ranked[:keep_n])
+    return [i in keep_set for i in range(n)]
 
 
 DEFAULT_IMAGE_PARAMS: Dict[str, Any] = {

@@ -1,0 +1,14 @@
+\begin{table}[t]
+\centering
+\caption{Phan tich song con tin hieu qua cac muc nen NTIRE-style tren anh nguoi Viet}
+\begin{tabular}{lcccc}
+\toprule
+Nhanh tin hieu & Clean Raw & Mild JPEG Q80 & Social Q55+0.75x & Heavy WebP Q32+Blur \\
+\midrule
+ViT Spatial & 0.726 (100\%) & 0.736 (101\%) & 0.713 (98\%) & 0.677 (93\%) \\
+2D-FFT + Haar Wavelet & 0.562 (100\%) & 0.557 (99\%) & 0.564 (100\%) & 0.575 (102\%) \\
+Corneal / Eye Specular & 0.564 (100\%) & 0.610 (108\%) & 0.584 (104\%) & 0.472 (84\%) \\
+\textbf{Quality-Aware Fusion} & 0.726 (100\%) & 0.731 (101\%) & 0.712 (98\%) & 0.680 (94\%) \\
+\bottomrule
+\end{tabular}
+\end{table}

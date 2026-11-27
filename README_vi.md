@@ -543,3 +543,18 @@ Dự án được phát hành dưới bản quyền **MIT License** - xem chi ti
 - **Model 2 (Human Biometrics + Noise-IM)**: Tích hợp **Hàm Tổn Thất Dị Biệt Nhiễu Noise-IM ($\mathcal{L}_{\text{noise}}$)** theo *MVIM Network (IEEE T-DSC 2025)* đo độ lệch PRNU vùng mặt can thiệp.
 - **Hiệu Chuẩn Xác Suất & Hội Đồng LLM**: Hội đồng 3 Trụ Cột (Gemini 3.8 Flash, Meta Muse Critic, Claude 3.7 Sonnet) thẩm định và phê duyệt tham số tối ưu: $\alpha_{\text{human}} = 0.62$, $\alpha_{\text{general}} = 0.38$, $T^* = 1.6178$, $\tau^* = 0.8118$, $\gamma = 2.25$, bảo đảm $ECE < 0.020$ đạt chuẩn EU AI Act Điều 50.
 - **Ma Trận Đánh Giá Chéo 6x6**: Kiểm thử khắt khe trên FaceForensics++ (c0/c23/c40), Celeb-DF v2, DFDC, Google DFD, DeeperForensics-1.0 và Threads-DFBench (OOD Việt Nam), bảo toàn cross-dataset AUC $\ge 0.989$ và kiểm soát sai số hiệu chuẩn chặt chẽ.
+
+---
+
+### 🧪 11. Benchmark Thực nghiệm Ảnh Người Việt Dưới Nén, Hợp nhất Theo Chất lượng & Hoãn Kết luận DiCoME (2026)
+
+Để đo lường trung thực trên phân tách không rò rỉ (`origin_id`-grouped: `train=258`, `cal_val=50`, `test_locked=62`, **0/0/0 overlap**) với trích xuất đặc trưng thực từ `custom_vit_model` (ViT-B/16), 2-level 2D Haar Wavelet + 2D-FFT (`forensics_kernel/spectral_wavelet.py`) và phản xạ giác mạc Fresnel (`forensics_kernel/biometric_corneal.py`), xem chi tiết tại [`benchmark/eval_vn_compression_quality_deferral.py`](benchmark/eval_vn_compression_quality_deferral.py) và [`report_colab/vn_compression_deferral_eval/vn_compression_deferral_report.md`](report_colab/vn_compression_deferral_eval/vn_compression_deferral_report.md):
+
+- **Giao thức A (Nén ghép đôi NTIRE-2026 & OOD chưa thấy)**:
+  - Trên `test_locked` gộp (`N = 310` lượt suy luận across `clean_raw`, `mild_jpeg_q80`, `medium_social_q55_r75`, `heavy_social_webp_q32_r50_blur`, `unseen_diffusion_blend_ood`): `single_vision_vit` đạt AUC `0.7411` (`[0.685, 0.794]`), `fixed_weight_fusion` đạt `0.7386` (ECE giảm từ `0.0764` xuống `0.0484`), `quality_aware_fusion` đạt `0.7375` (ECE `0.0585`) và giữ AUC cao hơn dưới nén nặng WebP Q32 + Blur (`0.6805` so với `0.6774` của ViT đơn và `0.6712` của hợp nhất cố định).
+  - Tín hiệu Wavelet/FFT suy giảm khi làm mịn mạnh (`unseen_diffusion_blend_ood`), trong khi nhánh ViT (`0.8439`) + Corneal (`0.6275`) duy trì khả năng phát hiện (`Quality-Aware Fusion` đạt `0.8304`).
+- **Giao thức B (Điều kiện chụp người Việt & Phân tầng Quang học Light2Lie)**:
+  - `vn_id_official` (ảnh thẻ studio, `q_eye = 0.794`): hợp nhất theo chất lượng tăng AUC từ `0.8889` (ViT đơn) lên **`0.9259`** (+0.0370); `vn_occlusion_glasses_mask` tăng từ `0.8765` lên **`0.9012`**.
+  - Phân tầng quang học xác nhận tín hiệu giác mạc phụ thuộc mạnh vào kích thước ROI mắt (`0.5884` ở ROI đủ lớn vs `0.4893` ở ROI nhỏ) và ánh sáng cân bằng (`0.5878` vs `0.4218` ở ánh sáng cực đoan).
+- **Hoãn Kết luận DiCoME (ICML 2026) so với Ngưỡng Xác suất ViT**:
+  - Trên cùng tỷ lệ tự động kết luận (`matched coverage`), **DiCoME Quality+Conflict Deferral** giảm sai số chọn lọc tại `90%` coverage từ `0.3477` (`FPR=0.5852`) xuống **`0.3297`** (`FPR=0.4266`), và cải thiện **AURC** tổng thể từ `0.3428` xuống **`0.3345`**.

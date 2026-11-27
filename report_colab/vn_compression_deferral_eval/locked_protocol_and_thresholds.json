@@ -1,0 +1,105 @@
+{
+  "generated_at_utc": "2026-11-27T11:07:01Z",
+  "manifest_path": "D:\\DATA\\TC\\Py_Ex\\NCS\\DeepFake-Detection-Agent\\report_colab\\corpus\\training_corpus_manifest.jsonl",
+  "leakage_audit": {
+    "train_samples": 258,
+    "cal_val_samples": 50,
+    "test_locked_samples": 62,
+    "train_origins": 125,
+    "cal_val_origins": 25,
+    "test_locked_origins": 31,
+    "train_cal_overlap": 0,
+    "train_test_overlap": 0,
+    "cal_test_overlap": 0,
+    "skipped_unverified": 0,
+    "skipped_missing": 0
+  },
+  "calibration_samples_total": 150,
+  "platt_params": {
+    "single_vision_vit": {
+      "platt_a": 0.05,
+      "platt_b": -0.033618,
+      "temperature_scaling_T": 20.0
+    },
+    "freq_wavelet_only": {
+      "platt_a": 0.627239,
+      "platt_b": 0.033768,
+      "temperature_scaling_T": 1.594289
+    },
+    "corneal_eye_only": {
+      "platt_a": 0.812585,
+      "platt_b": -0.075086,
+      "temperature_scaling_T": 1.23064
+    },
+    "fixed_weight_fusion": {
+      "platt_a": 0.248993,
+      "platt_b": -0.06059,
+      "temperature_scaling_T": 4.016177
+    },
+    "quality_aware_fusion": {
+      "platt_a": 0.213119,
+      "platt_b": -0.06557,
+      "temperature_scaling_T": 4.692214
+    }
+  },
+  "fusion_hyperparams": {
+    "fixed_weights": {
+      "w_vision": 0.45,
+      "w_freq": 0.15,
+      "w_eye": 0.4
+    },
+    "quality_aware_base_weights": {
+      "w_vision": 0.45,
+      "w_freq": 0.35,
+      "w_eye": 0.2
+    },
+    "quality_aware_gamma": 1.0
+  },
+  "locked_thresholds": {
+    "single_vision_vit": {
+      "tau_fpr1pct": 0.706302,
+      "tau_youden": 0.471712,
+      "cal_val_youden_j": 0.4667,
+      "cal_val_realized_fpr_at_fpr1_tau": 0.0,
+      "cal_val_tpr_at_fpr1_tau": 0.1333,
+      "cal_val_neg_count": 75,
+      "finite_sample_fpr_step": 0.0133
+    },
+    "freq_wavelet_only": {
+      "tau_fpr1pct": 0.652431,
+      "tau_youden": 0.501496,
+      "cal_val_youden_j": 0.12,
+      "cal_val_realized_fpr_at_fpr1_tau": 0.0,
+      "cal_val_tpr_at_fpr1_tau": 0.0267,
+      "cal_val_neg_count": 75,
+      "finite_sample_fpr_step": 0.0133
+    },
+    "corneal_eye_only": {
+      "tau_fpr1pct": 0.601874,
+      "tau_youden": 0.474553,
+      "cal_val_youden_j": 0.1733,
+      "cal_val_realized_fpr_at_fpr1_tau": 0.0,
+      "cal_val_tpr_at_fpr1_tau": 0.04,
+      "cal_val_neg_count": 75,
+      "finite_sample_fpr_step": 0.0133
+    },
+    "fixed_weight_fusion": {
+      "tau_fpr1pct": 0.878036,
+      "tau_youden": 0.441345,
+      "cal_val_youden_j": 0.4667,
+      "cal_val_realized_fpr_at_fpr1_tau": 0.0,
+      "cal_val_tpr_at_fpr1_tau": 0.1333,
+      "cal_val_neg_count": 75,
+      "finite_sample_fpr_step": 0.0133
+    },
+    "quality_aware_fusion": {
+      "tau_fpr1pct": 0.89786,
+      "tau_youden": 0.437685,
+      "cal_val_youden_j": 0.4667,
+      "cal_val_realized_fpr_at_fpr1_tau": 0.0,
+      "cal_val_tpr_at_fpr1_tau": 0.08,
+      "cal_val_neg_count": 75,
+      "finite_sample_fpr_step": 0.0133
+    }
+  }
+}
