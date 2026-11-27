@@ -1,5 +1,5 @@
 # DeepTrace Training Corpus Harvest Report
-- **Generated (UTC)**: `2026-11-27T11:39:43Z`
+- **Generated (UTC)**: `2026-11-27T23:07:23Z`
 - **Images**: `653` (`Real=153`, `Fake=500`, `SBI=500`)
 - **Audio Clips**: `0`
 
