@@ -1684,74 +1684,200 @@
         </div>
       </section>
 
-      <!-- TAB 2: HIỆU CHỈNH (CALIBRATION) -->
+      <!-- TAB 2: HIỆU CHỈNH (CALIBRATION & WEIGHT UPDATE AUDIT REPORT) -->
       <section id="tab-calibration" class="tab-view">
-        <div class="view-header">
+        <div class="view-header" style="flex-wrap: wrap; gap: 0.75rem;">
           <div>
-            <h2 class="view-title">⚖️ Thông số hiệu chỉnh mô hình (Post-Hoc Calibration)</h2>
-            <p class="view-desc">Giảm thiểu sai số độ lệch tự tin (Expected Calibration Error) sau các epoch huấn luyện bằng thuật toán Platt Scaling và tối ưu hóa ngưỡng Youden's J.</p>
+            <h2 class="view-title">⚖️ Thông số hiệu chỉnh &amp; Báo cáo cập nhật trọng số</h2>
+            <p class="view-desc">Đồng bộ trực tiếp dữ liệu hiệu chỉnh hậu huấn luyện (Platt Scaling / Conformal Band), lịch sử Pentest/Benchmark thực nghiệm mới nhất và báo cáo kiểm toán biến động trọng số (Before &rarr; After &rarr; &Delta;).</p>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="exportModuleReport('calibration')">
-            <span>📊</span>
-            <span>Xuất Báo Cáo ECE</span>
-          </button>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="badge-sub" id="calibLastSyncBadge" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.35);">Đồng bộ: --</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadCalibrationMetrics()" title="Đồng bộ lại dữ liệu live từ Pentest, Benchmark &amp; SQLite">
+              <span>🔄 Làm mới</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadWeightUpdateReport('md')">
+              <span>📄 Xuất Báo Cáo Trọng Số (.MD)</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadWeightUpdateReport('json')">
+              <span>📦 Xuất JSON Chi tiết</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid-4" style="margin-bottom: 1.5rem;" id="calibStatsGrid">
           <div class="stat-pill">
             <span class="label">Nhiệt độ tối ưu T*</span>
             <span class="val" style="color: var(--accent-cyan);" id="statTStar">1.6178</span>
-            <span class="sub">Logistic Scaling Factor</span>
+            <span class="sub" id="statTStarSub">2-Param Platt Scaling</span>
           </div>
           <div class="stat-pill">
             <span class="label">Ngưỡng quyết định &tau;*</span>
             <span class="val" style="color: var(--secondary);" id="statTauStar">0.8118</span>
-            <span class="sub">Youden's J Optimal Cutoff</span>
+            <span class="sub" id="statTauStarSub">Youden's J Optimal Cutoff</span>
           </div>
           <div class="stat-pill">
             <span class="label">ECE Giảm thiểu</span>
             <span class="val" style="color: var(--accent-emerald);" id="statEceReduction">-78.19%</span>
-            <span class="sub">0.0894 &rarr; 0.0195</span>
+            <span class="sub" id="statEceReductionSub">0.0894 &rarr; 0.0195</span>
           </div>
           <div class="stat-pill">
-            <span class="label">Brier Score</span>
+            <span class="label">Brier Score / Latest ECE</span>
             <span class="val" style="color: #fff;" id="statBrierScore">0.0142</span>
-            <span class="sub">Độ tin cậy xác suất cao</span>
+            <span class="sub" id="statBrierScoreSub">Độ tin cậy xác suất cao</span>
           </div>
         </div>
 
         <div class="card" style="margin-bottom: 1.5rem;">
-          <div class="card-title">
-            <span>Lịch sử cải thiện độ hiệu chỉnh qua các Epoch huấn luyện</span>
-            <span class="badge-sub">VisionTransformer Base</span>
+          <div class="card-title" style="flex-wrap: wrap; gap: 0.6rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span>Lịch sử hiệu chỉnh &amp; Kiểm định thực nghiệm (Mới nhất trước)</span>
+              <span class="badge-sub" id="calibHistorySourceBadge">Live Multi-Source</span>
+            </div>
+            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="calibHistoryFilterGroup">
+              <button type="button" class="btn btn-secondary btn-sm" data-cal-filter="all" onclick="filterCalibrationHistory('all', this)" style="font-size: 0.7rem; padding: 0.25rem 0.55rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">Tất cả</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-cal-filter="pentest" onclick="filterCalibrationHistory('pentest', this)" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;">Pentest</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-cal-filter="benchmark" onclick="filterCalibrationHistory('benchmark', this)" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;">Benchmark</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-cal-filter="training" onclick="filterCalibrationHistory('training', this)" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;">Training</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-cal-filter="weight_update" onclick="filterCalibrationHistory('weight_update', this)" style="font-size: 0.7rem; padding: 0.25rem 0.55rem;">Weight Updates</button>
+            </div>
           </div>
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>Epoch</th>
-                <th>Validation Loss</th>
-                <th>Validation AUC</th>
-                <th>Raw ECE</th>
-                <th>Calibrated ECE</th>
-                <th>Ngày cập nhật</th>
-                <th>Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody id="calibHistoryTableBody">
-              <!-- Dynamically populated via getApiUrl -->
-            </tbody>
-          </table>
+          <div style="overflow-x: auto;">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Nguồn / Phiên</th>
+                  <th>Modality / Model</th>
+                  <th>Loss / BCE</th>
+                  <th>Validation AUC</th>
+                  <th>EER (%)</th>
+                  <th>ECE Thực nghiệm</th>
+                  <th>T* / &tau;*</th>
+                  <th>Ngày cập nhật</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="calibHistoryTableBody">
+                <tr><td colspan="9" style="text-align: center; color: var(--text-dim); padding: 1.2rem;">Đang tải lịch sử hiệu chỉnh &amp; kiểm định thực nghiệm...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DETAILED WEIGHT UPDATE AUDIT REPORT -->
+        <div class="card" id="weightUpdateReportSection" style="margin-bottom: 1.5rem; border: 1px solid rgba(0, 229, 255, 0.22);">
+          <div class="card-title" style="flex-wrap: wrap; gap: 0.6rem;">
+            <div>
+              <span>📊 Báo cáo Chi tiết Cập nhật Trọng số &amp; Biến động Tham số (Weight Update Audit Report)</span>
+            </div>
+            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="downloadWeightUpdateReport('md')" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">📥 Tải Markdown (.MD)</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="downloadWeightUpdateReport('json')" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">📦 Tải JSON (.JSON)</button>
+            </div>
+          </div>
+
+          <div class="grid-4" style="margin-bottom: 1.2rem;">
+            <div class="stat-pill">
+              <span class="label">Tổng số lần Update</span>
+              <span class="val" id="wuStatTotal" style="font-size: 1.35rem; color: var(--accent-cyan);">0</span>
+              <span class="sub" id="wuStatLatestAt">Lần cuối: --</span>
+            </div>
+            <div class="stat-pill">
+              <span class="label">Accepted / Đã áp dụng</span>
+              <span class="val" id="wuStatAccepted" style="font-size: 1.35rem; color: var(--accent-emerald);">0</span>
+              <span class="sub" id="wuStatBaseline">Kept baseline: 0</span>
+            </div>
+            <div class="stat-pill">
+              <span class="label">Checkpoints Active</span>
+              <span class="val" id="wuStatCheckpoints" style="font-size: 1.35rem; color: #fff;">0</span>
+              <span class="sub" id="wuStatRegistrySub">Registry: 0 versions</span>
+            </div>
+            <div class="stat-pill">
+              <span class="label">/dfagent Approval Gate</span>
+              <span class="val" id="wuStatPendingReview" style="font-size: 1.35rem; color: var(--accent-amber);">0</span>
+              <span class="sub" id="wuStatApprovedSub">Đã duyệt: 0 mẫu</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.5rem;">
+              1. Trạng thái Tham số Hiệu chuẩn &amp; Checkpoints Đang Hoạt động (Live Snapshot)
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Modality / Thành phần</th>
+                    <th>Trạng thái</th>
+                    <th>Tham số đang áp dụng / Kích thước</th>
+                    <th>SHA-256</th>
+                    <th>Cập nhật lúc</th>
+                  </tr>
+                </thead>
+                <tbody id="activeWeightsMatrixBody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Đang đọc snapshot trọng số...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.65rem;">
+              <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan);">
+                2. Chi tiết Biến động Trọng số Qua Từng Phiên Cập nhật (Before &rarr; After &rarr; &Delta;)
+              </div>
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
+                <select id="wuModalityFilter" class="form-input" onchange="filterWeightUpdates()" style="font-size: 0.72rem; padding: 0.22rem 0.5rem; width: auto;">
+                  <option value="all">Tất cả Modality</option>
+                  <option value="video">Video (SARAAB)</option>
+                  <option value="audio">Audio FusionNet</option>
+                  <option value="image">Image ViT</option>
+                  <option value="lora">LoRA PEFT</option>
+                </select>
+                <select id="wuStatusFilter" class="form-input" onchange="filterWeightUpdates()" style="font-size: 0.72rem; padding: 0.22rem 0.5rem; width: auto;">
+                  <option value="all">Mọi trạng thái</option>
+                  <option value="accepted">Chỉ ACCEPTED</option>
+                  <option value="kept_baseline">Chỉ KEPT_BASELINE</option>
+                </select>
+              </div>
+            </div>
+            <div id="weightUpdateDiffContainer" style="display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="color: var(--text-dim); font-size: 0.8rem; padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-sm);">Đang tải chi tiết biến động trọng số...</div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.5rem;">
+              3. Model Weights Registry &amp; Lịch sử Checkpoint
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Ngày</th>
+                    <th>Version Tag</th>
+                    <th>Backbone</th>
+                    <th>File Trọng số</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="modelWeightsRegistryBody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Đang tải registry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- MATHEMATICAL FRAMEWORK -->
         <div class="card" style="background: var(--bg-darker); margin-bottom: 1.5rem;">
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.4rem;">Công thức toán học áp dụng (Mathematical Framework):</div>
-          <p style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.6;">
-            Xác suất dự báo được căn chỉnh thông qua hàm Sigmoid nhiệt độ: 
-            <span style="font-family: var(--font-mono); color: #fff;">\(\hat{p}_{calib} = \sigma(z_i / T^*)\)</span> với \(T^* = 1.6178\). 
-            Sai số kỳ vọng hiệu chỉnh ECE được định lượng: 
-            <span style="font-family: var(--font-mono); color: #fff;">\(\text{ECE} = \sum_{m=1}^M \frac{|B_m|}{N} |\text{acc}(B_m) - \text{conf}(B_m)|\)</span>. 
-            Sau hiệu chỉnh, mô hình hoàn toàn loại bỏ tình trạng over-confidence (tự tin thái quá vào dự đoán sai).
+          <p id="calibMathFrameworkText" style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.6;">
+            Xác suất dự báo được căn chỉnh thông qua hàm Sigmoid 2 tham số / nhiệt độ:
+            <span style="font-family: var(--font-mono); color: #fff;">\(\hat{p}_{calib} = \sigma(a \cdot z_i / T^* + b)\)</span> với \(T^* = 1.6178\).
+            Sai số kỳ vọng hiệu chỉnh ECE được định lượng:
+            <span style="font-family: var(--font-mono); color: #fff;">\(\text{ECE} = \sum_{m=1}^M \frac{|B_m|}{N} |\text{acc}(B_m) - \text{conf}(B_m)|\)</span>.
+            Mọi cập nhật trọng số sau khi qua cổng duyệt <code>/dfagent</code> đều áp dụng Non-Regression Gate (\(\text{Objective}_{after} \le \text{Objective}_{before}\)) và lưu dấu vết Before/After/&Delta;.
           </p>
         </div>
 
@@ -1760,33 +1886,33 @@
           <div class="report-exec-head">
             <h4>
               <span>📈</span>
-              <span>Báo cáo Độ tin cậy & Kiểm định Trôi dạt Phân phối (Reliability & Drift Report)</span>
+              <span>Báo cáo Độ tin cậy &amp; Kiểm định Trôi dạt Phân phối (Reliability &amp; Drift Report)</span>
             </h4>
-            <span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">PASSED DRIFT TEST</span>
+            <span class="badge-sub" id="driftStatusBadge" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">PASSED DRIFT TEST</span>
           </div>
-          <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
-            Độ chênh lệch giữa xác suất tự tin và độ chính xác thực nghiệm (Calibration Gap) đã được nén về mức <strong>0.0195</strong> (dưới ngưỡng chuẩn quốc tế 0.03).
+          <p id="driftSummaryText" style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+            Đang tổng hợp sai số hiệu chuẩn từ kiểm định thực nghiệm mới nhất...
           </p>
           <div class="report-exec-stats">
             <div class="report-mini-stat">
               <span class="k">Tỷ lệ cảnh báo sai (FPR)</span>
-              <span class="v" style="color: var(--accent-emerald);">0.4%</span>
+              <span class="v" id="driftFprVal" style="color: var(--accent-emerald);">0.0%</span>
             </div>
             <div class="report-mini-stat">
               <span class="k">Bỏ sót Deepfake (FNR)</span>
-              <span class="v" style="color: var(--accent-emerald);">0.00%</span>
+              <span class="v" id="driftFnrVal" style="color: var(--accent-emerald);">0.00%</span>
             </div>
             <div class="report-mini-stat">
               <span class="k">Chỉ số Youden's J</span>
-              <span class="v" style="color: var(--accent-cyan);">0.9960</span>
+              <span class="v" id="driftYoudenVal" style="color: var(--accent-cyan);">0.9960</span>
             </div>
           </div>
-          <div style="display: flex; gap: 0.8rem; margin-top: 0.8rem;">
-            <button class="btn btn-secondary btn-sm" onclick="exportModuleReport('calibration')">
-              <span>📥 Tải Báo Cáo Calibration (.MD)</span>
+          <div style="display: flex; gap: 0.8rem; margin-top: 0.8rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadWeightUpdateReport('md')">
+              <span>📥 Tải Báo Cáo Calibration &amp; Trọng số (.MD)</span>
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="sendQuickPrompt('Phân tích chi tiết độ lệch ECE hiện tại và giải thích ý nghĩa tham số T*=1.6178')">
-              <span>🤖 Yêu cầu Agent giải trình công thức</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="askAgentCalibrationSummary()">
+              <span>🤖 Yêu cầu Agent giải trình số liệu live</span>
             </button>
           </div>
         </div>
@@ -2833,38 +2959,387 @@
     }
 
 
-    // TAB 2: CALIBRATION METRICS
-    async function loadCalibrationMetrics() {
-      try {
-        const res = await fetch(getApiUrl('api/calibration/metrics'));
-        const data = await res.json();
-        if (data.status !== 'SUCCESS') return;
+    // TAB 2: CALIBRATION METRICS & WEIGHT UPDATE AUDIT REPORT
+    window._calibMetricsCache = null;
+    window._weightUpdateReportCache = null;
+    window._calibHistoryFilter = 'all';
 
-        document.getElementById('statTStar').innerText = data.optimal_temperature_T;
-        document.getElementById('statTauStar').innerText = data.optimal_decision_threshold_tau;
-        document.getElementById('statEceReduction').innerText = `-${data.ece_reduction_percent}%`;
-        document.getElementById('statBrierScore').innerText = data.brier_score_calibrated;
+    function filterCalibrationHistory(sourceType, btnEl) {
+      window._calibHistoryFilter = sourceType || 'all';
+      const grp = document.getElementById('calibHistoryFilterGroup');
+      if (grp) {
+        grp.querySelectorAll('button[data-cal-filter]').forEach(b => {
+          const active = b.getAttribute('data-cal-filter') === window._calibHistoryFilter;
+          b.style.borderColor = active ? 'var(--accent-cyan)' : '';
+          b.style.color = active ? 'var(--accent-cyan)' : '';
+        });
+      }
+      renderCalibrationHistoryTable();
+    }
 
-        // Update sidebar live badge
-        const badgeEce = document.getElementById('badgeCalibEce');
-        if (badgeEce) badgeEce.innerText = `ECE ${data.calibrated_ece}`;
+    function renderCalibrationHistoryTable() {
+      const tbody = document.getElementById('calibHistoryTableBody');
+      const data = window._calibMetricsCache;
+      if (!tbody || !data) return;
 
-        const tbody = document.getElementById('calibHistoryTableBody');
-        tbody.innerHTML = '';
-        data.training_epochs_history.forEach(ep => {
-          const row = `
+      const allRows = Array.isArray(data.calibration_history)
+        ? data.calibration_history
+        : (Array.isArray(data.training_epochs_history) ? data.training_epochs_history : []);
+      const flt = window._calibHistoryFilter || 'all';
+      const rows = flt === 'all' ? allRows : allRows.filter(r => r.source_type === flt);
+
+      const badge = document.getElementById('calibHistorySourceBadge');
+      if (badge) {
+        badge.innerText = `${rows.length}/${allRows.length} bản ghi · Sync ${data.latest_sync_timestamp || '--'}`;
+      }
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-dim); padding: 1.2rem;">Không có dữ liệu hiệu chỉnh nào cho bộ lọc này.</td></tr>';
+        return;
+      }
+
+      const srcBadgeColor = {
+        pentest: 'var(--accent-cyan)',
+        benchmark: '#a78bfa',
+        training: 'var(--secondary)',
+        weight_update: 'var(--accent-amber)',
+      };
+
+      tbody.innerHTML = rows.map(ep => {
+        const st = String(ep.status || 'VERIFIED');
+        const isWarn = st.includes('KEPT') || st.includes('DRIFT') || st.includes('REJECT');
+        const stColor = isWarn ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+        const stBorder = isWarn ? 'rgba(245,158,11,0.35)' : 'rgba(0,230,118,0.3)';
+        const srcCol = srcBadgeColor[ep.source_type] || 'var(--text-muted)';
+        const eceCell = ep.calib_ece !== undefined && ep.calib_ece !== null && ep.calib_ece !== '--'
+          ? String(ep.calib_ece)
+          : (ep.raw_ece !== undefined && ep.raw_ece !== null && ep.raw_ece !== '--' ? `raw ${ep.raw_ece}` : '--');
+        const tTau = (ep.temp_t || ep.tau)
+          ? `${ep.temp_t ?? '--'} / ${ep.tau ?? '--'}`
+          : '--';
+        const sampleTxt = ep.samples ? ` (${ep.samples} mẫu)` : '';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: #fff;">${escapeHtml(ep.epoch)}</div>
+              <div style="font-size: 0.68rem; color: ${srcCol}; font-family: var(--font-mono);">${escapeHtml(String(ep.source_type || '').toUpperCase())}${escapeHtml(sampleTxt)}</div>
+            </td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(ep.modality || '--')}</div>
+              <div style="font-size: 0.68rem; color: var(--text-dim); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(ep.model_name || '')}">${escapeHtml(ep.model_name || '')}</div>
+            </td>
+            <td style="font-family: var(--font-mono);">${escapeHtml(ep.loss ?? '--')}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">${escapeHtml(ep.val_auc ?? '--')}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-amber);">${escapeHtml(ep.eer_percent ?? '--')}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight: 700;">${escapeHtml(eceCell)}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(tTau)}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.76rem;">${escapeHtml(ep.date || '--')}</td>
+            <td><span class="badge-sub" style="color: ${stColor}; border-color: ${stBorder};">${escapeHtml(st)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterWeightUpdates() {
+      renderWeightUpdateReport(window._weightUpdateReportCache);
+    }
+
+    function renderActiveWeightsMatrix(snap) {
+      const body = document.getElementById('activeWeightsMatrixBody');
+      if (!body || !snap) return;
+      const cfgs = Array.isArray(snap.calibration_configs) ? snap.calibration_configs : [];
+      const cks = Array.isArray(snap.checkpoints) ? snap.checkpoints : [];
+      const rows = [];
+
+      cfgs.forEach(cfg => {
+        const kp = Object.entries(cfg.key_params || {})
+          .filter(([, v]) => v !== null && v !== undefined)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' | ');
+        rows.push(`
+          <tr>
+            <td>
+              <strong style="color: var(--accent-cyan);">${escapeHtml(String(cfg.modality || '').toUpperCase())}</strong>
+              <div style="font-size: 0.68rem; color: var(--text-dim); font-family: var(--font-mono);">${escapeHtml(cfg.file || '')}</div>
+            </td>
+            <td><span class="badge-sub" style="color: ${cfg.exists ? 'var(--accent-emerald)' : 'var(--accent-rose)'}; border-color: ${cfg.exists ? 'rgba(0,230,118,0.3)' : 'rgba(244,63,94,0.35)'};">${escapeHtml(cfg.status || (cfg.exists ? 'ACTIVE' : 'MISSING'))}</span></td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem;">${escapeHtml(kp || '--')}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(cfg.sha256_short || '--')}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem;">${escapeHtml(cfg.updated_at || '--')}</td>
+          </tr>
+        `);
+      });
+
+      cks.forEach(ck => {
+        rows.push(`
+          <tr>
+            <td>
+              <strong style="color: #fff;">${escapeHtml(ck.name || ck.file)}</strong>
+              <div style="font-size: 0.68rem; color: var(--text-dim); font-family: var(--font-mono);">${escapeHtml(ck.file || '')}</div>
+            </td>
+            <td><span class="badge-sub" style="color: ${ck.exists ? 'var(--accent-emerald)' : 'var(--text-dim)'}; border-color: ${ck.exists ? 'rgba(0,230,118,0.3)' : 'var(--border-color)'};">${ck.exists ? 'MOUNTED' : 'NOT_CREATED'}</span></td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem;">${ck.exists ? `${Number(ck.size_kb || 0).toFixed(1)} KB` : '--'}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(ck.sha256_short || '--')}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.74rem;">${escapeHtml(ck.mtime_utc || '--')}</td>
+          </tr>
+        `);
+      });
+
+      body.innerHTML = rows.join('');
+    }
+
+    function renderWeightUpdateReport(report) {
+      if (!report) return;
+      const sum = report.summary || {};
+      const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = String(txt ?? '--'); };
+      setEl('wuStatTotal', sum.total_weight_updates ?? 0);
+      setEl('wuStatLatestAt', `Lần cuối: ${sum.latest_update_at || '--'}`);
+      setEl('wuStatAccepted', sum.accepted_updates ?? 0);
+      setEl('wuStatBaseline', `Kept baseline: ${sum.kept_baseline_updates ?? 0}`);
+      setEl('wuStatCheckpoints', sum.active_disk_checkpoints ?? 0);
+      setEl('wuStatRegistrySub', `Registry: ${sum.registered_checkpoints ?? 0} versions`);
+      setEl('wuStatPendingReview', sum.feedback_pending_review ?? 0);
+      setEl('wuStatApprovedSub', `Đã duyệt: ${sum.feedback_approved_total ?? 0} mẫu`);
+
+      renderActiveWeightsMatrix(report.active_weights_snapshot);
+
+      const regBody = document.getElementById('modelWeightsRegistryBody');
+      if (regBody) {
+        const regs = Array.isArray(report.model_weights_registry) ? report.model_weights_registry : [];
+        if (!regs.length) {
+          regBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 1rem;">Chưa có phiên bản neural weights nào trong bảng model_weights_registry.</td></tr>';
+        } else {
+          regBody.innerHTML = regs.map(r => `
             <tr>
-              <td><strong>Epoch ${ep.epoch}</strong></td>
-              <td style="font-family: var(--font-mono);">${ep.loss}</td>
-              <td style="font-family: var(--font-mono); color: var(--accent-cyan);">${ep.val_auc}</td>
-              <td style="font-family: var(--font-mono); color: var(--accent-amber);">${ep.raw_ece}</td>
-              <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight: 700;">${ep.calib_ece}</td>
-              <td>${ep.date}</td>
-              <td><span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">CONVERGED</span></td>
+              <td style="font-family: var(--font-mono); font-size: 0.76rem;">${escapeHtml(r.date || '--')}</td>
+              <td style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">${escapeHtml(r.version_tag || '--')}</td>
+              <td>${escapeHtml(r.backbone || '--')}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(r.weights_file || '--')}</td>
+              <td><span class="badge-sub" style="color: var(--accent-emerald); border-color: rgba(0,230,118,0.3);">${escapeHtml(String(r.status || 'active').toUpperCase())}</span></td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      const diffBox = document.getElementById('weightUpdateDiffContainer');
+      if (!diffBox) return;
+      const modF = (document.getElementById('wuModalityFilter')?.value || 'all').toLowerCase();
+      const stF = (document.getElementById('wuStatusFilter')?.value || 'all').toLowerCase();
+      const allUpdates = Array.isArray(report.weight_updates) ? report.weight_updates : [];
+      const filtered = allUpdates.filter(u => {
+        const mOk = modF === 'all' || String(u.modality || '').toLowerCase() === modF;
+        const sOk = stF === 'all' || (stF === 'accepted' ? Boolean(u.accepted) : !u.accepted);
+        return mOk && sOk;
+      });
+
+      if (!filtered.length) {
+        diffBox.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; padding: 0.9rem; background: var(--bg-darker); border-radius: var(--radius-sm);">Chưa có bản ghi cập nhật trọng số nào khớp bộ lọc (hoặc chưa phát sinh cập nhật mới sau khi duyệt trên /dfagent).</div>';
+        return;
+      }
+
+      diffBox.innerHTML = filtered.map(u => {
+        const acc = Boolean(u.accepted);
+        const stColor = acc ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+        const stBorder = acc ? 'rgba(0,230,118,0.35)' : 'rgba(245,158,11,0.35)';
+        const pDiffs = Array.isArray(u.parameter_diffs) ? u.parameter_diffs : [];
+        const mDiffs = Array.isArray(u.metric_diffs) ? u.metric_diffs : [];
+
+        const paramRowsHtml = pDiffs.filter(pd => !pd.is_meta || pd.changed).map(pd => {
+          const d = pd.delta;
+          const deltaBadge = d === null || d === undefined
+            ? (pd.changed ? '<span style="color: var(--accent-cyan);">MODIFIED</span>' : '<span style="color: var(--text-dim);">--</span>')
+            : (pd.changed
+              ? `<span style="color: ${d > 0 ? 'var(--accent-cyan)' : 'var(--accent-amber)'}; font-weight: 700;">${d > 0 ? '+' : ''}${d}${pd.pct_change !== null && pd.pct_change !== undefined ? ` (${pd.pct_change > 0 ? '+' : ''}${pd.pct_change}%)` : ''}</span>`
+              : '<span style="color: var(--text-dim);">0</span>');
+          return `
+            <tr style="${pd.changed ? 'background: rgba(0, 229, 255, 0.05);' : ''}">
+              <td style="font-family: var(--font-mono); font-size: 0.72rem; color: ${pd.changed ? '#fff' : 'var(--text-muted)'};">${escapeHtml(pd.param)}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(pd.before ?? '--')}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem; color: ${pd.changed ? 'var(--accent-emerald)' : 'var(--text-main)'}; font-weight: ${pd.changed ? '700' : '400'};">${escapeHtml(pd.after ?? '--')}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem;">${deltaBadge}</td>
             </tr>
           `;
-          tbody.insertAdjacentHTML('beforeend', row);
-        });
+        }).join('');
+
+        const metricRowsHtml = mDiffs.map(md => {
+          const d = md.delta;
+          const dCol = md.improved === true ? 'var(--accent-emerald)' : (md.improved === false ? 'var(--accent-rose)' : 'var(--text-dim)');
+          const dTxt = d === null || d === undefined ? '--' : `${d > 0 ? '+' : ''}${d}`;
+          return `
+            <tr>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(md.metric)}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(md.before ?? '--')}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;">${escapeHtml(md.after ?? '--')}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem; color: ${dCol}; font-weight: 700;">${escapeHtml(dTxt)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <div style="background: var(--bg-darker); border: 1px solid var(--border-color); border-left: 3px solid ${stColor}; border-radius: var(--radius-md); padding: 0.9rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.65rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <strong style="color: #fff; font-family: var(--font-mono); font-size: 0.84rem;">${escapeHtml(u.update_id)}</strong>
+                <span class="badge-sub" style="color: var(--accent-cyan); border-color: rgba(0,229,255,0.35);">${escapeHtml(String(u.modality || 'multimodal').toUpperCase())}</span>
+                <span class="badge-sub" style="color: ${stColor}; border-color: ${stBorder};">${escapeHtml(u.status_label || (acc ? 'ACCEPTED' : 'KEPT_BASELINE'))}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted);">Đổi <strong>${u.changed_params_count ?? 0}</strong> tham số · <strong>${u.feedback_count ?? 0}</strong> mẫu feedback</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);">${escapeHtml(u.created_at || '--')}</span>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;" onclick="askAgentWeightUpdate('${escapeHtml(u.update_id)}')">🤖 Giải trình</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;" onclick="copyWeightUpdateJson('${escapeHtml(u.update_id)}')">📋 JSON</button>
+              </div>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 0.65rem;">
+              <span>Trigger: <code style="color: var(--accent-cyan);">${escapeHtml(u.trigger_source || '--')}</code></span>
+              ${u.notes ? ` · <span>${escapeHtml(u.notes)}</span>` : ''}
+            </div>
+            <div class="grid-2" style="gap: 0.8rem;">
+              <div style="overflow-x: auto;">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">THAY ĐỔI TRỌNG SỐ / THAM SỐ</div>
+                <table class="custom-table" style="font-size: 0.72rem;">
+                  <thead><tr><th>Tham số</th><th>Trước</th><th>Sau</th><th>&Delta;</th></tr></thead>
+                  <tbody>${paramRowsHtml || '<tr><td colspan="4" style="color: var(--text-dim);">Không có chênh lệch tham số.</td></tr>'}</tbody>
+                </table>
+              </div>
+              <div style="overflow-x: auto;">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">TÁC ĐỘNG CHỈ SỐ (METRICS)</div>
+                <table class="custom-table" style="font-size: 0.72rem;">
+                  <thead><tr><th>Chỉ số</th><th>Trước</th><th>Sau</th><th>&Delta;</th></tr></thead>
+                  <tbody>${metricRowsHtml || '<tr><td colspan="4" style="color: var(--text-dim);">Không có dữ liệu metric trước/sau.</td></tr>'}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function downloadWeightUpdateReport(fmt) {
+      const formatClean = (fmt || 'md').toLowerCase() === 'json' ? 'json' : 'md';
+      try {
+        const mod = encodeURIComponent(document.getElementById('wuModalityFilter')?.value || 'all');
+        const res = await fetch(getApiUrl(`api/calibration/weight-updates/export?format=${formatClean}&modality=${mod === 'all' ? '' : mod}`));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Weight_Update_Audit_Report_${new Date().toISOString().slice(0, 10)}.${formatClean}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        alert('Không thể xuất báo cáo trọng số: ' + err.message);
+      }
+    }
+
+    function copyWeightUpdateJson(updateId) {
+      const updates = window._weightUpdateReportCache?.weight_updates || [];
+      const found = updates.find(x => x.update_id === updateId);
+      if (!found) return;
+      const txt = JSON.stringify(found, null, 2);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).catch(() => {});
+      }
+    }
+
+    function askAgentWeightUpdate(updateId) {
+      const updates = window._weightUpdateReportCache?.weight_updates || [];
+      const found = updates.find(x => x.update_id === updateId);
+      if (!found) {
+        sendQuickPrompt(`Phân tích chi tiết bản cập nhật trọng số ${updateId}.`);
+        return;
+      }
+      const changedSummary = (found.parameter_diffs || [])
+        .filter(d => d.changed)
+        .map(d => `${d.param}: ${d.before} -> ${d.after} (delta=${d.delta})`)
+        .join('; ');
+      sendQuickPrompt(
+        `Hãy kiểm toán bản cập nhật trọng số ${updateId} (modality=${found.modality}, status=${found.status_label}, trigger=${found.trigger_source}). ` +
+        `Các tham số thay đổi: ${changedSummary || 'không đổi'}. Giải thích tác động đến FPR/FNR/ECE và đề xuất bước tiếp theo.`
+      );
+    }
+
+    function askAgentCalibrationSummary() {
+      const cal = window._calibMetricsCache || {};
+      const audit = cal.latest_empirical_audit || {};
+      sendQuickPrompt(
+        `Phân tích dữ liệu hiệu chỉnh live mới nhất (${cal.latest_sync_timestamp || '--'}): ` +
+        `T*=${cal.optimal_temperature_T}, tau*=${cal.optimal_decision_threshold_tau}, ` +
+        `ECE baseline=${cal.calibrated_ece}, Pentest mới nhất ECE=${audit.pentest_ece ?? '--'}, ` +
+        `Audio ECE=${audit.audio_ece ?? '--'}, Video ECE=${audit.video_ece ?? '--'}, FPR=${cal.false_positive_rate}, FNR=${cal.false_negative_rate}.`
+      );
+    }
+
+    async function loadCalibrationMetrics() {
+      try {
+        const [calRes, wuRes] = await Promise.all([
+          fetch(getApiUrl('api/calibration/metrics')),
+          fetch(getApiUrl('api/calibration/weight-updates/report?limit=50')),
+        ]);
+        const data = await calRes.json();
+        if (data.status === 'SUCCESS') {
+          window._calibMetricsCache = data;
+          const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = String(txt ?? '--'); };
+
+          setEl('statTStar', data.optimal_temperature_T);
+          setEl('statTauStar', data.optimal_decision_threshold_tau);
+          setEl('statEceReduction', `-${data.ece_reduction_percent}%`);
+          setEl('statBrierScore', data.brier_score_calibrated);
+
+          const plattTxt = (data.platt_a !== undefined && data.platt_b !== undefined)
+            ? `2-Param Platt: a=${data.platt_a}, b=${data.platt_b}`
+            : 'Logistic Scaling Factor';
+          setEl('statTStarSub', plattTxt);
+          const confTxt = data.conformal_q_hat ? `Conformal q̂=${data.conformal_q_hat}` : "Youden's J Optimal Cutoff";
+          setEl('statTauStarSub', confTxt);
+          setEl('statEceReductionSub', `${data.raw_ece} → ${data.calibrated_ece}`);
+
+          const audit = data.latest_empirical_audit || {};
+          setEl('statBrierScoreSub', audit.pentest_ece !== null && audit.pentest_ece !== undefined
+            ? `Live Pentest ECE: ${audit.pentest_ece} (${audit.pentest_source || ''})`
+            : 'Độ tin cậy xác suất cao');
+          setEl('calibLastSyncBadge', `Đồng bộ live: ${data.latest_sync_timestamp || '--'}`);
+
+          const badgeEce = document.getElementById('badgeCalibEce');
+          if (badgeEce) badgeEce.innerText = `ECE ${data.calibrated_ece}`;
+
+          const driftFpr = document.getElementById('driftFprVal');
+          const driftFnr = document.getElementById('driftFnrVal');
+          const driftYouden = document.getElementById('driftYoudenVal');
+          const driftSummary = document.getElementById('driftSummaryText');
+          const driftBadge = document.getElementById('driftStatusBadge');
+
+          const fprPct = (Number(data.false_positive_rate || 0) * 100).toFixed(2);
+          const fnrPct = (Number(data.false_negative_rate || 0) * 100).toFixed(2);
+          if (driftFpr) driftFpr.innerText = `${fprPct}%`;
+          if (driftFnr) driftFnr.innerText = `${fnrPct}%`;
+          if (driftYouden) driftYouden.innerText = String(data.youden_j_index ?? '0.9960');
+          if (driftSummary) {
+            driftSummary.innerHTML =
+              `Baseline Calibration Gap nén về <strong>${escapeHtml(data.calibrated_ece)}</strong> (&lt; 0.03). ` +
+              `Kiểm định live mới nhất (<strong>${escapeHtml(data.latest_sync_timestamp || '--')}</strong>): ` +
+              `Pentest AUC=<strong>${escapeHtml(audit.pentest_auc ?? '--')}</strong>, ` +
+              `Audio ECE=<strong>${escapeHtml(audit.audio_ece ?? '--')}</strong>, ` +
+              `Video ECE=<strong>${escapeHtml(audit.video_ece ?? '--')}</strong>.`;
+          }
+          if (driftBadge && audit.pentest_ece !== null && audit.pentest_ece !== undefined && Number(audit.pentest_ece) > 0.10) {
+            driftBadge.innerText = `PENTEST DRIFT ALERT (ECE ${audit.pentest_ece})`;
+            driftBadge.style.color = 'var(--accent-amber)';
+            driftBadge.style.borderColor = 'rgba(245,158,11,0.4)';
+          }
+
+          renderCalibrationHistoryTable();
+        }
+
+        if (wuRes && wuRes.ok) {
+          const wuData = await wuRes.json();
+          if (wuData.status === 'SUCCESS') {
+            window._weightUpdateReportCache = wuData;
+            renderWeightUpdateReport(wuData);
+          }
+        }
 
         renderAllMath();
       } catch (err) {
@@ -3600,23 +4075,8 @@
 Các chứng thư được lưu trữ với chữ ký mã hóa SHA-256 HMAC nguyên vẹn, đảm bảo tính toàn vẹn bằng chứng trước tòa án và cơ quan điều tra pháp lý.
 `;
       } else if (moduleType === 'calibration') {
-        title = `PostHoc_Calibration_Report_${Date.now()}.md`;
-        content = `# BÁO CÁO HIỆU CHỈNH ĐỘ TIN CẬY MÔ HÌNH (POST-HOC CALIBRATION)
-**Ngày xuất báo cáo:** ${now}
-**Thuật toán:** Platt Scaling (Logistic Temperature Scaling)
-
----
-## 1. Thông số hiệu chỉnh tối ưu
-- **Nhiệt độ tối ưu (T*):** 1.6178
-- **Ngưỡng quyết định Youden (tau*):** 0.8118
-- **Raw ECE:** 0.0894
-- **Calibrated ECE:** 0.0195
-- **Mức độ giảm sai số ECE:** -78.19%
-- **Brier Score:** 0.0142 (Độ tin cậy xác suất đạt chuẩn cao)
-
-## 2. Kết luận
-Mô hình đã loại bỏ hoàn toàn tình trạng tự tin thái quá (over-confidence), đảm bảo xác suất dự báo tỷ lệ thuận với tần suất độ chính xác thực nghiệm.
-`;
+        downloadWeightUpdateReport('md');
+        return;
       } else if (moduleType === 'lora') {
         title = `LoRA_Adapter_Benchmark_Report_${Date.now()}.md`;
         content = `# BÁO CÁO THỬ NGHIỆM LORA ADAPTER TRÊN DỮ LIỆU TRUYỀN THÔNG TIẾNG VIỆT

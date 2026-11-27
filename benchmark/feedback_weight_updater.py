@@ -55,6 +55,7 @@ FEEDBACK_FRAMES_DIR = PROJECT_ROOT / "colab_datasets" / "zero_day_vault" / "feed
 LABELED_MANIFEST_FILE = PROJECT_ROOT / "colab_datasets" / "zero_day_vault" / "labeled_feedback_manifest.json"
 LORA_ADAPTER_FILE = CUSTOM_VIT_DIR / "lora_feedback_adapter.pt"
 MERGED_FEEDBACK_WEIGHTS_FILE = CUSTOM_VIT_DIR / "feedback_merged_weights.pt"
+WEIGHT_UPDATES_REPORT_DIR = PROJECT_ROOT / "report_colab" / "weight_updates"
 
 
 def infer_platform_from_url(url: Optional[str]) -> str:
@@ -90,6 +91,76 @@ def _label_to_int(label: str) -> int:
 
 class FeedbackWeightUpdater:
     """Handles feedback ingestion, hard-frame extraction, calibration updates, and LoRA weight updates."""
+
+    @classmethod
+    def _persist_weight_update_report_artifact(
+        cls,
+        *,
+        update_id: str,
+        modality: str,
+        trigger_source: str,
+        feedback_count: int,
+        before_params: Dict[str, Any],
+        after_params: Dict[str, Any],
+        before_metrics: Dict[str, Any],
+        after_metrics: Dict[str, Any],
+        accepted: bool,
+        notes: str,
+        db_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Write persistent JSON & Markdown weight-update audit reports under report_colab/weight_updates/."""
+        from observability.app.calibration_audit import (
+            build_weight_update_detailed_report,
+            compute_metric_diffs,
+            compute_param_diffs,
+            render_weight_update_markdown_report,
+        )
+
+        p_diffs = compute_param_diffs(before_params, after_params)
+        m_diffs = compute_metric_diffs(before_metrics, after_metrics)
+        out_dir = Path(db_path).parent / "weight_updates" if db_path else WEIGHT_UPDATES_REPORT_DIR
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        payload = {
+            "update_id": update_id,
+            "modality": modality,
+            "trigger_source": trigger_source,
+            "feedback_count": int(feedback_count),
+            "accepted": bool(accepted),
+            "status_label": "ACCEPTED" if accepted else "KEPT_BASELINE",
+            "notes": notes,
+            "created_at": ts_utc,
+            "timestamp_utc": ts_utc,
+            "before_params": before_params,
+            "after_params": after_params,
+            "before_metrics": before_metrics,
+            "after_metrics": after_metrics,
+            "parameter_diffs": p_diffs,
+            "changed_params_count": sum(1 for d in p_diffs if d.get("changed")),
+            "metric_diffs": m_diffs,
+        }
+
+        safe_id = re.sub(r"[^A-Za-z0-9._-]+", "_", str(update_id or "update"))
+        art_json = out_dir / f"update_{safe_id}.json"
+        art_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        consolidated = build_weight_update_detailed_report(
+            repo_root=PROJECT_ROOT,
+            custom_vit_dir=CUSTOM_VIT_DIR,
+            db_path=Path(db_path) if db_path else None,
+        )
+        latest_json = out_dir / "latest_weight_update_report.json"
+        latest_md = out_dir / "latest_weight_update_report.md"
+        latest_json.write_text(json.dumps(consolidated, indent=2, ensure_ascii=False), encoding="utf-8")
+        latest_md.write_text(render_weight_update_markdown_report(consolidated), encoding="utf-8")
+
+        return {
+            "parameter_diffs": p_diffs,
+            "metric_diffs": m_diffs,
+            "report_artifact_path": str(art_json),
+            "latest_report_md_path": str(latest_md),
+        }
 
     @staticmethod
     def load_video_calibration_params() -> Dict[str, Any]:
@@ -512,16 +583,32 @@ class FeedbackWeightUpdater:
             if detector is not None and hasattr(detector, "reload_calibration_params"):
                 detector.reload_calibration_params()
 
+        final_after_params = best_params if accepted else before_params
+        final_after_metrics = best_metrics if accepted else before_metrics
         update_id = save_weight_update_audit({
             "trigger_source": trigger_source,
             "feedback_count": len(samples),
             "before_params": before_params,
-            "after_params": best_params if accepted else before_params,
+            "after_params": final_after_params,
             "before_metrics": before_metrics,
-            "after_metrics": best_metrics if accepted else before_metrics,
+            "after_metrics": final_after_metrics,
             "accepted": accepted,
             "notes": "Fast-loop SARAAB/Dual-Stream calibration refinement from short-video feedback",
         }, db_path=db_path)
+
+        art_info = cls._persist_weight_update_report_artifact(
+            update_id=update_id,
+            modality="video",
+            trigger_source=trigger_source,
+            feedback_count=len(samples),
+            before_params=before_params,
+            after_params=final_after_params,
+            before_metrics=before_metrics,
+            after_metrics=final_after_metrics,
+            accepted=accepted,
+            notes="Fast-loop SARAAB/Dual-Stream calibration refinement from short-video feedback",
+            db_path=db_path,
+        )
 
         return {
             "status": "updated" if accepted else "kept_baseline",
@@ -529,9 +616,12 @@ class FeedbackWeightUpdater:
             "accepted": accepted,
             "feedback_samples_used": len(samples),
             "before_params": before_params,
-            "after_params": best_params if accepted else before_params,
+            "after_params": final_after_params,
             "before_metrics": before_metrics,
-            "after_metrics": best_metrics if accepted else before_metrics,
+            "after_metrics": final_after_metrics,
+            "parameter_diffs": art_info["parameter_diffs"],
+            "metric_diffs": art_info["metric_diffs"],
+            "report_artifact_path": art_info["report_artifact_path"],
         }
 
     @classmethod
@@ -788,16 +878,33 @@ class FeedbackWeightUpdater:
             except Exception:
                 pass
 
+        lora_before_params = {"lora_r": 8, "lora_alpha": 16, "epochs": epochs, "lr": lr}
+        lora_after_params = {"lora_r": 8, "lora_alpha": 16, "epochs": epochs, "lr": lr, "adapter_path": saved_adapter_path, "merged_weights_path": saved_merged_path}
+        lora_notes = f"LoRA continual ViT feedback training ({len(feedback_batch)} feedback frames + {len(replay_entries)} replay)"
         update_id = save_weight_update_audit({
             "trigger_source": "slow_loop_lora_feedback",
             "feedback_count": len(feedback_batch),
-            "before_params": {"lora_r": 8, "lora_alpha": 16, "epochs": epochs, "lr": lr},
-            "after_params": {"adapter_path": saved_adapter_path, "merged_weights_path": saved_merged_path},
+            "before_params": lora_before_params,
+            "after_params": lora_after_params,
             "before_metrics": before_metrics,
             "after_metrics": after_metrics,
             "accepted": improved,
-            "notes": f"LoRA continual ViT feedback training ({len(feedback_batch)} feedback frames + {len(replay_entries)} replay)",
+            "notes": lora_notes,
         }, db_path=db_path)
+
+        art_info = cls._persist_weight_update_report_artifact(
+            update_id=update_id,
+            modality="lora",
+            trigger_source="slow_loop_lora_feedback",
+            feedback_count=len(feedback_batch),
+            before_params=lora_before_params,
+            after_params=lora_after_params,
+            before_metrics=before_metrics,
+            after_metrics=after_metrics,
+            accepted=improved,
+            notes=lora_notes,
+            db_path=db_path,
+        )
 
         return {
             "status": "updated" if improved else "rejected_no_improvement",
@@ -809,6 +916,9 @@ class FeedbackWeightUpdater:
             "after_metrics": after_metrics,
             "adapter_path": saved_adapter_path,
             "merged_weights_path": saved_merged_path,
+            "parameter_diffs": art_info["parameter_diffs"],
+            "metric_diffs": art_info["metric_diffs"],
+            "report_artifact_path": art_info["report_artifact_path"],
         }
 
     @staticmethod
@@ -969,16 +1079,32 @@ class FeedbackWeightUpdater:
             if detector is not None and hasattr(detector, "reload_calibration_params"):
                 detector.reload_calibration_params()
 
+        aud_after_params = best_params if accepted else before_params
+        aud_after_metrics = best_metrics if accepted else before_metrics
         update_id = save_weight_update_audit({
             "trigger_source": trigger_source,
             "feedback_count": len(samples),
             "before_params": before_params,
-            "after_params": best_params if accepted else before_params,
+            "after_params": aud_after_params,
             "before_metrics": before_metrics,
-            "after_metrics": best_metrics if accepted else before_metrics,
+            "after_metrics": aud_after_metrics,
             "accepted": accepted,
             "notes": "Fast-loop acoustic coordinate calibration refinement from audio feedback",
         }, db_path=db_path)
+
+        art_info = cls._persist_weight_update_report_artifact(
+            update_id=update_id,
+            modality="audio",
+            trigger_source=trigger_source,
+            feedback_count=len(samples),
+            before_params=before_params,
+            after_params=aud_after_params,
+            before_metrics=before_metrics,
+            after_metrics=aud_after_metrics,
+            accepted=accepted,
+            notes="Fast-loop acoustic coordinate calibration refinement from audio feedback",
+            db_path=db_path,
+        )
 
         return {
             "status": "updated" if accepted else "kept_baseline",
@@ -986,9 +1112,12 @@ class FeedbackWeightUpdater:
             "accepted": accepted,
             "feedback_samples_used": len(samples),
             "before_params": before_params,
-            "after_params": best_params if accepted else before_params,
+            "after_params": aud_after_params,
             "before_metrics": before_metrics,
-            "after_metrics": best_metrics if accepted else before_metrics,
+            "after_metrics": aud_after_metrics,
+            "parameter_diffs": art_info["parameter_diffs"],
+            "metric_diffs": art_info["metric_diffs"],
+            "report_artifact_path": art_info["report_artifact_path"],
         }
 
     @classmethod
@@ -1074,16 +1203,33 @@ class FeedbackWeightUpdater:
             if detector is not None and hasattr(detector, "reload_calibration_params"):
                 detector.reload_calibration_params()
 
+        img_after_params = after_params if accepted else before_params
+        img_before_metrics = {"errors": before_score[0], "objective": before_score[1]}
+        img_after_metrics = {"errors": best_score[0], "objective": best_score[1]} if accepted else img_before_metrics
         update_id = save_weight_update_audit({
             "trigger_source": trigger_source,
             "feedback_count": len(samples),
             "before_params": before_params,
-            "after_params": after_params if accepted else before_params,
-            "before_metrics": {"errors": before_score[0], "objective": before_score[1]},
-            "after_metrics": {"errors": best_score[0], "objective": best_score[1]},
+            "after_params": img_after_params,
+            "before_metrics": img_before_metrics,
+            "after_metrics": img_after_metrics,
             "accepted": accepted,
             "notes": "Image threshold refinement strictly from /dfagent-approved feedback",
         }, db_path=db_path)
+
+        art_info = cls._persist_weight_update_report_artifact(
+            update_id=update_id,
+            modality="image",
+            trigger_source=trigger_source,
+            feedback_count=len(samples),
+            before_params=before_params,
+            after_params=img_after_params,
+            before_metrics=img_before_metrics,
+            after_metrics=img_after_metrics,
+            accepted=accepted,
+            notes="Image threshold refinement strictly from /dfagent-approved feedback",
+            db_path=db_path,
+        )
 
         return {
             "status": "updated" if accepted else "kept_baseline",
@@ -1091,7 +1237,12 @@ class FeedbackWeightUpdater:
             "accepted": accepted,
             "feedback_samples_used": len(samples),
             "before_params": before_params,
-            "after_params": after_params if accepted else before_params,
+            "after_params": img_after_params,
+            "before_metrics": img_before_metrics,
+            "after_metrics": img_after_metrics,
+            "parameter_diffs": art_info["parameter_diffs"],
+            "metric_diffs": art_info["metric_diffs"],
+            "report_artifact_path": art_info["report_artifact_path"],
         }
 
     @classmethod

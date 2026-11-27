@@ -830,6 +830,173 @@ print("FASTAPI_RUNTIME_OK")
             self.assertEqual(len(approved_rows), 1)
             self.assertEqual(approved_rows[0]["feedback_id"], fid)
 
+    def test_21_calibration_live_history_and_weight_update_detailed_report(self):
+        """
+        Regression test for:
+          1) /api/calibration/metrics aggregating live post-2026-11-19 pentest/benchmark history
+             with real AUC/ECE values and never mis-mapping error_rate into raw_ece.
+          2) Detailed Weight Update Audit Report (parameter_diffs, metric_diffs, active_weights_snapshot,
+             Markdown export, and /dfagent UI report containers).
+        """
+        import importlib.util
+        import json
+        import sqlite3
+        import tempfile
+
+        audit_path = REPO_ROOT / "observability" / "app" / "calibration_audit.py"
+        self.assertTrue(audit_path.exists(), "Missing observability/app/calibration_audit.py")
+        spec = importlib.util.spec_from_file_location("calibration_audit_mod", str(audit_path))
+        cal_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cal_mod)
+
+        obs_main = (REPO_ROOT / "observability" / "app" / "main.py").read_text(encoding="utf-8")
+        for tok in (
+            "/api/calibration/metrics",
+            "/dfagent/api/calibration/metrics",
+            "/api/calibration/weight-updates/report",
+            "/dfagent/api/calibration/weight-updates/report",
+            "/api/calibration/weight-updates/export",
+            "/dfagent/api/calibration/weight-updates/export",
+            "build_live_calibration_metrics",
+            "build_weight_update_detailed_report",
+            "render_weight_update_markdown_report",
+        ):
+            self.assertIn(tok, obs_main, f"Missing '{tok}' in observability/app/main.py")
+
+        fwu_txt = (REPO_ROOT / "benchmark" / "feedback_weight_updater.py").read_text(encoding="utf-8")
+        self.assertIn("_persist_weight_update_report_artifact", fwu_txt)
+        self.assertIn("WEIGHT_UPDATES_REPORT_DIR", fwu_txt)
+
+        obs_html = (REPO_ROOT / "observability" / "static" / "index.html").read_text(encoding="utf-8")
+        for tok in (
+            "weightUpdateReportSection",
+            "activeWeightsMatrixBody",
+            "weightUpdateDiffContainer",
+            "modelWeightsRegistryBody",
+            "calibLastSyncBadge",
+            "downloadWeightUpdateReport",
+            "filterCalibrationHistory",
+            "api/calibration/weight-updates/report",
+            "api/calibration/weight-updates/export",
+        ):
+            self.assertIn(tok, obs_html, f"Missing '{tok}' in observability/static/index.html")
+
+        with tempfile.TemporaryDirectory(prefix="cal_audit_test_") as td:
+            tmp_db = Path(td) / "test_memory.db"
+            conn = sqlite3.connect(str(tmp_db))
+            conn.execute("""
+                CREATE TABLE calibration_weight_updates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    update_id TEXT UNIQUE NOT NULL,
+                    trigger_source TEXT NOT NULL,
+                    feedback_count INTEGER DEFAULT 0,
+                    before_params_json TEXT,
+                    after_params_json TEXT,
+                    before_metrics_json TEXT,
+                    after_metrics_json TEXT,
+                    accepted INTEGER DEFAULT 1,
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE model_weights_registry (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    version_tag TEXT NOT NULL,
+                    weights_file TEXT NOT NULL,
+                    backbone TEXT,
+                    status TEXT DEFAULT 'active',
+                    metrics_json TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE user_feedback_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    feedback_id TEXT UNIQUE NOT NULL,
+                    review_status TEXT DEFAULT 'PENDING'
+                )
+            """)
+            conn.execute(
+                """
+                INSERT INTO calibration_weight_updates
+                (update_id, trigger_source, feedback_count, before_params_json, after_params_json, before_metrics_json, after_metrics_json, accepted, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "WUP-TEST-001",
+                    "feedback:FB-TEST:FALSE_NEGATIVE",
+                    3,
+                    json.dumps({"tau_video": 0.8118, "w_peak": 0.50, "w_avg": 0.35, "w_jitter": 0.15}),
+                    json.dumps({"tau_video": 0.7318, "w_peak": 0.62, "w_avg": 0.28, "w_jitter": 0.10}),
+                    json.dumps({"fp": 0, "fn": 2, "error_rate": 0.50, "mean_bce": 0.812, "objective": 1.95}),
+                    json.dumps({"fp": 0, "fn": 0, "error_rate": 0.0, "mean_bce": 0.315, "objective": 0.32}),
+                    1,
+                    "Test fast-loop calibration improvement",
+                    "2026-11-26 09:00:00",
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO model_weights_registry (date, version_tag, weights_file, backbone, status, metrics_json)
+                VALUES ('2026-11-26', 'lora-test-v1', 'custom_vit_model/lora_feedback_adapter.pt', 'ViT-LoRA', 'active', '{}')
+                """
+            )
+            conn.execute("INSERT INTO user_feedback_events (feedback_id, review_status) VALUES ('FB-1', 'PENDING'), ('FB-2', 'APPROVED_FAKE')")
+            conn.commit()
+            conn.close()
+
+            metrics = cal_mod.build_live_calibration_metrics(
+                repo_root=REPO_ROOT,
+                custom_vit_dir=REPO_ROOT / "custom_vit_model",
+                db_path=tmp_db,
+            )
+            self.assertEqual(metrics["status"], "SUCCESS")
+            hist = metrics["training_epochs_history"]
+            self.assertGreaterEqual(len(hist), 3)
+            # Latest history MUST NOT be frozen on 2026-11-19 when 2026-11-25/26 reports exist
+            self.assertGreaterEqual(hist[0]["date"][:10], "2026-11-25", f"Expected fresh >= 2026-11-25 history, got: {hist[0]}")
+            # Empirical pentest rows must expose numeric AUC & ECE (not '--')
+            pentest_rows = [r for r in hist if r["source_type"] == "pentest" and r["calib_ece"] != "--"]
+            self.assertTrue(len(pentest_rows) >= 1, "Expected live pentest rows with real calib_ece")
+            self.assertNotEqual(pentest_rows[0]["val_auc"], "--")
+            # Weight update row must NOT copy error_rate into raw_ece
+            wup_rows = [r for r in hist if r["source_type"] == "weight_update"]
+            self.assertEqual(len(wup_rows), 1)
+            self.assertEqual(wup_rows[0]["raw_ece"], "--")
+            self.assertEqual(wup_rows[0]["loss"], 0.315)
+
+            report = cal_mod.build_weight_update_detailed_report(
+                repo_root=REPO_ROOT,
+                custom_vit_dir=REPO_ROOT / "custom_vit_model",
+                db_path=tmp_db,
+            )
+            self.assertEqual(report["summary"]["total_weight_updates"], 1)
+            self.assertEqual(report["summary"]["accepted_updates"], 1)
+            self.assertEqual(report["summary"]["feedback_pending_review"], 1)
+            self.assertEqual(report["summary"]["feedback_approved_total"], 1)
+
+            upd = report["weight_updates"][0]
+            self.assertEqual(upd["update_id"], "WUP-TEST-001")
+            self.assertEqual(upd["modality"], "video")
+            tau_diff = next(d for d in upd["parameter_diffs"] if d["param"] == "tau_video")
+            self.assertEqual(tau_diff["before"], 0.8118)
+            self.assertEqual(tau_diff["after"], 0.7318)
+            self.assertAlmostEqual(tau_diff["delta"], -0.08, places=4)
+            self.assertTrue(tau_diff["changed"])
+
+            fn_diff = next(d for d in upd["metric_diffs"] if d["metric"] == "fn")
+            self.assertEqual(fn_diff["before"], 2.0)
+            self.assertEqual(fn_diff["after"], 0.0)
+            self.assertTrue(fn_diff["improved"])
+
+            md = cal_mod.render_weight_update_markdown_report(report)
+            self.assertIn("WUP-TEST-001", md)
+            self.assertIn("tau_video", md)
+            self.assertIn("-0.08", md)
+            self.assertIn("Before", md)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

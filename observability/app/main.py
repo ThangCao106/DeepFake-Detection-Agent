@@ -1916,67 +1916,78 @@ async def get_vault_certificate_api(cert_id: str) -> dict:
 
 
 @app.get("/api/calibration/metrics")
+@app.get("/dfagent/api/calibration/metrics")
 async def get_calibration_metrics_api() -> dict:
-    """Return LIVE post-hoc calibration metrics read from mounted custom_vit_model & SQLite history."""
-    import sqlite3
+    """Return LIVE post-hoc calibration metrics & chronological empirical history (pentests, benchmarks, training, weight updates)."""
+    from app.calibration_audit import build_live_calibration_metrics
+
     cdir = _resolve_custom_vit_dir_obs()
-    img_cal = _load_json_obs(cdir / "calibration_params.json", {"temperature_scaling_T": 1.6178, "optimal_threshold_tau": 0.8118})
-    vid_cal = _load_json_obs(cdir / "video_calibration_params.json", {"tau_video": 0.68, "temperature_T": 1.6178})
-    aud_cal = _load_json_obs(cdir / "audio_calibration_params.json", {"tau_audio": 0.8118, "temperature_T": 1.6178})
-    vn_cal = _load_json_obs(cdir / "vietnamese_demographic_params.json", {})
-    bench_meta = _load_json_obs(cdir / "general_training_meta.json", {})
-
-    history = []
+    hdir = _resolve_repo_path_obs("human_vit_model")
+    report_dir = _resolve_repo_path_obs("report_colab")
+    repo_root = report_dir.parent if report_dir.exists() else cdir.parent
     db_path = get_deepfake_db_path()
-    if db_path.exists():
-        try:
-            conn = sqlite3.connect(str(db_path))
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute("SELECT * FROM calibration_weight_updates ORDER BY id DESC LIMIT 8").fetchall()
-            for idx, r in enumerate(rows, 1):
-                after_m = {}
-                try:
-                    after_m = json.loads(r["after_metrics_json"] or "{}")
-                except Exception:
-                    pass
-                history.append({
-                    "epoch": r["id"],
-                    "loss": after_m.get("mean_bce", "--"),
-                    "val_auc": after_m.get("roc_auc", after_m.get("accuracy", "--")),
-                    "raw_ece": after_m.get("error_rate", "--"),
-                    "calib_ece": after_m.get("ece", "--"),
-                    "date": str(r["created_at"])[:16],
-                    "trigger": r["trigger_source"],
-                })
-            conn.close()
-        except Exception:
-            pass
+    return build_live_calibration_metrics(
+        repo_root=repo_root,
+        custom_vit_dir=cdir,
+        human_vit_dir=hdir,
+        db_path=db_path,
+    )
 
-    ece_val = float(bench_meta.get("calibrated_ece", img_cal.get("calibrated_ece", 0.0195)))
-    raw_ece = float(bench_meta.get("raw_ece", 0.0894))
-    ece_red = round(((raw_ece - ece_val) / max(1e-6, raw_ece)) * 100.0, 2) if raw_ece > 0 else 78.19
 
-    return {
-        "status": "SUCCESS",
-        "method": "Platt Scaling + Coordinate Calibration (Live Telemetry)",
-        "optimal_temperature_T": float(img_cal.get("temperature_scaling_T", 1.6178)),
-        "optimal_decision_threshold_tau": float(img_cal.get("optimal_threshold_tau", 0.8118)),
-        "raw_ece": raw_ece,
-        "calibrated_ece": ece_val,
-        "ece_reduction_percent": ece_red,
-        "brier_score_raw": float(bench_meta.get("brier_score_raw", 0.0712)),
-        "brier_score_calibrated": float(bench_meta.get("brier_score_calibrated", 0.0142)),
-        "youden_j_index": float(bench_meta.get("youden_j_index", 0.9960)),
-        "false_positive_rate": float(bench_meta.get("fpr", 0.0)),
-        "false_negative_rate": float(bench_meta.get("fnr", 0.0)),
-        "modality_params": {
-            "image": img_cal,
-            "video": vid_cal,
-            "audio": aud_cal,
-            "vn_demographic": vn_cal,
-        },
-        "training_epochs_history": history,
-    }
+@app.get("/api/calibration/weight-updates/report")
+@app.get("/dfagent/api/calibration/weight-updates/report")
+async def get_weight_update_detailed_report_api(limit: int = 50, modality: str = "") -> dict:
+    """Return detailed audit report of active weights, before/after parameter & metric diffs, and weight registry."""
+    from app.calibration_audit import build_weight_update_detailed_report
+
+    cdir = _resolve_custom_vit_dir_obs()
+    hdir = _resolve_repo_path_obs("human_vit_model")
+    report_dir = _resolve_repo_path_obs("report_colab")
+    repo_root = report_dir.parent if report_dir.exists() else cdir.parent
+    db_path = get_deepfake_db_path()
+    report = build_weight_update_detailed_report(
+        repo_root=repo_root,
+        custom_vit_dir=cdir,
+        human_vit_dir=hdir,
+        db_path=db_path,
+        limit=max(1, min(200, int(limit))),
+        modality_filter=modality,
+    )
+    return {"status": "SUCCESS", **report}
+
+
+@app.get("/api/calibration/weight-updates/export")
+@app.get("/dfagent/api/calibration/weight-updates/export")
+async def export_weight_update_detailed_report_api(format: str = "md", limit: int = 50, modality: str = ""):
+    """Download detailed weight-update & calibration audit report as Markdown (.md) or JSON (.json)."""
+    from app.calibration_audit import build_weight_update_detailed_report, render_weight_update_markdown_report
+
+    cdir = _resolve_custom_vit_dir_obs()
+    hdir = _resolve_repo_path_obs("human_vit_model")
+    report_dir = _resolve_repo_path_obs("report_colab")
+    repo_root = report_dir.parent if report_dir.exists() else cdir.parent
+    db_path = get_deepfake_db_path()
+    report = build_weight_update_detailed_report(
+        repo_root=repo_root,
+        custom_vit_dir=cdir,
+        human_vit_dir=hdir,
+        db_path=db_path,
+        limit=max(1, min(200, int(limit))),
+        modality_filter=modality,
+    )
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    fmt_clean = str(format or "md").strip().lower()
+    if fmt_clean == "json":
+        return JSONResponse(
+            content={"status": "SUCCESS", **report},
+            headers={"Content-Disposition": f'attachment; filename="Weight_Update_Audit_Report_{stamp}.json"'},
+        )
+    md_text = render_weight_update_markdown_report(report)
+    return PlainTextResponse(
+        content=md_text,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="Weight_Update_Audit_Report_{stamp}.md"'},
+    )
 
 
 @app.get("/api/lora/status")
